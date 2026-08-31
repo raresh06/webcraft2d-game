@@ -9,13 +9,32 @@ import * as UI from './ui.js';
 
 // Expose exports to window for HTML inline event handlers (e.g. onclick)
 import {
-    IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT,
-    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion,
+    IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, HARDNESS, REACH, MOVE_SPEED, JUMP_FORCE,
+    BED_LENGTH, CAVE_SKY_FADE_TILES, CAVE_SKY_START_TILES, DIFFICULTIES, DIRT_TO_GRASS_DAYS,
+    LAVA_FLOW_INTERVAL, LAVA_FLOW_MAX, LEAF_DECAY_MIN_FRAMES, LEAF_DECAY_RANDOM_FRAMES,
+    SAPLING_GROWTH_DAYS, SNOW_REGROWTH_DAYS, WATER_FLOW_INTERVAL, WATER_FLOW_MAX,
+    canHarvestBlock, canSaplingGrowAt, checkSandFallAbove, currentWorldSize, getBedPairStart,
+    getBlockColor, getChestGroup, getChestKey, getDayDifficultyMultiplier, getDayHungerDrainMultiplier,
+    getDoorBaseY, getMaxAnimals, getRequiredMiningTier, isBackgroundBuildingBlock, isDoorBlock,
+    isFoodItem, isOpenDoorBlock, isSolidWorldBlock, isWorldMapOpen, notifyBlockedSaplings,
+    scheduleDirtToGrass, scheduleSnowRegrowth, scheduleTreeLeafDecay, setWorldDimensions,
+    showClouds, showDebug, showTutorial, autoJumpEnabled, graphicsMode, advancedGraphics,
+    fabulousGraphics, introEnabled, introPhase, introTimer, selectedDiffChoice, settingsPreviousState,
+    playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
+    mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
+    lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
+    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, FallingBlock, SnowballProjectile,
+    Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
+    setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState, setGameState,
+    setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
+    setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
+    setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
+    setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setSelectedHotbarIndex, setAttackAnimationTimer,
     drawMenuBackground, drawWorld, updateCamera,
     getSnowBiomeRatio, initCanvases, resizeCanvases, canvas, ctx,
     lightCanvas, lightCtx, LIGHT_SCALE, updateCachedVignette,
@@ -23,64 +42,83 @@ import {
     updateFluids, getFluid, setFluid, removeFluid, wakeFluidsAround, syncChest,
     spawnAnimals, spawnMobs, GRAVITY, TERMINAL_VELOCITY, DAY_LENGTH_FRAMES, DAY_LENGTH,
     updateTreeLeafDecay, updateSaplingGrowth, updateNaturalRegrowth, processDroppedItems,
-    miningTarget
+    miningTarget,
+    world, bgWorld, player, inventory, equippedArmor, entities, mobs, activeProjectiles, fallingBlocks,
+    particles, floatingTexts, clouds, fluids, fluidTick, furnaces, chests,
+    mouse, keys, camera, isMultiplayer, currentMpRoom, currentMpWorldName, remotePlayers, isSleeping,
+    sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue,
+    saplingGrowthQueue, saplingBlockedWarnings, dirtToGrassQueue, snowRegrowthQueue,
+    hotbarWheelLockUntil,
+    surfaceHeights, droppedItems, timeOfDay, dayCount, frameCount, STATE,
+    currentDifficulty, currentWorldId,
+    keepInventory, currentWorldAchievementsEnabled
 } from './engine.js';
 
-export let STATE = 'MENU';
-export let timeOfDay = 0;
-export let dayCount = 1;
-export let frameCount = 0;
-export let currentWorldId = null;
-export let currentDifficulty = 'normal';
-export let mouse = { x: 0, y: 0, clientX: 0, clientY: 0, down: false, rightDown: false, isDownLeft: false, isDownRight: false, worldX: 0, worldY: 0 };
-export let keys = {};
-export let world = null;
-export let bgWorld = null;
-export let camera = { x: 0, y: 0 };
-export let player = null;
-export let inventory = new Array(28).fill(null);
+export {
+    IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, HARDNESS, REACH, MOVE_SPEED, JUMP_FORCE,
+    BED_LENGTH, CAVE_SKY_FADE_TILES, CAVE_SKY_START_TILES, DIFFICULTIES, DIRT_TO_GRASS_DAYS,
+    LAVA_FLOW_INTERVAL, LAVA_FLOW_MAX, LEAF_DECAY_MIN_FRAMES, LEAF_DECAY_RANDOM_FRAMES,
+    SAPLING_GROWTH_DAYS, SNOW_REGROWTH_DAYS, WATER_FLOW_INTERVAL, WATER_FLOW_MAX,
+    canHarvestBlock, canSaplingGrowAt, checkSandFallAbove, currentWorldSize, getBedPairStart,
+    getBlockColor, getChestGroup, getChestKey, getDayDifficultyMultiplier, getDayHungerDrainMultiplier,
+    getDoorBaseY, getMaxAnimals, getRequiredMiningTier, isBackgroundBuildingBlock, isDoorBlock,
+    isFoodItem, isOpenDoorBlock, isSolidWorldBlock, isWorldMapOpen, notifyBlockedSaplings,
+    scheduleDirtToGrass, scheduleSnowRegrowth, scheduleTreeLeafDecay, setWorldDimensions,
+    showClouds, showDebug, showTutorial, autoJumpEnabled, graphicsMode, advancedGraphics,
+    fabulousGraphics, introEnabled, introPhase, introTimer, selectedDiffChoice, settingsPreviousState,
+    playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
+    mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
+    lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
+    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, FallingBlock, SnowballProjectile,
+    Particle, FloatingText, Cloud, ItemDrop,
+    generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
+    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
+    textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
+    setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
+    setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
+    setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState, setGameState,
+    setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
+    setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
+    setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
+    setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setSelectedHotbarIndex, setAttackAnimationTimer,
+    drawMenuBackground, drawWorld, updateCamera,
+    getSnowBiomeRatio, initCanvases, resizeCanvases, canvas, ctx,
+    lightCanvas, lightCtx, LIGHT_SCALE, updateCachedVignette,
+    PHYSICS_TICK_RATE, PHYSICS_TICK_MS, fpsCap,
+    updateFluids, getFluid, setFluid, removeFluid, wakeFluidsAround, syncChest,
+    spawnAnimals, spawnMobs, GRAVITY, TERMINAL_VELOCITY, DAY_LENGTH_FRAMES, DAY_LENGTH,
+    updateTreeLeafDecay, updateSaplingGrowth, updateNaturalRegrowth, processDroppedItems,
+    miningTarget,
+    world, bgWorld, player, inventory, equippedArmor, entities, mobs, activeProjectiles, fallingBlocks,
+    particles, floatingTexts, clouds, fluids, fluidTick, furnaces, chests,
+    mouse, keys, camera, isMultiplayer, currentMpRoom, currentMpWorldName, remotePlayers, isSleeping,
+    sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue,
+    saplingGrowthQueue, saplingBlockedWarnings, dirtToGrassQueue, snowRegrowthQueue,
+    hotbarWheelLockUntil,
+    surfaceHeights, droppedItems, timeOfDay, dayCount, frameCount, STATE,
+    currentDifficulty, currentWorldId,
+    keepInventory, currentWorldAchievementsEnabled
+};
+
+export let attackAnimationTimer = 0;
 export let selectedHotbarIndex = 0;
-export let equippedArmor = [null, null, null, null];
-export let entities = [];
-export let mobs = [];
-export let activeProjectiles = [];
-export let fallingBlocks = [];
-export let particles = [];
-export let floatingTexts = [];
-export let clouds = [];
-export let isMultiplayer = false;
-export let currentMpRoom = null;
-export let currentMpWorldName = null;
-export let remotePlayers = {};
-export let isSleeping = false;
+export let heldItemObj = null;
+export let heldItemIndex = -1;
+export let heldItemDraggedOutside = false;
+export let openedFurnace = null;
+export let openedChest = null;
+export let isInventoryOpen = false;
+export let monstersKilledCount = 0;
+export let deepBlocksMinedCount = 0;
+export let caveSkyOpacity = 0;
+export let tooltipEl = null;
+
 export let physicsAccumulator = 0;
 export let lastFrameTime = 0;
 export let lastRenderTime = 0;
 export let currentFps = 60;
 export let frameDeltaMs = 16.6;
-export let caveSkyOpacity = 0;
-export let sleepStartTime = 0;
 export let lastPlayerActivityAt = Date.now();
-export let isBackgroundBuildMode = false;
-export let nonCollidableTreeWood = new Set();
-export let leafDecayQueue = new Map();
-export let saplingGrowthQueue = new Map();
-export let saplingBlockedWarnings = new Map();
-export let dirtToGrassQueue = new Map();
-export let fluidTick = 0;
-export let attackAnimationTimer = 0;
-export let furnaces = [];
-export let openedFurnace = null;
-export let chests = new Map();
-export let openedChest = null;
-export let isInventoryOpen = false;
-export let hotbarWheelLockUntil = 0;
-export let heldItemIndex = -1;
-export let heldItemObj = null;
-export let heldItemDraggedOutside = false;
-export let tooltipEl = null;
-export let deepBlocksMinedCount = 0;
-export let monstersKilledCount = 0;
 export let lastAutosaveTimestamp = Date.now();
 
 export function updateUI() { if (typeof window !== 'undefined' && typeof window.updateUI === 'function' && window.updateUI !== updateUI) return window.updateUI(); }
@@ -125,6 +163,14 @@ export function isMultiplayerAuthority() {
 export function getSmeltResult(id) { if (typeof window !== 'undefined' && typeof window.getSmeltResult === 'function' && window.getSmeltResult !== getSmeltResult) return window.getSmeltResult(id); return null; }
 export function getFuelValue(id) { if (typeof window !== 'undefined' && typeof window.getFuelValue === 'function' && window.getFuelValue !== getFuelValue) return window.getFuelValue(id); return 0; }
 export function updateFurnaceVisual(f) { if (typeof window !== 'undefined' && typeof window.updateFurnaceVisual === 'function' && window.updateFurnaceVisual !== updateFurnaceVisual) return window.updateFurnaceVisual(f); }
+export function giveItem(id, amount = 1) { if (typeof window !== 'undefined' && typeof window.giveItem === 'function' && window.giveItem !== giveItem) return window.giveItem(id, amount); return false; }
+export function damageSelectedTool(amount = 1) { if (typeof window !== 'undefined' && typeof window.damageSelectedTool === 'function' && window.damageSelectedTool !== damageSelectedTool) return window.damageSelectedTool(amount); }
+export function canFitItem(id, amount) { if (typeof window !== 'undefined' && typeof window.canFitItem === 'function' && window.canFitItem !== canFitItem) return window.canFitItem(id, amount); return false; }
+export function hasItem(id, amount) { if (typeof window !== 'undefined' && typeof window.hasItem === 'function' && window.hasItem !== hasItem) return window.hasItem(id, amount); return false; }
+export function consumeItem(id, amount = 1) { if (typeof window !== 'undefined' && typeof window.consumeItem === 'function' && window.consumeItem !== consumeItem) return window.consumeItem(id, amount); return false; }
+export function isTool(id) { if (typeof window !== 'undefined' && typeof window.isTool === 'function' && window.isTool !== isTool) return window.isTool(id); return false; }
+export function ensureToolDurability(item) { if (typeof window !== 'undefined' && typeof window.ensureToolDurability === 'function' && window.ensureToolDurability !== ensureToolDurability) return window.ensureToolDurability(item); }
+export function ensureArmorDurability(item) { if (typeof window !== 'undefined' && typeof window.ensureArmorDurability === 'function' && window.ensureArmorDurability !== ensureArmorDurability) return window.ensureArmorDurability(item); }
 export function drawMinimap() { if (typeof window !== 'undefined' && typeof window.drawMinimap === 'function' && window.drawMinimap !== drawMinimap) return window.drawMinimap(); }
 export function unlockAchievement(id) { if (typeof window !== 'undefined' && typeof window.unlockAchievement === 'function' && window.unlockAchievement !== unlockAchievement) return window.unlockAchievement(id); }
 export function updateSettingsDifficultyUI() { if (typeof window !== 'undefined' && typeof window.updateSettingsDifficultyUI === 'function' && window.updateSettingsDifficultyUI !== updateSettingsDifficultyUI) return window.updateSettingsDifficultyUI(); }
@@ -158,6 +204,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             globalAudioCtx.resume().catch(() => {});
         }
         return globalAudioCtx;
+    }
+
+    if (typeof window !== 'undefined') {
+        const unlockAudio = () => {
+            const ctx = getAudioContext();
+            if (ctx && ctx.state === 'suspended') {
+                ctx.resume().catch(() => {});
+            }
+        };
+        window.addEventListener('pointerdown', unlockAudio, { passive: true });
+        window.addEventListener('keydown', unlockAudio, { passive: true });
+        window.addEventListener('click', unlockAudio, { passive: true });
     }
 
     export function getAudioNoiseBuffer(ctx) {
@@ -318,20 +376,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
 
     document.addEventListener('contextmenu', e => e.preventDefault());
 
-    export let currentWorldSize = 'small';
     export let selectedWorldSizeChoice = 'small';
     export let selectedMpWorldSize = 'small';
 
-    export function setWorldDimensions(size) {
-        currentWorldSize = size === 'big' ? 'big' : 'small';
-        if (currentWorldSize === 'big') {
-            WORLD_WIDTH = 1024;
-            WORLD_HEIGHT = 320;
-        } else {
-            WORLD_WIDTH = 512;
-            WORLD_HEIGHT = 256;
-        }
-    }
+
 
     export function selectWorldSize(size) {
         selectedWorldSizeChoice = size;
@@ -356,42 +404,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
 
     
 
-    
-    export let showClouds = true;
-    export let showDebug = false;
-    export let showTutorial = true;
-    export let autoJumpEnabled = true;
-    export let introEnabled = localStorage.getItem('swc_intro_enabled') !== 'false';
-    export let graphicsMode = localStorage.getItem('swc_graphics_mode') || (localStorage.getItem('swc_advanced_graphics') === 'false' ? 'base' : 'advanced');
-    export let advancedGraphics = (graphicsMode !== 'base');
-    export let fabulousGraphics = (graphicsMode === 'fabulous');
-    export let introPhase = 0;
-    export let introTimer = null;
-    export let selectedDiffChoice = 'normal';
-    export let settingsPreviousState = 'MENU';
-
     // Multiplayer Globals
-    export let playerName = localStorage.getItem('swc_player_name') || '';
     export let mpCreateDifficulty = 'normal';
     export let selectedJoinRoom = null;
-    export let sleepWakeVersion = 0;
     export let pendingPickupRequest = null;
     export let lastPickupResultId = null;
     export let seenEntityDamageEvents = new Set();
-    export let mpPeerIds = new Set();
-    export let lastWorldSyncTime = 0;
-    export let lastWorldStateTimestamp = 0;
-    export let lastDamageEventId = null;
-    export let mpPlayerSyncPending = false;
-    export let mpPlayerSyncQueued = false;
-    export let mpPlayerSyncPendingStartTime = 0;
-    export let mpWorldSyncPending = false;
-    export let lastSyncTime = 0;
-    export let lastSentSkinData = null; // Cache to avoid sending skin on every tick
-    export let lastFluidStateTimestamp = 0;
-
-    export const INVENTORY_SIZE = 28; 
-    export let hotbarSize = 9;
+    export const INVENTORY_SIZE = 28;
 
 
     export function closeForegroundScreen() {
@@ -653,52 +672,64 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         }
     });
 
-    canvas.addEventListener('mousemove', (e) => { 
-        lastPlayerActivityAt = Date.now();
-        const r = canvas.getBoundingClientRect(); 
-        mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; 
-        mouse.worldX = mouse.x + camera.x; mouse.worldY = mouse.y + camera.y;
-    });
+    let canvasListenersAttached = false;
+    export function initCanvasMouseListeners() {
+        if (typeof document === 'undefined') return;
+        const curCanvas = document.getElementById('gameCanvas');
+        if (!curCanvas || canvasListenersAttached) return;
+        canvasListenersAttached = true;
 
-    canvas.addEventListener('mousedown', (e) => {
-        lastPlayerActivityAt = Date.now();
-        if (STATE !== 'PLAYING' || isInventoryOpen) return;
-        if (e.button === 0) { mouse.isDownLeft = true; attackAnimationTimer = 12; handleMeleeAttack(); }
-        if (e.button === 2) { 
-            mouse.isDownRight = true;
-            attackAnimationTimer = 12;
-            continuousPlaceCooldown = 0;
-            lastPlacedCell.x = -1;
-            lastPlacedCell.y = -1;
-            if (!handleBlockInteraction()) {
-                const placed = handleRightClickPlace();
-                if (placed) {
-                    playSound('place');
+        curCanvas.addEventListener('mousemove', (e) => { 
+            lastPlayerActivityAt = Date.now();
+            const r = curCanvas.getBoundingClientRect(); 
+            mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; 
+            mouse.worldX = mouse.x + camera.x; mouse.worldY = mouse.y + camera.y;
+        });
+
+        curCanvas.addEventListener('mousedown', (e) => {
+            lastPlayerActivityAt = Date.now();
+            if (STATE !== 'PLAYING' || isInventoryOpen) return;
+            if (e.button === 0) { mouse.isDownLeft = true; attackAnimationTimer = 12; handleMeleeAttack(); }
+            if (e.button === 2) { 
+                mouse.isDownRight = true;
+                attackAnimationTimer = 12;
+                continuousPlaceCooldown = 0;
+                lastPlacedCell.x = -1;
+                lastPlacedCell.y = -1;
+                if (!handleBlockInteraction()) {
+                    const placed = handleRightClickPlace();
+                    if (placed) {
+                        playSound('place');
+                        lastPlacedCell.x = Math.floor(mouse.worldX / TILE_SIZE);
+                        lastPlacedCell.y = Math.floor(mouse.worldY / TILE_SIZE);
+                        continuousPlaceCooldown = 4;
+                    }
+                } else {
                     lastPlacedCell.x = Math.floor(mouse.worldX / TILE_SIZE);
                     lastPlacedCell.y = Math.floor(mouse.worldY / TILE_SIZE);
-                    continuousPlaceCooldown = 4;
+                    continuousPlaceCooldown = 12;
                 }
-            } else {
-                lastPlacedCell.x = Math.floor(mouse.worldX / TILE_SIZE);
-                lastPlacedCell.y = Math.floor(mouse.worldY / TILE_SIZE);
-                continuousPlaceCooldown = 12;
             }
-        }
-    });
+        });
 
-    canvas.addEventListener('mouseup', (e) => {
-        if (e.button === 0) {
-            mouse.isDownLeft = false;
-            if (miningTarget) miningTarget.progress = 0;
-        }
-        if (e.button === 2) { 
-            mouse.isDownRight = false; 
-            if (player && typeof player.resetEat === 'function') player.resetEat(); 
-            continuousPlaceCooldown = 0; 
-            lastPlacedCell.x = -1; 
-            lastPlacedCell.y = -1; 
-        }
-    });
+        curCanvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                mouse.isDownLeft = false;
+                if (miningTarget) miningTarget.progress = 0;
+            }
+            if (e.button === 2) { 
+                mouse.isDownRight = false; 
+                if (player && typeof player.resetEat === 'function') player.resetEat(); 
+                continuousPlaceCooldown = 0; 
+                lastPlacedCell.x = -1; 
+                lastPlacedCell.y = -1; 
+            }
+        });
+    }
+
+    if (typeof document !== 'undefined') {
+        initCanvasMouseListeners();
+    }
 
     window.addEventListener('mouseup', (e) => {
         if (e.button === 0) {
@@ -746,10 +777,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
 
     export function completeSleepTransition() {
         if (!isMultiplayer) {
-            timeOfDay = 0.2;
-            dayCount++;
-            isSleeping = false;
-            sleepStartTime = 0;
+            setEngineTimeOfDay(0.2);
+            setEngineDayCount(dayCount + 1);
+            setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
             spawnAnimals(2, 0.30);
             for (let i = 0; i < 2; i++) spawnMobs(false);
@@ -761,11 +791,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         const activePlayers = Object.values(remotePlayers).filter(remotePlayer => remotePlayer && !remotePlayer.isDisconnected && (!remotePlayer.lastSeenLocalTime || Date.now() - remotePlayer.lastSeenLocalTime < 12000));
         const allSleeping = activePlayers.length > 0 ? activePlayers.every(remotePlayer => remotePlayer.sleeping) : isSleeping;
         if (allSleeping && isSleeping) {
-            timeOfDay = 0.2;
-            dayCount++;
-            isSleeping = false;
-            sleepStartTime = 0;
-            sleepWakeVersion++;
+            setEngineTimeOfDay(0.2);
+            setEngineDayCount(dayCount + 1);
+            setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
             spawnAnimals(2, 0.30);
             for (let i = 0; i < 2; i++) spawnMobs(false);
@@ -788,16 +816,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 return true;
             }
             if (isSleeping) {
-                isSleeping = false;
-                sleepStartTime = 0;
-                keys = {};
+                setEngineIsSleeping(false);
+                Object.keys(keys).forEach(k => delete keys[k]);
                 updateSleepStatus();
                 showToast('Sleep cancelled.');
                 return true;
             }
-            isSleeping = true;
-            sleepStartTime = performance.now();
-            keys = {};
+            setEngineIsSleeping(true);
+            Object.keys(keys).forEach(k => delete keys[k]);
             updateSleepStatus();
             showToast('Sleeping...');
             unlockAchievement('sweet_dreams');
@@ -891,9 +917,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                         entities.splice(i, 1);
                     }
                     player.exhaustion += 0.15 * getDayHungerDrainMultiplier();
-                    document.getElementById('hotbar').children[selectedHotbarIndex].classList.add('eating-anim');
-                    setTimeout(()=>document.getElementById('hotbar').children[selectedHotbarIndex]?.classList.remove('eating-anim'), 100);
-                    return true; 
+                    const hotbarSlot = document.getElementById('hotbar')?.children?.[selectedHotbarIndex];
+                    if (hotbarSlot) hotbarSlot.classList.add('eating-anim');
+                    setTimeout(() => {
+                        const s = document.getElementById('hotbar')?.children?.[selectedHotbarIndex];
+                        if (s) s.classList.remove('eating-anim');
+                    }, 150);
+                    return true;
                 }
             }
         }
@@ -1447,6 +1477,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         if (introEl) { introEl.classList.add('hidden'); introEl.setAttribute('aria-hidden', 'true'); }
         document.getElementById('hud').style.display = 'block';
         document.getElementById('gameCanvas').classList.remove('hidden');
+        initCanvasMouseListeners();
 
         if (canvas && (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight)) {
             if (typeof resizeCanvases === 'function') resizeCanvases();
@@ -1466,29 +1497,29 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         lastRenderTime = performance.now();
         lastFrameTime = performance.now();
         physicsAccumulator = 0;
-        keys = {};
+        Object.keys(keys).forEach(k => delete keys[k]);
 
-        STATE = 'PLAYING'; updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateTutorialUI(); updateArmorUI(); updateHudArmorBar();
+        setEngineState('PLAYING'); updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateTutorialUI(); updateArmorUI(); updateHudArmorBar();
         if(!isMultiplayer) saveCurrentWorld();
     }
 
 
     export function pauseGame() {
-        STATE = 'PAUSED';
+        setEngineState('PAUSED');
         document.getElementById('pause-menu').classList.remove('hidden');
         const mpBtn = document.getElementById('btn-pause-multiplayer');
         if (mpBtn) {
             if (isMultiplayer) mpBtn.classList.add('hidden');
             else mpBtn.classList.remove('hidden');
         }
-        keys = {};
+        Object.keys(keys).forEach(k => delete keys[k]);
         physicsAccumulator = 0;
     }
     export function resumeGame() { 
-        STATE = 'PLAYING'; 
+        setEngineState('PLAYING'); 
         document.getElementById('pause-menu').classList.add('hidden'); 
         document.getElementById('settings-menu').classList.add('hidden'); 
-        keys = {}; 
+        Object.keys(keys).forEach(k => delete keys[k]); 
         lastRenderTime = performance.now(); 
         lastFrameTime = performance.now(); 
         physicsAccumulator = 0; 
@@ -1497,22 +1528,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         if (currentDifficulty === 'hardcore') return;
         if (!DIFFICULTIES[newDiff]) return;
 
-        currentDifficulty = newDiff;
+        setEngineCurrentDifficulty(newDiff);
         updateSettingsDifficultyUI();
 
         // Despawn or decrease mobs accordingly
         if (newDiff === 'peaceful') {
-            entities = entities.filter(e => !(e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion));
+            setEngineEntities(entities.filter(e => !(e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion)));
         } else {
             let maxHostiles = (newDiff === 'easy') ? 8 : (newDiff === 'normal' ? 14 : 42);
             let hostileCount = 0;
-            entities = entities.filter(e => {
+            setEngineEntities(entities.filter(e => {
                 if (e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion) {
                     hostileCount++;
                     return hostileCount <= maxHostiles;
                 }
                 return true;
-            });
+            }));
         }
 
         // Persist new difficulty to world metadata without affecting achievements
@@ -1540,13 +1571,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
 
 
     export function updateGameSimulation() {
-        frameCount++;
-        if (attackAnimationTimer > 0) attackAnimationTimer--;
+        setEngineFrameCount(frameCount + 1);
 
         let previousDayCount = dayCount;
         if (!isMultiplayer || isMultiplayerAuthority()) {
-            timeOfDay += 1 / DAY_LENGTH_FRAMES;
-            if (timeOfDay >= 1) { timeOfDay = 0; dayCount++; }
+            let newTimeOfDay = timeOfDay + 1 / DAY_LENGTH_FRAMES;
+            if (newTimeOfDay >= 1) {
+                setEngineTimeOfDay(0);
+                setEngineDayCount(dayCount + 1);
+            } else {
+                setEngineTimeOfDay(newTimeOfDay);
+            }
         }
         if (dayCount !== previousDayCount && (!isMultiplayer || isMultiplayerAuthority())) {
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
@@ -1978,6 +2013,7 @@ try { if (typeof updateSleepStatus !== "undefined") window.updateSleepStatus = u
 export function bootGame() {
     if (typeof document !== 'undefined') {
         tooltipEl = document.getElementById('item-tooltip') || document.getElementById('tooltip');
+        initCanvasMouseListeners();
     }
     if (typeof initCanvases === 'function') initCanvases();
     if (typeof loadSavedSettings === 'function') loadSavedSettings();

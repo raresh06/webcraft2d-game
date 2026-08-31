@@ -14,8 +14,8 @@ export let autoJumpEnabled = true;
 export let showHeatShimmer = true;
 export let showBiomeGrading = true;
 export let showVignette = true;
-export let introEnabled = localStorage.getItem('swc_intro_enabled') !== 'false';
-export let graphicsMode = localStorage.getItem('swc_graphics_mode') || 'advanced';
+export let introEnabled = typeof localStorage !== 'undefined' ? localStorage.getItem('swc_intro_enabled') !== 'false' : true;
+export let graphicsMode = typeof localStorage !== 'undefined' ? localStorage.getItem('swc_graphics_mode') || 'advanced' : 'advanced';
 export let advancedGraphics = (graphicsMode !== 'base');
 export let fabulousGraphics = (graphicsMode === 'fabulous');
 export let introPhase = 0;
@@ -27,6 +27,24 @@ export let settingsPreviousState = 'MENU';
 
 export function showToast(msg, duration) { if (typeof window !== 'undefined' && typeof window.showToast === 'function' && window.showToast !== showToast) return window.showToast(msg, duration); }
 export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !== 'undefined' && typeof window.dropItemForWorld === 'function' && window.dropItemForWorld !== dropItemForWorld) return window.dropItemForWorld(itemId, x, y, count); }
+export function playSound(type, options = {}) { if (typeof window !== 'undefined' && typeof window.playSound === 'function' && window.playSound !== playSound) return window.playSound(type, options); }
+export function giveItem(id, amount = 1) { if (typeof window !== 'undefined' && typeof window.giveItem === 'function' && window.giveItem !== giveItem) return window.giveItem(id, amount); return false; }
+export function damageSelectedTool(amount = 1) { if (typeof window !== 'undefined' && typeof window.damageSelectedTool === 'function' && window.damageSelectedTool !== damageSelectedTool) return window.damageSelectedTool(amount); }
+export function ensureToolDurability(item) { if (typeof window !== 'undefined' && typeof window.ensureToolDurability === 'function' && window.ensureToolDurability !== ensureToolDurability) return window.ensureToolDurability(item); return item; }
+export function isTool(id) { if (typeof window !== 'undefined' && typeof window.isTool === 'function' && window.isTool !== isTool) return window.isTool(id); return false; }
+export let currentAccentColor = '#4f46e5';
+export function getAccentPalette(baseHex) {
+    if (typeof window !== 'undefined' && typeof window.getAccentPalette === 'function' && window.getAccentPalette !== getAccentPalette) {
+        return window.getAccentPalette(baseHex || currentAccentColor);
+    }
+    return {
+        base: baseHex || '#4f46e5',
+        light: '#818cf8',
+        dark: '#3730a3',
+        darker: '#1e1b4b',
+        glow: 'rgba(79, 70, 229, 0.4)'
+    };
+}
 
 export let mouse = { x: 0, y: 0, clientX: 0, clientY: 0, down: false, rightDown: false, worldX: 0, worldY: 0 };
 export let keys = {};
@@ -51,7 +69,7 @@ export let lightMap = [];
 export let isMultiplayer = false;
 export let currentMpRoom = null;
 export let currentMpWorldName = null;
-export let playerName = localStorage.getItem('swc_player_name') || '';
+export let playerName = typeof localStorage !== 'undefined' ? localStorage.getItem('swc_player_name') || '' : '';
 export let remotePlayers = {};
 export let isSleeping = false;
 export let sleepWakeVersion = 0;
@@ -125,7 +143,7 @@ export function getMaxAnimals() {
     export let frameDeltaMs = 16.6;
 
     export const FPS_CAP_OPTIONS = [60, 120, 0, 30];
-    export let fpsCap = parseInt(localStorage.getItem('swc_fps_cap') || '60', 10);
+    export let fpsCap = typeof localStorage !== 'undefined' ? parseInt(localStorage.getItem('swc_fps_cap') || '60', 10) : 60;
     if (!FPS_CAP_OPTIONS.includes(fpsCap)) fpsCap = 60;
 
     export function getFpsCapText() {
@@ -279,20 +297,25 @@ export function getMaxAnimals() {
     export let auroraImageData = null;
     export let auroraSnowOpacity = 0;
 
-    export const minimapOffscreenCanvas = document.createElement('canvas');
-    minimapOffscreenCanvas.width = 64;
-    minimapOffscreenCanvas.height = 64;
-    export const minimapOffscreenCtx = minimapOffscreenCanvas.getContext('2d');
-    export const minimapImageData = minimapOffscreenCtx.createImageData(64, 64);
-    export const minimapBuf32 = new Uint32Array(minimapImageData.data.buffer);
+    export const minimapOffscreenCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (minimapOffscreenCanvas) {
+        minimapOffscreenCanvas.width = 64;
+        minimapOffscreenCanvas.height = 64;
+    }
+    export const minimapOffscreenCtx = minimapOffscreenCanvas ? minimapOffscreenCanvas.getContext('2d') : null;
+    export const minimapImageData = minimapOffscreenCtx ? minimapOffscreenCtx.createImageData(64, 64) : null;
+    export const minimapBuf32 = minimapImageData ? new Uint32Array(minimapImageData.data.buffer) : null;
+    export let minimapShape = 'square';
+    export function setMinimapShape(shape) { minimapShape = shape; if (typeof window !== 'undefined') window.minimapShape = shape; }
 
     export const visibleFluids = [];
     export const LEAF_COLORS = ['#6f9f38', '#8dbb45', '#c28a3d', '#d0a34a'];
     export const MINIMAP_COLOR_32 = new Uint32Array(256);
     export let caveSkyOpacity = 0;
     export let keepInventory = false;
+    export let currentWorldAchievementsEnabled = true;
     export let whatsNewShownThisLoad = false;
-    export let whatsNewStartupEnabled = localStorage.getItem('swc_whats_new_startup_enabled') !== 'false';
+    export let whatsNewStartupEnabled = typeof localStorage !== 'undefined' ? localStorage.getItem('swc_whats_new_startup_enabled') !== 'false' : true;
     export let previewWalkAnimation = 0;
     export let previewWalkUntil = 0;
     export let hotbarPopupTimeout = null;
@@ -608,11 +631,12 @@ export function getMaxAnimals() {
     export let heldItemObj = null; 
     export let heldItemDraggedOutside = false;
     export let miningTarget = { x: -1, y: -1, progress: 0 };
-    export const tooltipEl = document.getElementById('item-tooltip');
+    export let tooltipEl = typeof document !== 'undefined' ? document.getElementById('item-tooltip') : null;
 
     export const textures = {};
 
     export function generateTexture(id) {
+        if (typeof document === 'undefined') return;
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = 16; tempCanvas.height = 16;
         const tCtx = tempCanvas.getContext('2d');
@@ -991,28 +1015,30 @@ export function getMaxAnimals() {
                 }
             }
         }
-        tempCanvas.src = tempCanvas.toDataURL();
+        tempCanvas.src = tempCanvas.toDataURL ? tempCanvas.toDataURL() : '';
         textures[id] = tempCanvas;
     }
     Object.values(IDS).forEach(id => { if (id !== IDS.AIR) generateTexture(id); });
 
-    export const largeChestTexture = document.createElement('canvas');
-    largeChestTexture.width = 32; largeChestTexture.height = 16;
-    export const largeChestCtx = largeChestTexture.getContext('2d');
-    for (let x = 0; x < 32; x++) {
-        for (let y = 0; y < 16; y++) {
-            let color;
-            if (x < 1 || x > 30 || y < 2 || y > 13) color = '#4b2b18';
-            else if (y === 3 || y === 12 || x === 2 || x === 29) color = '#a66b38';
-            else color = (x + y) % 3 === 0 ? '#b9783d' : '#8f5b30';
-            if (x === 15 || x === 16) color = '#d5a04c';
-            if (y === 7 || y === 8) color = '#6b3d20';
-            if ((x === 15 || x === 16) && y === 7) color = '#f1d27a';
-            largeChestCtx.fillStyle = color;
-            largeChestCtx.fillRect(x, y, 1, 1);
+    export const largeChestTexture = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (largeChestTexture) {
+        largeChestTexture.width = 32; largeChestTexture.height = 16;
+        const largeChestCtx = largeChestTexture.getContext('2d');
+        for (let x = 0; x < 32; x++) {
+            for (let y = 0; y < 16; y++) {
+                let color;
+                if (x < 1 || x > 30 || y < 2 || y > 13) color = '#4b2b18';
+                else if (y === 3 || y === 12 || x === 2 || x === 29) color = '#a66b38';
+                else color = (x + y) % 3 === 0 ? '#b9783d' : '#8f5b30';
+                if (x === 15 || x === 16) color = '#d5a04c';
+                if (y === 7 || y === 8) color = '#6b3d20';
+                if ((x === 15 || x === 16) && y === 7) color = '#f1d27a';
+                largeChestCtx.fillStyle = color;
+                largeChestCtx.fillRect(x, y, 1, 1);
+            }
         }
+        largeChestTexture.src = largeChestTexture.toDataURL ? largeChestTexture.toDataURL() : '';
     }
-    largeChestTexture.src = largeChestTexture.toDataURL();
     export const largeChestImage = largeChestTexture;
 
     export function getBedLength(x, y) {
@@ -1036,8 +1062,10 @@ export const SKIN_H = 32;
     export let playerSkinData = new Array(SKIN_W * SKIN_H).fill(null);
     export let editingSkinId = null;
     export let activeSkinId = 'default';
-    export let skinCanvasObj = document.createElement('canvas');
-    skinCanvasObj.width = SKIN_W; skinCanvasObj.height = SKIN_H;
+    export let skinCanvasObj = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (skinCanvasObj) {
+        skinCanvasObj.width = SKIN_W; skinCanvasObj.height = SKIN_H;
+    }
     export let previewWalkAnimId = null;
     export let isPreviewWalking = false;
     export let staticPreviewDrawn = false;
@@ -7019,6 +7047,25 @@ try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay
     export function setEngineEquippedArmor(newArmor) { equippedArmor = newArmor; if (typeof window !== 'undefined') window.equippedArmor = newArmor; }
     export function setEngineEntities(newEntities) { entities = newEntities; if (typeof window !== 'undefined') window.entities = newEntities; }
     export function setEngineFluids(newFluids) { fluids = newFluids; if (typeof window !== 'undefined') window.fluids = newFluids; }
+    export function setEngineFurnaces(newFurnaces) { furnaces = newFurnaces; if (typeof window !== 'undefined') window.furnaces = newFurnaces; }
+    export function setEngineChests(newChests) { chests = newChests; if (typeof window !== 'undefined') window.chests = newChests; }
+    export function setEngineDroppedItems(newDrops) { droppedItems = newDrops; if (typeof window !== 'undefined') window.droppedItems = newDrops; }
+    export function setEngineState(newState) { STATE = newState; if (typeof window !== 'undefined') window.STATE = newState; }
+    export function setGameState(newState) { STATE = newState; if (typeof window !== 'undefined') window.STATE = newState; }
+    export function setEngineTimeOfDay(newTime) { timeOfDay = newTime; if (typeof window !== 'undefined') window.timeOfDay = newTime; }
+    export function setEngineDayCount(newDay) { dayCount = newDay; if (typeof window !== 'undefined') window.dayCount = newDay; }
+    export function setEngineFrameCount(newFrames) { frameCount = newFrames; if (typeof window !== 'undefined') window.frameCount = newFrames; }
+    export function setEngineCurrentWorldId(newId) { currentWorldId = newId; if (typeof window !== 'undefined') window.currentWorldId = newId; }
+    export function setEngineCurrentDifficulty(newDiff) { currentDifficulty = newDiff; if (typeof window !== 'undefined') window.currentDifficulty = newDiff; }
+    export function setEngineIsMultiplayer(newMp) { isMultiplayer = newMp; if (typeof window !== 'undefined') window.isMultiplayer = newMp; }
+    export function setEngineCurrentMpRoom(newRoom) { currentMpRoom = newRoom; if (typeof window !== 'undefined') window.currentMpRoom = newRoom; }
+    export function setEngineCurrentMpWorldName(newName) { currentMpWorldName = newName; if (typeof window !== 'undefined') window.currentMpWorldName = newName; }
+    export function setEngineRemotePlayers(newPlayers) { remotePlayers = newPlayers; if (typeof window !== 'undefined') window.remotePlayers = newPlayers; }
+    export function setEngineIsSleeping(newSleeping) { isSleeping = newSleeping; if (typeof window !== 'undefined') window.isSleeping = newSleeping; }
+    export function setEngineIsBackgroundBuildMode(newMode) { isBackgroundBuildMode = newMode; if (typeof window !== 'undefined') window.isBackgroundBuildMode = newMode; }
+    export function setEngineIsInventoryOpen(newOpen) { isInventoryOpen = newOpen; if (typeof window !== 'undefined') window.isInventoryOpen = newOpen; }
+    export function setSelectedHotbarIndex(idx) { selectedHotbarIndex = idx; if (typeof window !== 'undefined') window.selectedHotbarIndex = idx; }
+    export function setAttackAnimationTimer(t) { attackAnimationTimer = t; if (typeof window !== 'undefined') window.attackAnimationTimer = t; }
 
 try { if (typeof setEngineWorld !== "undefined") window.setEngineWorld = setEngineWorld; } catch(e) {}
 try { if (typeof setEngineBgWorld !== "undefined") window.setEngineBgWorld = setEngineBgWorld; } catch(e) {}
@@ -7028,6 +7075,23 @@ try { if (typeof setEngineInventory !== "undefined") window.setEngineInventory =
 try { if (typeof setEngineEquippedArmor !== "undefined") window.setEngineEquippedArmor = setEngineEquippedArmor; } catch(e) {}
 try { if (typeof setEngineEntities !== "undefined") window.setEngineEntities = setEngineEntities; } catch(e) {}
 try { if (typeof setEngineFluids !== "undefined") window.setEngineFluids = setEngineFluids; } catch(e) {}
+try { if (typeof setEngineFurnaces !== "undefined") window.setEngineFurnaces = setEngineFurnaces; } catch(e) {}
+try { if (typeof setEngineChests !== "undefined") window.setEngineChests = setEngineChests; } catch(e) {}
+try { if (typeof setEngineDroppedItems !== "undefined") window.setEngineDroppedItems = setEngineDroppedItems; } catch(e) {}
+try { if (typeof setEngineState !== "undefined") window.setEngineState = setEngineState; } catch(e) {}
+try { if (typeof setGameState !== "undefined") window.setGameState = setGameState; } catch(e) {}
+try { if (typeof setEngineTimeOfDay !== "undefined") window.setEngineTimeOfDay = setEngineTimeOfDay; } catch(e) {}
+try { if (typeof setEngineDayCount !== "undefined") window.setEngineDayCount = setEngineDayCount; } catch(e) {}
+try { if (typeof setEngineFrameCount !== "undefined") window.setEngineFrameCount = setEngineFrameCount; } catch(e) {}
+try { if (typeof setEngineCurrentWorldId !== "undefined") window.setEngineCurrentWorldId = setEngineCurrentWorldId; } catch(e) {}
+try { if (typeof setEngineCurrentDifficulty !== "undefined") window.setEngineCurrentDifficulty = setEngineCurrentDifficulty; } catch(e) {}
+try { if (typeof setEngineIsMultiplayer !== "undefined") window.setEngineIsMultiplayer = setEngineIsMultiplayer; } catch(e) {}
+try { if (typeof setEngineCurrentMpRoom !== "undefined") window.setEngineCurrentMpRoom = setEngineCurrentMpRoom; } catch(e) {}
+try { if (typeof setEngineCurrentMpWorldName !== "undefined") window.setEngineCurrentMpWorldName = setEngineCurrentMpWorldName; } catch(e) {}
+try { if (typeof setEngineRemotePlayers !== "undefined") window.setEngineRemotePlayers = setEngineRemotePlayers; } catch(e) {}
+try { if (typeof setEngineIsSleeping !== "undefined") window.setEngineIsSleeping = setEngineIsSleeping; } catch(e) {}
+try { if (typeof setEngineIsBackgroundBuildMode !== "undefined") window.setEngineIsBackgroundBuildMode = setEngineIsBackgroundBuildMode; } catch(e) {}
+try { if (typeof setEngineIsInventoryOpen !== "undefined") window.setEngineIsInventoryOpen = setEngineIsInventoryOpen; } catch(e) {}
 try { if (typeof initCanvases !== "undefined") window.initCanvases = initCanvases; } catch(e) {}
 try { if (typeof resizeCanvases !== "undefined") window.resizeCanvases = resizeCanvases; } catch(e) {}
 try { if (typeof canvas !== "undefined") window.canvas = canvas; } catch(e) {}

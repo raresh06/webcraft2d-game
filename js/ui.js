@@ -6,8 +6,14 @@ import {
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
+    setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState,
+    setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
+    setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
+    setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
+    setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setSelectedHotbarIndex,
     setWorldDimensions, getMaxAnimals,
     getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
+    TOOL_DURABILITY, ARMOR_DURABILITY, FPS_CAP_OPTIONS, diffDescriptions, DIFFICULTIES,
     LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS
 } from './engine.js';
 
@@ -3276,6 +3282,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         
         isMultiplayer = false;
         currentWorldId = 'world_' + Date.now();
+        if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
         currentDifficulty = selectedDiffChoice;
         setWorldDimensions(selectedWorldSizeChoice);
         let starterItems = document.getElementById('new-world-starter-items').checked;
@@ -3540,10 +3547,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         let raw = localStorage.getItem('swc_data_' + id);
         if(!raw) { hideSingleplayerLoading(); showToast('This world has no saved game data.'); return; }
         currentWorldId = id; isMultiplayer = false;
+        if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
         try {
             let data = JSON.parse(raw);
             if (data.gameVersion !== GAME_VERSION || data.gameBuild !== GAME_BUILD) {
                 currentWorldId = null;
+                if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(null);
                 hideSingleplayerLoading();
                 showToast(`Cannot open world: Incompatible version (World is v${data.gameVersion || 'older'}, Client is v${GAME_VERSION}).`);
                 return;
@@ -3568,6 +3577,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
             if (!Array.isArray(restoredWorld) || restoredWorld.length !== WORLD_WIDTH || !data.player) {
                 currentWorldId = null;
+                if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(null);
                 hideSingleplayerLoading();
                 showToast('This world save is incomplete or corrupted.');
                 return;
@@ -4701,8 +4711,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
         for (let i = 0; i < hotbarSize; i++) {
             let slot = hotbar.children[i];
+            if (!slot) continue;
             slot.className = `hotbar-slot w-12 h-12 flex items-center justify-center relative border-3 cursor-pointer ${i === selectedHotbarIndex ? 'active border-white bg-white/30' : 'border-gray-500 bg-black/60 hover:border-gray-300'}`;
-            while (slot.childNodes.length > 1) slot.removeChild(slot.lastChild);
+            while (slot.childNodes && slot.childNodes.length > 1) slot.removeChild(slot.lastChild);
             populateSlotItemDOM(slot, inventory[i]);
         }
 
