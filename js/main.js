@@ -22,7 +22,8 @@ import {
     PHYSICS_TICK_RATE, PHYSICS_TICK_MS, fpsCap,
     updateFluids, getFluid, setFluid, removeFluid, wakeFluidsAround, syncChest,
     spawnAnimals, spawnMobs, GRAVITY, TERMINAL_VELOCITY, DAY_LENGTH_FRAMES, DAY_LENGTH,
-    updateTreeLeafDecay, updateSaplingGrowth, updateNaturalRegrowth, processDroppedItems
+    updateTreeLeafDecay, updateSaplingGrowth, updateNaturalRegrowth, processDroppedItems,
+    miningTarget
 } from './engine.js';
 
 export let STATE = 'MENU';
@@ -31,7 +32,7 @@ export let dayCount = 1;
 export let frameCount = 0;
 export let currentWorldId = null;
 export let currentDifficulty = 'normal';
-export let mouse = { x: 0, y: 0, clientX: 0, clientY: 0, down: false, rightDown: false, worldX: 0, worldY: 0 };
+export let mouse = { x: 0, y: 0, clientX: 0, clientY: 0, down: false, rightDown: false, isDownLeft: false, isDownRight: false, worldX: 0, worldY: 0 };
 export let keys = {};
 export let world = null;
 export let bgWorld = null;
@@ -77,7 +78,6 @@ export let hotbarWheelLockUntil = 0;
 export let heldItemIndex = -1;
 export let heldItemObj = null;
 export let heldItemDraggedOutside = false;
-export let miningTarget = null;
 export let tooltipEl = null;
 export let deepBlocksMinedCount = 0;
 export let monstersKilledCount = 0;
@@ -625,11 +625,21 @@ export function checkAfkKick() { if (typeof window !== 'undefined' && typeof win
                 title = target.dataset.tip || null;
             }
 
-            if(title) {
-                tooltipEl.innerText = title; tooltipEl.style.display = 'block';
-                tooltipEl.style.left = (e.clientX + 15) + 'px'; tooltipEl.style.top = (e.clientY + 15) + 'px';
-            } else { tooltipEl.style.display = 'none'; }
-        } else { tooltipEl.style.display = 'none'; }
+            const tipEl = tooltipEl || (typeof document !== 'undefined' ? (document.getElementById('item-tooltip') || document.getElementById('tooltip')) : null);
+            if (tipEl) {
+                if (title) {
+                    tipEl.innerText = title;
+                    tipEl.style.display = 'block';
+                    tipEl.style.left = (e.clientX + 15) + 'px';
+                    tipEl.style.top = (e.clientY + 15) + 'px';
+                } else {
+                    tipEl.style.display = 'none';
+                }
+            }
+        } else {
+            const tipEl = tooltipEl || (typeof document !== 'undefined' ? (document.getElementById('item-tooltip') || document.getElementById('tooltip')) : null);
+            if (tipEl) tipEl.style.display = 'none';
+        }
     });
 
     canvas.addEventListener('mousemove', (e) => { 
@@ -666,10 +676,13 @@ export function checkAfkKick() { if (typeof window !== 'undefined' && typeof win
     });
 
     canvas.addEventListener('mouseup', (e) => {
-        if (e.button === 0) { mouse.isDownLeft = false; miningTarget.progress = 0; }
+        if (e.button === 0) {
+            mouse.isDownLeft = false;
+            if (miningTarget) miningTarget.progress = 0;
+        }
         if (e.button === 2) { 
             mouse.isDownRight = false; 
-            player.resetEat(); 
+            if (player && typeof player.resetEat === 'function') player.resetEat(); 
             continuousPlaceCooldown = 0; 
             lastPlacedCell.x = -1; 
             lastPlacedCell.y = -1; 
@@ -677,10 +690,13 @@ export function checkAfkKick() { if (typeof window !== 'undefined' && typeof win
     });
 
     window.addEventListener('mouseup', (e) => {
-        if (e.button === 0) { mouse.isDownLeft = false; miningTarget.progress = 0; }
+        if (e.button === 0) {
+            mouse.isDownLeft = false;
+            if (miningTarget) miningTarget.progress = 0;
+        }
         if (e.button === 2) { 
             mouse.isDownRight = false; 
-            player.resetEat(); 
+            if (player && typeof player.resetEat === 'function') player.resetEat(); 
             continuousPlaceCooldown = 0; 
             lastPlacedCell.x = -1; 
             lastPlacedCell.y = -1; 
@@ -1948,6 +1964,9 @@ try { if (typeof updateSleepStatus !== "undefined") window.updateSleepStatus = u
 
 // Safe Boot Sequence
 export function bootGame() {
+    if (typeof document !== 'undefined') {
+        tooltipEl = document.getElementById('item-tooltip') || document.getElementById('tooltip');
+    }
     if (typeof initCanvases === 'function') initCanvases();
     if (typeof loadSavedSettings === 'function') loadSavedSettings();
     if (typeof updateSettingsUI === 'function') updateSettingsUI();

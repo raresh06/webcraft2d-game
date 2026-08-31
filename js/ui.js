@@ -7,7 +7,8 @@ import {
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
     setWorldDimensions, getMaxAnimals,
-    getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability
+    getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
+    LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS
 } from './engine.js';
 
 export const SKIN_W = 16;
@@ -94,6 +95,9 @@ export let editingSkinId = null;
 export let fpsCap = 60;
 export let lastFrameTime = 0;
 export let lastRenderTime = 0;
+export let whatsNewShownThisLoad = false;
+export let whatsNewStartupEnabled = typeof localStorage !== 'undefined' ? (localStorage.getItem('swc_whats_new_startup_enabled') !== 'false') : true;
+export let introPhaseLockUntil = 0;
 export let hotbarPopupTimeout = null;
 export let lastHotbarItemId = null;
 export let caveSkyOpacity = 0;
@@ -3008,7 +3012,10 @@ export function isMultiplayerAuthority() {
     }
 
     export function showMainMenu() {
-        setRandomSplashText();
+        const splashEl = document.getElementById('splash-text');
+        if (!splashEl || !splashEl.innerText || !menuWorldInitialized) {
+            setRandomSplashText();
+        }
         document.getElementById('worlds-menu').classList.add('hidden');
         document.getElementById('multiplayer-modal').classList.add('hidden');
         document.getElementById('shared-menu-bg').classList.remove('hidden');
@@ -3016,8 +3023,8 @@ export function isMultiplayerAuthority() {
         if (!menuWorldInitialized) {
             generateMenuWorld();
         }
-        drawMenuBackground();
-        drawPlayerPreview();
+        if (typeof drawMenuBackground === 'function') drawMenuBackground();
+        if (typeof drawPlayerPreview === 'function') drawPlayerPreview();
         openWhatsNewOnce();
     }
 
@@ -3031,7 +3038,10 @@ export function isMultiplayerAuthority() {
         }
         document.getElementById('main-menu').classList.add('intro-reveal');
         showMainMenu();
-        setTimeout(() => document.getElementById('main-menu').classList.remove('intro-reveal'), 1500);
+        setTimeout(() => {
+            const mm = document.getElementById('main-menu');
+            if (mm) mm.classList.remove('intro-reveal');
+        }, 1500);
     }
 
     export function advanceIntro() {
@@ -3039,12 +3049,18 @@ export function isMultiplayerAuthority() {
         if (!introEnabled || !intro || intro.classList.contains('hidden')) return;
         if (introPhase === 0) {
             introPhase = 1;
-            document.getElementById('intro-black-text').classList.add('hidden');
+            if (introTimer) { clearTimeout(introTimer); introTimer = null; }
+            const blackText = document.getElementById('intro-black-text');
+            if (blackText) blackText.classList.add('hidden');
             intro.classList.add('message-stage');
-            document.getElementById('intro-message-screen').classList.add('visible');
-            document.getElementById('intro-skip-hint').innerText = 'Press SPACE or Click anywhere to enter Webcraft2D';
-            introTimer = null;
+            const msgScreen = document.getElementById('intro-message-screen');
+            if (msgScreen) msgScreen.classList.add('visible');
+            const skipHint = document.getElementById('intro-skip-hint');
+            if (skipHint) skipHint.innerText = 'Press SPACE or Click anywhere to enter Webcraft2D';
+            introPhaseLockUntil = Date.now() + 700;
+            introTimer = setTimeout(advanceIntro, 14000);
         } else {
+            if (Date.now() < introPhaseLockUntil) return;
             finishIntro();
         }
     }
@@ -3052,17 +3068,25 @@ export function isMultiplayerAuthority() {
     export function startIntro() {
         if (!introEnabled) { showMainMenu(); return; }
         introPhase = 0;
+        introPhaseLockUntil = 0;
         const intro = document.getElementById('game-intro');
         if (!intro) { showMainMenu(); return; }
         intro.style.pointerEvents = 'auto';
-        intro.onclick = () => { advanceIntro(); };
+        intro.onclick = (e) => {
+            if (e && e.stopPropagation) e.stopPropagation();
+            advanceIntro();
+        };
         document.getElementById('main-menu').classList.add('hidden');
         intro.classList.remove('message-stage');
-        document.getElementById('intro-black-text').classList.remove('hidden');
-        document.getElementById('intro-message-screen').classList.remove('visible');
-        document.getElementById('intro-skip-hint').innerText = 'Press SPACE or Click to continue';
+        const blackText = document.getElementById('intro-black-text');
+        if (blackText) blackText.classList.remove('hidden');
+        const msgScreen = document.getElementById('intro-message-screen');
+        if (msgScreen) msgScreen.classList.remove('visible');
+        const skipHint = document.getElementById('intro-skip-hint');
+        if (skipHint) skipHint.innerText = 'Press SPACE or Click to continue';
         intro.classList.remove('hidden');
         intro.setAttribute('aria-hidden', 'false');
+        if (introTimer) clearTimeout(introTimer);
         introTimer = setTimeout(advanceIntro, 3400);
     }
 
