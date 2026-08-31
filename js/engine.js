@@ -2317,12 +2317,12 @@ export const SKIN_H = 32;
         if (typeof window !== 'undefined' && typeof window.isActionActive === 'function' && window.isActionActive !== isActionActive) {
             return window.isActionActive(action);
         }
-        const activeKeys = keys || (typeof window !== 'undefined' ? window.keys : null);
+        const activeKeys = (typeof window !== 'undefined' && window.keys) ? window.keys : keys;
         if (!activeKeys) return false;
-        if (action === 'left') return !!(activeKeys['KeyA'] || activeKeys['ArrowLeft'] || activeKeys['a'] || activeKeys['A']);
-        if (action === 'right') return !!(activeKeys['KeyD'] || activeKeys['ArrowRight'] || activeKeys['d'] || activeKeys['D']);
-        if (action === 'jump') return !!(activeKeys['KeyW'] || activeKeys['Space'] || activeKeys['ArrowUp'] || activeKeys['w'] || activeKeys['W']);
-        if (action === 'sneak' || action === 'down') return !!(activeKeys['ShiftLeft'] || activeKeys['ShiftRight'] || activeKeys['KeyS'] || activeKeys['ArrowDown'] || activeKeys['s'] || activeKeys['S']);
+        if (action === 'left') return !!(activeKeys['KeyA'] || activeKeys['ArrowLeft'] || activeKeys['a'] || activeKeys['A'] || activeKeys['arrowleft']);
+        if (action === 'right') return !!(activeKeys['KeyD'] || activeKeys['ArrowRight'] || activeKeys['d'] || activeKeys['D'] || activeKeys['arrowright']);
+        if (action === 'jump') return !!(activeKeys['KeyW'] || activeKeys['Space'] || activeKeys['ArrowUp'] || activeKeys['w'] || activeKeys['W'] || activeKeys[' '] || activeKeys['arrowup']);
+        if (action === 'sneak' || action === 'down') return !!(activeKeys['ShiftLeft'] || activeKeys['ShiftRight'] || activeKeys['KeyS'] || activeKeys['ArrowDown'] || activeKeys['s'] || activeKeys['S'] || activeKeys['arrowdown']);
         return false;
     }
 
@@ -4572,9 +4572,9 @@ export const SKIN_H = 32;
         for (let [key, delay] of leafDecayQueue) {
             let [x, y] = key.split('_').map(Number);
             if (world[x]?.[y] !== IDS.LEAVES) { leafDecayQueue.delete(key); continue; }
-            if (isLeafConnectedToWood(x, y, 4)) { leafDecayQueue.delete(key); continue; }
             delay--;
             if (delay > 0) { leafDecayQueue.set(key, delay); continue; }
+            if (isLeafConnectedToWood(x, y, 4)) { leafDecayQueue.delete(key); continue; }
             world[x][y] = IDS.AIR;
             syncBlock(x, y, IDS.AIR);
             let roll = Math.random();

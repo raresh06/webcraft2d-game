@@ -540,7 +540,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 e.preventDefault(); toggleTutorial();
             }
             else if (k === invKey || k === 'i') toggleInventory();
-            else keys[k] = true;
+            else {
+                keys[k] = true;
+                if (e.code) keys[e.code] = true;
+                if (typeof window !== 'undefined') window.keys = keys;
+            }
             if (k >= '1' && k <= '9' && !isInventoryOpen) { 
                 selectedHotbarIndex = parseInt(k) - 1; 
                 updateUI();
@@ -548,7 +552,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             }
         }
     }, true);
-    window.addEventListener('keyup', (e) => { lastPlayerActivityAt = Date.now(); keys[e.key.toLowerCase()] = false; });
+    window.addEventListener('keyup', (e) => {
+        lastPlayerActivityAt = Date.now();
+        let k = (e.key || '').toLowerCase();
+        keys[k] = false;
+        if (e.code) keys[e.code] = false;
+        if (typeof window !== 'undefined') window.keys = keys;
+    });
     window.addEventListener('mousedown', (e) => {
         lastPlayerActivityAt = Date.now();
         if (e.button !== 0 || !isInventoryOpen || !heldItemObj || !heldItemDraggedOutside) return;
