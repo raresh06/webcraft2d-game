@@ -11,6 +11,9 @@ export let showClouds = true;
 export let showDebug = false;
 export let showTutorial = true;
 export let autoJumpEnabled = true;
+export let showHeatShimmer = true;
+export let showBiomeGrading = true;
+export let showVignette = true;
 export let introEnabled = localStorage.getItem('swc_intro_enabled') !== 'false';
 export let graphicsMode = localStorage.getItem('swc_graphics_mode') || 'advanced';
 export let advancedGraphics = (graphicsMode !== 'base');
@@ -21,6 +24,8 @@ export let currentWorldId = null;
 export let selectedDiffChoice = 'normal';
 export let currentDifficulty = 'normal';
 export let settingsPreviousState = 'MENU';
+
+export function showToast(msg, duration) { if (typeof window !== 'undefined' && typeof window.showToast === 'function' && window.showToast !== showToast) return window.showToast(msg, duration); }
 
 export let mouse = { x: 0, y: 0, clientX: 0, clientY: 0, down: false, rightDown: false, worldX: 0, worldY: 0 };
 export let keys = {};
@@ -67,8 +72,33 @@ export const TILE_SIZE = 32;
     export const CHUNK_HEIGHT = 128;
     export const WORLD_CHUNKS = 32;
     export const CHUNK_TOTAL_WIDTH = CHUNK_WIDTH * TILE_SIZE;
-    export const WORLD_WIDTH = 512;
-    export const WORLD_HEIGHT = 256;
+    export let WORLD_WIDTH = 512;
+    export let WORLD_HEIGHT = 256;
+    export let currentWorldSize = 'small';
+
+    export function setWorldDimensions(size) {
+        currentWorldSize = size === 'big' ? 'big' : 'small';
+        if (currentWorldSize === 'big') {
+            WORLD_WIDTH = 1024;
+            WORLD_HEIGHT = 320;
+        } else {
+            WORLD_WIDTH = 512;
+            WORLD_HEIGHT = 256;
+        }
+        if (typeof window !== 'undefined') {
+            window.currentWorldSize = currentWorldSize;
+            window.WORLD_WIDTH = WORLD_WIDTH;
+            window.WORLD_HEIGHT = WORLD_HEIGHT;
+        }
+    }
+
+    export function getMaxAnimals() {
+        if (isMultiplayer) {
+            return currentWorldSize === 'big' ? 18 : 10;
+        } else {
+            return currentWorldSize === 'big' ? 22 : 12;
+        }
+    }
     export const DAY_LENGTH = 24000;
     export const REACH = 5 * TILE_SIZE;
     export const MOVE_SPEED = 3.5;
@@ -104,6 +134,153 @@ export const TILE_SIZE = 32;
     export function getFpsCapText() {
         return fpsCap === 0 ? "Unlimited" : `${fpsCap} FPS`;
     }
+
+    export const LIGHT_SCALE = 0.5;
+    export let canvas = typeof document !== 'undefined' ? document.getElementById('gameCanvas') : null;
+    export let ctx = canvas ? canvas.getContext('2d', { alpha: false }) : null;
+    export let menuBgCanvas = typeof document !== 'undefined' ? document.getElementById('menuBgCanvas') : null;
+    export let menuCtx = menuBgCanvas ? menuBgCanvas.getContext('2d', { alpha: false }) : null;
+    export let lightCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export let lightCtx = lightCanvas ? lightCanvas.getContext('2d') : null;
+
+    // Cached vignette radial gradient
+    export let cachedLightVignette = null;
+    export let cachedVignetteW = 0;
+    export let cachedVignetteH = 0;
+    export function updateCachedVignette() {
+        if (!lightCanvas || !lightCanvas.width || !lightCanvas.height || lightCanvas.width < 10 || lightCanvas.height < 10) return;
+        if (!lightCtx) lightCtx = lightCanvas.getContext('2d');
+        if (!lightCtx) return;
+        cachedLightVignette = lightCtx.createRadialGradient(
+            lightCanvas.width / 2, lightCanvas.height / 2, Math.max(10, lightCanvas.height * 0.28),
+            lightCanvas.width / 2, lightCanvas.height / 2, Math.max(20, lightCanvas.height * 0.82)
+        );
+        cachedLightVignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        cachedLightVignette.addColorStop(1, 'rgba(0, 0, 12, 1)');
+        cachedVignetteW = lightCanvas.width;
+        cachedVignetteH = lightCanvas.height;
+    }
+
+    // Pre-rendered reusable light falloff stamp (GPU texture blit)
+    export const cachedTorchLightCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedTorchLightCanvas) {
+        cachedTorchLightCanvas.width = 256;
+        cachedTorchLightCanvas.height = 256;
+        const torchLightCtx = cachedTorchLightCanvas.getContext('2d');
+        const tGrad = torchLightCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
+        tGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        tGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        torchLightCtx.fillStyle = tGrad;
+        torchLightCtx.beginPath();
+        torchLightCtx.arc(128, 128, 128, 0, Math.PI * 2);
+        torchLightCtx.fill();
+    }
+
+    // Pre-rendered reusable warm torch aura glow stamp
+    export const cachedTorchGlowCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedTorchGlowCanvas) {
+        cachedTorchGlowCanvas.width = 128;
+        cachedTorchGlowCanvas.height = 128;
+        const torchGlowCtx = cachedTorchGlowCanvas.getContext('2d');
+        const gGrad = torchGlowCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gGrad.addColorStop(0, 'rgba(255, 214, 112, 0.32)');
+        gGrad.addColorStop(1, 'rgba(255, 82, 18, 0)');
+        torchGlowCtx.fillStyle = gGrad;
+        torchGlowCtx.fillRect(0, 0, 128, 128);
+    }
+
+    // Pre-rendered reusable screen vignette stamp for Fabulous Graphics
+    export const cachedFabulousVignetteCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedFabulousVignetteCanvas) {
+        cachedFabulousVignetteCanvas.width = 256;
+        cachedFabulousVignetteCanvas.height = 256;
+        const fabVigCtx = cachedFabulousVignetteCanvas.getContext('2d');
+        const fabVigGrad = fabVigCtx.createRadialGradient(128, 128, 64, 128, 128, 128);
+        fabVigGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        fabVigGrad.addColorStop(0.65, 'rgba(0, 0, 0, 0.45)');
+        fabVigGrad.addColorStop(1, 'rgba(0, 0, 0, 1.0)');
+        fabVigCtx.fillStyle = fabVigGrad;
+        fabVigCtx.fillRect(0, 0, 256, 256);
+    }
+
+    // Pre-rendered reusable snow fog gradient stamp
+    export const cachedSnowFogCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedSnowFogCanvas) {
+        cachedSnowFogCanvas.width = 16;
+        cachedSnowFogCanvas.height = 256;
+        const snowFogCtx = cachedSnowFogCanvas.getContext('2d');
+        const sFogGrad = snowFogCtx.createLinearGradient(0, 0, 0, 256);
+        sFogGrad.addColorStop(0, 'rgba(230, 245, 255, 0)');
+        sFogGrad.addColorStop(0.3, 'rgba(225, 242, 255, 0.45)');
+        sFogGrad.addColorStop(0.7, 'rgba(215, 238, 255, 0.65)');
+        sFogGrad.addColorStop(1, 'rgba(230, 245, 255, 0)');
+        snowFogCtx.fillStyle = sFogGrad;
+        snowFogCtx.fillRect(0, 0, 16, 256);
+    }
+
+    // Pre-rendered Sun Corona Glow (Daytime)
+    export const cachedSunGlowDayCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedSunGlowDayCanvas) {
+        cachedSunGlowDayCanvas.width = 200;
+        cachedSunGlowDayCanvas.height = 200;
+        const sunDayCtx = cachedSunGlowDayCanvas.getContext('2d');
+        const sgDay = sunDayCtx.createRadialGradient(100, 100, 15, 100, 100, 95);
+        sgDay.addColorStop(0, 'rgba(255, 245, 160, 0.45)');
+        sgDay.addColorStop(0.5, 'rgba(255, 215, 80, 0.18)');
+        sgDay.addColorStop(1, 'rgba(255, 190, 40, 0)');
+        sunDayCtx.fillStyle = sgDay;
+        sunDayCtx.beginPath(); sunDayCtx.arc(100, 100, 95, 0, Math.PI * 2); sunDayCtx.fill();
+    }
+
+    // Pre-rendered Sun Corona Glow (Sunset / Sunrise)
+    export const cachedSunGlowSunsetCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedSunGlowSunsetCanvas) {
+        cachedSunGlowSunsetCanvas.width = 200;
+        cachedSunGlowSunsetCanvas.height = 200;
+        const sunSunsetCtx = cachedSunGlowSunsetCanvas.getContext('2d');
+        const sgSunset = sunSunsetCtx.createRadialGradient(100, 100, 15, 100, 100, 95);
+        sgSunset.addColorStop(0, 'rgba(255, 140, 60, 0.45)');
+        sgSunset.addColorStop(0.5, 'rgba(255, 90, 40, 0.20)');
+        sgSunset.addColorStop(1, 'rgba(255, 50, 20, 0)');
+        sunSunsetCtx.fillStyle = sgSunset;
+        sunSunsetCtx.beginPath(); sunSunsetCtx.arc(100, 100, 95, 0, Math.PI * 2); sunSunsetCtx.fill();
+    }
+
+    // Pre-rendered Moon Celestial Halo Glow
+    export const cachedMoonGlowCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedMoonGlowCanvas) {
+        cachedMoonGlowCanvas.width = 180;
+        cachedMoonGlowCanvas.height = 180;
+        const moonGlowCtx = cachedMoonGlowCanvas.getContext('2d');
+        const mg = moonGlowCtx.createRadialGradient(90, 90, 15, 90, 90, 80);
+        mg.addColorStop(0, 'rgba(190, 220, 255, 0.28)');
+        mg.addColorStop(0.5, 'rgba(140, 185, 245, 0.12)');
+        mg.addColorStop(1, 'rgba(100, 150, 230, 0)');
+        moonGlowCtx.fillStyle = mg;
+        moonGlowCtx.beginPath(); moonGlowCtx.arc(90, 90, 80, 0, Math.PI * 2); moonGlowCtx.fill();
+    }
+
+    // Pre-rendered Soft Entity Drop Shadow Sprite
+    export const cachedShadowCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedShadowCanvas) {
+        cachedShadowCanvas.width = 64;
+        cachedShadowCanvas.height = 16;
+        const shadowCtx = cachedShadowCanvas.getContext('2d');
+        const shGrad = shadowCtx.createRadialGradient(32, 8, 0, 32, 8, 32);
+        shGrad.addColorStop(0, 'rgba(0, 0, 0, 0.42)');
+        shGrad.addColorStop(0.7, 'rgba(0, 0, 0, 0.35)');
+        shGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        shadowCtx.fillStyle = shGrad;
+        shadowCtx.beginPath();
+        shadowCtx.ellipse(32, 8, 30, 7, 0, 0, Math.PI * 2);
+        shadowCtx.fill();
+    }
+
+    // Persistent offscreen canvas and ImageData for pixel-art aurora rendering
+    export const auroraCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const auroraCtx = auroraCanvas ? auroraCanvas.getContext('2d') : null;
+    export let auroraImageData = null;
+    export let auroraSnowOpacity = 0;
 
     export const minimapOffscreenCanvas = document.createElement('canvas');
     minimapOffscreenCanvas.width = 64;
@@ -2133,6 +2310,19 @@ export const SKIN_H = 32;
                 break;
             }
         }
+    }
+
+    export function isActionActive(action) {
+        if (typeof window !== 'undefined' && typeof window.isActionActive === 'function' && window.isActionActive !== isActionActive) {
+            return window.isActionActive(action);
+        }
+        const activeKeys = keys || (typeof window !== 'undefined' ? window.keys : null);
+        if (!activeKeys) return false;
+        if (action === 'left') return !!(activeKeys['KeyA'] || activeKeys['ArrowLeft'] || activeKeys['a'] || activeKeys['A']);
+        if (action === 'right') return !!(activeKeys['KeyD'] || activeKeys['ArrowRight'] || activeKeys['d'] || activeKeys['D']);
+        if (action === 'jump') return !!(activeKeys['KeyW'] || activeKeys['Space'] || activeKeys['ArrowUp'] || activeKeys['w'] || activeKeys['W']);
+        if (action === 'sneak' || action === 'down') return !!(activeKeys['ShiftLeft'] || activeKeys['ShiftRight'] || activeKeys['KeyS'] || activeKeys['ArrowDown'] || activeKeys['s'] || activeKeys['S']);
+        return false;
     }
 
     export class Player extends PhysicsEntity {
@@ -4278,14 +4468,47 @@ export const SKIN_H = 32;
         }
     }
 
-    window.addEventListener('resize', () => { 
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight; 
-        menuBgCanvas.width = window.innerWidth; menuBgCanvas.height = window.innerHeight;
-        lightCanvas.width = Math.max(1, Math.ceil(window.innerWidth * LIGHT_SCALE)); 
-        lightCanvas.height = Math.max(1, Math.ceil(window.innerHeight * LIGHT_SCALE));
-        updateCachedVignette();
-    });
-    window.dispatchEvent(new Event('resize'));
+    export function initCanvases() {
+        if (!canvas && typeof document !== 'undefined') canvas = document.getElementById('gameCanvas');
+        if (canvas && !ctx) ctx = canvas.getContext('2d', { alpha: false });
+        if (!menuBgCanvas && typeof document !== 'undefined') menuBgCanvas = document.getElementById('menuBgCanvas');
+        if (menuBgCanvas && !menuCtx) menuCtx = menuBgCanvas.getContext('2d', { alpha: false });
+        if (!lightCanvas && typeof document !== 'undefined') {
+            lightCanvas = document.createElement('canvas');
+            lightCtx = lightCanvas.getContext('2d');
+        }
+        if (!auroraCanvas && typeof document !== 'undefined') {
+            auroraCanvas = document.createElement('canvas');
+            auroraCtx = auroraCanvas.getContext('2d');
+        }
+        resizeCanvases();
+    }
+
+    export function resizeCanvases() {
+        if (!canvas && typeof document !== 'undefined') canvas = document.getElementById('gameCanvas');
+        if (canvas) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx = canvas.getContext('2d', { alpha: false });
+        }
+        if (!menuBgCanvas && typeof document !== 'undefined') menuBgCanvas = document.getElementById('menuBgCanvas');
+        if (menuBgCanvas) {
+            menuBgCanvas.width = window.innerWidth;
+            menuBgCanvas.height = window.innerHeight;
+            menuCtx = menuBgCanvas.getContext('2d', { alpha: false });
+        }
+        if (lightCanvas) {
+            lightCanvas.width = Math.max(1, Math.ceil(window.innerWidth * LIGHT_SCALE));
+            lightCanvas.height = Math.max(1, Math.ceil(window.innerHeight * LIGHT_SCALE));
+        }
+        if (typeof updateCachedVignette === 'function') {
+            updateCachedVignette();
+        }
+    }
+
+    if (typeof window !== 'undefined') {
+        window.addEventListener('resize', resizeCanvases);
+    }
 
 
     export function isLeafConnectedToWood(lx, ly, maxDistance = 4) {
@@ -4610,16 +4833,18 @@ export const SKIN_H = 32;
 
 
     export function updateCamera(dtFactor = 1.0) {
-        if (!player) return;
-        let targetX = player.x + player.width / 2 - canvas.width / 2;
-        let targetY = player.y + player.height / 2 - canvas.height / 2;
+        const curPlayer = player || (typeof window !== 'undefined' ? window.player : null);
+        const curCanvas = canvas || (typeof window !== 'undefined' ? window.canvas : null);
+        if (!curPlayer || !curCanvas) return;
+        let targetX = curPlayer.x + (curPlayer.width || 24) / 2 - curCanvas.width / 2;
+        let targetY = curPlayer.y + (curPlayer.height || 48) / 2 - curCanvas.height / 2;
         const lerp = 1 - Math.pow(1 - 0.15, dtFactor);
         camera.x += (targetX - camera.x) * lerp; 
         camera.y += (targetY - camera.y) * lerp; 
         
         // Let camera go beyond bounds for ocean rendering effect, but keep it mostly clamped
-        camera.x = Math.max(-canvas.width / 3, Math.min(camera.x, WORLD_WIDTH * TILE_SIZE - canvas.width + canvas.width / 3));
-        camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT * TILE_SIZE - canvas.height));
+        camera.x = Math.max(-curCanvas.width / 3, Math.min(camera.x, WORLD_WIDTH * TILE_SIZE - curCanvas.width + curCanvas.width / 3));
+        camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT * TILE_SIZE - curCanvas.height));
     }
 
     export const SKY_STARS = Array.from({ length: 70 }, (_, index) => ({
@@ -4854,8 +5079,7 @@ export const SKIN_H = 32;
         }
         const now = performance.now();
         const delta = Math.min(40, now - menuLastFrame);
-        menuLastFrame = now;
-        const motion = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : delta;
+        const motion = (typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 0 : delta;
         const pointerX = Math.max(-1, Math.min(1, (mouse.clientX - window.innerWidth / 2) / Math.max(1, window.innerWidth / 2)));
         const pointerY = Math.max(-1, Math.min(1, (mouse.clientY - window.innerHeight / 2) / Math.max(1, window.innerHeight / 2)));
         const targetPX = pointerX * 18;
@@ -4929,17 +5153,22 @@ export const SKIN_H = 32;
     }
 
     export function getWorldSurfaceY(x) {
-        if (surfaceHeights.length === WORLD_WIDTH && Number.isFinite(surfaceHeights[x])) return surfaceHeights[x];
+        const curWorld = world || window.world;
+        if (!curWorld || !Array.isArray(curWorld) || x < 0 || x >= WORLD_WIDTH) return WORLD_HEIGHT;
+        const curHeights = (surfaceHeights && surfaceHeights.length === WORLD_WIDTH) ? surfaceHeights : window.surfaceHeights;
+        if (curHeights && curHeights.length === WORLD_WIDTH && Number.isFinite(curHeights[x])) return curHeights[x];
         for (let y = 0; y < WORLD_HEIGHT; y++) {
-            const block = world[x]?.[y];
+            const block = curWorld[x]?.[y];
             if (block !== undefined && block !== IDS.AIR && block !== IDS.LEAVES && block !== IDS.WOOD && block !== IDS.SAPLING && block !== IDS.TORCH) return y;
         }
         return WORLD_HEIGHT;
     }
 
     export function getPlayerCaveSkyOpacity() {
-        if (!player) return 0;
-        const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
+        const curPlayer = player || window.player;
+        const curWorld = world || window.world;
+        if (!curPlayer || !curWorld) return 0;
+        const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((curPlayer.x || 0) + (curPlayer.width || 24) / 2) / TILE_SIZE)));
         let avgSurfaceY = 0;
         let count = 0;
         for (let ox = -2; ox <= 2; ox++) {
@@ -4948,7 +5177,7 @@ export const SKIN_H = 32;
             count++;
         }
         avgSurfaceY = (avgSurfaceY / count) * TILE_SIZE;
-        const playerFeetWorldY = (player.y || 0) + (player.height || 48);
+        const playerFeetWorldY = (curPlayer.y || 0) + (curPlayer.height || 48);
         const caveDepthTiles = (playerFeetWorldY - avgSurfaceY) / TILE_SIZE;
         return Math.max(0, Math.min(1, (caveDepthTiles - CAVE_SKY_START_TILES) / CAVE_SKY_FADE_TILES));
     }
@@ -6782,8 +7011,43 @@ try { if (typeof updateNaturalRegrowth !== "undefined") window.updateNaturalRegr
 try { if (typeof updateSaplingGrowth !== "undefined") window.updateSaplingGrowth = updateSaplingGrowth; } catch(e) {}
 try { if (typeof updateTimeUI !== "undefined") window.updateTimeUI = updateTimeUI; } catch(e) {}
 try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay = updateTreeLeafDecay; } catch(e) {}
-try { if (typeof visibleFluids !== "undefined") window.visibleFluids = visibleFluids; } catch(e) {}
-try { if (typeof wakeFluidsAround !== "undefined") window.wakeFluidsAround = wakeFluidsAround; } catch(e) {}
-try { if (typeof whatsNewShownThisLoad !== "undefined") window.whatsNewShownThisLoad = whatsNewShownThisLoad; } catch(e) {}
-try { if (typeof whatsNewStartupEnabled !== "undefined") window.whatsNewStartupEnabled = whatsNewStartupEnabled; } catch(e) {}
+    export function setEngineWorld(newWorld) { world = newWorld; if (typeof window !== 'undefined') window.world = newWorld; }
+    export function setEngineBgWorld(newBgWorld) { bgWorld = newBgWorld; if (typeof window !== 'undefined') window.bgWorld = newBgWorld; }
+    export function setEnginePlayer(newPlayer) { player = newPlayer; if (typeof window !== 'undefined') window.player = newPlayer; }
+    export function setEngineSurfaceHeights(newHeights) { surfaceHeights = newHeights; if (typeof window !== 'undefined') window.surfaceHeights = newHeights; }
+    export function setEngineInventory(newInv) { inventory = newInv; if (typeof window !== 'undefined') window.inventory = newInv; }
+    export function setEngineEquippedArmor(newArmor) { equippedArmor = newArmor; if (typeof window !== 'undefined') window.equippedArmor = newArmor; }
+    export function setEngineEntities(newEntities) { entities = newEntities; if (typeof window !== 'undefined') window.entities = newEntities; }
+    export function setEngineFluids(newFluids) { fluids = newFluids; if (typeof window !== 'undefined') window.fluids = newFluids; }
+
+try { if (typeof setEngineWorld !== "undefined") window.setEngineWorld = setEngineWorld; } catch(e) {}
+try { if (typeof setEngineBgWorld !== "undefined") window.setEngineBgWorld = setEngineBgWorld; } catch(e) {}
+try { if (typeof setEnginePlayer !== "undefined") window.setEnginePlayer = setEnginePlayer; } catch(e) {}
+try { if (typeof setEngineSurfaceHeights !== "undefined") window.setEngineSurfaceHeights = setEngineSurfaceHeights; } catch(e) {}
+try { if (typeof setEngineInventory !== "undefined") window.setEngineInventory = setEngineInventory; } catch(e) {}
+try { if (typeof setEngineEquippedArmor !== "undefined") window.setEngineEquippedArmor = setEngineEquippedArmor; } catch(e) {}
+try { if (typeof setEngineEntities !== "undefined") window.setEngineEntities = setEngineEntities; } catch(e) {}
+try { if (typeof setEngineFluids !== "undefined") window.setEngineFluids = setEngineFluids; } catch(e) {}
+try { if (typeof initCanvases !== "undefined") window.initCanvases = initCanvases; } catch(e) {}
+try { if (typeof resizeCanvases !== "undefined") window.resizeCanvases = resizeCanvases; } catch(e) {}
+try { if (typeof canvas !== "undefined") window.canvas = canvas; } catch(e) {}
+try { if (typeof ctx !== "undefined") window.ctx = ctx; } catch(e) {}
+try { if (typeof menuBgCanvas !== "undefined") window.menuBgCanvas = menuBgCanvas; } catch(e) {}
+try { if (typeof menuCtx !== "undefined") window.menuCtx = menuCtx; } catch(e) {}
+try { if (typeof lightCanvas !== "undefined") window.lightCanvas = lightCanvas; } catch(e) {}
+try { if (typeof lightCtx !== "undefined") window.lightCtx = lightCtx; } catch(e) {}
+try { if (typeof LIGHT_SCALE !== "undefined") window.LIGHT_SCALE = LIGHT_SCALE; } catch(e) {}
+try { if (typeof updateCachedVignette !== "undefined") window.updateCachedVignette = updateCachedVignette; } catch(e) {}
+try { if (typeof cachedLightVignette !== "undefined") window.cachedLightVignette = cachedLightVignette; } catch(e) {}
+try { if (typeof cachedTorchLightCanvas !== "undefined") window.cachedTorchLightCanvas = cachedTorchLightCanvas; } catch(e) {}
+try { if (typeof cachedTorchGlowCanvas !== "undefined") window.cachedTorchGlowCanvas = cachedTorchGlowCanvas; } catch(e) {}
+try { if (typeof cachedFabulousVignetteCanvas !== "undefined") window.cachedFabulousVignetteCanvas = cachedFabulousVignetteCanvas; } catch(e) {}
+try { if (typeof cachedSnowFogCanvas !== "undefined") window.cachedSnowFogCanvas = cachedSnowFogCanvas; } catch(e) {}
+try { if (typeof cachedSunGlowDayCanvas !== "undefined") window.cachedSunGlowDayCanvas = cachedSunGlowDayCanvas; } catch(e) {}
+try { if (typeof cachedSunGlowSunsetCanvas !== "undefined") window.cachedSunGlowSunsetCanvas = cachedSunGlowSunsetCanvas; } catch(e) {}
+try { if (typeof cachedMoonGlowCanvas !== "undefined") window.cachedMoonGlowCanvas = cachedMoonGlowCanvas; } catch(e) {}
+try { if (typeof cachedShadowCanvas !== "undefined") window.cachedShadowCanvas = cachedShadowCanvas; } catch(e) {}
+try { if (typeof auroraCanvas !== "undefined") window.auroraCanvas = auroraCanvas; } catch(e) {}
+try { if (typeof auroraCtx !== "undefined") window.auroraCtx = auroraCtx; } catch(e) {}
+try { if (typeof setWorldDimensions !== "undefined") window.setWorldDimensions = setWorldDimensions; } catch(e) {}
 try { if (typeof world !== "undefined") window.world = world; } catch(e) {}

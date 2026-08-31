@@ -1,9 +1,163 @@
+import {
+    IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT,
+    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion,
+    generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
+    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
+    textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
+    setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
+    setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
+    setWorldDimensions, getMaxAnimals,
+    getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability
+} from './engine.js';
+
 export const SKIN_W = 16;
 export const SKIN_H = 32;
+export let playerSkinData = new Array(SKIN_W * SKIN_H).fill(null);
 // =============================================================================
 // WEBCRAFT 2D - UI MODULE (ui.js)
 // DOM Event Listeners, Inventory, Crafting, Aseprite Skin Maker & Menus
 // =============================================================================
+
+export let STATE = 'MENU';
+export let timeOfDay = 0;
+export let dayCount = 1;
+export let frameCount = 0;
+export let showClouds = true;
+export let showDebug = false;
+export let showTutorial = true;
+export let autoJumpEnabled = true;
+export let introEnabled = true;
+export let graphicsMode = 'advanced';
+export let advancedGraphics = true;
+export let fabulousGraphics = false;
+export let introPhase = 0;
+export let introTimer = null;
+export let currentWorldId = null;
+export let selectedDiffChoice = 'normal';
+export let currentDifficulty = 'normal';
+export let settingsPreviousState = 'MENU';
+export let currentWorldSize = 'small';
+export let selectedWorldSizeChoice = 'small';
+export let selectedMpWorldSize = 'small';
+export let isMultiplayer = false;
+export let currentMpRoom = null;
+export let currentMpWorldName = null;
+export let playerName = '';
+export let remotePlayers = {};
+export let isSleeping = false;
+export let sleepWakeVersion = 0;
+export let mpPeerIds = new Set();
+export let lastWorldSyncTime = 0;
+export let lastWorldStateTimestamp = 0;
+export let mpPlayerSyncPending = false;
+export let mpPlayerSyncQueued = false;
+export let mpWorldSyncPending = false;
+export let lastSentSkinData = null;
+export let currentAutosaveBroadcastId = null;
+export let pendingDropRequest = null;
+export let mpUnsubscribers = [];
+
+export let world = null;
+export let bgWorld = null;
+export let player = null;
+export let surfaceHeights = [];
+export let inventory = new Array(28).fill(null);
+export let hotbarSize = 9;
+export let selectedHotbarIndex = 0;
+export let equippedArmor = [null, null, null, null];
+export let entities = [];
+export let mobs = [];
+export let droppedItems = [];
+export let activeProjectiles = [];
+export let fallingBlocks = [];
+export let particles = [];
+export let floatingTexts = [];
+export let clouds = [];
+export let lightMap = [];
+export let fluids = new Map();
+export let furnaces = [];
+export let openedFurnace = null;
+export let chests = new Map();
+export let openedChest = null;
+export let isInventoryOpen = false;
+export let hotbarWheelLockUntil = 0;
+export let heldItemIndex = -1;
+export let heldItemObj = null;
+export let heldItemDraggedOutside = false;
+export let nonCollidableTreeWood = new Set();
+export let saplingGrowthQueue = new Map();
+export let dirtToGrassQueue = new Map();
+export let snowRegrowthQueue = new Map();
+export let isBackgroundBuildMode = false;
+export let keepInventory = false;
+export let editingSkinId = null;
+export let fpsCap = 60;
+export let lastFrameTime = 0;
+export let lastRenderTime = 0;
+export let hotbarPopupTimeout = null;
+export let lastHotbarItemId = null;
+export let caveSkyOpacity = 0;
+export let currentFps = 60;
+export let frameDeltaMs = 16.6;
+export let physicsAccumulator = 0;
+export let keys = {};
+export let mouse = { x: 0, y: 0, clientX: 0, clientY: 0, down: false, rightDown: false, worldX: 0, worldY: 0 };
+export let camera = { x: 0, y: 0 };
+export let isWorldMapOpen = false;
+export let mapPanX = 0;
+export let mapPanY = 0;
+export let mapZoom = 1;
+export let isMapDragging = false;
+export let mapDragStartX = 0;
+export let mapDragStartY = 0;
+export let mapDragOriginPanX = 0;
+export let mapDragOriginPanY = 0;
+export let mapHoverTileX = -1;
+export let mapHoverTileY = -1;
+export let mapAnimFrameId = null;
+export let mapEventsInitialized = false;
+
+export function startGameplay() {
+    if (typeof window !== 'undefined' && typeof window.startGameplay === 'function' && window.startGameplay !== startGameplay) {
+        return window.startGameplay();
+    }
+}
+export function pauseGame() {
+    if (typeof window !== 'undefined' && typeof window.pauseGame === 'function' && window.pauseGame !== pauseGame) {
+        return window.pauseGame();
+    }
+}
+export function resumeGame() {
+    if (typeof window !== 'undefined' && typeof window.resumeGame === 'function' && window.resumeGame !== resumeGame) {
+        return window.resumeGame();
+    }
+}
+export function closeForegroundScreen() {
+    if (typeof window !== 'undefined' && typeof window.closeForegroundScreen === 'function' && window.closeForegroundScreen !== closeForegroundScreen) {
+        return window.closeForegroundScreen();
+    }
+}
+export function playSound(type, options = {}) {
+    if (typeof window !== 'undefined' && typeof window.playSound === 'function' && window.playSound !== playSound) {
+        return window.playSound(type, options);
+    }
+}
+export function syncMultiplayerWorldState(force = false) {
+    if (typeof window !== 'undefined' && typeof window.syncMultiplayerWorldState === 'function' && window.syncMultiplayerWorldState !== syncMultiplayerWorldState) {
+        return window.syncMultiplayerWorldState(force);
+    }
+}
+export function syncLocalPlayerState(force = false) {
+    if (typeof window !== 'undefined' && typeof window.syncLocalPlayerState === 'function' && window.syncLocalPlayerState !== syncLocalPlayerState) {
+        return window.syncLocalPlayerState(force);
+    }
+}
+export function isMultiplayerAuthority() {
+    if (typeof window !== 'undefined' && typeof window.isMultiplayerAuthority === 'function' && window.isMultiplayerAuthority !== isMultiplayerAuthority) {
+        return window.isMultiplayerAuthority();
+    }
+    return false;
+}
 
     export const GAME_VERSION = '0.1.3';
     export const DISPLAY_VERSION = '0.1.3';
@@ -105,6 +259,12 @@ export const SKIN_H = 32;
     export let KEYBINDS = Object.assign({}, DEFAULT_KEYBINDS);
     export let rebindingAction = null;
     export let rebindingBtnEl = null;
+
+    export let masterVolume = 0.8;
+    export let sfxVolume = 0.8;
+    export let uiVolume = 0.5;
+    export let isAudioMuted = false;
+    export let footstepsEnabled = true;
 
     export let scrollSensitivity = 1;
     export let invertScrollWheel = false;
@@ -223,12 +383,14 @@ export const SKIN_H = 32;
         currentAccentName = name || ACCENT_PRESETS[hex] || 'Custom';
 
         const palette = getAccentPalette(hex);
-        const root = document.documentElement;
-        root.style.setProperty('--mc-accent-color', palette.base);
-        root.style.setProperty('--mc-accent-light', palette.light);
-        root.style.setProperty('--mc-accent-dark', palette.dark);
-        root.style.setProperty('--mc-accent-darker', palette.darker);
-        root.style.setProperty('--mc-accent-glow', palette.glow);
+        const root = typeof document !== 'undefined' ? document.documentElement : null;
+        if (root && root.style) {
+            root.style.setProperty('--mc-accent-color', palette.base);
+            root.style.setProperty('--mc-accent-light', palette.light);
+            root.style.setProperty('--mc-accent-dark', palette.dark);
+            root.style.setProperty('--mc-accent-darker', palette.darker);
+            root.style.setProperty('--mc-accent-glow', palette.glow);
+        }
 
         buildMinimapCircleBezel();
 
@@ -291,22 +453,22 @@ export const SKIN_H = 32;
             const rawSettings = localStorage.getItem('webcraft_settings');
             if (rawSettings) {
                 const s = JSON.parse(rawSettings);
-                if (s.masterVolume !== undefined) masterVolume = s.masterVolume;
-                if (s.sfxVolume !== undefined) sfxVolume = s.sfxVolume;
-                if (s.uiVolume !== undefined) uiVolume = s.uiVolume;
-                if (s.isAudioMuted !== undefined) isAudioMuted = s.isAudioMuted;
-                if (s.footstepsEnabled !== undefined) footstepsEnabled = s.footstepsEnabled;
-                if (s.scrollSensitivity !== undefined) scrollSensitivity = s.scrollSensitivity;
-                if (s.invertScrollWheel !== undefined) invertScrollWheel = s.invertScrollWheel;
-                if (s.hotbarWrapAround !== undefined) hotbarWrapAround = s.hotbarWrapAround;
-                if (s.showItemPopups !== undefined) showItemPopups = s.showItemPopups;
-                if (s.showScreenShake !== undefined) showScreenShake = s.showScreenShake;
-                if (s.showVignette !== undefined) showVignette = s.showVignette;
-                if (s.showHeatShimmer !== undefined) showHeatShimmer = s.showHeatShimmer;
-                if (s.showBiomeGrading !== undefined) showBiomeGrading = s.showBiomeGrading;
-                if (s.minimapShape !== undefined) minimapShape = s.minimapShape;
-                if (s.accentColor !== undefined) currentAccentColor = s.accentColor;
-                if (s.accentName !== undefined) currentAccentName = s.accentName;
+                if (s.masterVolume !== undefined) { masterVolume = s.masterVolume; if (typeof window !== 'undefined') window.masterVolume = s.masterVolume; }
+                if (s.sfxVolume !== undefined) { sfxVolume = s.sfxVolume; if (typeof window !== 'undefined') window.sfxVolume = s.sfxVolume; }
+                if (s.uiVolume !== undefined) { uiVolume = s.uiVolume; if (typeof window !== 'undefined') window.uiVolume = s.uiVolume; }
+                if (s.isAudioMuted !== undefined) { isAudioMuted = s.isAudioMuted; if (typeof window !== 'undefined') window.isAudioMuted = s.isAudioMuted; }
+                if (s.footstepsEnabled !== undefined) { footstepsEnabled = s.footstepsEnabled; if (typeof window !== 'undefined') window.footstepsEnabled = s.footstepsEnabled; }
+                if (s.scrollSensitivity !== undefined) { scrollSensitivity = s.scrollSensitivity; if (typeof window !== 'undefined') window.scrollSensitivity = s.scrollSensitivity; }
+                if (s.invertScrollWheel !== undefined) { invertScrollWheel = s.invertScrollWheel; if (typeof window !== 'undefined') window.invertScrollWheel = s.invertScrollWheel; }
+                if (s.hotbarWrapAround !== undefined) { hotbarWrapAround = s.hotbarWrapAround; if (typeof window !== 'undefined') window.hotbarWrapAround = s.hotbarWrapAround; }
+                if (s.showItemPopups !== undefined) { showItemPopups = s.showItemPopups; if (typeof window !== 'undefined') window.showItemPopups = s.showItemPopups; }
+                if (s.showScreenShake !== undefined) { showScreenShake = s.showScreenShake; if (typeof window !== 'undefined') window.showScreenShake = s.showScreenShake; }
+                if (s.showVignette !== undefined) { showVignette = s.showVignette; if (typeof window !== 'undefined') window.showVignette = s.showVignette; }
+                if (s.showHeatShimmer !== undefined) { showHeatShimmer = s.showHeatShimmer; if (typeof window !== 'undefined') window.showHeatShimmer = s.showHeatShimmer; }
+                if (s.showBiomeGrading !== undefined) { showBiomeGrading = s.showBiomeGrading; if (typeof window !== 'undefined') window.showBiomeGrading = s.showBiomeGrading; }
+                if (s.minimapShape !== undefined) { minimapShape = s.minimapShape; if (typeof window !== 'undefined') window.minimapShape = s.minimapShape; }
+                if (s.accentColor !== undefined) { currentAccentColor = s.accentColor; if (typeof window !== 'undefined') window.currentAccentColor = s.accentColor; }
+                if (s.accentName !== undefined) { currentAccentName = s.accentName; if (typeof window !== 'undefined') window.currentAccentName = s.accentName; }
             }
         } catch (e) {
             console.error('Failed to load settings', e);
@@ -317,11 +479,11 @@ export const SKIN_H = 32;
         try {
             localStorage.setItem('webcraft_keybinds', JSON.stringify(KEYBINDS));
             localStorage.setItem('webcraft_settings', JSON.stringify({
-                masterVolume,
-                sfxVolume,
-                uiVolume,
-                isAudioMuted,
-                footstepsEnabled,
+                masterVolume: (typeof window !== 'undefined' && window.masterVolume !== undefined) ? window.masterVolume : masterVolume,
+                sfxVolume: (typeof window !== 'undefined' && window.sfxVolume !== undefined) ? window.sfxVolume : sfxVolume,
+                uiVolume: (typeof window !== 'undefined' && window.uiVolume !== undefined) ? window.uiVolume : uiVolume,
+                isAudioMuted: (typeof window !== 'undefined' && window.isAudioMuted !== undefined) ? window.isAudioMuted : isAudioMuted,
+                footstepsEnabled: (typeof window !== 'undefined' && window.footstepsEnabled !== undefined) ? window.footstepsEnabled : footstepsEnabled,
                 scrollSensitivity,
                 invertScrollWheel,
                 hotbarWrapAround,
@@ -346,6 +508,7 @@ export const SKIN_H = 32;
     }
 
     export function applyMinimapShape() {
+        if (typeof document === 'undefined') return;
         const wrap = document.querySelector('.hud-minimap-wrap');
         const mm = document.getElementById('minimap');
         const isCircle = minimapShape === 'circle';
@@ -367,25 +530,28 @@ export const SKIN_H = 32;
 
     export function isActionActive(actionName) {
         const boundKey = (KEYBINDS[actionName] || '').toLowerCase();
-        if (boundKey && keys[boundKey]) return true;
+        const activeKeys = (typeof window !== 'undefined' && window.keys) ? window.keys : keys;
+        if (boundKey && activeKeys[boundKey]) return true;
 
-        if (actionName === 'left') return keys['a'] || keys['arrowleft'];
-        if (actionName === 'right') return keys['d'] || keys['arrowright'];
-        if (actionName === 'jump') return keys[' '] || keys['w'] || keys['arrowup'];
-        if (actionName === 'down') return keys['s'] || keys['arrowdown'] || keys['shift'];
+        if (actionName === 'left') return activeKeys['a'] || activeKeys['arrowleft'];
+        if (actionName === 'right') return activeKeys['d'] || activeKeys['arrowright'];
+        if (actionName === 'jump') return activeKeys[' '] || activeKeys['w'] || activeKeys['arrowup'];
+        if (actionName === 'down') return activeKeys['s'] || activeKeys['arrowdown'] || activeKeys['shift'];
         return false;
     }
 
-    loadSavedSettings();
-    applyAccentColor(currentAccentColor, currentAccentName);
-    if (document.readyState === 'loading') {
-        window.addEventListener('DOMContentLoaded', () => {
+    if (typeof window !== 'undefined') {
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', () => {
+                loadSavedSettings();
+                applyMinimapShape();
+                applyAccentColor(currentAccentColor, currentAccentName);
+            });
+        } else {
+            loadSavedSettings();
             applyMinimapShape();
             applyAccentColor(currentAccentColor, currentAccentName);
-        });
-    } else {
-        applyMinimapShape();
-        applyAccentColor(currentAccentColor, currentAccentName);
+        }
     }
 
     export let lastUiClickSoundTime = 0;
@@ -420,8 +586,13 @@ export const SKIN_H = 32;
     });
 
 
+    export let activeSkinId = 'default';
+    export let skinCanvasObj = (typeof document !== 'undefined') ? (window.skinCanvasObj || document.createElement('canvas')) : null;
+    if (skinCanvasObj) { skinCanvasObj.width = SKIN_W; skinCanvasObj.height = SKIN_H; }
+
     // Redesigned Advanced Default Skin to map neatly to limbs
     export function generateDefaultSkin() {
+        if (!playerSkinData) playerSkinData = new Array(SKIN_W * SKIN_H).fill(null);
         playerSkinData.fill(null);
         
         // Head (x: 4-11, y: 0-7)
@@ -1144,19 +1315,32 @@ export const SKIN_H = 32;
     }
 
     export function compileSkinCanvas() {
+        if (!skinCanvasObj && typeof document !== 'undefined') {
+            skinCanvasObj = (typeof window !== 'undefined' && window.skinCanvasObj) ? window.skinCanvasObj : document.createElement('canvas');
+            if (skinCanvasObj) { skinCanvasObj.width = SKIN_W; skinCanvasObj.height = SKIN_H; }
+        }
+        if (!skinCanvasObj) return;
         let sCtx = skinCanvasObj.getContext('2d');
+        if (!sCtx) return;
         sCtx.clearRect(0, 0, SKIN_W, SKIN_H);
-        for(let y=0; y<SKIN_H; y++) {
-            for(let x=0; x<SKIN_W; x++) {
-                if(playerSkinData[y*SKIN_W + x]) {
-                    sCtx.fillStyle = playerSkinData[y*SKIN_W + x];
-                    sCtx.fillRect(x, y, 1, 1);
+        const skinData = playerSkinData || (typeof window !== 'undefined' ? window.playerSkinData : null);
+        if (skinData) {
+            for(let y=0; y<SKIN_H; y++) {
+                for(let x=0; x<SKIN_W; x++) {
+                    if(skinData[y*SKIN_W + x]) {
+                        sCtx.fillStyle = skinData[y*SKIN_W + x];
+                        sCtx.fillRect(x, y, 1, 1);
+                    }
                 }
             }
         }
         skinCanvasObj.cachedSkinTone = getSkinToneFromContext(sCtx);
+        if (typeof window !== 'undefined') {
+            window.playerSkinData = playerSkinData;
+            window.skinCanvasObj = skinCanvasObj;
+        }
         if (typeof staticPreviewDrawn !== 'undefined') staticPreviewDrawn = false;
-        drawPlayerPreview();
+        if (typeof drawPlayerPreview === 'function') drawPlayerPreview();
     }
 
     export function getSkinToneFromContext(sCtx) {
@@ -3074,17 +3258,26 @@ export const SKIN_H = 32;
         saveWorldsList(worlds);
         
         generateWorld();
+        if (typeof window !== 'undefined' && window.world) world = window.world;
+        if (typeof window !== 'undefined' && window.surfaceHeights) surfaceHeights = window.surfaceHeights;
+        if (typeof setEngineWorld === 'function') setEngineWorld(world);
+        if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights(surfaceHeights);
+        
         const spawn = getInitialSpawnPoint();
+        if (!player) player = (typeof window !== 'undefined' && window.player) ? window.player : new Player(spawn.x, spawn.y);
         player.x = spawn.x; player.y = spawn.y;
         player.fallStartY = spawn.y;
         player.isGrounded = true;
         player.health = player.maxHealth; player.hunger = 20; player.exhaustion = 0; player.oxygen = player.maxOxygen;
         player.poisonTimer = 0;
         player.isDead = false; player.vy = 0; player.vx = 0; player.damageCooldown = 60;
+        if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
         
         entities = []; furnaces = []; timeOfDay = 0.15; dayCount = 1; frameCount = 0;
         let initialAnimals = Math.min(getMaxAnimals(), Math.floor(getMaxAnimals() * 0.7));
         const centerSpawnX = Math.floor(spawn.x / TILE_SIZE);
+        const curSurfaces = surfaceHeights || (typeof window !== 'undefined' ? window.surfaceHeights : []);
+        const curWorld = world || (typeof window !== 'undefined' ? window.world : []);
         for (let i = 0; i < initialAnimals; i++) {
             // Evenly segment the world to guarantee nice, widespread distribution
             let segmentMin = Math.floor(15 + (i / initialAnimals) * (WORLD_WIDTH - 30));
@@ -3094,8 +3287,8 @@ export const SKIN_H = 32;
             if (Math.abs(rx - centerSpawnX) < 25) {
                 rx = (rx < centerSpawnX) ? Math.max(5, centerSpawnX - 28) : Math.min(WORLD_WIDTH - 6, centerSpawnX + 28);
             }
-            let ry = surfaceHeights[rx];
-            if (ry < WORLD_HEIGHT && (world[rx][ry] === IDS.GRASS || world[rx][ry] === IDS.SNOW || world[rx][ry] === IDS.DIRT)) {
+            let ry = curSurfaces[rx] !== undefined ? curSurfaces[rx] : Math.floor(WORLD_HEIGHT / 2);
+            if (ry < WORLD_HEIGHT && curWorld[rx] && (curWorld[rx][ry] === IDS.GRASS || curWorld[rx][ry] === IDS.SNOW || curWorld[rx][ry] === IDS.DIRT)) {
                 let roll = Math.random();
                 let animal;
                 if (roll < 0.40) animal = new Sheep(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
@@ -3104,8 +3297,11 @@ export const SKIN_H = 32;
                 entities.push(animal);
             }
         }
+        if (typeof setEngineEntities === 'function') setEngineEntities(entities);
         inventory.fill(null);
         equippedArmor = [null, null, null, null];
+        if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
+        if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
         if (starterItems) {
             giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 32); giveItem(IDS.RAW_PORKCHOP, 5); giveItem(IDS.TORCH, 16);
         }
@@ -3297,6 +3493,20 @@ export const SKIN_H = 32;
         }, 120);
     }
 
+    export function showSingleplayerLoading(text = 'Loading world...') {
+        const screen = document.getElementById('loading-screen');
+        const status = document.getElementById('multiplayer-loading-status');
+        const title = document.getElementById('multiplayer-loading-title');
+        if (title) title.innerText = 'Loading World';
+        if (status) status.innerText = text;
+        if (screen) screen.classList.remove('hidden');
+    }
+
+    export function hideSingleplayerLoading() {
+        const screen = document.getElementById('loading-screen');
+        if (screen) screen.classList.add('hidden');
+    }
+
     export function loadWorldData(id) {
         let raw = localStorage.getItem('swc_data_' + id);
         if(!raw) { hideSingleplayerLoading(); showToast('This world has no saved game data.'); return; }
@@ -3335,13 +3545,16 @@ export const SKIN_H = 32;
             }
 
             world = restoredWorld; window.world = world;
+            if (typeof setEngineWorld === 'function') setEngineWorld(world);
             if (data.bgWorldRle) {
                 bgWorld = decompressWorld(data.bgWorldRle, targetWidth, targetHeight); window.bgWorld = bgWorld;
             } else {
                 bgWorld = Array.from({ length: WORLD_WIDTH }, () => Array(WORLD_HEIGHT).fill(IDS.AIR)); window.bgWorld = bgWorld;
             }
+            if (typeof setEngineBgWorld === 'function') setEngineBgWorld(bgWorld);
             if (typeof toggleBackgroundBuildMode === 'function') toggleBackgroundBuildMode(false);
             fluids = new Map(Object.entries(data.fluids || {}));
+            if (typeof setEngineFluids === 'function') setEngineFluids(fluids);
             
             // 3. Rebuild surfaceHeights properly from the restored world blocks
             surfaceHeights = new Array(WORLD_WIDTH);
@@ -3357,6 +3570,8 @@ export const SKIN_H = 32;
                 }
                 surfaceHeights[x] = surfY;
             }
+            window.surfaceHeights = surfaceHeights;
+            if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights(surfaceHeights);
 
             timeOfDay = data.timeOfDay !== undefined ? data.timeOfDay : 0.2;
             dayCount = data.dayCount || 1;
@@ -3369,6 +3584,7 @@ export const SKIN_H = 32;
             currentWorldAchievementsEnabled = data.achievementsEnabled !== undefined ? data.achievementsEnabled : (data.starterItems !== true && data.keepInventory !== true);
             
             // 4. Validate & safely position player
+            if (!player) player = (typeof window !== 'undefined' && window.player) ? window.player : new Player(0, 0);
             if (Number.isFinite(data.player.x) && Number.isFinite(data.player.y)) {
                 player.x = Math.max(10, Math.min(data.player.x, WORLD_WIDTH * TILE_SIZE - player.width - 10));
                 player.y = Math.max(0, Math.min(data.player.y, WORLD_HEIGHT * TILE_SIZE - player.height));
@@ -3389,10 +3605,14 @@ export const SKIN_H = 32;
             player.vy = 0;
             player.vx = 0;
             player.damageCooldown = 60;
+            window.player = player;
+            if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
 
             inventory = Array.isArray(data.inventory) ? data.inventory : new Array(INVENTORY_SIZE).fill(null);
             while(inventory.length < INVENTORY_SIZE) inventory.push(null);
             inventory = inventory.map(item => item ? ensureToolDurability(item) : null);
+            window.inventory = inventory;
+            if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
             
             if (Array.isArray(data.equippedArmor)) {
                 equippedArmor = data.equippedArmor.slice(0, 4);
@@ -3401,6 +3621,8 @@ export const SKIN_H = 32;
                 equippedArmor = [null, null, null, null];
             }
             equippedArmor = equippedArmor.map(item => item ? (ensureArmorDurability(item), item) : null);
+            window.equippedArmor = equippedArmor;
+            if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
             updateArmorUI();
             updateHudArmorBar();
             
@@ -3424,6 +3646,8 @@ export const SKIN_H = 32;
                 return inst;
             });
             ensureDesertScorpions();
+            window.entities = entities;
+            if (typeof setEngineEntities === 'function') setEngineEntities(entities);
             
             // 5. Update world metadata and upgrade version safely
             let worlds = getSavedWorlds();
@@ -5262,3 +5486,8 @@ try { if (typeof whatsNewModalBackdrop !== "undefined") window.whatsNewModalBack
 try { if (typeof zoomInSkinEditor !== "undefined") window.zoomInSkinEditor = zoomInSkinEditor; } catch(e) {}
 try { if (typeof zoomOutSkinEditor !== "undefined") window.zoomOutSkinEditor = zoomOutSkinEditor; } catch(e) {}
 try { if (typeof zoomResetSkinEditor !== "undefined") window.zoomResetSkinEditor = zoomResetSkinEditor; } catch(e) {}
+try { if (typeof masterVolume !== "undefined") window.masterVolume = masterVolume; } catch(e) {}
+try { if (typeof sfxVolume !== "undefined") window.sfxVolume = sfxVolume; } catch(e) {}
+try { if (typeof uiVolume !== "undefined") window.uiVolume = uiVolume; } catch(e) {}
+try { if (typeof isAudioMuted !== "undefined") window.isAudioMuted = isAudioMuted; } catch(e) {}
+try { if (typeof footstepsEnabled !== "undefined") window.footstepsEnabled = footstepsEnabled; } catch(e) {}

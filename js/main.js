@@ -8,7 +8,131 @@ import * as Engine from './engine.js';
 import * as UI from './ui.js';
 
 // Expose exports to window for HTML inline event handlers (e.g. onclick)
-Object.assign(window, Network, Engine, UI);
+import {
+    IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT,
+    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion,
+    generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
+    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
+    textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
+    setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
+    setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
+    drawMenuBackground, drawWorld, updateCamera,
+    getSnowBiomeRatio, initCanvases, resizeCanvases, canvas, ctx,
+    lightCanvas, lightCtx, LIGHT_SCALE, updateCachedVignette,
+    PHYSICS_TICK_RATE, PHYSICS_TICK_MS, fpsCap,
+    updateFluids, getFluid, setFluid, removeFluid, wakeFluidsAround, syncChest,
+    spawnAnimals, spawnMobs, GRAVITY, TERMINAL_VELOCITY, DAY_LENGTH_FRAMES, DAY_LENGTH,
+    updateTreeLeafDecay, updateSaplingGrowth, updateNaturalRegrowth, processDroppedItems
+} from './engine.js';
+
+export let STATE = 'MENU';
+export let timeOfDay = 0;
+export let dayCount = 1;
+export let frameCount = 0;
+export let currentWorldId = null;
+export let currentDifficulty = 'normal';
+export let mouse = { x: 0, y: 0, clientX: 0, clientY: 0, down: false, rightDown: false, worldX: 0, worldY: 0 };
+export let keys = {};
+export let world = null;
+export let bgWorld = null;
+export let camera = { x: 0, y: 0 };
+export let player = null;
+export let inventory = new Array(28).fill(null);
+export let selectedHotbarIndex = 0;
+export let equippedArmor = [null, null, null, null];
+export let entities = [];
+export let mobs = [];
+export let activeProjectiles = [];
+export let fallingBlocks = [];
+export let particles = [];
+export let floatingTexts = [];
+export let clouds = [];
+export let isMultiplayer = false;
+export let currentMpRoom = null;
+export let currentMpWorldName = null;
+export let remotePlayers = {};
+export let isSleeping = false;
+export let physicsAccumulator = 0;
+export let lastFrameTime = 0;
+export let lastRenderTime = 0;
+export let currentFps = 60;
+export let frameDeltaMs = 16.6;
+export let caveSkyOpacity = 0;
+export let sleepStartTime = 0;
+export let lastPlayerActivityAt = Date.now();
+export let isBackgroundBuildMode = false;
+export let nonCollidableTreeWood = new Set();
+export let leafDecayQueue = new Map();
+export let saplingGrowthQueue = new Map();
+export let saplingBlockedWarnings = new Map();
+export let dirtToGrassQueue = new Map();
+export let fluidTick = 0;
+export let attackAnimationTimer = 0;
+export let furnaces = [];
+export let openedFurnace = null;
+export let chests = new Map();
+export let openedChest = null;
+export let isInventoryOpen = false;
+export let hotbarWheelLockUntil = 0;
+export let heldItemIndex = -1;
+export let heldItemObj = null;
+export let heldItemDraggedOutside = false;
+export let miningTarget = null;
+export let tooltipEl = null;
+export let deepBlocksMinedCount = 0;
+export let monstersKilledCount = 0;
+export let lastAutosaveTimestamp = Date.now();
+
+export function updateUI() { if (typeof window !== 'undefined' && typeof window.updateUI === 'function' && window.updateUI !== updateUI) return window.updateUI(); }
+export function updateHealthUI() { if (typeof window !== 'undefined' && typeof window.updateHealthUI === 'function' && window.updateHealthUI !== updateHealthUI) return window.updateHealthUI(); }
+export function updateHungerUI() { if (typeof window !== 'undefined' && typeof window.updateHungerUI === 'function' && window.updateHungerUI !== updateHungerUI) return window.updateHungerUI(); }
+export function updateTimeUI() { if (typeof window !== 'undefined' && typeof window.updateTimeUI === 'function' && window.updateTimeUI !== updateTimeUI) return window.updateTimeUI(); }
+export function updateTutorialUI() { if (typeof window !== 'undefined' && typeof window.updateTutorialUI === 'function' && window.updateTutorialUI !== updateTutorialUI) return window.updateTutorialUI(); }
+export function updateArmorUI() { if (typeof window !== 'undefined' && typeof window.updateArmorUI === 'function' && window.updateArmorUI !== updateArmorUI) return window.updateArmorUI(); }
+export function updateHudArmorBar() { if (typeof window !== 'undefined' && typeof window.updateHudArmorBar === 'function' && window.updateHudArmorBar !== updateHudArmorBar) return window.updateHudArmorBar(); }
+export function saveCurrentWorld() { if (typeof window !== 'undefined' && typeof window.saveCurrentWorld === 'function' && window.saveCurrentWorld !== saveCurrentWorld) return window.saveCurrentWorld(); }
+export function showToast(msg, duration) { if (typeof window !== 'undefined' && typeof window.showToast === 'function' && window.showToast !== showToast) return window.showToast(msg, duration); }
+export function checkAutosave() { if (typeof window !== 'undefined' && typeof window.checkAutosave === 'function' && window.checkAutosave !== checkAutosave) return window.checkAutosave(); }
+export function isActionActive(action) { if (typeof window !== 'undefined' && typeof window.isActionActive === 'function' && window.isActionActive !== isActionActive) return window.isActionActive(action); return false; }
+export function getMemoryUsageText() { if (typeof window !== 'undefined' && typeof window.getMemoryUsageText === 'function' && window.getMemoryUsageText !== getMemoryUsageText) return window.getMemoryUsageText(); return ''; }
+
+export function syncBlock(x, y, newId, extraData = {}) {
+    if (typeof window !== 'undefined' && typeof window.syncBlock === 'function' && window.syncBlock !== syncBlock) {
+        return window.syncBlock(x, y, newId, extraData);
+    }
+}
+export function syncFluidState() {
+    if (typeof window !== 'undefined' && typeof window.syncFluidState === 'function' && window.syncFluidState !== syncFluidState) {
+        return window.syncFluidState();
+    }
+}
+export function syncLocalPlayerState(force = false) {
+    if (typeof window !== 'undefined' && typeof window.syncLocalPlayerState === 'function' && window.syncLocalPlayerState !== syncLocalPlayerState) {
+        return window.syncLocalPlayerState(force);
+    }
+}
+export function syncMultiplayerWorldState(force = false) {
+    if (typeof window !== 'undefined' && typeof window.syncMultiplayerWorldState === 'function' && window.syncMultiplayerWorldState !== syncMultiplayerWorldState) {
+        return window.syncMultiplayerWorldState(force);
+    }
+}
+export function isMultiplayerAuthority() {
+    if (typeof window !== 'undefined' && typeof window.isMultiplayerAuthority === 'function' && window.isMultiplayerAuthority !== isMultiplayerAuthority) {
+        return window.isMultiplayerAuthority();
+    }
+    return false;
+}
+export function getSmeltResult(id) { if (typeof window !== 'undefined' && typeof window.getSmeltResult === 'function' && window.getSmeltResult !== getSmeltResult) return window.getSmeltResult(id); return null; }
+export function getFuelValue(id) { if (typeof window !== 'undefined' && typeof window.getFuelValue === 'function' && window.getFuelValue !== getFuelValue) return window.getFuelValue(id); return 0; }
+export function updateFurnaceVisual(f) { if (typeof window !== 'undefined' && typeof window.updateFurnaceVisual === 'function' && window.updateFurnaceVisual !== updateFurnaceVisual) return window.updateFurnaceVisual(f); }
+export function drawMinimap() { if (typeof window !== 'undefined' && typeof window.drawMinimap === 'function' && window.drawMinimap !== drawMinimap) return window.drawMinimap(); }
+export function unlockAchievement(id) { if (typeof window !== 'undefined' && typeof window.unlockAchievement === 'function' && window.unlockAchievement !== unlockAchievement) return window.unlockAchievement(id); }
+export function updateSettingsDifficultyUI() { if (typeof window !== 'undefined' && typeof window.updateSettingsDifficultyUI === 'function' && window.updateSettingsDifficultyUI !== updateSettingsDifficultyUI) return window.updateSettingsDifficultyUI(); }
+export function getSavedWorlds() { if (typeof window !== 'undefined' && typeof window.getSavedWorlds === 'function' && window.getSavedWorlds !== getSavedWorlds) return window.getSavedWorlds(); return []; }
+export function processRemotePickupRequests() { if (typeof window !== 'undefined' && typeof window.processRemotePickupRequests === 'function' && window.processRemotePickupRequests !== processRemotePickupRequests) return window.processRemotePickupRequests(); }
+export function processRemoteDropRequests() { if (typeof window !== 'undefined' && typeof window.processRemoteDropRequests === 'function' && window.processRemoteDropRequests !== processRemoteDropRequests) return window.processRemoteDropRequests(); }
+export function tryCompleteMultiplayerSleep() { if (typeof window !== 'undefined' && typeof window.tryCompleteMultiplayerSleep === 'function' && window.tryCompleteMultiplayerSleep !== tryCompleteMultiplayerSleep) return window.tryCompleteMultiplayerSleep(); }
+export function checkAfkKick() { if (typeof window !== 'undefined' && typeof window.checkAfkKick === 'function' && window.checkAfkKick !== checkAfkKick) return window.checkAfkKick(); }
 
 
     // ==========================================
@@ -191,142 +315,8 @@ Object.assign(window, Network, Engine, UI);
     }
 
 
-    export const canvas = document.getElementById('gameCanvas');
-    export const ctx = canvas.getContext('2d', { alpha: false }); 
-    export const menuBgCanvas = document.getElementById('menuBgCanvas');
-    export const menuCtx = menuBgCanvas.getContext('2d', { alpha: false });
-    
-    // Performance optimized low-resolution lighting buffer (2x downscale = 4x fillrate boost)
-    export const LIGHT_SCALE = 0.5;
-    export const lightCanvas = document.createElement('canvas');
-    export const lightCtx = lightCanvas.getContext('2d');
-
-    // Cached vignette radial gradient
-    export let cachedLightVignette = null;
-    export let cachedVignetteW = 0;
-    export let cachedVignetteH = 0;
-    export function updateCachedVignette() {
-        if (!lightCanvas.width || !lightCanvas.height || lightCanvas.width < 10 || lightCanvas.height < 10) return;
-        cachedLightVignette = lightCtx.createRadialGradient(
-            lightCanvas.width / 2, lightCanvas.height / 2, Math.max(10, lightCanvas.height * 0.28),
-            lightCanvas.width / 2, lightCanvas.height / 2, Math.max(20, lightCanvas.height * 0.82)
-        );
-        cachedLightVignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
-        cachedLightVignette.addColorStop(1, 'rgba(0, 0, 12, 1)');
-        cachedVignetteW = lightCanvas.width;
-        cachedVignetteH = lightCanvas.height;
-    }
-
-    // Pre-rendered reusable light falloff stamp (GPU texture blit instead of runtime radial gradient creation)
-    export const cachedTorchLightCanvas = document.createElement('canvas');
-    cachedTorchLightCanvas.width = 256;
-    cachedTorchLightCanvas.height = 256;
-    export const torchLightCtx = cachedTorchLightCanvas.getContext('2d');
-    export const tGrad = torchLightCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
-    tGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    tGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    torchLightCtx.fillStyle = tGrad;
-    torchLightCtx.beginPath();
-    torchLightCtx.arc(128, 128, 128, 0, Math.PI * 2);
-    torchLightCtx.fill();
-
-    // Pre-rendered reusable warm torch aura glow stamp
-    export const cachedTorchGlowCanvas = document.createElement('canvas');
-    cachedTorchGlowCanvas.width = 128;
-    cachedTorchGlowCanvas.height = 128;
-    export const torchGlowCtx = cachedTorchGlowCanvas.getContext('2d');
-    export const gGrad = torchGlowCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    gGrad.addColorStop(0, 'rgba(255, 214, 112, 0.32)');
-    gGrad.addColorStop(1, 'rgba(255, 82, 18, 0)');
-    torchGlowCtx.fillStyle = gGrad;
-    torchGlowCtx.fillRect(0, 0, 128, 128);
-
-    // Pre-rendered reusable screen vignette stamp for Fabulous Graphics (0ms GPU texture blit)
-    export const cachedFabulousVignetteCanvas = document.createElement('canvas');
-    cachedFabulousVignetteCanvas.width = 256;
-    cachedFabulousVignetteCanvas.height = 256;
-    export const fabVigCtx = cachedFabulousVignetteCanvas.getContext('2d');
-    export const fabVigGrad = fabVigCtx.createRadialGradient(128, 128, 64, 128, 128, 128);
-    fabVigGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    fabVigGrad.addColorStop(0.65, 'rgba(0, 0, 0, 0.45)');
-    fabVigGrad.addColorStop(1, 'rgba(0, 0, 0, 1.0)');
-    fabVigCtx.fillStyle = fabVigGrad;
-    fabVigCtx.fillRect(0, 0, 256, 256);
-
-    // Pre-rendered reusable snow fog gradient stamp
-    export const cachedSnowFogCanvas = document.createElement('canvas');
-    cachedSnowFogCanvas.width = 16;
-    cachedSnowFogCanvas.height = 256;
-    export const snowFogCtx = cachedSnowFogCanvas.getContext('2d');
-    export const sFogGrad = snowFogCtx.createLinearGradient(0, 0, 0, 256);
-    sFogGrad.addColorStop(0, 'rgba(230, 245, 255, 0)');
-    sFogGrad.addColorStop(0.3, 'rgba(225, 242, 255, 0.45)');
-    sFogGrad.addColorStop(0.7, 'rgba(215, 238, 255, 0.65)');
-    sFogGrad.addColorStop(1, 'rgba(230, 245, 255, 0)');
-    snowFogCtx.fillStyle = sFogGrad;
-    snowFogCtx.fillRect(0, 0, 16, 256);
-
-    // Pre-rendered Sun Corona Glow (Daytime)
-    export const cachedSunGlowDayCanvas = document.createElement('canvas');
-    cachedSunGlowDayCanvas.width = 200;
-    cachedSunGlowDayCanvas.height = 200;
-    export const sunDayCtx = cachedSunGlowDayCanvas.getContext('2d');
-    export const sgDay = sunDayCtx.createRadialGradient(100, 100, 15, 100, 100, 95);
-    sgDay.addColorStop(0, 'rgba(255, 245, 160, 0.45)');
-    sgDay.addColorStop(0.5, 'rgba(255, 215, 80, 0.18)');
-    sgDay.addColorStop(1, 'rgba(255, 190, 40, 0)');
-    sunDayCtx.fillStyle = sgDay;
-    sunDayCtx.beginPath(); sunDayCtx.arc(100, 100, 95, 0, Math.PI * 2); sunDayCtx.fill();
-
-    // Pre-rendered Sun Corona Glow (Sunset / Sunrise)
-    export const cachedSunGlowSunsetCanvas = document.createElement('canvas');
-    cachedSunGlowSunsetCanvas.width = 200;
-    cachedSunGlowSunsetCanvas.height = 200;
-    export const sunSunsetCtx = cachedSunGlowSunsetCanvas.getContext('2d');
-    export const sgSunset = sunSunsetCtx.createRadialGradient(100, 100, 15, 100, 100, 95);
-    sgSunset.addColorStop(0, 'rgba(255, 140, 60, 0.45)');
-    sgSunset.addColorStop(0.5, 'rgba(255, 90, 40, 0.20)');
-    sgSunset.addColorStop(1, 'rgba(255, 50, 20, 0)');
-    sunSunsetCtx.fillStyle = sgSunset;
-    sunSunsetCtx.beginPath(); sunSunsetCtx.arc(100, 100, 95, 0, Math.PI * 2); sunSunsetCtx.fill();
-
-    // Pre-rendered Moon Celestial Halo Glow
-    export const cachedMoonGlowCanvas = document.createElement('canvas');
-    cachedMoonGlowCanvas.width = 180;
-    cachedMoonGlowCanvas.height = 180;
-    export const moonGlowCtx = cachedMoonGlowCanvas.getContext('2d');
-    export const mg = moonGlowCtx.createRadialGradient(90, 90, 15, 90, 90, 80);
-    mg.addColorStop(0, 'rgba(190, 220, 255, 0.28)');
-    mg.addColorStop(0.5, 'rgba(140, 185, 245, 0.12)');
-    mg.addColorStop(1, 'rgba(100, 150, 230, 0)');
-    moonGlowCtx.fillStyle = mg;
-    moonGlowCtx.beginPath(); moonGlowCtx.arc(90, 90, 80, 0, Math.PI * 2); moonGlowCtx.fill();
-
-    // Pre-rendered Soft Entity Drop Shadow Sprite
-    export const cachedShadowCanvas = document.createElement('canvas');
-    cachedShadowCanvas.width = 64;
-    cachedShadowCanvas.height = 16;
-    export const shadowCtx = cachedShadowCanvas.getContext('2d');
-    export const shGrad = shadowCtx.createRadialGradient(32, 8, 0, 32, 8, 32);
-    shGrad.addColorStop(0, 'rgba(0, 0, 0, 0.42)');
-    shGrad.addColorStop(0.7, 'rgba(0, 0, 0, 0.35)');
-    shGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    shadowCtx.fillStyle = shGrad;
-    shadowCtx.beginPath();
-    shadowCtx.ellipse(32, 8, 30, 7, 0, 0, Math.PI * 2);
-    shadowCtx.fill();
-
-    // Persistent offscreen canvas and ImageData for pixel-art aurora rendering
-    export const auroraCanvas = document.createElement('canvas');
-    export const auroraCtx = auroraCanvas.getContext('2d');
-    export let auroraImageData = null;
-    export let auroraSnowOpacity = 0;
-
     document.addEventListener('contextmenu', e => e.preventDefault());
 
-    export const TILE_SIZE = 40;
-    export let WORLD_WIDTH = 512;
-    export let WORLD_HEIGHT = 256;
     export let currentWorldSize = 'small';
     export let selectedWorldSizeChoice = 'small';
     export let selectedMpWorldSize = 'small';
@@ -363,32 +353,7 @@ Object.assign(window, Network, Engine, UI);
         }
     }
 
-    export function getMaxAnimals() {
-        if (isMultiplayer) {
-            return currentWorldSize === 'big' ? 18 : 10;
-        } else {
-            return currentWorldSize === 'big' ? 22 : 12;
-        }
-    }
-
-    export const GRAVITY = 0.45;
-    export const TERMINAL_VELOCITY = 15;
-    export const JUMP_FORCE = -8.5;
-    export const MOVE_SPEED = 3.6;
-    export const REACH = 4.2;
-    export const DAY_LENGTH_FRAMES = 60 * 60 * 8;
-    export const CAVE_SKY_START_TILES = 6;
-    export const CAVE_SKY_FADE_TILES = 3;
-    export const SAPLING_GROWTH_DAYS = 2;
-    export const DIRT_TO_GRASS_DAYS = 1.5;
-    export const SNOW_REGROWTH_DAYS = 1.0;
-    export const BED_LENGTH = 2;
-    export const LEAF_DECAY_MIN_FRAMES = 180;
-    export const LEAF_DECAY_RANDOM_FRAMES = 180;
-    export const WATER_FLOW_MAX = 5;
-    export const LAVA_FLOW_MAX = 3;
-    export const WATER_FLOW_INTERVAL = 4;
-    export const LAVA_FLOW_INTERVAL = 16;
+    
 
     
     export let showClouds = true;
@@ -1456,19 +1421,20 @@ Object.assign(window, Network, Engine, UI);
         document.getElementById('hud').style.display = 'block';
         document.getElementById('gameCanvas').classList.remove('hidden');
 
-        if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            lightCanvas.width = Math.max(1, Math.ceil(window.innerWidth * LIGHT_SCALE));
-            lightCanvas.height = Math.max(1, Math.ceil(window.innerHeight * LIGHT_SCALE));
+        if (canvas && (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight)) {
+            if (typeof resizeCanvases === 'function') resizeCanvases();
         }
 
-        camera.x = player.x + player.width / 2 - canvas.width / 2;
-        camera.y = player.y + player.height / 2 - canvas.height / 2;
-        camera.x = Math.max(-canvas.width / 3, Math.min(camera.x, WORLD_WIDTH * TILE_SIZE - canvas.width + canvas.width / 3));
-        camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT * TILE_SIZE - canvas.height));
+        const curPlayer = player || (typeof window !== 'undefined' ? window.player : null);
+        const curCanvas = canvas || (typeof window !== 'undefined' ? window.canvas : null);
+        if (curCanvas && curPlayer) {
+            camera.x = curPlayer.x + (curPlayer.width || 24) / 2 - curCanvas.width / 2;
+            camera.y = curPlayer.y + (curPlayer.height || 48) / 2 - curCanvas.height / 2;
+            camera.x = Math.max(-curCanvas.width / 3, Math.min(camera.x, WORLD_WIDTH * TILE_SIZE - curCanvas.width + curCanvas.width / 3));
+            camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT * TILE_SIZE - curCanvas.height));
+        }
 
-        caveSkyOpacity = getPlayerCaveSkyOpacity();
+        caveSkyOpacity = typeof getPlayerCaveSkyOpacity === 'function' ? getPlayerCaveSkyOpacity() : 0;
         lastAutosaveTimestamp = Date.now();
         lastRenderTime = performance.now();
         lastFrameTime = performance.now();
@@ -1594,12 +1560,15 @@ Object.assign(window, Network, Engine, UI);
         checkAutosave(Date.now());
         if (frameCount % 10 === 0) drawMinimap();
 
-        player.update();
-        if (frameCount % 60 === 0) {
-            let px = Math.floor((player.x + player.width / 2) / TILE_SIZE);
-            let py = Math.floor((player.y + player.height) / TILE_SIZE);
+        const curPlayer = player || (typeof window !== 'undefined' ? window.player : null);
+        if (curPlayer && typeof curPlayer.update === 'function') {
+            curPlayer.update();
+        }
+        if (curPlayer && frameCount % 60 === 0) {
+            let px = Math.floor((curPlayer.x + (curPlayer.width || 24) / 2) / TILE_SIZE);
+            let py = Math.floor((curPlayer.y + (curPlayer.height || 48)) / TILE_SIZE);
             if (px >= 0 && px < WORLD_WIDTH) {
-                let surfY = getWorldSurfaceY(px);
+                let surfY = typeof getWorldSurfaceY === 'function' ? getWorldSurfaceY(px) : 0;
                 if (py > surfY + 45) {
                     unlockAchievement('deep_diver');
                 }
@@ -1674,7 +1643,8 @@ Object.assign(window, Network, Engine, UI);
         });
 
         if (!isMultiplayer || isMultiplayerAuthority()) {
-            const playerXPositions = [player.x + player.width / 2];
+            const curPlayer = player || (typeof window !== 'undefined' ? window.player : null);
+            const playerXPositions = curPlayer ? [curPlayer.x + (curPlayer.width || 24) / 2] : [];
             if (isMultiplayer && typeof remotePlayers === 'object') {
                 Object.values(remotePlayers).forEach(rp => {
                     const rx = rp.renderX ?? rp.targetX ?? rp.x;
@@ -1724,12 +1694,8 @@ Object.assign(window, Network, Engine, UI);
 
     export function gameLoop(now = performance.now()) {
         try {
-            if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                lightCanvas.width = Math.max(1, Math.ceil(window.innerWidth * LIGHT_SCALE));
-                lightCanvas.height = Math.max(1, Math.ceil(window.innerHeight * LIGHT_SCALE));
-                updateCachedVignette();
+            if (canvas && (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight)) {
+                if (typeof resizeCanvases === 'function') resizeCanvases();
             }
 
             if (fpsCap > 0) {
@@ -1748,10 +1714,17 @@ Object.assign(window, Network, Engine, UI);
             if (frameDeltaMs > 0) currentFps = Math.round(1000 / frameDeltaMs);
 
             if (STATE === 'MENU') {
-                drawMenuBackground();
-                drawPlayerPreview();
+                if (typeof drawMenuBackground === 'function') drawMenuBackground();
+                if (typeof drawPlayerPreview === 'function') drawPlayerPreview();
             } 
             else if (STATE === 'PLAYING') {
+                const curWorld = world || (typeof window !== 'undefined' ? window.world : null);
+                const curPlayer = player || (typeof window !== 'undefined' ? window.player : null);
+                if (!curWorld || !curPlayer) {
+                    if (typeof drawMenuBackground === 'function') drawMenuBackground();
+                    return;
+                }
+
                 // Delta time snap: If rawDelta is within ±2.8ms of a multiple of 16.67ms (e.g. 60Hz or 30Hz vsync jitter), snap it to avoid accumulator micro-stutter
                 let snappedDelta = rawDelta;
                 let nearestTicks = Math.round(rawDelta / PHYSICS_TICK_MS);
@@ -1772,28 +1745,29 @@ Object.assign(window, Network, Engine, UI);
                 }
 
                 const dtFactor = Math.max(0.2, Math.min(3.0, frameDeltaMs / PHYSICS_TICK_MS));
-                updateCamera(dtFactor);
-                drawWorld();
+                if (typeof updateCamera === 'function') updateCamera(dtFactor);
+                if (typeof drawWorld === 'function') drawWorld();
             }
             else if (STATE === 'PAUSED' || STATE === 'DEAD') {
                 physicsAccumulator = 0;
-                drawWorld();
+                if (typeof drawWorld === 'function') drawWorld();
             }
 
             if(showDebug && STATE === 'PLAYING' && frameCount % 10 === 0 && player) {
                 let px = player.x / TILE_SIZE;
                 let py = WORLD_HEIGHT - (player.y + player.height) / TILE_SIZE;
                 let gx = Math.floor(mouse.worldX / TILE_SIZE); let gy = Math.floor(mouse.worldY / TILE_SIZE);
-                let targetBlockName = (gx >= 0 && gx < WORLD_WIDTH && gy >= 0 && gy < WORLD_HEIGHT && world[gx]?.[gy] !== undefined && world[gx][gy] !== IDS.AIR) ? ID_NAMES[world[gx][gy]] : 'Air';
+                let curWorld = world || (typeof window !== 'undefined' ? window.world : null);
+                let targetBlockName = (curWorld && gx >= 0 && gx < WORLD_WIDTH && gy >= 0 && gy < WORLD_HEIGHT && curWorld[gx]?.[gy] !== undefined && curWorld[gx][gy] !== IDS.AIR) ? ID_NAMES[curWorld[gx][gy]] : 'Air';
                 let pigs = entities.filter(e => e instanceof Pig).length;
                 let chickens = entities.filter(e => e instanceof Chicken).length;
                 let sheep = entities.filter(e => e instanceof Sheep).length;
                 let hostiles = entities.length - pigs - chickens - sheep;
                 
                 let debugGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(px)));
-                let surfaceY = getWorldSurfaceY(debugGridX);
+                let surfaceY = typeof getWorldSurfaceY === 'function' ? getWorldSurfaceY(debugGridX) : 0;
                 let playerFeetGridY = (player.y + player.height) / TILE_SIZE;
-                let isSnowy = getSnowBiomeRatio(debugGridX, 8) > 0.35;
+                let isSnowy = typeof getSnowBiomeRatio === 'function' ? getSnowBiomeRatio(debugGridX, 8) > 0.35 : false;
                 let biome = playerFeetGridY > surfaceY + CAVE_SKY_START_TILES ? 'Underground' : (isSnowy ? 'Snowy Biome' : 'Plains Surface');
 
                 const dbgEl = document.getElementById('debug-info');
@@ -1804,7 +1778,7 @@ Object.assign(window, Network, Engine, UI);
                         `FPS: ${currentFps} (${frameDeltaMs.toFixed(1)} ms) | Cap: ${fpsCap === 0 ? 'Unlimited' : fpsCap}\n` +
                         `TPS: ${PHYSICS_TICK_RATE} (Fixed 60Hz)\n` +
                         `XYZ: ${px.toFixed(2)} / ${py.toFixed(2)} / 0.00\n` +
-                        `RAM: ${getMemoryUsageText()}\n` +
+                        `RAM: ${typeof getMemoryUsageText === 'function' ? getMemoryUsageText() : 'N/A'}\n` +
                         `Block: ${Math.floor(px)} ${Math.floor(py)}\n` +
                         `Facing: ${player.facingRight ? 'East (+X)' : 'West (-X)'}\n` +
                         `Biome: ${biome}\n` +
@@ -1812,11 +1786,14 @@ Object.assign(window, Network, Engine, UI);
                         `Multiplayer: ${isMultiplayer ? currentMpRoom : 'Local'}\n` +
                         `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Bad:${hostiles})\n` +
                         `Target: ${targetBlockName}\n` +
-                        `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%) | Day Scale: ${getDayDifficultyMultiplier().toFixed(2)}x (Hunger: ${getDayHungerDrainMultiplier().toFixed(2)}x)`;
+                        `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%) | Day Scale: ${typeof getDayDifficultyMultiplier === 'function' ? getDayDifficultyMultiplier().toFixed(2) : 1}x (Hunger: ${typeof getDayHungerDrainMultiplier === 'function' ? getDayHungerDrainMultiplier().toFixed(2) : 1}x)`;
                 }
             }
         } catch (loopErr) {
-            console.error("Game loop error handled:", loopErr);
+            if (!gameLoop._lastErrorLogged || Date.now() - gameLoop._lastErrorLogged > 2000) {
+                console.error("Game loop error handled:", loopErr);
+                gameLoop._lastErrorLogged = Date.now();
+            }
         } finally {
             requestAnimationFrame(gameLoop);
         }
@@ -1969,8 +1946,24 @@ try { if (typeof updateGameSimulation !== "undefined") window.updateGameSimulati
 try { if (typeof updateSleepStatus !== "undefined") window.updateSleepStatus = updateSleepStatus; } catch(e) {}
 
 
-// Start Game
-updateSettingsUI();
-initEmeraldSystem();
-startIntro();
-setTimeout(() => { requestAnimationFrame(gameLoop); }, 100);
+// Safe Boot Sequence
+export function bootGame() {
+    if (typeof initCanvases === 'function') initCanvases();
+    if (typeof loadSavedSettings === 'function') loadSavedSettings();
+    if (typeof updateSettingsUI === 'function') updateSettingsUI();
+    if (typeof initEmeraldSystem === 'function') initEmeraldSystem();
+    if (typeof startIntro === 'function') startIntro();
+    if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(gameLoop);
+    } else if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(gameLoop);
+    }
+}
+
+if (typeof window !== 'undefined') {
+    if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', bootGame);
+    } else {
+        bootGame();
+    }
+}

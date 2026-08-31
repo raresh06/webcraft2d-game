@@ -3,6 +3,43 @@
 // Firebase Authentication & WebRTC Peer-to-Peer Networking
 // =============================================================================
 
+export let STATE = 'MENU';
+export let world = null;
+export let bgWorld = null;
+export let surfaceHeights = [];
+export let inventory = new Array(28).fill(null);
+export let equippedArmor = [null, null, null, null];
+export let entities = [];
+export let droppedItems = [];
+export let furnaces = [];
+export let fluids = new Map();
+export let saplingGrowthQueue = new Map();
+export let nonCollidableTreeWood = new Set();
+export let timeOfDay = 0;
+export let dayCount = 1;
+export let frameCount = 0;
+export let currentDifficulty = 'normal';
+export let keepInventory = false;
+export let currentWorldAchievementsEnabled = true;
+export let isMultiplayer = false;
+export let currentMpRoom = null;
+export let currentMpWorldName = null;
+export let mpCreateDifficulty = 'normal';
+export let selectedJoinRoom = null;
+export let playerName = '';
+export let remotePlayers = {};
+export let isSleeping = false;
+export let sleepWakeVersion = 0;
+export let mpPeerIds = new Set();
+export let lastWorldSyncTime = 0;
+export let lastWorldStateTimestamp = 0;
+export let lastSyncTime = 0;
+export let lastSentSkinData = null;
+export let lastAutosaveTimestamp = Date.now();
+export let pendingPickupRequest = null;
+export let caveSkyOpacity = 0;
+export let chatSeenMessageIds = new Set();
+
 // Firebase Initialization & Authentication
 export const appId = typeof __app_id !== 'undefined' ? __app_id : 'webcraft';
 export let firebaseConfig = null;
