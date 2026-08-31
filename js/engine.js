@@ -67,57 +67,53 @@ export let lastSyncTime = 0;
 export let lastSentSkinData = null;
 export let lastFluidStateTimestamp = 0;
 
-export const TILE_SIZE = 32;
-    export const GRAVITY = 0.5;
-    export const CHUNK_WIDTH = 16;
-    export const CHUNK_HEIGHT = 128;
-    export const WORLD_CHUNKS = 32;
-    export const CHUNK_TOTAL_WIDTH = CHUNK_WIDTH * TILE_SIZE;
-    export let WORLD_WIDTH = 512;
-    export let WORLD_HEIGHT = 256;
-    export let currentWorldSize = 'small';
+export const TILE_SIZE = 40;
+export const GRAVITY = 0.45;
+export const TERMINAL_VELOCITY = 15;
+export const JUMP_FORCE = -8.5;
+export const MOVE_SPEED = 3.6;
+export const REACH = 4.2;
+export const DAY_LENGTH_FRAMES = 60 * 60 * 8;
+export const DAY_LENGTH = 24000;
+export const CAVE_SKY_START_TILES = 6;
+export const CAVE_SKY_FADE_TILES = 3;
+export const SAPLING_GROWTH_DAYS = 2;
+export const DIRT_TO_GRASS_DAYS = 1.5;
+export const SNOW_REGROWTH_DAYS = 1.0;
+export const BED_LENGTH = 2;
+export const LEAF_DECAY_MIN_FRAMES = 180;
+export const LEAF_DECAY_RANDOM_FRAMES = 180;
+export const WATER_FLOW_MAX = 5;
+export const LAVA_FLOW_MAX = 3;
+export const WATER_FLOW_INTERVAL = 4;
+export const LAVA_FLOW_INTERVAL = 16;
+export let WORLD_WIDTH = 512;
+export let WORLD_HEIGHT = 256;
+export let currentWorldSize = 'small';
 
-    export function setWorldDimensions(size) {
-        currentWorldSize = size === 'big' ? 'big' : 'small';
-        if (currentWorldSize === 'big') {
-            WORLD_WIDTH = 1024;
-            WORLD_HEIGHT = 320;
-        } else {
-            WORLD_WIDTH = 512;
-            WORLD_HEIGHT = 256;
-        }
-        if (typeof window !== 'undefined') {
-            window.currentWorldSize = currentWorldSize;
-            window.WORLD_WIDTH = WORLD_WIDTH;
-            window.WORLD_HEIGHT = WORLD_HEIGHT;
-        }
+export function setWorldDimensions(size) {
+    currentWorldSize = size === 'big' ? 'big' : 'small';
+    if (currentWorldSize === 'big') {
+        WORLD_WIDTH = 1024;
+        WORLD_HEIGHT = 320;
+    } else {
+        WORLD_WIDTH = 512;
+        WORLD_HEIGHT = 256;
     }
+    if (typeof window !== 'undefined') {
+        window.currentWorldSize = currentWorldSize;
+        window.WORLD_WIDTH = WORLD_WIDTH;
+        window.WORLD_HEIGHT = WORLD_HEIGHT;
+    }
+}
 
-    export function getMaxAnimals() {
-        if (isMultiplayer) {
-            return currentWorldSize === 'big' ? 18 : 10;
-        } else {
-            return currentWorldSize === 'big' ? 22 : 12;
-        }
+export function getMaxAnimals() {
+    if (isMultiplayer) {
+        return currentWorldSize === 'big' ? 18 : 10;
+    } else {
+        return currentWorldSize === 'big' ? 22 : 12;
     }
-    export const DAY_LENGTH = 24000;
-    export const REACH = 5 * TILE_SIZE;
-    export const MOVE_SPEED = 3.5;
-    export const JUMP_FORCE = -8.5;
-    export const TERMINAL_VELOCITY = 15;
-    export const DAY_LENGTH_FRAMES = 14400;
-    export const DIRT_TO_GRASS_DAYS = 1;
-    export const SAPLING_GROWTH_DAYS = 2;
-    export const SNOW_REGROWTH_DAYS = 3;
-    export const BED_LENGTH = 2;
-    export const CAVE_SKY_START_TILES = 12;
-    export const CAVE_SKY_FADE_TILES = 18;
-    export const LEAF_DECAY_MIN_FRAMES = 60;
-    export const LEAF_DECAY_RANDOM_FRAMES = 180;
-    export const WATER_FLOW_MAX = 5;
-    export const LAVA_FLOW_MAX = 3;
-    export const WATER_FLOW_INTERVAL = 4;
-    export const LAVA_FLOW_INTERVAL = 16;
+}
 
 
     export const PHYSICS_TICK_RATE = 60;
@@ -5079,7 +5075,9 @@ export const SKIN_H = 32;
             generateMenuWorld();
         }
         const now = performance.now();
-        const delta = Math.min(40, now - menuLastFrame);
+        if (!menuLastFrame) menuLastFrame = now;
+        const delta = Math.min(32, Math.max(0, now - menuLastFrame));
+        menuLastFrame = now;
         const motion = (typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 0 : delta;
         const pointerX = Math.max(-1, Math.min(1, (mouse.clientX - window.innerWidth / 2) / Math.max(1, window.innerWidth / 2)));
         const pointerY = Math.max(-1, Math.min(1, (mouse.clientY - window.innerHeight / 2) / Math.max(1, window.innerHeight / 2)));
