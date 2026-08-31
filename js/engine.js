@@ -26,6 +26,7 @@ export let currentDifficulty = 'normal';
 export let settingsPreviousState = 'MENU';
 
 export function showToast(msg, duration) { if (typeof window !== 'undefined' && typeof window.showToast === 'function' && window.showToast !== showToast) return window.showToast(msg, duration); }
+export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !== 'undefined' && typeof window.dropItemForWorld === 'function' && window.dropItemForWorld !== dropItemForWorld) return window.dropItemForWorld(itemId, x, y, count); }
 
 export let mouse = { x: 0, y: 0, clientX: 0, clientY: 0, down: false, rightDown: false, worldX: 0, worldY: 0 };
 export let keys = {};
@@ -5150,6 +5151,7 @@ export const SKIN_H = 32;
         const vignette = menuCtx.createRadialGradient(width / 2, height * 0.46, height * 0.28, width / 2, height * 0.46, height * 0.82);
         vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(2,8,12,0.46)');
         menuCtx.fillStyle = vignette; menuCtx.fillRect(0, 0, width, height);
+        menuLastFrame = now;
     }
 
     export function getWorldSurfaceY(x) {

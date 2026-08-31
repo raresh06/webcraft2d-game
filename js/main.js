@@ -133,6 +133,7 @@ export function processRemotePickupRequests() { if (typeof window !== 'undefined
 export function processRemoteDropRequests() { if (typeof window !== 'undefined' && typeof window.processRemoteDropRequests === 'function' && window.processRemoteDropRequests !== processRemoteDropRequests) return window.processRemoteDropRequests(); }
 export function tryCompleteMultiplayerSleep() { if (typeof window !== 'undefined' && typeof window.tryCompleteMultiplayerSleep === 'function' && window.tryCompleteMultiplayerSleep !== tryCompleteMultiplayerSleep) return window.tryCompleteMultiplayerSleep(); }
 export function checkAfkKick() { if (typeof window !== 'undefined' && typeof window.checkAfkKick === 'function' && window.checkAfkKick !== checkAfkKick) return window.checkAfkKick(); }
+export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !== 'undefined' && typeof window.dropItemForWorld === 'function' && window.dropItemForWorld !== dropItemForWorld) return window.dropItemForWorld(itemId, x, y, count); }
 
 
     // ==========================================
@@ -1708,6 +1709,8 @@ export function checkAfkKick() { if (typeof window !== 'undefined' && typeof win
         syncMultiplayerWorldState();
     }
 
+    export let isGameLoopRunning = false;
+
     export function gameLoop(now = performance.now()) {
         try {
             if (canvas && (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight)) {
@@ -1716,8 +1719,7 @@ export function checkAfkKick() { if (typeof window !== 'undefined' && typeof win
 
             if (fpsCap > 0) {
                 const minFrameDuration = 1000 / fpsCap;
-                if (lastRenderTime > 0 && now - lastRenderTime < minFrameDuration - 3.5) {
-                    requestAnimationFrame(gameLoop);
+                if (lastRenderTime > 0 && now - lastRenderTime < minFrameDuration - 2.0) {
                     return;
                 }
             }
@@ -1972,10 +1974,13 @@ export function bootGame() {
     if (typeof updateSettingsUI === 'function') updateSettingsUI();
     if (typeof initEmeraldSystem === 'function') initEmeraldSystem();
     if (typeof startIntro === 'function') startIntro();
-    if (typeof requestAnimationFrame === 'function') {
-        requestAnimationFrame(gameLoop);
-    } else if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-        window.requestAnimationFrame(gameLoop);
+    if (!isGameLoopRunning) {
+        isGameLoopRunning = true;
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(gameLoop);
+        } else if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+            window.requestAnimationFrame(gameLoop);
+        }
     }
 }
 

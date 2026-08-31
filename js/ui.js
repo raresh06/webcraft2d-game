@@ -162,6 +162,11 @@ export function isMultiplayerAuthority() {
     }
     return false;
 }
+export function dropItemForWorld(itemId, x, y, count = 1) {
+    if (typeof window !== 'undefined' && typeof window.dropItemForWorld === 'function' && window.dropItemForWorld !== dropItemForWorld) {
+        return window.dropItemForWorld(itemId, x, y, count);
+    }
+}
 
     export const GAME_VERSION = '0.1.3';
     export const DISPLAY_VERSION = '0.1.3';
