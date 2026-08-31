@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Webcraft2D Beta</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+
+    <div id="shared-menu-bg" class="pointer-events-none z-0" style="position: fixed; inset: 0; width: 100vw; height: 100vh;">
+        <canvas id="menuBgCanvas" style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
+    </div>
+
+    <div id="game-intro" class="hidden" aria-hidden="true">
+        <div id="intro-black-text">A Gheorghes Rares game</div>
+        <div id="intro-message-screen">
+            <div id="intro-message">
+                <p>Dear whoever is reading this,</p>
+                <p>Thank you for choosing to boot up this game. It may not be the biggest adventure yet, but I poured my heart, curiosity, and a few personal touches into every block, with AI as my companion along the way.</p>
+                <p>This is my little homage to a childhood game that meant a lot to me: <strong>Minecraft2D: PocketCode Edition.</strong></p>
+                <p>Thank you for being here.<br>- Gheorghes Rares</p>
+            </div>
+            <div id="intro-skip-hint">Press SPACE or Click anywhere to continue</div>
+        </div>
+        <div id="intro-menu-fade"></div>
+    </div>
+
+    <!-- UI Tooltip -->
+    <div id="item-tooltip" class="tooltip">Item Name</div>
+    
+    <!-- Floating Dragged Item Container -->
+    <div id="dragged-item-container">
+        <img id="dragged-item-img" src="" class="w-full h-full object-contain pixelated">
+        <span id="dragged-item-count" class="item-count !right-0 !bottom-0"></span>
+    </div>
+
+    <div id="toast-container"></div>
+    <div id="achievement-toast-container"></div>
+    <div id="autosave-toast-container"></div>
+
+    <div id="achievements-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-md z-[160]" role="dialog" aria-modal="true" aria-labelledby="achievements-title">
+        <section class="achievements-panel p-4">
+            <div class="flex justify-between items-center pb-2 mb-3 border-b-2 border-[#46515a]">
+                <div class="flex items-center gap-3">
+                    <h2 id="achievements-title" class="screen-title text-4xl font-bold text-[var(--mc-accent-color)] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323']">Achievements</h2>
+                    <span id="achievements-progress-badge" class="bg-[#171b20] border-2 border-[var(--mc-accent-color)] text-[var(--mc-accent-color)] font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">0 / 32 (0%)</span>
+                </div>
+                <button class="mc-btn !w-9 !h-9 !text-2xl !p-0 !m-0 !bg-red-600 !text-white hover:!bg-red-500 flex items-center justify-center leading-none" onclick="closeAchievements()">X</button>
+            </div>
+
+            <div class="flex gap-2 mb-2">
+                <button id="ach-tab-sp" class="ach-tab-btn active flex items-center gap-2" onclick="switchAchievementTab('sp')">
+                    <span>🎮 Singleplayer</span>
+                    <span id="ach-count-sp" class="text-sm bg-black/30 px-1.5 py-0.5 rounded font-bold">0/32</span>
+                </button>
+                <button id="ach-tab-mp" class="ach-tab-btn flex items-center gap-2" onclick="switchAchievementTab('mp')">
+                    <span>🌐 Multiplayer</span>
+                    <span id="ach-count-mp" class="text-sm bg-black/30 px-1.5 py-0.5 rounded font-bold">0/32</span>
+                </button>
+            </div>
+
+            <!-- Difficulty Tier Filter Buttons -->
+            <div class="flex gap-1.5 mb-2 overflow-x-auto py-1 px-0.5" id="ach-difficulty-filters">
+                <button class="ach-filter-btn active" data-diff="all" onclick="filterAchievementsByDiff('all')">All</button>
+                <button class="ach-filter-btn ach-badge-easy" data-diff="Easy" onclick="filterAchievementsByDiff('Easy')">Easy</button>
+                <button class="ach-filter-btn ach-badge-medium" data-diff="Medium" onclick="filterAchievementsByDiff('Medium')">Medium</button>
+                <button class="ach-filter-btn ach-badge-hard" data-diff="Hard" onclick="filterAchievementsByDiff('Hard')">Hard</button>
+                <button class="ach-filter-btn ach-badge-master" data-diff="Master" onclick="filterAchievementsByDiff('Master')">Master</button>
+            </div>
+
+            <div class="bg-[#171b20] border border-[#333a41] p-2 mb-2 text-[#aebac2] font-['VT323'] text-lg">
+                <span id="ach-mode-description">Achievements earned in Singleplayer worlds. Independent from Multiplayer milestones.</span>
+            </div>
+
+            <div id="achievements-list" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 custom-scrollbar max-h-[380px]"></div>
+
+            <div class="mt-3 pt-2 border-t-2 border-[#46515a] flex justify-between items-center">
+                <button class="mc-btn !w-32 !px-2 !py-1 !text-2xl !m-0 !bg-red-800 hover:!bg-red-700 !text-white flex items-center justify-center text-center" onclick="resetAchievements()">Reset Tab</button>
+                <button class="mc-btn !w-32 !px-2 !py-1 !text-2xl !m-0 flex items-center justify-center text-center" onclick="closeAchievements()">Back</button>
+            </div>
+        </section>
+    </div>
+
+    <div id="main-menu" class="menu-overlay bg-black/30 backdrop-blur-[2px]">
+        <!-- Top Left Emerald Balance Badge (Enhanced Corner UI) -->
+        <div id="main-menu-emerald-box" class="main-menu-emerald-badge" onclick="openAchievements('sp')" title="Emeralds earned from Achievements (Click to view Achievements)">
+            <div class="emerald-gem-socket">
+                <svg class="emerald-pixel-art" viewBox="0 0 16 16" width="20" height="20">
+                    <rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/>
+                    <rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/>
+                    <rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/>
+                    <rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/>
+                    <rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/>
+                    <rect x="11" y="5" width="3" height="6" fill="#136d33"/>
+                    <rect x="5" y="13" width="6" height="1" fill="#136d33"/>
+                    <rect x="10" y="11" width="3" height="2" fill="#136d33"/>
+                    <rect x="8" y="12" width="3" height="1" fill="#0e5326"/>
+                    <rect x="5" y="2" width="6" height="1" fill="#1b9549"/>
+                    <rect x="4" y="4" width="8" height="1" fill="#46f381"/>
+                    <rect x="3" y="5" width="8" height="6" fill="#17c858"/>
+                    <rect x="3" y="11" width="7" height="1" fill="#17c858"/>
+                    <rect x="4" y="12" width="4" height="1" fill="#136d33"/>
+                    <rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/>
+                    <rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/>
+                    <rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/>
+                    <rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/>
+                    <rect x="5" y="3" width="3" height="2" fill="#ffffff"/>
+                    <rect x="4" y="4" width="2" height="1" fill="#ffffff"/>
+                    <rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/>
+                </svg>
+            </div>
+            <div class="emerald-badge-content">
+                <div class="emerald-badge-count-row">
+                    <span id="main-menu-emeralds-count" class="emerald-count-text">0</span>
+                    <span class="emerald-label-text">EMERALDS</span>
+                </div>
+                <div class="emerald-badge-sublabel">
+                    <span class="emerald-hint-default">
+                        <svg class="trophy-pixel-art inline" viewBox="0 0 12 12" width="13" height="13" style="image-rendering: pixelated; shape-rendering: crispEdges; vertical-align: -1px; margin-right: 2px;">
+                            <rect x="2" y="1" width="8" height="1" fill="#3a280b"/>
+                            <rect x="3" y="1" width="6" height="1" fill="#ffd34d"/>
+                            <rect x="2" y="2" width="8" height="3" fill="#ffd34d"/>
+                            <rect x="2" y="2" width="1" height="3" fill="#3a280b"/>
+                            <rect x="9" y="2" width="1" height="3" fill="#3a280b"/>
+                            <rect x="3" y="2" width="2" height="1" fill="#fef08a"/>
+                            <rect x="7" y="3" width="2" height="2" fill="#b45309"/>
+                            <rect x="1" y="2" width="1" height="2" fill="#ffd34d"/>
+                            <rect x="0" y="2" width="1" height="2" fill="#3a280b"/>
+                            <rect x="10" y="2" width="1" height="2" fill="#ffd34d"/>
+                            <rect x="11" y="2" width="1" height="2" fill="#3a280b"/>
+                            <rect x="3" y="5" width="6" height="1" fill="#f59e0b"/>
+                            <rect x="4" y="6" width="4" height="1" fill="#f59e0b"/>
+                            <rect x="5" y="7" width="2" height="2" fill="#d97706"/>
+                            <rect x="3" y="9" width="6" height="1" fill="#ffd34d"/>
+                            <rect x="2" y="10" width="8" height="1" fill="#78350f"/>
+                        </svg>
+                        Achievements
+                    </span>
+                    <span class="emerald-hint-hover">Click to View ➔</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center justify-center w-full h-full relative z-10">
+            <div class="menu-brand relative mb-6 inline-block">
+                <h1 class="mc-title">Webcraft2D</h1>
+                <span id="menu-splash" class="mc-splash">Multiplayer!</span>
+            </div>
+            
+            <div class="flex flex-col gap-2 w-[260px]">
+                <button class="mc-btn" onclick="openWorldsMenu()">Singleplayer</button>
+                <button class="mc-btn" onclick="openMultiplayerMenu()">Multiplayer</button>
+                <button class="mc-btn" onclick="openAchievements('sp')">Achievements</button>
+                <button class="mc-btn" onclick="openSettings()">Settings</button>
+            </div>
+
+            <p class="menu-version" id="game-version-label">Webcraft2D Beta v0.1.3</p>
+            <p class="menu-credit">A game totally not coded with AI by Gheorghes Rares</p>
+        </div>
+
+        <div class="menu-skin-preview">
+            <span class="menu-skin-preview-label">Skin Preview</span>
+            <canvas id="player-preview-canvas" width="110" height="220"></canvas>
+            <button class="menu-skin-preview-button" onclick="openSkins()" title="Change Skin" aria-label="Change Skin">Change</button>
+        </div>
+        <button class="menu-news-button" type="button" onclick="openWhatsNew()" title="Read What's New" aria-label="Read What's New">📰</button>
+    </div>
+
+    <div id="whats-new-modal" class="menu-overlay whats-new-modal hidden" role="dialog" aria-modal="true" aria-labelledby="whats-new-title">
+        <div id="whats-new-confetti" aria-hidden="true"></div>
+        <section class="whats-new-panel">
+            <button id="whats-new-startup-toggle" class="whats-new-startup-toggle" type="button" onclick="toggleWhatsNewStartup()" aria-pressed="true">Startup: ON</button>
+            <button class="whats-new-close" type="button" onclick="closeWhatsNew()" aria-label="Close What's New">X</button>
+            <h2 id="whats-new-title" class="screen-title text-4xl font-bold mb-3 font-['VT323'] pr-10">What's New in Webcraft2D Beta 0.1.3</h2>
+            <div class="whats-new-content" tabindex="0">
+                <div id="whats-new-entries"></div>
+            </div>
+        </section>
+    </div>
+    
+    <div id="multiplayer-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-md z-[200]">
+        <div class="w-full max-w-[850px] max-h-[650px] flex flex-col relative z-10">
+            
+            <!-- Header -->
+            <div class="bg-[#333a41] px-4 py-3 border-b-4 border-[#111820] flex justify-between items-center shadow-md">
+                <h2 class="screen-title text-4xl font-bold text-[#f2f6f8] drop-shadow-[2px_2px_0_#000] m-0 tracking-wide font-['VT323']">Multiplayer Lobby</h2>
+                <button class="mc-btn !w-10 !h-10 !text-2xl !p-0 !m-0 !bg-red-600 !text-white hover:!bg-red-500 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 flex items-center justify-center leading-none" onclick="closeMultiplayerMenu()">X</button>
+            </div>
+
+            <!-- Profile Info Bar -->
+            <div class="px-4 py-3 bg-[#46515a] border-b-2 border-[#111820] flex items-center gap-3 shadow-inner">
+                <label class="text-2xl font-bold text-[#d9e1e7] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323']">Character Name:</label>
+                <input type="text" id="mp-player-name" class="flex-1 text-2xl p-1.5 font-['VT323'] border-2 border-gray-600 border-t-black border-l-black bg-gray-200 text-black outline-none focus:bg-white" maxlength="16" placeholder="Enter your name">
+            </div>
+
+            <!-- Main Content Area with Tabs -->
+            <div class="flex flex-1 overflow-hidden bg-[#b8b8b8]">
+                
+                <!-- Sidebar Tabs -->
+                <div class="w-48 bg-[#333a41] border-r-2 border-[#111820] flex flex-col p-2 gap-2 shadow-inner z-10">
+                    <button class="mc-btn mp-tab-button !w-full !text-2xl !py-3 !px-2 !m-0 active-mp-tab font-['VT323']" id="tab-btn-join" onclick="switchMpTab('join')">Join Game</button>
+                    <button class="mc-btn mp-tab-button !w-full !text-2xl !py-3 !px-2 !m-0 font-['VT323']" id="tab-btn-host" onclick="switchMpTab('host')">Host Game</button>
+                </div>
+
+                <!-- Tab Content: JOIN -->
+                <div id="mp-tab-join" class="flex-1 flex flex-col p-5 bg-[#b8b8b8] overflow-y-auto relative shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3)]">
+                    
+                    <div class="flex justify-between items-end mb-4">
+                        <h3 class="text-3xl font-bold text-[#111] m-0 leading-none font-['VT323']">Server Browser</h3>
+                        <div class="flex gap-1 bg-[#333a41] p-1.5 border-2 border-[#111820] shadow-inner" id="mp-filter-selector">
+                            <button class="mp-filter-button text-lg font-['VT323'] py-1.5 px-3 border-2 active-mp-filter cursor-pointer" data-filter="all" onclick="setMpFilter('all')">All</button>
+                            <button class="mp-filter-button text-lg font-['VT323'] py-1.5 px-3 border-2 cursor-pointer" data-filter="survival" onclick="setMpFilter('survival')">Survival</button>
+                            <button class="mp-filter-button text-lg font-['VT323'] py-1.5 px-3 border-2 cursor-pointer" data-filter="minigames" onclick="setMpFilter('minigames')">Minigames</button>
+                        </div>
+                    </div>
+                    
+                    <div id="mp-room-list" class="w-full flex-1 overflow-y-auto bg-[#333a41] border-2 border-[#111820] p-2 mb-4 custom-scrollbar flex flex-col gap-2 shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
+                        <!-- Rooms will be populated here by JavaScript -->
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <input type="password" id="mp-join-password" class="flex-1 text-2xl p-1.5 font-['VT323'] border-2 border-gray-600 border-t-black border-l-black bg-gray-200 text-black outline-none focus:bg-white" placeholder="Password (if required)" disabled>
+                        <button class="mc-btn !w-40 !text-2xl !mb-0 !p-2 !bg-blue-600 !border-t-blue-400 !border-l-blue-400 !border-b-blue-800 !border-r-blue-800 !text-white hover:!bg-blue-500" id="btn-mp-join" onclick="joinSelectedRoom()" disabled>Join</button>
+                    </div>
+                </div>
+
+                <!-- Tab Content: HOST -->
+                <div id="mp-tab-host" class="flex-1 flex flex-col p-5 bg-[#b8b8b8] overflow-y-auto hidden relative shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3)]">
+                    <h3 class="text-3xl font-bold text-[#111] mb-5 leading-none border-b-2 border-[#888] pb-2 font-['VT323']">Host New Game</h3>
+
+                    <label class="w-full text-left text-2xl font-bold text-[#333] mb-1 font-['VT323']">Server Name:</label>
+                    <input type="text" id="mp-world-name" class="w-full text-2xl p-2 mb-5 font-['VT323'] border-2 border-gray-600 border-t-black border-l-black bg-gray-200 text-black outline-none focus:bg-white" value="My Epic Server" maxlength="24">
+
+                    <label class="w-full text-left text-2xl font-bold text-[#333] mb-1 font-['VT323']">Game Mode:</label>
+                    <div class="flex gap-1 w-full mb-5 bg-[#333a41] p-1.5 border-2 border-[#111820] shadow-inner">
+                        <button class="mp-mode-button flex-1 text-xl font-['VT323'] py-2 px-1 border-2 active-mp-mode cursor-pointer" data-mode="survival" onclick="selectMpGameMode('survival')">Survival</button>
+                        <button class="mp-mode-button flex-1 text-xl font-['VT323'] py-2 px-1 border-2 cursor-pointer" data-mode="minigames" onclick="selectMpGameMode('minigames')">Minigames</button>
+                    </div>
+
+                    <!-- Survival Options -->
+                    <div id="mp-survival-panel" class="flex flex-col mb-4">
+                        <label class="w-full text-left text-2xl font-bold text-[#333] mb-1 font-['VT323']">Difficulty:</label>
+                        <div class="flex gap-1 w-full mb-5" id="mp-diff-selector">
+                            <button class="diff-btn !text-lg !px-1" data-diff="peaceful" onclick="selectMpDifficulty('peaceful')">Peaceful</button>
+                            <button class="diff-btn !text-lg !px-1" data-diff="easy" onclick="selectMpDifficulty('easy')">Easy</button>
+                            <button class="diff-btn active !text-lg !px-1" data-diff="normal" onclick="selectMpDifficulty('normal')">Normal</button>
+                            <button class="diff-btn !text-lg !px-1" data-diff="hard" onclick="selectMpDifficulty('hard')">Hard</button>
+                            <button class="diff-btn !text-lg !px-1" data-diff="hardcore" onclick="selectMpDifficulty('hardcore')">Hardcore</button>
+                        </div>
+                        <label class="w-full text-left text-2xl font-bold text-[#333] mb-1 font-['VT323']">World Size:</label>
+                        <div class="flex gap-2 w-full mb-2" id="mp-world-size-selector">
+                            <button type="button" class="diff-btn flex-1 active !text-lg !py-1" data-size="small" onclick="selectMpWorldSize('small')">Small (512x256)</button>
+                            <button type="button" class="diff-btn flex-1 !text-lg !py-1" data-size="big" onclick="selectMpWorldSize('big')">Big (1024x320)</button>
+                        </div>
+                        <p id="mp-world-size-warning" class="text-lg font-['VT323'] text-amber-300 bg-[#251e12] p-2 border border-amber-500/60 w-full mb-4 hidden">
+                            ⚠️ Warning: Big world generation can impact performance and network sync.
+                        </p>
+
+                        <label class="w-full flex items-center gap-2 text-2xl font-bold text-[#222] mb-3 cursor-pointer hover:text-black font-['VT323']">
+                            <input type="checkbox" id="mp-starter-items" class="w-5 h-5 cursor-pointer accent-[#166534]" onchange="updateMpAchievementWarning()" checked> Start with Starter Items
+                        </label>
+                        <label class="w-full flex items-center gap-2 text-2xl font-bold text-[#222] cursor-pointer hover:text-black font-['VT323'] mb-3" id="mp-keep-inventory-label">
+                            <input type="checkbox" id="mp-keep-inventory" class="w-5 h-5 cursor-pointer accent-[#166534]" onchange="updateMpAchievementWarning()" checked> Keep Inventory
+                        </label>
+
+                        <div id="mp-achievement-warning" class="text-lg font-['VT323'] text-amber-300 bg-[#251e12] p-2.5 border border-amber-500/60 w-full mb-3 leading-tight">
+                            ⚠️ <span class="font-bold text-yellow-400">Achievements Disabled:</span> Starting with Starter Items or Keep Inventory disables achievements in this room. Disable both to enable achievements.
+                        </div>
+                    </div>
+
+                    <!-- Minigame Options -->
+                    <div id="mp-minigames-panel" class="flex flex-col mb-4 hidden">
+                        <label class="w-full text-left text-2xl font-bold text-[#333] mb-1 font-['VT323']">Select Minigame:</label>
+                        <select id="mp-minigame-type" class="w-full text-2xl p-2 mb-4 font-['VT323'] border-2 border-gray-600 border-t-black border-l-black bg-gray-200 text-black outline-none focus:bg-white">
+                            <option value="skyblock">Skyblock</option>
+                            <option value="paintwars" disabled>Paint Wars (Coming Soon)</option>
+                        </select>
+                        <div class="bg-[#333a41] p-3 border-2 border-[#111820] text-[#d9e1e7] font-['VT323'] text-lg shadow-inner leading-tight">
+                            <span class="text-yellow-300 font-bold">Skyblock:</span> Survive on a tiny floating island with minimal resources. Form a cobble generator and expand your territory!
+                        </div>
+                    </div>
+
+                    <div class="mt-auto pt-5 border-t-2 border-[#999]">
+                        <label class="w-full text-left text-2xl font-bold text-[#333] mb-1 font-['VT323']">Server Password (Optional):</label>
+                        <div class="flex gap-3">
+                            <input type="password" id="mp-create-password" class="flex-1 text-2xl p-2 font-['VT323'] border-2 border-gray-600 border-t-black border-l-black bg-gray-200 text-black outline-none focus:bg-white" maxlength="32" placeholder="Leave empty for public">
+                            <button class="mc-btn !w-auto !text-2xl !mb-0 !p-2 !bg-green-600 !border-t-green-400 !border-l-green-400 !border-b-green-800 !border-r-green-800 !text-white hover:!bg-green-500" onclick="createMultiplayerRoom()">Create & Host</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Worlds Menu -->
+    <div id="worlds-menu" class="menu-overlay hidden bg-black/70 backdrop-blur-md z-[110]">
+        <section class="worlds-panel">
+            <h1 class="screen-title mc-title mb-4">Select World</h1>
+            <div id="worlds-list" class="flex flex-col overflow-y-auto custom-scrollbar">
+                <!-- populated by JS -->
+            </div>
+            <div class="world-actions flex">
+                <button class="mc-btn flex-1 !w-auto !text-xl !bg-green-600 !border-t-green-400 !border-l-green-400 !border-b-green-800 !border-r-green-800 !text-white hover:!bg-green-500" onclick="openNewWorldModal()">Create New</button>
+                <label class="mc-btn flex-1 !w-auto !text-xl !bg-blue-600 !border-t-blue-400 !border-l-blue-400 !border-b-blue-800 !border-r-blue-800 !text-white hover:!bg-blue-500 cursor-pointer">
+                    Import World
+                    <input type="file" class="hidden" accept=".json" id="import-world-input" onchange="importWorld(event)">
+                </label>
+                <button class="mc-btn flex-1 !w-auto !text-xl bg-gray-400" onclick="closeWorldsMenu()">Cancel</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Create New World Modal -->
+    <div id="new-world-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-md z-[250]" role="dialog" aria-modal="true">
+        <div class="bg-[#c6c6c6] p-5 border-4 border-white border-b-gray-600 border-r-gray-600 w-full max-w-[420px] flex flex-col items-center shadow-2xl rounded">
+            <h2 class="screen-title text-3xl font-bold mb-3 font-['VT323']">Create New World</h2>
+            
+            <label class="w-full text-left text-xl font-bold font-['VT323'] text-gray-800 mb-1">World Name:</label>
+            <input type="text" id="new-world-name" class="w-full text-xl p-1.5 mb-4 font-['VT323'] border-2 border-gray-600 border-t-black border-l-black bg-gray-200 text-black outline-none focus:bg-white" value="New World">
+            
+            <label class="w-full text-left text-xl font-bold font-['VT323'] text-gray-800 mb-1">Difficulty:</label>
+            <div class="flex gap-1 w-full mb-2" id="diff-selector">
+                <button class="diff-btn" data-diff="peaceful" onclick="selectDifficulty('peaceful')">Peaceful</button>
+                <button class="diff-btn" data-diff="easy" onclick="selectDifficulty('easy')">Easy</button>
+                <button class="diff-btn active" data-diff="normal" onclick="selectDifficulty('normal')">Normal</button>
+                <button class="diff-btn" data-diff="hard" onclick="selectDifficulty('hard')">Hard</button>
+                <button class="diff-btn" data-diff="hardcore" onclick="selectDifficulty('hardcore')">Hardcore</button>
+            </div>
+            <p id="diff-desc" class="text-lg font-['VT323'] text-white bg-gray-300 p-2 rounded border border-gray-500 w-full mb-5 min-h-[50px]">
+                Normal: Standard survival mode. Monsters spawn at night and hunger depletes.
+            </p>
+            <label class="w-full text-left text-xl font-bold font-['VT323'] text-gray-800 mb-1">World Size:</label>
+            <div class="flex gap-2 w-full mb-4" id="world-size-selector">
+                <button type="button" class="diff-btn flex-1 active !text-lg !py-1" data-size="small" onclick="selectWorldSize('small')">Small (512x256)</button>
+                <button type="button" class="diff-btn flex-1 !text-lg !py-1" data-size="big" onclick="selectWorldSize('big')">Big (1024x320)</button>
+            </div>
+            
+            <label class="world-option w-full flex items-center gap-2 text-xl font-bold font-['VT323'] mb-3 cursor-pointer" title="Start with the normal starter tools, food, wood, and torches. Turn this off to begin with an empty inventory.">
+                <input type="checkbox" id="new-world-starter-items" class="w-5 h-5 cursor-pointer" onchange="updateNewWorldAchievementWarning()" checked>
+                Start with Starter Items
+            </label>
+            <label class="world-option w-full flex items-center gap-2 text-xl font-bold font-['VT323'] mb-3 cursor-pointer" id="new-world-keep-inventory-label" title="Keep your inventory when you die. Hardcore mode always disables this option.">
+                <input type="checkbox" id="new-world-keep-inventory" class="w-5 h-5 cursor-pointer" onchange="updateNewWorldAchievementWarning()" checked>
+                Keep Inventory
+            </label>
+
+            <div id="new-world-achievement-warning" class="text-lg font-['VT323'] text-amber-300 bg-[#251e12] p-2.5 border border-amber-500/60 w-full mb-4 leading-tight">
+                ⚠️ <span class="font-bold text-yellow-400">Achievements Disabled:</span> Starting with Starter Items or Keep Inventory disables achievements in this world. Disable both options to enable achievements.
+            </div>
+
+            <div class="flex gap-3 w-full">
+                <button class="mc-btn flex-1 !w-auto !text-xl !mb-0 !p-1.5 !bg-green-600 !border-t-green-400 !border-l-green-400 !border-b-green-800 !border-r-green-800 !text-white" onclick="confirmCreateWorld()">Create World</button>
+                <button class="mc-btn flex-1 !w-auto !text-xl !mb-0 !p-1.5 bg-gray-400" onclick="closeNewWorldModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen World Map Modal -->
+    <div id="world-map-modal" class="menu-overlay hidden z-[180] flex items-center justify-center p-2 md:p-6 select-none" role="dialog" aria-modal="true" aria-labelledby="world-map-title-text">
+        <div class="world-map-frame">
+            
+            <!-- Map Header Bar -->
+            <div class="world-map-header">
+                <!-- Left: Title & World Info Badge -->
+                <div class="world-map-header-left">
+                    <h2 id="world-map-title-text" class="world-map-title">World Map</h2>
+                    <span id="map-world-badge" class="world-map-badge">512x256 SMALL</span>
+                </div>
+
+                <!-- Center: Sunken Coordinate Readout -->
+                <div class="world-map-coords-panel">
+                    <span class="text-[#ff5252] font-bold">Player:</span>
+                    <span id="map-player-coords" class="text-[#ffffff]">X: 0, Y: 0</span>
+                    <span class="text-[#46515a]">|</span>
+                    <span class="text-[#38bdf8] font-bold">Cursor:</span>
+                    <span id="map-cursor-coords" class="text-[#ffffff]">X: 0, Y: 0 (Plains)</span>
+                </div>
+
+                <!-- Right: Authentic Toolbar Controls -->
+                <div class="world-map-toolbar">
+                    <button type="button" class="world-map-btn primary" onclick="centerMapOnPlayer()" title="Center view on Player (Hotkey: C)">
+                        <span>Center</span>
+                        <span class="world-map-key-badge">C</span>
+                    </button>
+
+                    <div class="world-map-zoom-group">
+                        <button type="button" class="world-map-zoom-btn" onclick="changeMapZoom(1 / 1.3)" title="Zoom Out (-)">−</button>
+                        <span id="map-zoom-badge" class="world-map-zoom-readout">100%</span>
+                        <button type="button" class="world-map-zoom-btn" onclick="changeMapZoom(1.3)" title="Zoom In (+)">+</button>
+                    </div>
+
+                    <button type="button" class="world-map-btn" onclick="resetMapView()" title="Reset View & Zoom">Reset</button>
+                    <button type="button" class="world-map-close-btn" onclick="toggleWorldMap(false)" title="Close Map (M / ESC)">✕</button>
+                </div>
+            </div>
+
+            <!-- Canvas Viewport -->
+            <div class="world-map-body" id="world-map-container">
+                <canvas id="world-map-canvas" class="world-map-viewport cursor-grab active:cursor-grabbing block"></canvas>
+            </div>
+
+            <!-- Map Bottom Footer (Navigation Guide & Legend) -->
+            <div class="world-map-footer">
+                <!-- Navigation Hints -->
+                <div class="world-map-nav-group">
+                    <span class="world-map-nav-chip"><span class="world-map-key-badge">LMB Drag</span> Pan</span>
+                    <span class="world-map-nav-chip"><span class="world-map-key-badge">Wheel</span> Zoom</span>
+                    <span class="world-map-nav-chip"><span class="world-map-key-badge">C</span> Center</span>
+                    <span class="world-map-nav-chip"><span class="world-map-key-badge">M / ESC</span> Close</span>
+                </div>
+
+                <!-- Pixel-art Map Legend -->
+                <div class="world-map-legend-group">
+                    <span class="world-map-legend-chip"><span class="world-map-legend-dot bg-[#ff3333] border border-white"></span> Player</span>
+                    <span class="world-map-legend-chip"><span class="world-map-legend-dot bg-[#00e5ff] border border-white"></span> Peer</span>
+                    <span class="world-map-legend-chip"><span class="world-map-legend-dot bg-[#ffea6c]"></span> Torches</span>
+                    <span class="world-map-legend-chip"><span class="world-map-legend-dot bg-[#3b82f6]"></span> Water</span>
+                    <span class="world-map-legend-chip"><span class="world-map-legend-dot bg-[#ef4444]"></span> Lava</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="settings-menu" class="menu-overlay hidden backdrop-blur-sm z-[160]">
+        <section class="settings-panel">
+            <h1 class="screen-title">Settings</h1>
+            
+            <!-- Category Tabs Bar (Strictly No Emojis) -->
+            <div class="settings-tabs-bar" id="settings-tabs-bar">
+                <button class="settings-tab-btn active" data-tab="gameplay" onclick="switchSettingsTab('gameplay')">Gameplay</button>
+                <button class="settings-tab-btn" data-tab="graphics" onclick="switchSettingsTab('graphics')">Graphics</button>
+                <button class="settings-tab-btn" data-tab="audio" onclick="switchSettingsTab('audio')">Audio</button>
+                <button class="settings-tab-btn" data-tab="controls" onclick="switchSettingsTab('controls')">Controls</button>
+            </div>
+
+            <!-- Tab 1: Gameplay -->
+            <div class="settings-tab-content active custom-scrollbar" id="settings-tab-gameplay">
+                <div class="settings-section-title">Gameplay & Mechanics</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div class="settings-row" id="settings-row-difficulty" style="display: none;">
+                        <span class="settings-label">Difficulty</span>
+                        <button class="mc-btn" id="btn-settings-difficulty" onclick="cycleWorldDifficulty()">Normal</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Auto-Jump</span>
+                        <button class="mc-btn" id="btn-toggle-autojump" onclick="toggleAutoJump()">ON</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Tutorial HUD Overlay</span>
+                        <button class="mc-btn" id="btn-toggle-tutorial" onclick="toggleTutorial()">ON</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Debug Screen (F3)</span>
+                        <button class="mc-btn" id="btn-toggle-debug" onclick="toggleDebug()">OFF</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">World Intro Animation</span>
+                        <button class="mc-btn" id="btn-toggle-intro" onclick="toggleIntro()">ON</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Hotbar Item Popups</span>
+                        <button class="mc-btn" id="btn-toggle-item-popups" onclick="toggleItemPopups()">ON</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Damage Screen Shake</span>
+                        <button class="mc-btn" id="btn-toggle-screenshake" onclick="toggleScreenShake()">ON</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Minimap Shape</span>
+                        <button class="mc-btn" id="btn-toggle-minimap-shape" onclick="toggleMinimapShape()">SQUARE</button>
+                    </div>
+                    <div class="settings-row relative" id="settings-row-accent">
+                        <span class="settings-label">UI Accent Color</span>
+                        <div class="relative">
+                            <button class="mc-btn flex items-center justify-center gap-2 !m-0" id="btn-open-accent-picker" onclick="toggleAccentColorPicker(event)">
+                                <span id="settings-accent-preview" class="inline-block w-4 h-4 border border-black shadow" style="background-color: var(--mc-accent-color);"></span>
+                                <span id="settings-accent-label">Gold</span>
+                            </button>
+
+                            <!-- Small Anchored Pop-up from Color Button -->
+                            <div id="accent-color-popover" class="accent-popover hidden">
+                                <div class="accent-popover-title">Palette Presets</div>
+                                <div class="accent-swatch-grid">
+                                    <button type="button" class="accent-swatch-tile" style="background-color: #ffd34d;" onclick="applyAccentPreset('#ffd34d', 'Gold')" title="Gold (Default)"></button>
+                                    <button type="button" class="accent-swatch-tile" style="background-color: #00e5ff;" onclick="applyAccentPreset('#00e5ff', 'Diamond')" title="Diamond Cyan"></button>
+                                    <button type="button" class="accent-swatch-tile" style="background-color: #00e676;" onclick="applyAccentPreset('#00e676', 'Emerald')" title="Emerald Green"></button>
+                                    <button type="button" class="accent-swatch-tile" style="background-color: #ff3d00;" onclick="applyAccentPreset('#ff3d00', 'Redstone')" title="Redstone Red"></button>
+                                    <button type="button" class="accent-swatch-tile" style="background-color: #d500f9;" onclick="applyAccentPreset('#d500f9', 'Amethyst')" title="Amethyst Purple"></button>
+                                    <button type="button" class="accent-swatch-tile" style="background-color: #ff9100;" onclick="applyAccentPreset('#ff9100', 'Copper')" title="Copper Orange"></button>
+                                    <button type="button" class="accent-swatch-tile" style="background-color: #2979ff;" onclick="applyAccentPreset('#2979ff', 'Lapis')" title="Lapis Blue"></button>
+                                    <button type="button" class="accent-swatch-tile" style="background-color: #e0e0e0;" onclick="applyAccentPreset('#e0e0e0', 'Iron')" title="Iron Silver"></button>
+                                </div>
+                                <div class="accent-custom-row">
+                                    <span class="accent-custom-label">Custom:</span>
+                                    <div class="accent-custom-picker-wrap">
+                                        <input type="color" id="accent-native-picker" value="#ffd34d" oninput="setCustomAccentColor(this.value)" class="accent-native-input" title="Color Wheel">
+                                        <input type="text" id="accent-hex-input" maxlength="7" value="#FFD34D" onchange="setCustomAccentColor(this.value)" oninput="if(this.value.length===7) setCustomAccentColor(this.value)" class="accent-hex-input" title="Hex Code">
+                                    </div>
+                                </div>
+                                <button type="button" class="accent-reset-btn" onclick="resetAccentColor()">
+                                    <span>↺</span> RESET DEFAULT
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Graphics -->
+            <div class="settings-tab-content custom-scrollbar" id="settings-tab-graphics">
+                <div class="settings-section-title">Video & Shaders</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div class="settings-row">
+                        <span class="settings-label">Graphics Tier</span>
+                        <button class="mc-btn" id="btn-toggle-graphics" onclick="toggleGraphics()">ADVANCED</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Framerate Limit</span>
+                        <button class="mc-btn" id="btn-toggle-fps-cap" onclick="cycleFpsCap()">60 FPS</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Volumetric Clouds</span>
+                        <button class="mc-btn" id="btn-toggle-clouds" onclick="toggleClouds()">ON</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Cinematic Vignette</span>
+                        <button class="mc-btn" id="btn-toggle-vignette" onclick="toggleVignette()">ON</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Desert Heat Shimmer</span>
+                        <button class="mc-btn" id="btn-toggle-shimmer" onclick="toggleShimmer()">ON</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Biome Color Grading</span>
+                        <button class="mc-btn" id="btn-toggle-grading" onclick="toggleGrading()">ON</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Audio -->
+            <div class="settings-tab-content custom-scrollbar" id="settings-tab-audio">
+                <div class="settings-section-title">Volume Levels</div>
+                <div class="flex flex-col gap-2">
+                    <div class="settings-row">
+                        <span class="settings-label">Master Volume</span>
+                        <div class="settings-slider-wrap">
+                            <input type="range" min="0" max="100" value="80" class="settings-slider" id="slider-master-vol" oninput="updateMasterVolume(this.value)">
+                            <span class="settings-val-badge" id="badge-master-vol">80%</span>
+                        </div>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Sound Effects (SFX)</span>
+                        <div class="settings-slider-wrap">
+                            <input type="range" min="0" max="100" value="80" class="settings-slider" id="slider-sfx-vol" oninput="updateSfxVolume(this.value)">
+                            <span class="settings-val-badge" id="badge-sfx-vol">80%</span>
+                        </div>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">UI Interface Clicks</span>
+                        <div class="settings-slider-wrap">
+                            <input type="range" min="0" max="100" value="50" class="settings-slider" id="slider-ui-vol" oninput="updateUiVolume(this.value)">
+                            <span class="settings-val-badge" id="badge-ui-vol">50%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section-title !text-xl !mt-2 !mb-1">Audio Features</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div class="settings-row">
+                        <span class="settings-label">Footstep Sounds</span>
+                        <button class="mc-btn" id="btn-toggle-footsteps" onclick="toggleFootsteps()">ON</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Mute All Audio</span>
+                        <button class="mc-btn" id="btn-toggle-mute" onclick="toggleMuteAudio()">OFF (Audio ON)</button>
+                    </div>
+                    <div class="settings-row" style="grid-column: 1 / -1;">
+                        <span class="settings-label">Test Audio Engine</span>
+                        <button class="mc-btn !w-full" onclick="playTestSound()">Play Test Sound</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Controls -->
+            <div class="settings-tab-content custom-scrollbar" id="settings-tab-controls">
+                <div class="flex justify-between items-center mb-1">
+                    <div class="settings-section-title !m-0">Keybindings</div>
+                    <button class="mc-btn !w-auto !px-3 !py-0.5 !text-lg !m-0 bg-red-800 hover:bg-red-700 text-white" onclick="resetKeybindsToDefault()">Reset Defaults</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div class="settings-row">
+                        <span class="settings-label">Move Left</span>
+                        <button class="keybind-btn" data-action="left" onclick="startRebinding('left', this)">A</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Move Right</span>
+                        <button class="keybind-btn" data-action="right" onclick="startRebinding('right', this)">D</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Jump / Climb Up</span>
+                        <button class="keybind-btn" data-action="jump" onclick="startRebinding('jump', this)">Space / W</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Crouch / Climb Down</span>
+                        <button class="keybind-btn" data-action="down" onclick="startRebinding('down', this)">S / Shift</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Open Inventory</span>
+                        <button class="keybind-btn" data-action="inventory" onclick="startRebinding('inventory', this)">E</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">World Map</span>
+                        <button class="keybind-btn" data-action="map" onclick="startRebinding('map', this)">M</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Drop Hotbar Item</span>
+                        <button class="keybind-btn" data-action="drop" onclick="startRebinding('drop', this)">Q</button>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Multiplayer Chat</span>
+                        <button class="keybind-btn" data-action="chat" onclick="startRebinding('chat', this)">T</button>
+                    </div>
+                    <div class="settings-row" style="grid-column: 1 / -1;">
+                        <span class="settings-label">Debug Screen</span>
+                        <button class="keybind-btn" data-action="debug" onclick="startRebinding('debug', this)">F3</button>
+                    </div>
+                </div>
+
+                <div class="settings-section-title !text-xl !mt-2 !mb-1">Mouse & Hotbar Scrolling</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div class="settings-row">
+                        <span class="settings-label">Scroll Sensitivity</span>
+                        <div class="settings-slider-wrap">
+                            <input type="range" min="1" max="5" value="1" class="settings-slider" id="slider-scroll-sens" oninput="updateScrollSens(this.value)">
+                            <span class="settings-val-badge" id="badge-scroll-sens">1x</span>
+                        </div>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Invert Scroll Wheel</span>
+                        <button class="mc-btn" id="btn-invert-wheel" onclick="toggleInvertWheel()">Normal</button>
+                    </div>
+                    <div class="settings-row" style="grid-column: 1 / -1;">
+                        <span class="settings-label">Hotbar Wrap-Around</span>
+                        <button class="mc-btn" id="btn-hotbar-wrap" onclick="toggleHotbarWrap()">Wrap (1-9)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="mt-3 pt-2 border-t-2 border-[#46515a] flex justify-between items-center">
+                <button class="mc-btn !w-36 !py-1 !text-2xl !m-0 bg-gray-600 hover:bg-gray-500 text-white" onclick="openCredits()">Credits</button>
+                <button class="mc-btn !w-36 !py-1 !text-2xl !m-0 !bg-green-600 !border-t-green-400 !border-l-green-400 !border-b-green-800 !border-r-green-800 !text-white" onclick="closeSettings()">Done</button>
+            </div>
+        </section>
+    </div>
+
+    <div id="credits-modal" class="menu-overlay credits-modal hidden" role="dialog" aria-modal="true" aria-labelledby="credits-title">
+        <section class="whats-new-panel credits-panel">
+            <button class="whats-new-close" type="button" onclick="closeCredits()" aria-label="Close Credits">X</button>
+            <h2 id="credits-title" class="screen-title text-4xl font-bold mb-2 font-['VT323'] pr-10">Credits</h2>
+            <div class="credits-content custom-scrollbar" tabindex="0">
+                <div class="credits-banner">
+                    <span class="credits-game-title">Webcraft2D</span>
+                    <span class="credits-version-badge">Beta v0.1.3</span>
+                </div>
+
+                <div class="credits-cards-container">
+                    <div class="credits-card">
+                        <span class="credits-role">Created, designed, tested, and survived by</span>
+                        <span class="credits-name credits-highlight">Gheorghes Rares</span>
+                    </div>
+
+                    <div class="credits-card">
+                        <span class="credits-role">Ideas, code, debugging, and questionable life decisions</span>
+                        <span class="credits-name credits-highlight">Gheorghes Rares</span>
+                    </div>
+
+                    <div class="credits-card">
+                        <span class="credits-role">Digital co-pilot, brainstorming partner, and occasional bug generator</span>
+                        <span class="credits-name credits-highlight">AI</span>
+                    </div>
+                </div>
+
+                <div class="credits-note-box">
+                    <p class="credits-note-text">Everything in these credits is Me and AI.<br>That is the whole team. We are very efficient. Unemployed ass activities bruh.</p>
+                    <p class="credits-easter-egg">Buna Adnanaaaaaaaaaa, stiu ca citesti asta acum, hehehehehe</p>
+                </div>
+
+                <div class="credits-legal-box">
+                    <div class="credits-legal-header">
+                        <span class="credits-legal-icon">⚖</span>
+                        <h3 class="credits-legal-title">Disclaimer & Legal Notice</h3>
+                    </div>
+                    <div class="credits-legal-body">
+                        <p class="credits-legal-text">
+                            Webcraft2D is a free, non-commercial, independent fan-game project created solely for educational and entertainment purposes.
+                        </p>
+                        <p class="credits-legal-text">
+                            This project is not affiliated with, endorsed by, sponsored by, or associated in any way with Mojang Studios, Microsoft Corporation, Minecraft, or any adjacent game titles or trademarks. All copyrights, trademarks, character concepts, block designs, and game names belong exclusively to their respective owners.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="credits-footer">
+                <button class="mc-btn !w-36 !py-1 !text-2xl !m-0 !text-[#111111]" onclick="closeCredits()">Done</button>
+            </div>
+        </section>
+    </div>
+
+    <div id="skins-menu" class="menu-overlay hidden bg-black/70 backdrop-blur-sm z-[120]">
+        <div id="skins-header-bar" class="flex items-center justify-between w-full max-w-[760px] mb-2 px-1 transition-[max-width] duration-150">
+            <h1 id="skins-title" class="screen-title mc-title text-white !text-4xl m-0">Skins</h1>
+            <div class="skin-emerald-badge" title="Your Emeralds (Earned from Achievements)">
+                <div class="emerald-gem-socket">
+                    <svg class="emerald-pixel-art" viewBox="0 0 16 16" width="18" height="18">
+                        <rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/>
+                        <rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/>
+                        <rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/>
+                        <rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/>
+                        <rect x="11" y="5" width="3" height="6" fill="#136d33"/>
+                        <rect x="5" y="13" width="6" height="1" fill="#136d33"/>
+                        <rect x="10" y="11" width="3" height="2" fill="#136d33"/>
+                        <rect x="8" y="12" width="3" height="1" fill="#0e5326"/>
+                        <rect x="5" y="2" width="6" height="1" fill="#1b9549"/>
+                        <rect x="4" y="4" width="8" height="1" fill="#46f381"/>
+                        <rect x="3" y="5" width="8" height="6" fill="#17c858"/>
+                        <rect x="3" y="11" width="7" height="1" fill="#17c858"/>
+                        <rect x="4" y="12" width="4" height="1" fill="#136d33"/>
+                        <rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/>
+                        <rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/>
+                        <rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/>
+                        <rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/>
+                        <rect x="5" y="3" width="3" height="2" fill="#ffffff"/>
+                        <rect x="4" y="4" width="2" height="1" fill="#ffffff"/>
+                        <rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/>
+                    </svg>
+                </div>
+                <div class="emerald-badge-content">
+                    <div class="emerald-badge-count-row">
+                        <span id="skins-emeralds-count" class="emerald-count-text">0</span>
+                        <span class="emerald-label-text">EMERALDS</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="skin-library" class="skin-library">
+            <div class="skin-library-tabs">
+                <button id="skin-tab-mine" class="mc-btn skin-library-tab active" onclick="switchSkinLibraryTab('mine')">My Skins</button>
+                <button id="skin-tab-gallery" class="mc-btn skin-library-tab" onclick="switchSkinLibraryTab('gallery')">Skins Shop</button>
+            </div>
+            <div id="skin-grid" class="skin-grid"></div>
+            <div id="skin-gallery-panel" class="skin-gallery-panel hidden">
+                <!-- Geometry Dash Style Shopkeeper Banner -->
+                <div id="skin-shopkeeper-banner" class="shopkeeper-box">
+                    <div class="shopkeeper-avatar" onclick="cycleShopkeeperDialogue()" title="Click me for tips!">
+                        <canvas id="shopkeeper-canvas" width="48" height="48"></canvas>
+                    </div>
+                    <div class="shopkeeper-dialogue-wrap" onclick="cycleShopkeeperDialogue()" role="button" title="Click for more dialogue">
+                        <span class="shopkeeper-name">The Shopkeeper</span>
+                        <p id="shopkeeper-dialogue-text" class="shopkeeper-speech">"Welcome to the Skins Shop! Spend Emeralds earned from achievements on community skins, or publish your own!"</p>
+                    </div>
+                </div>
+                
+                <h2 class="skin-gallery-heading">Skins Shop</h2>
+                <p id="skin-gallery-status" class="skin-gallery-status"></p>
+                <div id="skin-gallery-grid" class="skin-grid"></div>
+            </div>
+            <button class="mc-btn !w-full !mt-2 !mb-0 bg-gray-300" onclick="closeSkins()">Back</button>
+        </div>
+        <div id="skin-editor-container" class="hidden">
+            <!-- Top Options & Tab Bar -->
+            <div class="aseprite-topbar">
+                <div class="aseprite-tab-wrap">
+                    <span class="aseprite-tab-label">Sprite:</span>
+                    <input id="skin-name-input" type="text" maxlength="24" placeholder="My Skin" oninput="updateSkinNameCharCount()">
+                    <span id="skin-name-count" class="text-gray-400 font-['VT323'] text-base">0/24</span>
+                </div>
+
+                <div class="aseprite-options-bar">
+                    <div class="aseprite-badge">
+                        <span class="text-gray-400">Brush:</span>
+                        <span class="text-[#ffd34d] font-bold">1px</span>
+                    </div>
+
+                    <button id="skin-grid-btn" class="aseprite-btn-icon active" onclick="toggleSkinEditorGrid()" title="Toggle Pixel Grid">
+                        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+                            <path d="M1 1h14v14H1V1zm2 2v3h3V3H3zm5 0v3h3V3H8zm5 0v3h2V3h-2zm-8 5v3h3V8H3zm5 0v3h3V8H8zm5 0v3h2V8h-2zm-8 5v2h3v-2H3zm5 0v2h3v-2H8zm5 0v2h2v-2h-2z"/>
+                        </svg>
+                        <span>Grid</span>
+                    </button>
+
+                    <button id="skin-guides-btn" class="aseprite-btn-icon active" onclick="toggleSkinEditorGuides()" title="Toggle Body Region Guides">
+                        <svg viewBox="0 0 16 16" width="14" height="14">
+                            <rect x="5" y="1" width="6" height="4" fill="none" stroke="#ffd34d" stroke-width="1.2"/>
+                            <rect x="5" y="5" width="6" height="6" fill="none" stroke="#00bcd4" stroke-width="1.2"/>
+                            <rect x="1" y="5" width="4" height="6" fill="none" stroke="#4caf50" stroke-width="1.2"/>
+                            <rect x="11" y="5" width="4" height="6" fill="none" stroke="#4caf50" stroke-width="1.2"/>
+                            <rect x="5" y="11" width="3" height="4" fill="none" stroke="#ab47bc" stroke-width="1.2"/>
+                            <rect x="8" y="11" width="3" height="4" fill="none" stroke="#ab47bc" stroke-width="1.2"/>
+                        </svg>
+                        <span>Guides</span>
+                    </button>
+
+                    <button id="skin-undo-btn" class="aseprite-btn-icon" onclick="undoSkinEdit()" title="Undo (Ctrl+Z)" disabled>
+                        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+                            <path d="M6 3v2H4v2H2V5H0V3h2V1h2v2h2zm2 4h4v2H8V7zm4 2h2v4h-2V9zm0 4H6v2h6v-2zm-6-2H4v2h2v-2z"/>
+                        </svg>
+                        <span>Undo</span>
+                    </button>
+
+                    <button id="skin-redo-btn" class="aseprite-btn-icon" onclick="redoSkinEdit()" title="Redo (Ctrl+Y)" disabled>
+                        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+                            <path d="M10 3V1h2v2h2v2h2v2h-2V5h-2V3h-2zm-2 4H4v2h4V7zm-4 2H2v4h2V9zm0 4h6v2H4v-2zm6-2h2v2h-2v-2z"/>
+                        </svg>
+                        <span>Redo</span>
+                    </button>
+
+                    <span id="skin-tool-status" class="aseprite-badge text-[#ffd34d]">Ready</span>
+                </div>
+            </div>
+
+            <!-- Aseprite Studio Workspace (3 Columns) -->
+            <div class="aseprite-studio-workspace">
+                <!-- Left Column: Palette & Color Studio -->
+                <div class="aseprite-palette-col custom-scrollbar">
+                    <h3 class="aseprite-panel-title">
+                        <span>Palette</span>
+                        <span class="text-xs text-gray-400 font-normal">32 Swatches</span>
+                    </h3>
+
+                    <!-- 32 Color Palette Grid -->
+                    <div id="palette-matrix" class="aseprite-palette-matrix"></div>
+
+                    <!-- Active Color & Picker Box -->
+                    <div class="aseprite-color-card">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-300">Selected Color:</span>
+                            <span id="custom-color-hex-label" class="text-white font-mono text-base font-bold">#00AAAA</span>
+                        </div>
+                        <div class="aseprite-color-preview-row">
+                            <div id="active-color-swatch-box" class="aseprite-color-box" style="background-color: #00AAAA;" title="Current Color"></div>
+                            <div class="aseprite-picker-input-wrap" title="Pick Custom Color">
+                                <input type="color" id="custom-color-picker" value="#00AAAA">
+                            </div>
+                            <button class="aseprite-btn-icon !py-1 !text-base flex-1 justify-center" onclick="addCurrentColorToCustom()" title="Add to Recents">+ Add</button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Colors -->
+                    <div class="flex flex-col gap-1">
+                        <span class="text-xs text-gray-400">Recent Colors:</span>
+                        <div id="palette-recent-colors" class="aseprite-recent-row"></div>
+                    </div>
+                </div>
+
+                <!-- Center Column: Viewport & Canvas -->
+                <div class="aseprite-canvas-viewport">
+                    <div class="aseprite-canvas-stage custom-scrollbar" id="skin-canvas-stage">
+                        <canvas id="skin-canvas" width="192" height="384"></canvas>
+                    </div>
+
+                    <!-- Bottom Status / Zoom Bar -->
+                    <div class="aseprite-canvas-bottombar">
+                        <span class="text-gray-300 font-['VT323'] text-lg">16 × 32 px</span>
+                        <div class="flex items-center gap-1">
+                            <button class="aseprite-btn-icon !py-0 !px-2" onclick="zoomOutSkinEditor()" title="Zoom Out">[-]</button>
+                            <button id="skin-zoom-btn" class="aseprite-btn-icon !py-0 !px-2" onclick="zoomResetSkinEditor()" title="Reset Zoom (1:1)">100%</button>
+                            <button class="aseprite-btn-icon !py-0 !px-2" onclick="zoomInSkinEditor()" title="Zoom In">[+]</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Vertical Tool Strip -->
+                <div class="aseprite-tools-col">
+                    <span class="text-xs text-gray-400 font-bold mb-1">TOOLS</span>
+                    
+                    <!-- Pencil Tool -->
+                    <button id="tool-btn-pencil" class="aseprite-tool-btn active" onclick="selectSkinTool('pencil')" title="Pencil (Draw)">
+                        <svg viewBox="0 0 16 16" width="22" height="22">
+                            <path d="M13 1h2v2h-1v1h-1v-1h-1V2h1V1z" fill="#f4a261"/>
+                            <path d="M10 4h3v3h-1v1h-1v-1h-1V6h-1V5h1V4z" fill="#e76f51"/>
+                            <path d="M7 7h3v3h-1v1h-1v-1H7V9H6V8h1V7z" fill="#e76f51"/>
+                            <path d="M4 10h3v3H6v1H5v-1H4v-1H3v-1h1v-1z" fill="#e9c46a"/>
+                            <path d="M2 12h2v2H2v-1H1v-1h1z" fill="#f8f9fa"/>
+                            <rect x="0" y="14" width="2" height="2" fill="#264653"/>
+                        </svg>
+                        <span class="aseprite-tool-btn-label">Pencil</span>
+                    </button>
+
+                    <!-- Eraser Tool -->
+                    <button id="tool-btn-eraser" class="aseprite-tool-btn" onclick="selectSkinTool('eraser')" title="Eraser (Clear)">
+                        <svg viewBox="0 0 16 16" width="22" height="22">
+                            <path d="M6 2h5v3h2v3h-1v1h-1v1h-1v1h-1v1H8v1H7v1H6v1H3v-3h1v-1h1v-1h1v-1h1V8h1V7h1V5H6V2z" fill="#ff70a6"/>
+                            <path d="M3 13h3v2H2v-3h1v1z" fill="#e9ecef"/>
+                            <path d="M6 8h2v2H6z" fill="#ff9770"/>
+                        </svg>
+                        <span class="aseprite-tool-btn-label">Eraser</span>
+                    </button>
+
+                    <!-- Eyedropper Tool -->
+                    <button id="tool-btn-picker" class="aseprite-tool-btn" onclick="selectSkinTool('picker')" title="Eyedropper (Pick Color)">
+                        <svg viewBox="0 0 16 16" width="22" height="22">
+                            <path d="M12 1h3v3h-1v1h-1v-1h-1V3h-1V2h1V1z" fill="#c1121f"/>
+                            <path d="M10 4h2v2h-1v1h-1V6h-1V5h1V4z" fill="#adb5bd"/>
+                            <path d="M6 8h3v3H8v1H7v1H6v1H5v-1H4v-1h1v-1h1v-1h1V9H6V8z" fill="#dee2e6"/>
+                            <path d="M2 12h2v2H3v1H1v-2h1v-1z" fill="#00b4d8"/>
+                            <rect x="0" y="15" width="1" height="1" fill="#0077b6"/>
+                        </svg>
+                        <span class="aseprite-tool-btn-label">Picker</span>
+                    </button>
+
+                    <!-- Bucket Tool -->
+                    <button id="tool-btn-bucket" class="aseprite-tool-btn" onclick="selectSkinTool('bucket')" title="Bucket (Flood Fill)">
+                        <svg viewBox="0 0 16 16" width="22" height="22">
+                            <path d="M5 2h3v2h2v2h2v3h-1v1h-1v1H9v1H8v1H5v-1H4v-1H3v-2H2V7h1V5h1V3h1V2z" fill="#ced4da"/>
+                            <path d="M5 4h2v2H5z" fill="#00b4d8"/>
+                            <path d="M11 6h2v2h-1v1h-1V8h-1V7h1V6z" fill="#0077b6"/>
+                            <path d="M13 11h2v3h-1v1h-1v-1h-1v-2h1v-1z" fill="#00b4d8"/>
+                        </svg>
+                        <span class="aseprite-tool-btn-label">Fill</span>
+                    </button>
+
+                    <div class="w-full my-1 border-t border-[#3c3745]"></div>
+
+                    <!-- Fill All Tool -->
+                    <button class="aseprite-tool-btn" onclick="fillSkin()" title="Fill Entire Canvas">
+                        <svg viewBox="0 0 16 16" width="20" height="20">
+                            <rect x="1" y="1" width="14" height="14" fill="none" stroke="#d9e1e7" stroke-width="1.5"/>
+                            <rect x="3" y="3" width="10" height="10" fill="#00b4d8"/>
+                        </svg>
+                        <span class="aseprite-tool-btn-label">All</span>
+                    </button>
+
+                    <!-- Reset Steve Tool -->
+                    <button class="aseprite-tool-btn" onclick="resetSkinToDefault()" title="Reset to Steve Template">
+                        <svg viewBox="0 0 16 16" width="20" height="20">
+                            <rect x="2" y="2" width="12" height="12" fill="#d09f7a"/>
+                            <rect x="2" y="2" width="12" height="4" fill="#4a2c11"/>
+                            <rect x="2" y="6" width="2" height="3" fill="#4a2c11"/>
+                            <rect x="12" y="6" width="2" height="3" fill="#4a2c11"/>
+                            <rect x="4" y="7" width="2" height="2" fill="#ffffff"/>
+                            <rect x="5" y="7" width="1" height="2" fill="#333399"/>
+                            <rect x="10" y="7" width="2" height="2" fill="#ffffff"/>
+                            <rect x="10" y="7" width="1" height="2" fill="#333399"/>
+                            <rect x="6" y="9" width="4" height="2" fill="#8d5524"/>
+                            <rect x="5" y="11" width="6" height="2" fill="#4a2c11"/>
+                        </svg>
+                        <span class="aseprite-tool-btn-label">Steve</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bottom Actions Footer -->
+            <div class="aseprite-footer">
+                <div class="aseprite-footer-left">
+                    <button class="mc-btn !w-auto !px-3 !py-1 !text-xl !m-0 !bg-[#36323d] hover:!bg-[#4a4453] !text-white" onclick="exportSkin()" title="Export Skin to JSON">Export JSON</button>
+                    <label class="mc-btn !w-auto !px-3 !py-1 !text-xl !m-0 !bg-[#36323d] hover:!bg-[#4a4453] !text-white cursor-pointer text-center" title="Import Skin from JSON">
+                        Import JSON
+                        <input type="file" class="hidden" accept=".json" onchange="importSkin(event)">
+                    </label>
+                    <button class="mc-btn !w-auto !px-3 !py-1 !text-xl !m-0 !bg-[#0288d1] hover:!bg-[#039be5] !text-white" onclick="publishCurrentSkin()" title="Upload to Community Skins Shop">Upload to Skins Shop</button>
+                </div>
+                <div class="aseprite-footer-right">
+                    <button class="mc-btn skin-action-btn !bg-[#c62828] hover:!bg-[#d32f2f] !text-white" onclick="closeSkinMaker()">Cancel</button>
+                    <button class="mc-btn skin-action-btn !bg-green-600 !border-t-green-400 !border-l-green-400 !border-b-green-800 !border-r-green-800 !text-white hover:!bg-green-500" onclick="saveSkin()">Save & Equip</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload to Skins Shop Modal with Authentic Minecraft Design & Emerald Economy -->
+    <div id="skin-upload-modal" class="menu-overlay skin-upload-modal hidden z-[250]" role="dialog" aria-modal="true" aria-labelledby="skin-upload-title">
+        <section class="skin-upload-panel">
+            <!-- Header -->
+            <div class="skin-upload-header">
+                <h2 id="skin-upload-title" class="skin-upload-title">Upload to Skins Shop</h2>
+                <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 !text-white flex items-center justify-center leading-none" onclick="closeSkinUploadModal()" aria-label="Close modal">X</button>
+            </div>
+
+            <!-- Body: Large Preview Frame + Form -->
+            <div class="skin-upload-body">
+                <!-- Large 96x192 Skin Preview Frame -->
+                <div class="skin-upload-preview-frame">
+                    <canvas id="skin-upload-preview" width="16" height="32"></canvas>
+                    <span class="text-base text-gray-300 font-['VT323'] mt-1">Skin Preview</span>
+                </div>
+
+                <!-- Form Controls -->
+                <div class="skin-upload-form">
+                    <div>
+                        <label class="block text-gray-200 font-['VT323'] text-2xl mb-1 text-shadow">Skin Name:</label>
+                        <input id="skin-upload-name-input" type="text" maxlength="24" placeholder="My Custom Skin" class="skin-upload-input">
+                    </div>
+
+                    <div>
+                        <div class="skin-upload-price-row">
+                            <label class="text-gray-200 font-['VT323'] text-2xl m-0 text-shadow">Price:</label>
+                            <span id="skin-upload-price-val" class="skin-emerald-badge !py-0.5 !px-2">
+                                <!-- Populated dynamically with pixel emerald -->
+                            </span>
+                        </div>
+                        <input id="skin-upload-price-slider" type="range" min="0" max="100" step="5" value="0" oninput="updateSkinUploadPriceDisplay(this.value)" class="settings-slider !w-full my-1">
+                        
+                        <div class="skin-upload-presets-grid">
+                            <button type="button" class="mc-btn" onclick="setSkinUploadPrice(0)">Free</button>
+                            <button type="button" class="mc-btn" onclick="setSkinUploadPrice(15)">15 <svg class="emerald-pixel-art inline" viewBox="0 0 16 16" width="12" height="12"><rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/><rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/><rect x="11" y="5" width="3" height="6" fill="#136d33"/><rect x="5" y="13" width="6" height="1" fill="#136d33"/><rect x="10" y="11" width="3" height="2" fill="#136d33"/><rect x="8" y="12" width="3" height="1" fill="#0e5326"/><rect x="5" y="2" width="6" height="1" fill="#1b9549"/><rect x="4" y="4" width="8" height="1" fill="#46f381"/><rect x="3" y="5" width="8" height="6" fill="#17c858"/><rect x="3" y="11" width="7" height="1" fill="#17c858"/><rect x="4" y="12" width="4" height="1" fill="#136d33"/><rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/><rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/><rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/><rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/></svg></button>
+                            <button type="button" class="mc-btn" onclick="setSkinUploadPrice(30)">30 <svg class="emerald-pixel-art inline" viewBox="0 0 16 16" width="12" height="12"><rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/><rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/><rect x="11" y="5" width="3" height="6" fill="#136d33"/><rect x="5" y="13" width="6" height="1" fill="#136d33"/><rect x="10" y="11" width="3" height="2" fill="#136d33"/><rect x="8" y="12" width="3" height="1" fill="#0e5326"/><rect x="5" y="2" width="6" height="1" fill="#1b9549"/><rect x="4" y="4" width="8" height="1" fill="#46f381"/><rect x="3" y="5" width="8" height="6" fill="#17c858"/><rect x="3" y="11" width="7" height="1" fill="#17c858"/><rect x="4" y="12" width="4" height="1" fill="#136d33"/><rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/><rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/><rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/><rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/></svg></button>
+                            <button type="button" class="mc-btn" onclick="setSkinUploadPrice(50)">50 <svg class="emerald-pixel-art inline" viewBox="0 0 16 16" width="12" height="12"><rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/><rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/><rect x="11" y="5" width="3" height="6" fill="#136d33"/><rect x="5" y="13" width="6" height="1" fill="#136d33"/><rect x="10" y="11" width="3" height="2" fill="#136d33"/><rect x="8" y="12" width="3" height="1" fill="#0e5326"/><rect x="5" y="2" width="6" height="1" fill="#1b9549"/><rect x="4" y="4" width="8" height="1" fill="#46f381"/><rect x="3" y="5" width="8" height="6" fill="#17c858"/><rect x="3" y="11" width="7" height="1" fill="#17c858"/><rect x="4" y="12" width="4" height="1" fill="#136d33"/><rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/><rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/><rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/><rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/></svg></button>
+                            <button type="button" class="mc-btn" onclick="setSkinUploadPrice(100)">100 <svg class="emerald-pixel-art inline" viewBox="0 0 16 16" width="12" height="12"><rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/><rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/><rect x="11" y="5" width="3" height="6" fill="#136d33"/><rect x="5" y="13" width="6" height="1" fill="#136d33"/><rect x="10" y="11" width="3" height="2" fill="#136d33"/><rect x="8" y="12" width="3" height="1" fill="#0e5326"/><rect x="5" y="2" width="6" height="1" fill="#1b9549"/><rect x="4" y="4" width="8" height="1" fill="#46f381"/><rect x="3" y="5" width="8" height="6" fill="#17c858"/><rect x="3" y="11" width="7" height="1" fill="#17c858"/><rect x="4" y="12" width="4" height="1" fill="#136d33"/><rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/><rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/><rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/><rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/></svg></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guidelines -->
+            <div class="skin-upload-guidelines">
+                <span class="text-[var(--mc-accent-color)] font-bold">Shop Guidelines:</span> Set a price between <span class="text-[#4eed99]">0 (Free)</span> and <span class="text-[#4eed99]">100 Emeralds</span>. Players spend Emeralds earned from achievements to purchase and equip your skin!
+            </div>
+
+            <!-- Symmetrical Action Footer -->
+            <div class="skin-upload-footer">
+                <button class="mc-btn skin-action-btn !bg-[#c62828] hover:!bg-[#d32f2f] !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 !text-white" onclick="closeSkinUploadModal()">Cancel</button>
+                <button id="btn-confirm-skin-upload" class="mc-btn skin-action-btn !bg-green-600 hover:!bg-green-500 !border-t-green-400 !border-l-green-400 !border-b-green-800 !border-r-green-800 !text-white" onclick="confirmSkinUpload()">Publish</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Already Owned Skin Modal with Minecraft Design -->
+    <div id="skin-owned-modal" class="menu-overlay skin-upload-modal hidden z-[260]" role="dialog" aria-modal="true" aria-labelledby="skin-owned-title">
+        <section class="skin-upload-panel !max-w-[480px]">
+            <!-- Header -->
+            <div class="skin-upload-header">
+                <h2 id="skin-owned-title" class="skin-upload-title">Skin Already Owned</h2>
+                <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 !text-white flex items-center justify-center leading-none" onclick="closeSkinOwnedModal()" aria-label="Close modal">X</button>
+            </div>
+
+            <!-- Body: Preview Frame + Info -->
+            <div class="skin-upload-body items-center">
+                <div class="skin-upload-preview-frame">
+                    <canvas id="skin-owned-preview" width="16" height="32"></canvas>
+                    <span class="text-base text-gray-300 font-['VT323'] mt-1">Owned Skin</span>
+                </div>
+
+                <div class="skin-upload-form flex flex-col justify-center">
+                    <h3 id="skin-owned-name" class="text-2xl font-bold text-[#ffd34d] m-0">Skin Name</h3>
+                    <p id="skin-owned-author" class="text-lg text-gray-300 m-0 mb-2">by Creator</p>
+                    <p class="text-xl text-[#f2f6f8] font-['VT323'] leading-snug m-0">
+                        You already have this skin saved in <span class="text-[#4eed99]">My Skins</span>!
+                    </p>
+                    <p class="text-base text-gray-400 font-['VT323'] leading-snug mt-2 m-0">
+                        To get and equip this skin again from the Skins Shop, you must first delete it from <span class="text-white">My Skins</span>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Symmetrical Action Footer -->
+            <div class="skin-upload-footer mt-2">
+                <button class="mc-btn skin-action-btn !bg-gray-600 hover:!bg-gray-500 !text-white" onclick="closeSkinOwnedModal()">Close</button>
+                <button class="mc-btn skin-action-btn !bg-green-600 hover:!bg-green-500 !border-t-green-400 !border-l-green-400 !border-b-green-800 !border-r-green-800 !text-white" onclick="goToMySkinsFromOwnedModal()">View in My Skins</button>
+            </div>
+        </section>
+    </div>
+
+    <div id="pause-menu" class="menu-overlay hidden bg-black/70 backdrop-blur-md z-[150]">
+        <section>
+        <h1 class="screen-title mc-title mb-6 text-white">Game Paused</h1>
+        <button class="mc-btn mb-3" onclick="resumeGame()">Back to Game</button>
+        <button id="btn-pause-multiplayer" class="mc-btn mb-3" onclick="openPublishMultiplayerModal()">Open to Multiplayer</button>
+        <button class="mc-btn mb-3" onclick="openAchievementsFromPause()">Achievements</button>
+        <button class="mc-btn mb-3" onclick="openSettingsFromPause()">Settings</button>
+        <button id="btn-quit-to-menu" class="mc-btn" onclick="quitToMenu()">Save & Quit to Title</button>
+        </section>
+    </div>
+
+    <div id="publish-multiplayer-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-md z-[250]" role="dialog" aria-modal="true" aria-labelledby="publish-mp-title">
+        <section class="publish-mp-panel settings-panel !w-[480px] !max-w-[calc(100vw-28px)] flex flex-col items-center">
+            <h2 id="publish-mp-title" class="screen-title text-4xl font-bold mb-1 font-['VT323'] text-[#ffd34d]" style="text-shadow: 3px 3px 0 #080a0c;">Open to Multiplayer</h2>
+            <p class="text-[#d9e1e7] text-xl mb-4 font-['VT323'] text-center" style="text-shadow: 2px 2px 0 #080a0c;">Convert this singleplayer world into an online server so friends can join!</p>
+            
+            <div class="w-full mb-3 text-left">
+                <label class="block text-[#d9e1e7] font-['VT323'] text-xl mb-1" style="text-shadow: 2px 2px 0 #080a0c;">Server Room Name:</label>
+                <input id="publish-mp-world-name" type="text" maxlength="24" class="w-full text-2xl p-2 font-['VT323'] border-2 border-[#333a41] border-t-[#080a0c] border-l-[#080a0c] border-r-[#69737b] border-b-[#69737b] bg-[#171b20] text-[#f2f6f8] outline-none focus:border-[#ffd34d]" placeholder="My World Server">
+            </div>
+
+            <div class="w-full mb-3 text-left">
+                <label class="block text-[#d9e1e7] font-['VT323'] text-xl mb-1" style="text-shadow: 2px 2px 0 #080a0c;">Room Password (at least 4 digits):</label>
+                <input id="publish-mp-password" type="password" maxlength="16" class="w-full text-2xl p-2 font-['VT323'] border-2 border-[#333a41] border-t-[#080a0c] border-l-[#080a0c] border-r-[#69737b] border-b-[#69737b] bg-[#171b20] text-[#f2f6f8] outline-none focus:border-[#ffd34d]" placeholder="e.g. 1234">
+            </div>
+
+            <div class="w-full mb-5 bg-[#171b20] p-3 border-2 border-[#333a41] border-t-[#46515a] border-l-[#46515a] border-r-[#080a0c] border-b-[#080a0c] text-left shadow-inner">
+                <label class="flex items-center gap-2 cursor-pointer world-option">
+                    <input id="publish-mp-backup-copy" type="checkbox" checked class="w-5 h-5 accent-[#ffd34d] cursor-pointer">
+                    <span class="text-[#f2f6f8] font-['VT323'] text-xl font-bold">Save a Singleplayer backup copy</span>
+                </label>
+                <p class="text-[#a0acb5] font-['VT323'] text-lg ml-7">Keeps a safe singleplayer snapshot in your worlds list before transitioning.</p>
+            </div>
+
+            <div class="flex gap-3 w-full justify-end">
+                <button class="mc-btn !w-auto !text-2xl !mb-0 !p-2 !bg-[#333a41] !text-[#f2f6f8] hover:!bg-[#46515a] !border-t-[#69737b] !border-l-[#69737b] !border-r-[#080a0c] !border-b-[#080a0c]" onclick="closePublishMultiplayerModal()">Cancel</button>
+                <button class="mc-btn !w-auto !text-2xl !mb-0 !p-2 !bg-green-700 !border-t-green-400 !border-l-green-400 !border-b-green-900 !border-r-green-900 !text-white hover:!bg-green-600" onclick="confirmPublishToMultiplayer()">Publish & Host</button>
+            </div>
+        </section>
+    </div>
+
+    <div id="death-menu" class="menu-overlay hidden bg-red-900/90 backdrop-blur-md z-[150]">
+        <section>
+        <h1 class="screen-title mc-title !text-red-500 mb-1">You Died!</h1>
+        <p id="death-subtitle" class="text-white text-2xl mb-6 font-bold drop-shadow">Game Over</p>
+        <button id="respawn-btn" class="mc-btn mb-3 !bg-red-700 !text-white hover:!bg-red-600" onclick="respawn()">Respawn</button>
+        <button class="mc-btn !bg-gray-400 !text-black" onclick="quitToMenu()">Disconnect / Quit</button>
+        </section>
+    </div>
+
+    <div id="kick-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-md z-[340]" role="dialog" aria-modal="true" aria-labelledby="kick-title">
+        <div class="bg-[#c6c6c6] p-5 border-4 border-white border-b-gray-600 border-r-gray-600 w-full max-w-[420px] flex flex-col items-center shadow-2xl rounded text-center">
+            <h2 id="kick-title" class="screen-title text-4xl font-bold mb-3 font-['VT323'] text-black">Disconnected</h2>
+            <p id="kick-message" class="text-black text-2xl mb-5 font-['VT323'] leading-snug">You were kicked from the server.</p>
+            <button class="mc-btn !w-full !text-xl !mb-0 !p-1.5 !bg-red-600 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 !text-white" onclick="dismissKickModal()">Understand</button>
+        </div>
+    </div>
+
+    <div id="loading-screen" class="menu-overlay hidden bg-black/90 z-[300]">
+        <section class="multiplayer-loading-panel" role="status" aria-live="polite">
+            <h1 id="multiplayer-loading-title" class="screen-title multiplayer-loading-title">Connecting to Server</h1>
+            <p id="multiplayer-loading-room" class="multiplayer-loading-subtitle">Preparing multiplayer world</p>
+            <div class="multiplayer-loading-track" aria-hidden="true"><div id="multiplayer-loading-fill" class="multiplayer-loading-fill"></div></div>
+            <p id="multiplayer-loading-status" class="multiplayer-loading-status">Signing in</p>
+            <div class="multiplayer-loading-dots" aria-hidden="true">...</div>
+            <p id="multiplayer-loading-error" class="multiplayer-loading-error"></p>
+            <div id="multiplayer-loading-actions" class="multiplayer-loading-actions hidden">
+                <button class="mc-btn" type="button" onclick="retryMultiplayerConnection()">Retry</button>
+                <button class="mc-btn !bg-gray-500" type="button" onclick="cancelMultiplayerConnection()">Cancel</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Main Game Canvas (hidden on boot) -->
+    <canvas id="gameCanvas" class="relative z-10 hidden"></canvas>
+
+    <div class="ui-layer z-20" id="hud" style="display:none;">
+        <div class="hud-topbar p-3 flex justify-between items-start pointer-events-none w-full">
+            <div class="flex flex-col gap-1.5">
+                <div id="health-bar" class="flex mb-0.5 h-6 items-center"></div>
+                <div id="hunger-bar" class="flex mb-0.5 h-6 items-center"></div>
+                <div id="armor-bar" class="flex mb-0.5 h-6 items-center"></div>
+                <div id="oxygen-bar" class="mb-1"></div>
+                
+                <div id="bg-build-indicator" class="hidden flex items-center gap-2 bg-[#1b1e23]/90 border-2 border-[#f59e0b] px-2.5 py-0.5 shadow-lg backdrop-blur-sm mt-0.5 rounded pointer-events-none w-fit">
+                    <span class="text-xl text-[#fef3c7] font-bold tracking-wide font-['VT323'] leading-none">Background building</span>
+                    <span class="text-xs bg-[#f59e0b] text-black px-1.5 py-0.5 rounded font-bold uppercase font-['VT323'] leading-none">[B]</span>
+                </div>
+                
+                <div id="tutorial-text" class="hud-tutorial mt-1 text-lg inline-block transition-opacity duration-300">
+                    <p class="text-white drop-shadow">WASD/Arrows: Move | Space: Jump</p>
+                    <p class="text-white drop-shadow">Hold L-Click: Mine/Attack | R-Click: Place/Interact</p>
+                    <p class="text-yellow-400 font-bold drop-shadow mt-0.5">Press 'E' for Inventory | 'B' for Background | 'M' for Map</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-end gap-1.5">
+                <p id="room-indicator" class="hidden text-xl text-yellow-300 font-bold text-shadow-sm bg-black/80 px-3 py-1 border-2 border-yellow-600 inline-block shadow-lg rounded text-right backdrop-blur-sm mb-1">
+                    Room: <span id="mp-room-display">Global</span>
+                </p>
+                <div class="hud-minimap-wrap pointer-events-auto cursor-pointer" onclick="toggleWorldMap(true)" title="Click to Open Full World Map [M]">
+                    <canvas id="minimap" width="160" height="160" class="hud-minimap opacity-90"></canvas>
+                </div>
+                <div class="hud-day-readout">
+                    Day <span id="day-counter">1</span><br><span id="time-display">Morning</span>
+                </div>
+                <p id="sleep-status" class="hidden text-lg text-yellow-200 bg-black/60 px-2 py-1 border border-yellow-600 rounded"></p>
+                <div id="debug-info" class="text-base bg-black/85 p-3 border-2 border-green-500/80 text-green-400 hidden shadow-2xl rounded mt-1 font-mono leading-tight max-w-sm pointer-events-none">Debug Screen</div>
+            </div>
+        </div>
+
+        <div id="inventory-container" class="fixed inset-0 flex items-center justify-center pointer-events-none z-50 hidden bg-black/50 backdrop-blur-sm">
+            <div id="inventory-menu" class="p-4 relative">
+                <div id="header-inventory" class="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-[#20252b] border-3 border-[#69737b] border-b-0 px-6 py-1 shadow-xl z-10 hidden">
+                    <h1 class="text-3xl text-white drop-shadow whitespace-nowrap m-0 font-['VT323']">Backpack</h1>
+                </div>
+                
+                <div id="header-crafting" class="absolute -top-11 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-[#5c3a1d] border-4 border-[#b07d4b] border-b-0 px-6 py-1.5 shadow-2xl z-10 hidden">
+                    <div id="ct-icon" class="w-7 h-7 flex items-center justify-center filter drop-shadow"></div>
+                    <div class="flex flex-col">
+                        <h1 class="text-3xl text-[#ffd899] font-bold drop-shadow whitespace-nowrap m-0 font-['VT323'] leading-none">Crafting Table</h1>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-start gap-5 pt-2">
+                    <div id="chest-panel" class="hidden flex-col items-center bg-gray-700 border-3 border-black p-4 shadow-xl rounded">
+                        <h2 id="chest-title" class="text-white text-2xl mb-3 font-bold drop-shadow">Chest</h2>
+                        <div id="chest-grid" class="grid grid-cols-9 gap-1 bg-gray-800 p-2 border-3 border-black rounded shadow-inner"></div>
+                    </div>
+
+                    <!-- Main Backpack Column: Equipment Stage On Top, Separated Inventory Storage Below -->
+                    <div id="backpack-column" class="flex flex-col gap-3">
+                        <!-- Top Equipment Showcase (Minecraft Authentic Layout) -->
+                        <div id="backpack-top-showcase" class="flex items-center justify-between gap-4 bg-[#171b20] p-3 border-2 border-[#46515a] shadow-inner">
+                            <!-- Left: 4 Vertical Armor Slots (Helmet -> Chestplate -> Leggings -> Boots) -->
+                            <div class="flex flex-col items-center gap-1">
+                                <span class="text-[#ffd34d] text-base font-bold font-['VT323'] leading-none">Armour</span>
+                                <div class="armor-slots-container flex flex-col gap-1 bg-[#101418] p-1 border border-[#333a41]">
+                                    <div id="armor-slot-0" class="slot armor-slot armor-slot-helmet empty" data-tip="Helmet"></div>
+                                    <div id="armor-slot-1" class="slot armor-slot armor-slot-chestplate empty" data-tip="Chestplate"></div>
+                                    <div id="armor-slot-2" class="slot armor-slot armor-slot-leggings empty" data-tip="Leggings"></div>
+                                    <div id="armor-slot-3" class="slot armor-slot armor-slot-boots empty" data-tip="Boots"></div>
+                                </div>
+                            </div>
+
+                            <!-- Center: Large Character Paper-Doll Stage -->
+                            <div class="flex flex-col items-center gap-1">
+                                <span class="text-white text-base font-bold font-['VT323'] leading-none">Player</span>
+                                <div class="character-preview-stage">
+                                    <canvas id="inv-player-preview-canvas" width="60" height="120" class="block image-pixelated" style="width: 60px; height: 120px;"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Right: Offhand Slot, Defense Readout, and Quick Tip -->
+                            <div class="flex flex-col items-center justify-between gap-2 h-[202px] py-1">
+                                <div class="flex flex-col items-center gap-1">
+                                    <span class="text-[#ffd34d] text-base font-bold font-['VT323'] leading-none">Offhand</span>
+                                    <div id="inv-offhand-slot" class="slot offhand-slot empty" data-tip="Offhand (Shield / Torches)"></div>
+                                </div>
+                                <div class="flex flex-col items-center gap-1">
+                                    <span class="text-gray-300 text-sm font-['VT323'] leading-none">Protection</span>
+                                    <div id="inv-defense-readout" class="text-lg font-bold text-cyan-300 font-['VT323'] bg-[#080a0c] px-3 py-0.5 border border-cyan-700 text-center shadow whitespace-nowrap">Defense: 0%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom: Main Inventory Storage Grid (2 Rows) & Hotbar (1 Row) Separated -->
+                        <div class="flex flex-col">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[#ffd34d] text-lg font-bold font-['VT323']">Inventory</span>
+                                <span class="text-gray-400 text-base font-['VT323']">Slots 9–26</span>
+                            </div>
+                            <div id="inventory-storage-grid" class="grid grid-cols-9 gap-1 bg-[#171b20] p-2 border-2 border-[#080a0c] shadow-inner mb-2"></div>
+
+                            <!-- Fine line separator -->
+                            <div class="h-px bg-gray-700/60 border-b border-black/50 my-1.5"></div>
+
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[#ffd34d] text-lg font-bold font-['VT323']">Hotbar</span>
+                                <span class="text-gray-400 text-base font-['VT323']">Keys 1–9</span>
+                            </div>
+                            <div id="inventory-hotbar-grid" class="grid grid-cols-9 gap-1 bg-[#171b20] p-2 border-2 border-[#080a0c] shadow-inner"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="furnace-panel" class="hidden flex-col items-center bg-gray-700 border-3 border-black p-4 shadow-xl rounded">
+                        <h2 class="text-white text-2xl mb-4 font-bold drop-shadow">Smelting</h2>
+                        <div class="furnace-workspace">
+                            <div class="furnace-station furnace-input-station">
+                                <span class="furnace-station-label">Input</span>
+                                <div id="f-input" class="slot !w-12 !h-12" data-tip="Input (Ore, Food)"></div>
+                                <span class="furnace-arrow">↓</span>
+                                <span class="furnace-station-label furnace-fuel-label">Fuel</span>
+                                <div id="f-fuel" class="slot !w-12 !h-12" data-tip="Fuel (Wood, Coal)"></div>
+                            </div>
+                            <div class="furnace-process-column">
+                                <span class="furnace-station-label">Heat</span>
+                                <div class="furnace-process relative w-10 h-8 bg-[#222] border-2 border-black rounded overflow-hidden shadow-inner">
+                                <div id="f-flame" class="absolute bottom-0 left-0 w-full bg-orange-500 opacity-80" style="height: 0%"></div>
+                                <div id="f-prog" class="absolute left-0 top-0 h-full bg-green-500/80 transition-all duration-200" style="width: 0%"></div>
+                                <span class="absolute inset-0 flex items-center justify-center text-white text-lg z-10 drop-shadow">▶</span>
+                                </div>
+                            </div>
+                            <div class="furnace-station furnace-output-station">
+                                <span class="furnace-station-label">Output</span>
+                                <div id="f-output" class="slot !w-16 !h-16 border-3 border-yellow-600 bg-yellow-900/30" data-tip="Output"></div>
+                                <span class="furnace-output-hint">Collect result</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="crafting-panel" class="flex flex-col w-72 md:w-80">
+                        <div class="flex justify-between items-end mb-2 border-b border-gray-600 pb-1 shrink-0">
+                            <h2 class="text-white text-2xl font-bold drop-shadow">Recipes</h2>
+                            <span id="crafting-status" class="text-lg text-yellow-400 font-bold bg-black/40 px-2 py-0.5 rounded">Basic</span>
+                        </div>
+
+                        <!-- Crafting Search Input -->
+                        <div class="crafting-search-box shrink-0">
+                            <input type="text" id="crafting-search" placeholder="Search recipes..." 
+                                   class="crafting-search-input"
+                                   oninput="handleCraftingSearch(this.value)" autocomplete="off" spellcheck="false" />
+                            <button id="crafting-search-clear" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white font-bold text-base cursor-pointer" onclick="clearCraftingSearch()">✕</button>
+                        </div>
+
+                        <div id="crafting-categories" class="grid grid-cols-3 gap-1.5 mb-2.5 shrink-0">
+                            <button class="diff-btn active !text-lg" data-category="all" onclick="setCraftingCategory('all')">All</button>
+                            <button class="diff-btn !text-lg" data-category="tools" onclick="setCraftingCategory('tools')">Tools</button>
+                            <button class="diff-btn !text-lg" data-category="armor" onclick="setCraftingCategory('armor')">Armour</button>
+                            <button class="diff-btn !text-lg" data-category="materials" onclick="setCraftingCategory('materials')">Materials</button>
+                            <button class="diff-btn !text-lg" data-category="blocks" onclick="setCraftingCategory('blocks')">Blocks</button>
+                            <button class="diff-btn !text-lg" data-category="utility" onclick="setCraftingCategory('utility')">Utility</button>
+                        </div>
+                        <div id="crafting-list" class="flex flex-col gap-1.5 overflow-y-auto max-h-64 pr-1 pb-1 custom-scrollbar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Multiplayer In-Game Chat Box -->
+        <div id="mp-chat-container" class="hidden">
+            <div id="mp-chat-messages" class="custom-scrollbar"></div>
+            <div id="mp-chat-input-bar" class="hidden">
+                <span id="mp-chat-prompt">&gt;</span>
+                <input type="text" id="mp-chat-input" maxlength="120" placeholder="Type a message... (Press Enter to send, Esc to cancel)" autocomplete="off" spellcheck="false">
+            </div>
+        </div>
+
+        <div class="absolute bottom-4 left-0 w-full flex flex-col items-center pointer-events-none">
+            <div id="hotbar-item-name" class="text-2xl text-white font-bold font-['VT323'] mb-1 bg-black/60 px-3 py-0.5 rounded border border-gray-600 transition-opacity duration-300 opacity-0"></div>
+            <div class="flex gap-3 items-end scale-95 md:scale-100">
+                <div class="interactive-ui hud-item-frame hud-offhand-frame" id="hud-offhand-slot"></div>
+                <div class="interactive-ui hud-item-frame hud-hotbar-frame" id="hotbar"></div>
+            </div>
+        </div>
+
+        <!-- Standalone Big Celestial Clock (Bottom Right) -->
+        <div id="hud-bottom-clock" class="hud-corner-clock pointer-events-none">
+            <canvas id="time-clock" class="hud-clock-canvas pointer-events-none" width="76" height="76" aria-label="Time of day"></canvas>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
+
