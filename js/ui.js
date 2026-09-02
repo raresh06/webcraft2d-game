@@ -12,6 +12,7 @@ import {
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
     setEngineIsBackgroundBuildMode, setMinimapShape, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex,
     buildFullOffscreenMap, renderWorldMapLoop,
+    setIsWorldMapOpen, setMapPan, setMapZoom,
     generateMenuWorld, menuWorldInitialized, drawMenuBackground,
     setWorldDimensions, getMaxAnimals,
     getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
@@ -5170,6 +5171,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (curState !== 'PLAYING') return;
             if (isInventoryOpen) toggleInventory();
             isWorldMapOpen = true;
+            if (typeof window !== 'undefined') window.isWorldMapOpen = true;
+            if (typeof setIsWorldMapOpen === 'function') setIsWorldMapOpen(true);
             const mapModal = document.getElementById('world-map-modal');
             if (mapModal) mapModal.classList.remove('hidden');
             
@@ -5181,6 +5184,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             unlockAchievement('cartographer');
         } else {
             isWorldMapOpen = false;
+            if (typeof window !== 'undefined') window.isWorldMapOpen = false;
+            if (typeof setIsWorldMapOpen === 'function') setIsWorldMapOpen(false);
             const mapModal = document.getElementById('world-map-modal');
             if (mapModal) mapModal.classList.add('hidden');
             if (mapAnimFrameId) {
@@ -5227,6 +5232,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             mapPanX = WORLD_WIDTH / 2;
             mapPanY = WORLD_HEIGHT / 2;
         }
+        if (typeof window !== 'undefined') {
+            window.mapPanX = mapPanX;
+            window.mapPanY = mapPanY;
+        }
+        if (typeof setMapPan === 'function') setMapPan(mapPanX, mapPanY);
     }
 
     export function resetMapView() {
@@ -5237,11 +5247,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         } else {
             mapZoom = 1.0;
         }
+        if (typeof window !== 'undefined') window.mapZoom = mapZoom;
+        if (typeof setMapZoom === 'function') setMapZoom(mapZoom);
         updateMapZoomBadge();
     }
 
     export function changeMapZoom(factor) {
         mapZoom = Math.max(0.25, Math.min(8.0, mapZoom * factor));
+        if (typeof window !== 'undefined') window.mapZoom = mapZoom;
+        if (typeof setMapZoom === 'function') setMapZoom(mapZoom);
         updateMapZoomBadge();
     }
 
@@ -5280,6 +5294,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 
                 mapPanX = Math.max(-50, Math.min(WORLD_WIDTH + 50, mapPanX));
                 mapPanY = Math.max(-30, Math.min(WORLD_HEIGHT + 30, mapPanY));
+                if (typeof window !== 'undefined') {
+                    window.mapPanX = mapPanX;
+                    window.mapPanY = mapPanY;
+                }
+                if (typeof setMapPan === 'function') setMapPan(mapPanX, mapPanY);
             }
 
             if (mouseX >= 0 && mouseX < mapCanvas.width && mouseY >= 0 && mouseY < mapCanvas.height) {
@@ -5312,6 +5331,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 let panDelta = (e.deltaX || e.deltaY) / oldTileSize;
                 mapPanX += panDelta * 0.7;
                 mapPanX = Math.max(-50, Math.min(WORLD_WIDTH + 50, mapPanX));
+                if (typeof window !== 'undefined') window.mapPanX = mapPanX;
+                if (typeof setMapPan === 'function') setMapPan(mapPanX, mapPanY);
                 return;
             }
 
@@ -5325,6 +5346,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
             mapPanX = Math.max(-50, Math.min(WORLD_WIDTH + 50, mapPanX));
             mapPanY = Math.max(-30, Math.min(WORLD_HEIGHT + 30, mapPanY));
+            if (typeof window !== 'undefined') {
+                window.mapPanX = mapPanX;
+                window.mapPanY = mapPanY;
+                window.mapZoom = mapZoom;
+            }
+            if (typeof setMapPan === 'function') setMapPan(mapPanX, mapPanY);
+            if (typeof setMapZoom === 'function') setMapZoom(mapZoom);
         }, { passive: false });
     }
 
@@ -5332,19 +5360,25 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const playerCoordsEl = document.getElementById('map-player-coords');
         const cursorCoordsEl = document.getElementById('map-cursor-coords');
         if (playerCoordsEl) {
-            let px = Math.floor(player.x / TILE_SIZE);
-            let py = Math.floor((player.y + player.height) / TILE_SIZE);
-            playerCoordsEl.innerText = `X: ${px}, Y: ${py}`;
+            const curPlayer = player || (typeof window !== 'undefined' && window.player);
+            if (curPlayer && curPlayer.x !== undefined) {
+                let px = Math.floor(curPlayer.x / TILE_SIZE);
+                let py = Math.floor(((curPlayer.y || 0) + (curPlayer.height || 48)) / TILE_SIZE);
+                playerCoordsEl.innerText = `X: ${px}, Y: ${py}`;
+            } else {
+                playerCoordsEl.innerText = `X: 0, Y: 0`;
+            }
         }
         if (cursorCoordsEl) {
             let hx = mapHoverTileX;
             let hy = mapHoverTileY;
             if (hx >= 0 && hx < WORLD_WIDTH && hy >= 0 && hy < WORLD_HEIGHT) {
-                let block = world[hx]?.[hy];
+                const curWorld = world || (typeof window !== 'undefined' && window.world);
+                let block = curWorld ? curWorld[hx]?.[hy] : undefined;
                 let blockName = "Air";
                 if (block !== undefined && block !== IDS.AIR) {
                     blockName = getMapBlockName(block);
-                } else if (getFluid(hx, hy)) {
+                } else if (typeof getFluid === 'function' && getFluid(hx, hy)) {
                     blockName = getFluid(hx, hy).type === IDS.LAVA ? "Lava" : "Water";
                 }
                 cursorCoordsEl.innerText = `X: ${hx}, Y: ${hy} (${blockName})`;

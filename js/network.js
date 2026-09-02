@@ -22,6 +22,8 @@ export let currentDifficulty = 'normal';
 export let keepInventory = false;
 export let currentWorldAchievementsEnabled = true;
 export let isMultiplayer = false;
+export function setNetworkIsMultiplayer(val) { isMultiplayer = !!val; if (typeof window !== 'undefined') window.isMultiplayer = !!val; }
+export function setNetworkEntities(newEntities) { entities = newEntities; if (typeof window !== 'undefined') window.entities = newEntities; }
 export let currentMpRoom = null;
 export let currentMpWorldName = null;
 export let mpCreateDifficulty = 'normal';
@@ -274,7 +276,11 @@ initFirebaseSdk().then(() => {
     }
 
     export function serializeMultiplayerEntity(entity) {
+        if (!entity.id) {
+            entity.id = 'ent_' + Math.random().toString(36).slice(2, 9) + '_' + Date.now();
+        }
         return Object.fromEntries(Object.entries({
+            id: entity.id,
             type: entity.constructor.name, x: entity.x, y: entity.y,
             width: entity.width, height: entity.height, vx: entity.vx, vy: entity.vy,
             isGrounded: entity.isGrounded, health: entity.health,
@@ -288,10 +294,18 @@ initFirebaseSdk().then(() => {
     }
 
     export function deserializeMultiplayerEntity(data) {
-        const constructors = { Pig, Chicken, Sheep, Zombie, Creeper, Scorpion };
+        const constructors = {
+            Pig: typeof Pig !== 'undefined' ? Pig : (typeof window !== 'undefined' ? window.Pig : null),
+            Chicken: typeof Chicken !== 'undefined' ? Chicken : (typeof window !== 'undefined' ? window.Chicken : null),
+            Sheep: typeof Sheep !== 'undefined' ? Sheep : (typeof window !== 'undefined' ? window.Sheep : null),
+            Zombie: typeof Zombie !== 'undefined' ? Zombie : (typeof window !== 'undefined' ? window.Zombie : null),
+            Creeper: typeof Creeper !== 'undefined' ? Creeper : (typeof window !== 'undefined' ? window.Creeper : null),
+            Scorpion: typeof Scorpion !== 'undefined' ? Scorpion : (typeof window !== 'undefined' ? window.Scorpion : null)
+        };
         const EntityType = constructors[data.type];
         if (!EntityType || !Number.isFinite(data.x) || !Number.isFinite(data.y)) return null;
         const entity = new EntityType(data.x, data.y);
+        entity.id = data.id || ('ent_' + Math.random().toString(36).slice(2, 9) + '_' + Date.now());
         Object.keys(data).forEach(key => {
             if (key !== 'type' && data[key] !== undefined) entity[key] = data[key];
         });
@@ -320,15 +334,26 @@ initFirebaseSdk().then(() => {
             }
         }
 
-        // Reconcile entities without tearing down objects (prevents GC freezing)
+        // Reconcile entities by stable ID without tearing down objects (prevents GC freezing and cross-entity teleporting)
         const incomingEntities = Array.isArray(data.entities) ? data.entities : [];
-        const constructors = { Pig, Chicken, Sheep, Zombie, Creeper, Scorpion };
+        const constructors = {
+            Pig: typeof Pig !== 'undefined' ? Pig : (typeof window !== 'undefined' ? window.Pig : null),
+            Chicken: typeof Chicken !== 'undefined' ? Chicken : (typeof window !== 'undefined' ? window.Chicken : null),
+            Sheep: typeof Sheep !== 'undefined' ? Sheep : (typeof window !== 'undefined' ? window.Sheep : null),
+            Zombie: typeof Zombie !== 'undefined' ? Zombie : (typeof window !== 'undefined' ? window.Zombie : null),
+            Creeper: typeof Creeper !== 'undefined' ? Creeper : (typeof window !== 'undefined' ? window.Creeper : null),
+            Scorpion: typeof Scorpion !== 'undefined' ? Scorpion : (typeof window !== 'undefined' ? window.Scorpion : null)
+        };
         const newEntities = [];
         for (let i = 0; i < incomingEntities.length; i++) {
             const eData = incomingEntities[i];
             if (!eData || !constructors[eData.type] || !Number.isFinite(eData.x) || !Number.isFinite(eData.y)) continue;
-            let existing = entities[i];
-            if (existing && existing.constructor.name === eData.type) {
+            const curEntities = (entities && entities.length) ? entities : (typeof window !== 'undefined' && Array.isArray(window.entities) ? window.entities : entities);
+            let existing = eData.id ? curEntities.find(e => e.id === eData.id && e.constructor.name === eData.type) : null;
+            if (!existing && i < curEntities.length && curEntities[i].constructor.name === eData.type && !newEntities.includes(curEntities[i])) {
+                existing = curEntities[i];
+            }
+            if (existing) {
                 Object.keys(eData).forEach(k => {
                     if (k !== 'type' && eData[k] !== undefined) existing[k] = eData[k];
                 });
@@ -339,6 +364,10 @@ initFirebaseSdk().then(() => {
             }
         }
         entities = newEntities;
+        if (typeof window !== 'undefined') {
+            window.entities = newEntities;
+            if (typeof window.setEngineEntities === 'function') window.setEngineEntities(newEntities);
+        }
 
         // Reconcile dropped items
         const incomingDrops = Array.isArray(data.droppedItems) ? data.droppedItems : [];
@@ -360,7 +389,8 @@ initFirebaseSdk().then(() => {
         }
         droppedItems = newDrops;
 
-        updateSleepStatus();
+        if (typeof updateSleepStatus === 'function') updateSleepStatus();
+        else if (typeof window !== 'undefined' && typeof window.updateSleepStatus === 'function') window.updateSleepStatus();
     }
 
     export let lastSentLocalPlayerPos = { x: 0, y: 0, vx: 0, vy: 0, facingRight: true, heldItem: null, health: 20 };

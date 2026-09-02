@@ -225,17 +225,81 @@ export function getMaxAnimals() {
         cachedVignetteH = lightCanvas.height;
     }
 
-    export const cachedOverhangShadow = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-    if (cachedOverhangShadow) {
-        cachedOverhangShadow.width = TILE_SIZE;
-        cachedOverhangShadow.height = 12;
-        const oCtx = cachedOverhangShadow.getContext('2d');
-        if (oCtx) {
-            const oGrad = oCtx.createLinearGradient(0, 0, 0, 12);
-            oGrad.addColorStop(0, 'rgba(0, 0, 0, 0.45)');
-            oGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            oCtx.fillStyle = oGrad;
-            oCtx.fillRect(0, 0, TILE_SIZE, 12);
+    // Natural Ambient Occlusion (AO) System for caves, overhangs, walls, and crevices
+    export const cachedCeilingAO = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const cachedLeftWallAO = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const cachedRightWallAO = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const cachedCornerAOTopLeft = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const cachedCornerAOTopRight = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const cachedOverhangShadow = cachedCeilingAO; // Compatibility alias
+
+    if (cachedCeilingAO) {
+        cachedCeilingAO.width = TILE_SIZE;
+        cachedCeilingAO.height = 8;
+        const cCtx = cachedCeilingAO.getContext('2d');
+        if (cCtx) {
+            const grad = cCtx.createLinearGradient(0, 0, 0, 8);
+            grad.addColorStop(0, 'rgba(0, 0, 0, 0.22)');
+            grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.10)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            cCtx.fillStyle = grad;
+            cCtx.fillRect(0, 0, TILE_SIZE, 8);
+        }
+    }
+
+    if (cachedLeftWallAO) {
+        cachedLeftWallAO.width = 8;
+        cachedLeftWallAO.height = TILE_SIZE;
+        const lwCtx = cachedLeftWallAO.getContext('2d');
+        if (lwCtx) {
+            const grad = lwCtx.createLinearGradient(0, 0, 8, 0);
+            grad.addColorStop(0, 'rgba(0, 0, 0, 0.18)');
+            grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.08)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            lwCtx.fillStyle = grad;
+            lwCtx.fillRect(0, 0, 8, TILE_SIZE);
+        }
+    }
+
+    if (cachedRightWallAO) {
+        cachedRightWallAO.width = 8;
+        cachedRightWallAO.height = TILE_SIZE;
+        const rwCtx = cachedRightWallAO.getContext('2d');
+        if (rwCtx) {
+            const grad = rwCtx.createLinearGradient(8, 0, 0, 0);
+            grad.addColorStop(0, 'rgba(0, 0, 0, 0.18)');
+            grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.08)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            rwCtx.fillStyle = grad;
+            rwCtx.fillRect(0, 0, 8, TILE_SIZE);
+        }
+    }
+
+    if (cachedCornerAOTopLeft) {
+        cachedCornerAOTopLeft.width = 12;
+        cachedCornerAOTopLeft.height = 12;
+        const clCtx = cachedCornerAOTopLeft.getContext('2d');
+        if (clCtx) {
+            const grad = clCtx.createRadialGradient(0, 0, 0, 0, 0, 12);
+            grad.addColorStop(0, 'rgba(0, 0, 0, 0.28)');
+            grad.addColorStop(0.6, 'rgba(0, 0, 0, 0.12)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            clCtx.fillStyle = grad;
+            clCtx.fillRect(0, 0, 12, 12);
+        }
+    }
+
+    if (cachedCornerAOTopRight) {
+        cachedCornerAOTopRight.width = 12;
+        cachedCornerAOTopRight.height = 12;
+        const crCtx = cachedCornerAOTopRight.getContext('2d');
+        if (crCtx) {
+            const grad = crCtx.createRadialGradient(12, 0, 0, 12, 0, 12);
+            grad.addColorStop(0, 'rgba(0, 0, 0, 0.28)');
+            grad.addColorStop(0.6, 'rgba(0, 0, 0, 0.12)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            crCtx.fillStyle = grad;
+            crCtx.fillRect(0, 0, 12, 12);
         }
     }
 
@@ -5396,22 +5460,39 @@ export const SKIN_H = 32;
             }
         }
 
-        // 6. Draw Living Animated Animals
+        // 6. Draw Living Animated Animals (Smooth stepping, zero teleportation)
         if (menuEntities && menuEntities.length) {
             menuEntities.forEach(entry => {
                 const entity = entry.entity;
                 entity.timer = (entity.timer || 60) - motion * 0.06;
                 if (entity.timer <= 0) {
                     entity.dir = menuRandom() > 0.5 ? 1 : -1;
-                    if (menuRandom() < 0.3) entity.dir = 0;
+                    if (menuRandom() < 0.35) entity.dir = 0;
                     entity.timer = 60 + menuRandom() * 140;
                 }
+                
+                const curGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.width / 2) / TILE_SIZE)));
+                const groundY = (menuWorld.terrain && menuWorld.terrain[curGx] !== undefined) ? menuWorld.terrain[curGx] : Math.floor(WORLD_HEIGHT / 2);
+
+                if (entity.dir !== 0) {
+                    const nextGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.dir * 12 + entity.width / 2) / TILE_SIZE)));
+                    const nextGroundY = (menuWorld.terrain && menuWorld.terrain[nextGx] !== undefined) ? menuWorld.terrain[nextGx] : groundY;
+                    // Steep cliff or world bounds: turn around naturally
+                    if (Math.abs(nextGroundY - groundY) > 1 || nextGx <= 2 || nextGx >= WORLD_WIDTH - 3) {
+                        entity.dir = -entity.dir;
+                    }
+                }
+
                 entity.x += entity.dir * (entity.menuSpeed || 0.8) * (motion * 0.06);
-                if (entity.x <= 0) { entity.x = WORLD_WIDTH * TILE_SIZE - entity.width - 1; entity.dir = 1; }
-                if (entity.x >= WORLD_WIDTH * TILE_SIZE - entity.width) { entity.x = 1; entity.dir = -1; }
-                const gx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.width / 2) / TILE_SIZE)));
-                const groundY = (menuWorld.terrain && menuWorld.terrain[gx] !== undefined) ? menuWorld.terrain[gx] : Math.floor(WORLD_HEIGHT / 2);
-                entity.y = groundY * TILE_SIZE - entity.height;
+                entity.x = Math.max(TILE_SIZE * 2, Math.min((WORLD_WIDTH - 3) * TILE_SIZE, entity.x));
+
+                const targetY = groundY * TILE_SIZE - entity.height;
+                if (entity.y === undefined || Math.abs(entity.y - targetY) > TILE_SIZE * 3) {
+                    entity.y = targetY;
+                } else {
+                    entity.y += (targetY - entity.y) * 0.20;
+                }
+
                 entity.draw(menuCtx, cameraX, cameraY);
             });
         }
@@ -6055,10 +6136,30 @@ export const SKIN_H = 32;
             for (let y = startRow; y <= endRow; y++) {
                 let block = world[x][y];
                 if (block === IDS.AIR) {
-                    // Ambient occlusion: soft ceiling drop shadow beneath cave roofs & subterranean overhangs
-                    if (advancedGraphics && cachedOverhangShadow && y > 0 && world[x][y - 1] !== IDS.AIR && y >= surfaceHeights[x]) {
-                        let drawY = Math.round(y * TILE_SIZE - camY);
-                        ctx.drawImage(cachedOverhangShadow, drawX, drawY, TILE_SIZE, 12);
+                    // Natural Ambient Occlusion (AO) on cave ceilings, overhangs, walls, and inner corners
+                    if (advancedGraphics && y > 0 && y >= surfaceHeights[x]) {
+                        const hasCeiling = world[x][y - 1] !== undefined && isSolidWorldBlock(x, y - 1, world[x][y - 1]);
+                        const hasLeftWall = x > 0 && world[x - 1]?.[y] !== undefined && isSolidWorldBlock(x - 1, y, world[x - 1][y]);
+                        const hasRightWall = x < WORLD_WIDTH - 1 && world[x + 1]?.[y] !== undefined && isSolidWorldBlock(x + 1, y, world[x + 1][y]);
+                        
+                        if (hasCeiling || hasLeftWall || hasRightWall) {
+                            let drawY = Math.round(y * TILE_SIZE - camY);
+                            if (hasCeiling && cachedCeilingAO) {
+                                ctx.drawImage(cachedCeilingAO, drawX, drawY, TILE_SIZE, 8);
+                            }
+                            if (hasLeftWall && cachedLeftWallAO) {
+                                ctx.drawImage(cachedLeftWallAO, drawX, drawY, 8, TILE_SIZE);
+                            }
+                            if (hasRightWall && cachedRightWallAO) {
+                                ctx.drawImage(cachedRightWallAO, drawX + TILE_SIZE - 8, drawY, 8, TILE_SIZE);
+                            }
+                            if (hasCeiling && hasLeftWall && cachedCornerAOTopLeft) {
+                                ctx.drawImage(cachedCornerAOTopLeft, drawX, drawY, 12, 12);
+                            }
+                            if (hasCeiling && hasRightWall && cachedCornerAOTopRight) {
+                                ctx.drawImage(cachedCornerAOTopRight, drawX + TILE_SIZE - 12, drawY, 12, 12);
+                            }
+                        }
                     }
                     continue;
                 }
@@ -6788,6 +6889,25 @@ export const SKIN_H = 32;
     export let mapAnimFrameId = null;
     export let mapEventsInitialized = false;
 
+    export function setIsWorldMapOpen(val) {
+        isWorldMapOpen = !!val;
+        if (typeof window !== 'undefined') window.isWorldMapOpen = !!val;
+    }
+
+    export function setMapPan(x, y) {
+        mapPanX = x;
+        mapPanY = y;
+        if (typeof window !== 'undefined') {
+            window.mapPanX = x;
+            window.mapPanY = y;
+        }
+    }
+
+    export function setMapZoom(z) {
+        mapZoom = z;
+        if (typeof window !== 'undefined') window.mapZoom = z;
+    }
+
     // High performance offscreen cache canvas
     export let offscreenMapCanvas = null;
     export let offscreenMapCtx = null;
@@ -6824,7 +6944,7 @@ export const SKIN_H = 32;
                     if (fl) {
                         offscreenMapCtx.fillStyle = fl.type === IDS.LAVA ? '#e85d04' : '#1e6bb8';
                         offscreenMapCtx.fillRect(x, y, 1, 1);
-                    } else if (bgWorld && bgWorld[x]?.[y] !== undefined && bgWorld[x][y] !== IDS.AIR) {
+                    } else if (curBgWorld && curBgWorld[x]?.[y] !== undefined && curBgWorld[x][y] !== IDS.AIR) {
                         offscreenMapCtx.fillStyle = '#1e2430';
                         offscreenMapCtx.fillRect(x, y, 1, 1);
                     }
@@ -6836,7 +6956,8 @@ export const SKIN_H = 32;
 
 
     export function renderWorldMapLoop() {
-        if (!isWorldMapOpen) return;
+        const isOpen = (typeof window !== 'undefined' && window.isWorldMapOpen !== undefined) ? window.isWorldMapOpen : isWorldMapOpen;
+        if (!isOpen) return;
         renderWorldMapFrame();
         mapAnimFrameId = requestAnimationFrame(renderWorldMapLoop);
     }
@@ -6847,9 +6968,9 @@ export const SKIN_H = 32;
         
         const container = document.getElementById('world-map-container');
         if (container) {
-            const w = container.clientWidth;
-            const h = container.clientHeight;
-            if (mapCanvas.width !== w || mapCanvas.height !== h) {
+            const w = container.clientWidth || mapCanvas.clientWidth || 800;
+            const h = container.clientHeight || mapCanvas.clientHeight || 500;
+            if (w > 0 && h > 0 && (mapCanvas.width !== w || mapCanvas.height !== h)) {
                 mapCanvas.width = w;
                 mapCanvas.height = h;
             }
@@ -6866,15 +6987,20 @@ export const SKIN_H = 32;
 
         const cx = cw / 2;
         const cy = ch / 2;
-        const tileSize = Math.max(1, 4 * mapZoom);
+        const curZoom = (typeof window !== 'undefined' && window.mapZoom !== undefined) ? window.mapZoom : mapZoom;
+        const curPanX = (typeof window !== 'undefined' && window.mapPanX !== undefined) ? window.mapPanX : mapPanX;
+        const curPanY = (typeof window !== 'undefined' && window.mapPanY !== undefined) ? window.mapPanY : mapPanY;
+        const tileSize = Math.max(1, 4 * curZoom);
 
         if (isOffscreenMapDirty || !offscreenMapCanvas) {
             buildFullOffscreenMap();
         }
 
+        if (!offscreenMapCanvas) return;
+
         // Draw offscreen world canvas in 1 single ultra-fast blit
-        const drawStartX = Math.floor(cx - mapPanX * tileSize);
-        const drawStartY = Math.floor(cy - mapPanY * tileSize);
+        const drawStartX = Math.floor(cx - curPanX * tileSize);
+        const drawStartY = Math.floor(cy - curPanY * tileSize);
         const drawWidth = Math.floor(WORLD_WIDTH * tileSize);
         const drawHeight = Math.floor(WORLD_HEIGHT * tileSize);
 
@@ -6886,19 +7012,22 @@ export const SKIN_H = 32;
         ctx.lineWidth = 2;
         ctx.strokeRect(drawStartX, drawStartY, drawWidth, drawHeight);
 
+        const curWorld = world || (typeof window !== 'undefined' && window.world);
         // Draw torches as glowing yellow pixel squares
-        const startTileX = Math.max(0, Math.floor(mapPanX - cx / tileSize) - 1);
-        const endTileX = Math.min(WORLD_WIDTH - 1, Math.ceil(mapPanX + cx / tileSize) + 1);
-        const startTileY = Math.max(0, Math.floor(mapPanY - cy / tileSize) - 1);
-        const endTileY = Math.min(WORLD_HEIGHT - 1, Math.ceil(mapPanY + cy / tileSize) + 1);
+        const startTileX = Math.max(0, Math.floor(curPanX - cx / tileSize) - 1);
+        const endTileX = Math.min(WORLD_WIDTH - 1, Math.ceil(curPanX + cx / tileSize) + 1);
+        const startTileY = Math.max(0, Math.floor(curPanY - cy / tileSize) - 1);
+        const endTileY = Math.min(WORLD_HEIGHT - 1, Math.ceil(curPanY + cy / tileSize) + 1);
 
-        for (let x = startTileX; x <= endTileX; x++) {
-            const screenX = Math.floor(cx + (x - mapPanX) * tileSize);
-            for (let y = startTileY; y <= endTileY; y++) {
-                if (world[x]?.[y] === IDS.TORCH) {
-                    const screenY = Math.floor(cy + (y - mapPanY) * tileSize);
-                    ctx.fillStyle = '#ffea6c';
-                    ctx.fillRect(screenX, screenY, Math.max(2, tileSize * 0.75), Math.max(2, tileSize * 0.75));
+        if (curWorld) {
+            for (let x = startTileX; x <= endTileX; x++) {
+                const screenX = Math.floor(cx + (x - curPanX) * tileSize);
+                for (let y = startTileY; y <= endTileY; y++) {
+                    if (curWorld[x]?.[y] === IDS.TORCH) {
+                        const screenY = Math.floor(cy + (y - curPanY) * tileSize);
+                        ctx.fillStyle = '#ffea6c';
+                        ctx.fillRect(screenX, screenY, Math.max(2, tileSize * 0.75), Math.max(2, tileSize * 0.75));
+                    }
                 }
             }
         }
@@ -6910,8 +7039,8 @@ export const SKIN_H = 32;
                 if (rp && !rp.isDead && !rp.isDisconnected && (!rp.lastSeenLocalTime || Date.now() - rp.lastSeenLocalTime < 12000)) {
                     let rx = (rp.renderX !== undefined ? rp.renderX : (rp.x || 0)) / TILE_SIZE;
                     let ry = ((rp.renderY !== undefined ? rp.renderY : (rp.y || 0)) + 35) / TILE_SIZE;
-                    let rScreenX = Math.floor(cx + (rx - mapPanX) * tileSize);
-                    let rScreenY = Math.floor(cy + (ry - mapPanY) * tileSize);
+                    let rScreenX = Math.floor(cx + (rx - curPanX) * tileSize);
+                    let rScreenY = Math.floor(cy + (ry - curPanY) * tileSize);
 
                     // Pixel Diamond 5x5
                     const rPixelScale = 2;
@@ -6946,81 +7075,84 @@ export const SKIN_H = 32;
         }
 
         // Render Local Player Marker & Pixel-Art Beacon
-        const px = player.x / TILE_SIZE;
-        const py = (player.y + player.height / 2) / TILE_SIZE;
-        const pScreenX = Math.round(cx + (px - mapPanX) * tileSize);
-        const pScreenY = Math.round(cy + (py - mapPanY) * tileSize);
+        const curPlayer = player || (typeof window !== 'undefined' && window.player);
+        if (curPlayer) {
+            const px = curPlayer.x / TILE_SIZE;
+            const py = (curPlayer.y + (curPlayer.height || 48) / 2) / TILE_SIZE;
+            const pScreenX = Math.round(cx + (px - curPanX) * tileSize);
+            const pScreenY = Math.round(cy + (py - curPanY) * tileSize);
 
-        // Animated pixel pulse box
-        const pulseCycle = (Date.now() % 1200) / 1200;
-        const pulseSize = Math.round(10 + pulseCycle * 24);
-        ctx.strokeStyle = `rgba(255, 60, 60, ${1 - pulseCycle})`;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(pScreenX - pulseSize / 2, pScreenY - pulseSize / 2, pulseSize, pulseSize);
+            // Animated pixel pulse box
+            const pulseCycle = (Date.now() % 1200) / 1200;
+            const pulseSize = Math.round(10 + pulseCycle * 24);
+            ctx.strokeStyle = `rgba(255, 60, 60, ${1 - pulseCycle})`;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(pScreenX - pulseSize / 2, pScreenY - pulseSize / 2, pulseSize, pulseSize);
 
-        // Pixel-Art Diamond Beacon
-        const diamondPattern = [
-            [0,0,1,0,0],
-            [0,1,2,1,0],
-            [1,2,3,2,1],
-            [0,1,2,1,0],
-            [0,0,1,0,0]
-        ];
-        const pixelScale = Math.max(2, Math.min(4, Math.round(2 * mapZoom)));
-        const dOffset = Math.floor(diamondPattern.length / 2) * pixelScale;
+            // Pixel-Art Diamond Beacon
+            const diamondPattern = [
+                [0,0,1,0,0],
+                [0,1,2,1,0],
+                [1,2,3,2,1],
+                [0,1,2,1,0],
+                [0,0,1,0,0]
+            ];
+            const pixelScale = Math.max(2, Math.min(4, Math.round(2 * curZoom)));
+            const dOffset = Math.floor(diamondPattern.length / 2) * pixelScale;
 
-        for (let dy = 0; dy < diamondPattern.length; dy++) {
-            for (let dx = 0; dx < diamondPattern[dy].length; dx++) {
-                let val = diamondPattern[dy][dx];
-                if (val > 0) {
-                    ctx.fillStyle = val === 3 ? '#ffffff' : (val === 2 ? '#ff3333' : '#990000');
-                    ctx.fillRect(pScreenX - dOffset + dx * pixelScale, pScreenY - dOffset + dy * pixelScale, pixelScale, pixelScale);
+            for (let dy = 0; dy < diamondPattern.length; dy++) {
+                for (let dx = 0; dx < diamondPattern[dy].length; dx++) {
+                    let val = diamondPattern[dy][dx];
+                    if (val > 0) {
+                        ctx.fillStyle = val === 3 ? '#ffffff' : (val === 2 ? '#ff3333' : '#990000');
+                        ctx.fillRect(pScreenX - dOffset + dx * pixelScale, pScreenY - dOffset + dy * pixelScale, pixelScale, pixelScale);
+                    }
                 }
             }
+
+            // Pixel-Art "YOU ARE HERE" Callout Box
+            const tagText = "YOU ARE HERE";
+            ctx.font = 'bold 18px VT323, monospace';
+            ctx.textAlign = 'center';
+            const textWidth = ctx.measureText(tagText).width;
+            const boxW = Math.round(textWidth + 18);
+            const boxH = 24;
+            const boxX = Math.round(pScreenX - boxW / 2);
+            const boxY = Math.round(pScreenY - 32);
+
+            // Pin stem (pixel line)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(pScreenX - 1, boxY + boxH, 2, Math.max(0, pScreenY - dOffset - (boxY + boxH)));
+
+            // Pixel-art Box Background & Borders
+            ctx.fillStyle = '#171b20';
+            ctx.fillRect(boxX, boxY, boxW, boxH);
+            
+            // Red outer border
+            ctx.fillStyle = '#ff4444';
+            ctx.fillRect(boxX, boxY, boxW, 2);
+            ctx.fillRect(boxX, boxY + boxH - 2, boxW, 2);
+            ctx.fillRect(boxX, boxY, 2, boxH);
+            ctx.fillRect(boxX + boxW - 2, boxY, 2, boxH);
+
+            // Gold corner pixels
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(boxX, boxY, 2, 2);
+            ctx.fillRect(boxX + boxW - 2, boxY, 2, 2);
+            ctx.fillRect(boxX, boxY + boxH - 2, 2, 2);
+            ctx.fillRect(boxX + boxW - 2, boxY + boxH - 2, 2, 2);
+
+            // Text
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(tagText, pScreenX, boxY + 17);
         }
 
-        // Pixel-Art "YOU ARE HERE" Callout Box
-        const tagText = "YOU ARE HERE";
-        ctx.font = 'bold 18px VT323, monospace';
-        ctx.textAlign = 'center';
-        const textWidth = ctx.measureText(tagText).width;
-        const boxW = Math.round(textWidth + 18);
-        const boxH = 24;
-        const boxX = Math.round(pScreenX - boxW / 2);
-        const boxY = Math.round(pScreenY - 32);
-
-        // Pin stem (pixel line)
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(pScreenX - 1, boxY + boxH, 2, Math.max(0, pScreenY - dOffset - (boxY + boxH)));
-
-        // Pixel-art Box Background & Borders
-        ctx.fillStyle = '#171b20';
-        ctx.fillRect(boxX, boxY, boxW, boxH);
-        
-        // Red outer border
-        ctx.fillStyle = '#ff4444';
-        ctx.fillRect(boxX, boxY, boxW, 2);
-        ctx.fillRect(boxX, boxY + boxH - 2, boxW, 2);
-        ctx.fillRect(boxX, boxY, 2, boxH);
-        ctx.fillRect(boxX + boxW - 2, boxY, 2, boxH);
-
-        // Gold corner pixels
-        ctx.fillStyle = '#ffd700';
-        ctx.fillRect(boxX, boxY, 2, 2);
-        ctx.fillRect(boxX + boxW - 2, boxY, 2, 2);
-        ctx.fillRect(boxX, boxY + boxH - 2, 2, 2);
-        ctx.fillRect(boxX + boxW - 2, boxY + boxH - 2, 2, 2);
-
-        // Text
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(tagText, pScreenX, boxY + 17);
-
         // Coordinate Grid ticks when zoomed in
-        if (mapZoom >= 1.4) {
+        if (curZoom >= 1.4) {
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
             ctx.lineWidth = 1;
             for (let x = Math.ceil(startTileX / 10) * 10; x <= endTileX; x += 10) {
-                const sx = Math.floor(cx + (x - mapPanX) * tileSize);
+                const sx = Math.floor(cx + (x - curPanX) * tileSize);
                 ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, ch); ctx.stroke();
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
                 ctx.font = '13px VT323, monospace';
@@ -7029,7 +7161,8 @@ export const SKIN_H = 32;
             }
         }
 
-        updateMapCoordinateReadout();
+        if (typeof updateMapCoordinateReadout === 'function') updateMapCoordinateReadout();
+        else if (typeof window !== 'undefined' && typeof window.updateMapCoordinateReadout === 'function') window.updateMapCoordinateReadout();
     }
 
     export function getMapBlockColor(block) {
