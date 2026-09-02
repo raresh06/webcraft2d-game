@@ -6,9 +6,6 @@
 import * as Network from './network.js';
 import * as Engine from './engine.js';
 import * as UI from './ui.js';
-import * as Network from './network.js?v=0.1.4';
-import * as Engine from './engine.js?v=0.1.4';
-import * as UI from './ui.js?v=0.1.4';
 
 // Expose exports to window for HTML inline event handlers (e.g. onclick)
 import {
@@ -56,7 +53,6 @@ import {
     currentDifficulty, currentWorldId,
     keepInventory, currentWorldAchievementsEnabled
 } from './engine.js';
-} from './engine.js?v=0.1.4';
 
 export {
     IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, HARDNESS, REACH, MOVE_SPEED, JUMP_FORCE,
@@ -1808,18 +1804,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
 
                 physicsAccumulator += snappedDelta;
 
+                let ranPhysics = false;
                 let maxSteps = 5; // Prevent spiral of death on severe lag spikes
                 while (physicsAccumulator >= PHYSICS_TICK_MS - 0.1 && maxSteps > 0) {
                     updateGameSimulation();
                     physicsAccumulator -= PHYSICS_TICK_MS;
                     maxSteps--;
+                    ranPhysics = true;
                 }
                 if (maxSteps === 0 || physicsAccumulator < 0.2) {
                     physicsAccumulator = 0;
                 }
 
-                const dtFactor = Math.max(0.2, Math.min(3.0, frameDeltaMs / PHYSICS_TICK_MS));
-                if (typeof updateCamera === 'function') updateCamera(dtFactor);
+                if (ranPhysics || STATE !== 'PLAYING') {
+                    const dtFactor = Math.max(0.2, Math.min(3.0, frameDeltaMs / PHYSICS_TICK_MS));
+                    if (typeof updateCamera === 'function') updateCamera(dtFactor);
+                }
                 if (typeof drawWorld === 'function') drawWorld();
             }
             else if (STATE === 'PAUSED' || STATE === 'DEAD') {

@@ -468,13 +468,6 @@ export function getMaxAnimals() {
         DIAMOND_PICKAXE: 125, DIAMOND_SWORD: 126, DIAMOND_AXE: 127
     };
 
-    // Fast Opaque Block Table for Zero-Cost Occlusion Culling
-    export const OPAQUE_BLOCKS = new Uint8Array(256);
-    [
-        IDS.DIRT, IDS.GRASS, IDS.STONE, IDS.COBBLESTONE, IDS.WOOD, IDS.PLANKS,
-        IDS.COAL_ORE, IDS.GOLD_ORE, IDS.CRAFTING_TABLE, IDS.FURNACE, IDS.SAND,
-        IDS.SNOW, IDS.IRON_ORE, IDS.DIAMOND_ORE
-    ].forEach(id => { if (id !== undefined) OPAQUE_BLOCKS[id] = 1; });
 
     MINIMAP_COLOR_32.fill(0xFF7D7D7D); // default stone color (ABGR)
     MINIMAP_COLOR_32[IDS.AIR] = 0xFF0A0A0A;
@@ -2415,6 +2408,7 @@ export const SKIN_H = 32;
             this.walkAnimTime = 0;
             this.fallStartY = y;
             this.poisonTimer = 0;
+            this.airborneTicks = 0;
         }
 
         update() {
@@ -2463,8 +2457,8 @@ export const SKIN_H = 32;
                 this.exhaustion += 0.005 * hungerRate;
             } else {
                 if (this.isGrounded) {
-                    this.vx *= 0.65;
-                    if (Math.abs(this.vx) < 0.1) this.vx = 0;
+                    this.vx *= 0.55;
+                    if (Math.abs(this.vx) < 0.15) this.vx = 0;
                 } else {
                     this.vx *= 0.88;
                     if (Math.abs(this.vx) < 0.1) this.vx = 0;
@@ -2528,9 +2522,15 @@ export const SKIN_H = 32;
             }
             if (fullySubmerged || previousOxygen !== this.oxygen) updateOxygenUI(fullySubmerged);
 
-            if (Math.abs(this.vx) > 0.15 && this.isGrounded) {
+            if (this.isGrounded) {
+                this.airborneTicks = 0;
+            } else {
+                this.airborneTicks++;
+            }
+
+            if (moveDir !== 0 && (this.isGrounded || this.airborneTicks <= 4) && Math.abs(this.vx) > 0.15) {
                 this.walkAnimTime += (Math.abs(this.vx) / MOVE_SPEED) * 0.20;
-            } else if (!this.isGrounded) {
+            } else if (!this.isGrounded && this.airborneTicks > 4) {
                 this.walkAnimTime = Math.PI / 6;
             } else {
                 this.walkAnimTime = 0;
@@ -2751,7 +2751,7 @@ export const SKIN_H = 32;
                 let flash = document.createElement('div');
                 flash.className = 'fixed inset-0 bg-red-600/30 pointer-events-none z-50 transition-opacity duration-300';
                 document.body.appendChild(flash);
-                setTimeout(() => { flash.style.opacity = '0'; setTimeout(()=>flash.remove(), 300); }, 50);
+                setTimeout(() => { if (flash && flash.style) flash.style.opacity = '0'; setTimeout(() => { if (flash && typeof flash.remove === 'function') flash.remove(); }, 300); }, 50);
             }
 
             if (this.health <= 0) {
@@ -2804,8 +2804,8 @@ export const SKIN_H = 32;
 
         draw(ctx, camX, camY) {
             if (this.isDead) return;
-            const drawX = Math.floor(this.x) - camX;
-            const drawY = Math.floor(this.y) - camY;
+            const drawX = Math.round(this.x) - camX;
+            const drawY = Math.round(this.y) - camY;
             
             if (advancedGraphics) {
                 ctx.drawImage(cachedShadowCanvas, drawX + this.width/2 - this.width/2.2, drawY + this.height - 6, this.width * (2/2.2), 8);
@@ -4917,9 +4917,12 @@ export const SKIN_H = 32;
         if (!curPlayer || !curCanvas) return;
         let targetX = curPlayer.x + (curPlayer.width || 24) / 2 - curCanvas.width / 2;
         let targetY = curPlayer.y + (curPlayer.height || 48) / 2 - curCanvas.height / 2;
-        const lerp = 1 - Math.pow(1 - 0.15, dtFactor);
-        camera.x += (targetX - camera.x) * lerp; 
-        camera.y += (targetY - camera.y) * lerp; 
+        const lerpX = 1 - Math.pow(1 - 0.20, dtFactor);
+        const lerpY = 1 - Math.pow(1 - 0.15, dtFactor);
+        camera.x += (targetX - camera.x) * lerpX; 
+        camera.y += (targetY - camera.y) * lerpY; 
+        if (Math.abs(targetX - camera.x) < 0.1) camera.x = targetX;
+        if (Math.abs(targetY - camera.y) < 0.1) camera.y = targetY;
         
         // Let camera go beyond bounds for ocean rendering effect, but keep it mostly clamped
         camera.x = Math.max(-curCanvas.width / 3, Math.min(camera.x, WORLD_WIDTH * TILE_SIZE - curCanvas.width + curCanvas.width / 3));
@@ -5686,8 +5689,8 @@ export const SKIN_H = 32;
     }
 
     export function drawWorld() {
-        const camX = Math.floor(camera.x);
-        const camY = Math.floor(camera.y);
+        const camX = Math.round(camera.x);
+        const camY = Math.round(camera.y);
         updateBiomeAtmosphere();
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((player.x + player.width / 2) / TILE_SIZE)));
         const surfaceWorldY = getWorldSurfaceY(playerGridX) * TILE_SIZE;
@@ -5899,16 +5902,6 @@ export const SKIN_H = 32;
                         if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE);
                         ctx.restore();
                     } else {
-                        // Occlusion culling: Skip rendering fully buried opaque solid blocks
-                        if (OPAQUE_BLOCKS[block] === 1) {
-                            const top = (y > 0) ? world[x]?.[y - 1] : IDS.AIR;
-                            const bottom = (y < WORLD_HEIGHT - 1) ? world[x]?.[y + 1] : IDS.AIR;
-                            const left = (x > 0) ? world[x - 1]?.[y] : IDS.AIR;
-                            const right = (x < WORLD_WIDTH - 1) ? world[x + 1]?.[y] : IDS.AIR;
-                            if (OPAQUE_BLOCKS[top] && OPAQUE_BLOCKS[bottom] && OPAQUE_BLOCKS[left] && OPAQUE_BLOCKS[right]) {
-                                continue;
-                            }
-                        }
                         if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
                     }
                 }
@@ -6898,7 +6891,6 @@ try { if (typeof MINIMAP_COLOR_32 !== "undefined") window.MINIMAP_COLOR_32 = MIN
 try { if (typeof MINING_TOOL_TIERS !== "undefined") window.MINING_TOOL_TIERS = MINING_TOOL_TIERS; } catch(e) {}
 try { if (typeof NIGHT_BOTTOM !== "undefined") window.NIGHT_BOTTOM = NIGHT_BOTTOM; } catch(e) {}
 try { if (typeof NIGHT_TOP !== "undefined") window.NIGHT_TOP = NIGHT_TOP; } catch(e) {}
-try { if (typeof OPAQUE_BLOCKS !== "undefined") window.OPAQUE_BLOCKS = OPAQUE_BLOCKS; } catch(e) {}
 try { if (typeof PHYSICS_TICK_MS !== "undefined") window.PHYSICS_TICK_MS = PHYSICS_TICK_MS; } catch(e) {}
 try { if (typeof PHYSICS_TICK_RATE !== "undefined") window.PHYSICS_TICK_RATE = PHYSICS_TICK_RATE; } catch(e) {}
 try { if (typeof Particle !== "undefined") window.Particle = Particle; } catch(e) {}
