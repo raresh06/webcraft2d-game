@@ -468,13 +468,6 @@ export function getMaxAnimals() {
         DIAMOND_PICKAXE: 125, DIAMOND_SWORD: 126, DIAMOND_AXE: 127
     };
 
-    // Fast Opaque Block Table for Zero-Cost Occlusion Culling
-    export const OPAQUE_BLOCKS = new Uint8Array(256);
-    [
-        IDS.DIRT, IDS.GRASS, IDS.STONE, IDS.COBBLESTONE, IDS.WOOD, IDS.PLANKS,
-        IDS.COAL_ORE, IDS.GOLD_ORE, IDS.CRAFTING_TABLE, IDS.FURNACE, IDS.SAND,
-        IDS.SNOW, IDS.IRON_ORE, IDS.DIAMOND_ORE
-    ].forEach(id => { if (id !== undefined) OPAQUE_BLOCKS[id] = 1; });
 
     MINIMAP_COLOR_32.fill(0xFF7D7D7D); // default stone color (ABGR)
     MINIMAP_COLOR_32[IDS.AIR] = 0xFF0A0A0A;
@@ -5899,16 +5892,6 @@ export const SKIN_H = 32;
                         if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE);
                         ctx.restore();
                     } else {
-                        // Occlusion culling: Skip rendering fully buried opaque solid blocks
-                        if (OPAQUE_BLOCKS[block] === 1) {
-                            const top = (y > 0) ? world[x]?.[y - 1] : IDS.AIR;
-                            const bottom = (y < WORLD_HEIGHT - 1) ? world[x]?.[y + 1] : IDS.AIR;
-                            const left = (x > 0) ? world[x - 1]?.[y] : IDS.AIR;
-                            const right = (x < WORLD_WIDTH - 1) ? world[x + 1]?.[y] : IDS.AIR;
-                            if (OPAQUE_BLOCKS[top] && OPAQUE_BLOCKS[bottom] && OPAQUE_BLOCKS[left] && OPAQUE_BLOCKS[right]) {
-                                continue;
-                            }
-                        }
                         if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
                     }
                 }
@@ -6898,7 +6881,6 @@ try { if (typeof MINIMAP_COLOR_32 !== "undefined") window.MINIMAP_COLOR_32 = MIN
 try { if (typeof MINING_TOOL_TIERS !== "undefined") window.MINING_TOOL_TIERS = MINING_TOOL_TIERS; } catch(e) {}
 try { if (typeof NIGHT_BOTTOM !== "undefined") window.NIGHT_BOTTOM = NIGHT_BOTTOM; } catch(e) {}
 try { if (typeof NIGHT_TOP !== "undefined") window.NIGHT_TOP = NIGHT_TOP; } catch(e) {}
-try { if (typeof OPAQUE_BLOCKS !== "undefined") window.OPAQUE_BLOCKS = OPAQUE_BLOCKS; } catch(e) {}
 try { if (typeof PHYSICS_TICK_MS !== "undefined") window.PHYSICS_TICK_MS = PHYSICS_TICK_MS; } catch(e) {}
 try { if (typeof PHYSICS_TICK_RATE !== "undefined") window.PHYSICS_TICK_RATE = PHYSICS_TICK_RATE; } catch(e) {}
 try { if (typeof Particle !== "undefined") window.Particle = Particle; } catch(e) {}
