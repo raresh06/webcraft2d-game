@@ -1042,6 +1042,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             brokenCells.forEach(([brokenX, brokenY]) => {
                 removeFluid(brokenX, brokenY);
                 world[brokenX][brokenY] = IDS.AIR;
+                if (bgWorld && bgWorld[brokenX] && bgWorld[brokenX][brokenY] !== IDS.AIR) {
+                    const natBg = bgWorld[brokenX][brokenY];
+                    if (natBg === IDS.SAND || natBg === IDS.DIRT || natBg === IDS.STONE || natBg === IDS.GRASS || natBg === IDS.SNOW || natBg === blockId) {
+                        bgWorld[brokenX][brokenY] = IDS.AIR;
+                        syncBlock(brokenX, brokenY, IDS.AIR, { isBackground: true });
+                    }
+                }
                 wakeFluidsAround(brokenX, brokenY);
                 leafDecayQueue.delete(`${brokenX}_${brokenY}`);
                 saplingGrowthQueue.delete(`${brokenX}_${brokenY}`);

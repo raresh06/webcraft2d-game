@@ -478,12 +478,36 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 if (s.hotbarWrapAround !== undefined) { hotbarWrapAround = s.hotbarWrapAround; if (typeof window !== 'undefined') window.hotbarWrapAround = s.hotbarWrapAround; }
                 if (s.showItemPopups !== undefined) { showItemPopups = s.showItemPopups; if (typeof window !== 'undefined') window.showItemPopups = s.showItemPopups; }
                 if (s.showScreenShake !== undefined) { showScreenShake = s.showScreenShake; if (typeof window !== 'undefined') window.showScreenShake = s.showScreenShake; }
-                if (s.showVignette !== undefined) { showVignette = s.showVignette; if (typeof window !== 'undefined') window.showVignette = s.showVignette; }
-                if (s.showHeatShimmer !== undefined) { showHeatShimmer = s.showHeatShimmer; if (typeof window !== 'undefined') window.showHeatShimmer = s.showHeatShimmer; }
-                if (s.showBiomeGrading !== undefined) { showBiomeGrading = s.showBiomeGrading; if (typeof window !== 'undefined') window.showBiomeGrading = s.showBiomeGrading; }
+                if (s.showVignette !== undefined) { 
+                    showVignette = s.showVignette; 
+                    if (typeof window !== 'undefined') { window.showVignette = s.showVignette; if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showVignette', s.showVignette); }
+                }
+                if (s.showHeatShimmer !== undefined) { 
+                    showHeatShimmer = s.showHeatShimmer; 
+                    if (typeof window !== 'undefined') { window.showHeatShimmer = s.showHeatShimmer; if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showHeatShimmer', s.showHeatShimmer); }
+                }
+                if (s.showBiomeGrading !== undefined) { 
+                    showBiomeGrading = s.showBiomeGrading; 
+                    if (typeof window !== 'undefined') { window.showBiomeGrading = s.showBiomeGrading; if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showBiomeGrading', s.showBiomeGrading); }
+                }
                 if (s.minimapShape !== undefined) { minimapShape = s.minimapShape; if (typeof window !== 'undefined') window.minimapShape = s.minimapShape; }
                 if (s.accentColor !== undefined) { currentAccentColor = s.accentColor; if (typeof window !== 'undefined') window.currentAccentColor = s.accentColor; }
                 if (s.accentName !== undefined) { currentAccentName = s.accentName; if (typeof window !== 'undefined') window.currentAccentName = s.accentName; }
+            }
+
+            const savedGraphicsMode = localStorage.getItem('swc_graphics_mode') || (localStorage.getItem('swc_advanced_graphics') === 'false' ? 'base' : 'advanced');
+            if (savedGraphicsMode) {
+                graphicsMode = savedGraphicsMode;
+                advancedGraphics = (graphicsMode !== 'base');
+                fabulousGraphics = (graphicsMode === 'fabulous');
+                if (typeof window !== 'undefined') {
+                    window.graphicsMode = graphicsMode;
+                    window.advancedGraphics = advancedGraphics;
+                    window.fabulousGraphics = fabulousGraphics;
+                    if (typeof window.setEngineGraphicsMode === 'function') {
+                        window.setEngineGraphicsMode(graphicsMode);
+                    }
+                }
             }
         } catch (e) {
             console.error('Failed to load settings', e);
@@ -3593,7 +3617,27 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             world = restoredWorld; window.world = world;
             if (typeof setEngineWorld === 'function') setEngineWorld(world);
             if (data.bgWorldRle) {
-                bgWorld = decompressWorld(data.bgWorldRle, targetWidth, targetHeight); window.bgWorld = bgWorld;
+                bgWorld = decompressWorld(data.bgWorldRle, targetWidth, targetHeight);
+                let naturalCount = 0;
+                for (let x = 0; x < WORLD_WIDTH; x++) {
+                    for (let y = 0; y < WORLD_HEIGHT; y++) {
+                        const bgB = bgWorld[x]?.[y];
+                        if (bgB === IDS.SAND || bgB === IDS.DIRT || bgB === IDS.STONE || bgB === IDS.GRASS || bgB === IDS.SNOW) {
+                            naturalCount++;
+                        }
+                    }
+                }
+                if (naturalCount > 50) {
+                    for (let x = 0; x < WORLD_WIDTH; x++) {
+                        for (let y = 0; y < WORLD_HEIGHT; y++) {
+                            const bgB = bgWorld[x]?.[y];
+                            if (bgB === IDS.SAND || bgB === IDS.DIRT || bgB === IDS.STONE || bgB === IDS.GRASS || bgB === IDS.SNOW) {
+                                bgWorld[x][y] = IDS.AIR;
+                            }
+                        }
+                    }
+                }
+                window.bgWorld = bgWorld;
             } else {
                 bgWorld = Array.from({ length: WORLD_WIDTH }, () => Array(WORLD_HEIGHT).fill(IDS.AIR)); window.bgWorld = bgWorld;
             }
@@ -3998,6 +4042,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         showVignette = !showVignette;
         const btn = document.getElementById('btn-toggle-vignette');
         if (btn) btn.innerText = showVignette ? "ON" : "OFF";
+        if (typeof window !== 'undefined') {
+            window.showVignette = showVignette;
+            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showVignette', showVignette);
+        }
         saveCurrentSettings();
     }
 
@@ -4005,6 +4053,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         showHeatShimmer = !showHeatShimmer;
         const btn = document.getElementById('btn-toggle-shimmer');
         if (btn) btn.innerText = showHeatShimmer ? "ON" : "OFF";
+        if (typeof window !== 'undefined') {
+            window.showHeatShimmer = showHeatShimmer;
+            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showHeatShimmer', showHeatShimmer);
+        }
         saveCurrentSettings();
     }
 
@@ -4012,6 +4064,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         showBiomeGrading = !showBiomeGrading;
         const btn = document.getElementById('btn-toggle-grading');
         if (btn) btn.innerText = showBiomeGrading ? "ON" : "OFF";
+        if (typeof window !== 'undefined') {
+            window.showBiomeGrading = showBiomeGrading;
+            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showBiomeGrading', showBiomeGrading);
+        }
         saveCurrentSettings();
     }
 
@@ -4219,6 +4275,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         showClouds = !showClouds; 
         const btn = document.getElementById('btn-toggle-clouds');
         if (btn) btn.innerText = showClouds ? "ON" : "OFF"; 
+        if (typeof window !== 'undefined') {
+            window.showClouds = showClouds;
+            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showClouds', showClouds);
+        }
         saveCurrentSettings();
     }
     export function toggleDebug() {
@@ -4227,6 +4287,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (btn) btn.innerText = showDebug ? "ON" : "OFF";
         const dbg = document.getElementById('debug-info');
         if (dbg) dbg.classList.toggle('hidden', !showDebug);
+        if (typeof window !== 'undefined') {
+            window.showDebug = showDebug;
+            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showDebug', showDebug);
+        }
         saveCurrentSettings();
     }
     export function toggleTutorial() { 
@@ -4238,12 +4302,20 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
         const btn = document.getElementById('btn-toggle-tutorial');
         if (btn) btn.innerText = showTutorial ? "ON" : "OFF"; 
+        if (typeof window !== 'undefined') {
+            window.showTutorial = showTutorial;
+            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showTutorial', showTutorial);
+        }
         saveCurrentSettings();
     }
     export function toggleAutoJump() { 
         autoJumpEnabled = !autoJumpEnabled; 
         const btn = document.getElementById('btn-toggle-autojump');
         if (btn) btn.innerText = autoJumpEnabled ? "ON" : "OFF"; 
+        if (typeof window !== 'undefined') {
+            window.autoJumpEnabled = autoJumpEnabled;
+            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('autoJumpEnabled', autoJumpEnabled);
+        }
         saveCurrentSettings();
     }
     export function toggleGraphics() {
@@ -4256,6 +4328,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
         advancedGraphics = (graphicsMode !== 'base');
         fabulousGraphics = (graphicsMode === 'fabulous');
+        if (typeof window !== 'undefined') {
+            window.graphicsMode = graphicsMode;
+            window.advancedGraphics = advancedGraphics;
+            window.fabulousGraphics = fabulousGraphics;
+            if (typeof window.setEngineGraphicsMode === 'function') {
+                window.setEngineGraphicsMode(graphicsMode);
+            }
+        }
         localStorage.setItem('swc_graphics_mode', graphicsMode);
         localStorage.setItem('swc_advanced_graphics', advancedGraphics ? 'true' : 'false');
         updateGraphicsButton();

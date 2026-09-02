@@ -25,6 +25,38 @@ export let selectedDiffChoice = 'normal';
 export let currentDifficulty = 'normal';
 export let settingsPreviousState = 'MENU';
 
+export function setEngineGraphicsMode(mode) {
+    graphicsMode = mode;
+    advancedGraphics = (mode !== 'base');
+    fabulousGraphics = (mode === 'fabulous');
+    if (typeof window !== 'undefined') {
+        window.graphicsMode = mode;
+        window.advancedGraphics = advancedGraphics;
+        window.fabulousGraphics = fabulousGraphics;
+    }
+}
+
+export function setEngineSetting(key, val) {
+    if (key === 'showClouds') showClouds = val;
+    else if (key === 'showDebug') showDebug = val;
+    else if (key === 'showTutorial') showTutorial = val;
+    else if (key === 'autoJumpEnabled') autoJumpEnabled = val;
+    else if (key === 'showHeatShimmer') showHeatShimmer = val;
+    else if (key === 'showBiomeGrading') showBiomeGrading = val;
+    else if (key === 'showVignette') showVignette = val;
+    else if (key === 'introEnabled') introEnabled = val;
+    else if (key === 'graphicsMode') setEngineGraphicsMode(val);
+    if (typeof window !== 'undefined') window[key] = val;
+}
+
+if (typeof window !== 'undefined') {
+    window.graphicsMode = graphicsMode;
+    window.advancedGraphics = advancedGraphics;
+    window.fabulousGraphics = fabulousGraphics;
+    window.setEngineGraphicsMode = setEngineGraphicsMode;
+    window.setEngineSetting = setEngineSetting;
+}
+
 export function showToast(msg, duration) { if (typeof window !== 'undefined' && typeof window.showToast === 'function' && window.showToast !== showToast) return window.showToast(msg, duration); }
 export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !== 'undefined' && typeof window.dropItemForWorld === 'function' && window.dropItemForWorld !== dropItemForWorld) return window.dropItemForWorld(itemId, x, y, count); }
 export function playSound(type, options = {}) { if (typeof window !== 'undefined' && typeof window.playSound === 'function' && window.playSound !== playSound) return window.playSound(type, options); }
@@ -191,6 +223,20 @@ export function getMaxAnimals() {
         cachedLightVignette.addColorStop(1, 'rgba(0, 0, 12, 1)');
         cachedVignetteW = lightCanvas.width;
         cachedVignetteH = lightCanvas.height;
+    }
+
+    export const cachedOverhangShadow = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedOverhangShadow) {
+        cachedOverhangShadow.width = TILE_SIZE;
+        cachedOverhangShadow.height = 12;
+        const oCtx = cachedOverhangShadow.getContext('2d');
+        if (oCtx) {
+            const oGrad = oCtx.createLinearGradient(0, 0, 0, 12);
+            oGrad.addColorStop(0, 'rgba(0, 0, 0, 0.45)');
+            oGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            oCtx.fillStyle = oGrad;
+            oCtx.fillRect(0, 0, TILE_SIZE, 12);
+        }
     }
 
     // Pre-rendered reusable light falloff stamp (GPU texture blit)
@@ -3927,27 +3973,25 @@ export const SKIN_H = 32;
             for (let y = 0; y < WORLD_HEIGHT; y++) {
                 if (y < surfaceY) {
                     world[x][y] = IDS.AIR;
-                    bgWorld[x][y] = IDS.AIR;
                 }
                 else if (y === surfaceY) {
-                    if (biome === "desert") { world[x][y] = IDS.SAND; bgWorld[x][y] = IDS.SAND; }
-                    else if (biome === "snow") { world[x][y] = IDS.SNOW; bgWorld[x][y] = IDS.DIRT; }
-                    else if (biome === "mountains" && y < baseHeight - 35) { world[x][y] = IDS.SNOW; bgWorld[x][y] = IDS.STONE; }
-                    else if (biome === "mountains") { world[x][y] = IDS.STONE; bgWorld[x][y] = IDS.STONE; }
-                    else { world[x][y] = IDS.GRASS; bgWorld[x][y] = IDS.DIRT; }
+                    if (biome === "desert") world[x][y] = IDS.SAND;
+                    else if (biome === "snow") world[x][y] = IDS.SNOW;
+                    else if (biome === "mountains" && y < baseHeight - 35) world[x][y] = IDS.SNOW;
+                    else if (biome === "mountains") world[x][y] = IDS.STONE;
+                    else world[x][y] = IDS.GRASS;
                 }
                 else if (y > surfaceY && y < surfaceY + seededRandom() * 3 + 3) {
-                    if (biome === "desert") { world[x][y] = IDS.SAND; bgWorld[x][y] = IDS.SAND; }
-                    else if (biome === "snow" || biome === "plains" || biome === "forest") { world[x][y] = IDS.DIRT; bgWorld[x][y] = IDS.DIRT; }
-                    else { world[x][y] = IDS.STONE; bgWorld[x][y] = IDS.STONE; }
+                    if (biome === "desert") world[x][y] = IDS.SAND;
+                    else if (biome === "snow" || biome === "plains" || biome === "forest") world[x][y] = IDS.DIRT;
+                    else world[x][y] = IDS.STONE;
                 }
                 else {
                     world[x][y] = IDS.STONE;
-                    bgWorld[x][y] = IDS.STONE;
 
                     // Multi-type Cave Generator:
                     // Mountain peaks and high slopes remain solid stone/snow; caves only generate deep underground below mountain base.
-                    let minCaveY = surfaceY + 12;
+                    let minCaveY = surfaceY + 6;
                     if (biome === "mountains") minCaveY = Math.max(surfaceY + 28, baseHeight - 6);
                     let isCave = false;
 
@@ -3959,18 +4003,18 @@ export const SKIN_H = 32;
                         let spag1 = Math.sin(cx * 0.045 + Math.cos(cy * 0.04 + worldSeed * 0.7) * 1.8);
                         let spag2 = Math.cos(cy * 0.045 + Math.sin(cx * 0.04 + worldSeed * 0.3) * 1.8);
                         let spagDist = spag1 * spag1 + spag2 * spag2;
-                        let isSpaghetti = spagDist < 0.15;
+                        let isSpaghetti = spagDist < 0.18;
 
                         // 2. Cheese Caverns: Spacious large halls and open underground rooms
                         let cavernNoise = (Math.sin(cx * 0.024 + worldSeed * 0.2) * Math.cos(cy * 0.024 + worldSeed * 0.5) + 
                                            Math.sin(cx * 0.048 + cy * 0.048 + worldSeed * 0.8) * 0.45);
-                        let cavernThresh = 0.78 - (Math.max(0, y - baseHeight) / (WORLD_HEIGHT - baseHeight)) * 0.14;
+                        let cavernThresh = 0.76 - (Math.max(0, y - baseHeight) / (WORLD_HEIGHT - baseHeight)) * 0.14;
                         let isCavern = cavernNoise > cavernThresh;
 
                         // 3. Noodle Crevices: Tangled, narrow, squiggly fissures connecting subterranean pockets
                         let noodle = Math.abs(Math.sin(cx * 0.07 + Math.sin(cy * 0.06) * 1.7 + worldSeed * 0.4) + 
                                              Math.cos(cy * 0.07 + Math.cos(cx * 0.06) * 1.7 + worldSeed * 0.9));
-                        let isNoodle = noodle < 0.075;
+                        let isNoodle = noodle < 0.085;
 
                         if (isCavern || isSpaghetti || isNoodle) {
                             isCave = true;
@@ -4092,13 +4136,11 @@ export const SKIN_H = 32;
                 
                 for (let y = surfaceY; y < floorY; y++) {
                     world[x][y] = IDS.AIR;
-                    bgWorld[x][y] = IDS.DIRT;
                     setFluid(x, y, { type: IDS.WATER, level: 0, source: true, falling: false });
                     placed++;
                 }
-                if (floorY < WORLD_HEIGHT) {
+                if (floorY < WORLD_HEIGHT && !isSolidWorldBlock(x, floorY, world[x][floorY])) {
                     world[x][floorY] = IDS.SAND;
-                    bgWorld[x][floorY] = IDS.SAND;
                 }
             }
             return placed > 0;
@@ -4992,25 +5034,29 @@ export const SKIN_H = 32;
         const color1 = 'rgb(' + r1 + ',' + g1 + ',' + b1 + ')';
         const topColor1 = 'rgb(' + topR1 + ',' + topG1 + ',' + topB1 + ')';
 
-        // Layer 1 - Continuous Mountain Polygon Fill
-        targetCtx.beginPath();
-        targetCtx.moveTo(0, h);
-        for (let x = 0; x <= w + STEP; x += STEP) {
-            let wx = x + camX * 0.1 + offsetX * 0.4;
-            let my = Math.floor((h - 180 - Math.sin(wx * 0.003) * 100 - Math.sin(wx * 0.01) * 50 + offsetY * 0.3) / STEP) * STEP;
-            targetCtx.lineTo(x, my);
-            targetCtx.lineTo(x + STEP, my);
+        const maxCols = Math.ceil(w / STEP) + 2;
+        if (!drawMountains.yArr || drawMountains.yArr.length < maxCols) {
+            drawMountains.yArr = new Int32Array(maxCols);
         }
-        targetCtx.lineTo(w + STEP, h);
-        targetCtx.closePath();
-        targetCtx.fillStyle = color1;
-        targetCtx.fill();
+        const yArr = drawMountains.yArr;
 
-        // Layer 1 - Ridge highlights
-        targetCtx.fillStyle = topColor1;
+        let idx = 0;
         for (let x = 0; x <= w + STEP; x += STEP) {
             let wx = x + camX * 0.1 + offsetX * 0.4;
-            let my = Math.floor((h - 180 - Math.sin(wx * 0.003) * 100 - Math.sin(wx * 0.01) * 50 + offsetY * 0.3) / STEP) * STEP;
+            let rawY = h - 180 - Math.sin(wx * 0.003) * 100 - Math.sin(wx * 0.01) * 50 + offsetY * 0.3;
+            yArr[idx++] = Math.floor(rawY / STEP) * STEP;
+        }
+
+        targetCtx.fillStyle = color1;
+        idx = 0;
+        for (let x = 0; x <= w + STEP; x += STEP) {
+            let my = yArr[idx++];
+            targetCtx.fillRect(x, my, STEP, h - my);
+        }
+        targetCtx.fillStyle = topColor1;
+        idx = 0;
+        for (let x = 0; x <= w + STEP; x += STEP) {
+            let my = yArr[idx++];
             targetCtx.fillRect(x, my, STEP, STEP);
         }
 
@@ -5020,25 +5066,23 @@ export const SKIN_H = 32;
         const color2 = 'rgb(' + r2 + ',' + g2 + ',' + b2 + ')';
         const topColor2 = 'rgb(' + topR2 + ',' + topG2 + ',' + topB2 + ')';
 
-        // Layer 2 - Continuous Mountain Polygon Fill
-        targetCtx.beginPath();
-        targetCtx.moveTo(0, h);
+        idx = 0;
         for (let x = 0; x <= w + STEP; x += STEP) {
             let wx = x + camX * 0.25 + offsetX * 0.7;
-            let my = Math.floor((h - 110 - Math.sin(wx * 0.005) * 70 - Math.cos(wx * 0.015) * 35 + offsetY * 0.6) / STEP) * STEP;
-            targetCtx.lineTo(x, my);
-            targetCtx.lineTo(x + STEP, my);
+            let rawY = h - 110 - Math.sin(wx * 0.005) * 70 - Math.cos(wx * 0.015) * 35 + offsetY * 0.6;
+            yArr[idx++] = Math.floor(rawY / STEP) * STEP;
         }
-        targetCtx.lineTo(w + STEP, h);
-        targetCtx.closePath();
-        targetCtx.fillStyle = color2;
-        targetCtx.fill();
 
-        // Layer 2 - Ridge highlights
-        targetCtx.fillStyle = topColor2;
+        targetCtx.fillStyle = color2;
+        idx = 0;
         for (let x = 0; x <= w + STEP; x += STEP) {
-            let wx = x + camX * 0.25 + offsetX * 0.7;
-            let my = Math.floor((h - 110 - Math.sin(wx * 0.005) * 70 - Math.cos(wx * 0.015) * 35 + offsetY * 0.6) / STEP) * STEP;
+            let my = yArr[idx++];
+            targetCtx.fillRect(x, my, STEP, h - my);
+        }
+        targetCtx.fillStyle = topColor2;
+        idx = 0;
+        for (let x = 0; x <= w + STEP; x += STEP) {
+            let my = yArr[idx++];
             targetCtx.fillRect(x, my, STEP, STEP);
         }
     }
@@ -5515,22 +5559,39 @@ export const SKIN_H = 32;
     export function drawSnowFog(targetCtx, w, h, camX) {
         if (!fabulousGraphics || currentFogDensity <= 0.01 || w <= 0 || h <= 0) return;
         targetCtx.save();
-        const baseAlpha = currentFogDensity * 0.45;
-        targetCtx.globalAlpha = baseAlpha;
-        targetCtx.imageSmoothingEnabled = true;
-        targetCtx.drawImage(cachedSnowFogCanvas, 0, Math.floor(h * 0.15), w, Math.floor(h * 0.75));
-        targetCtx.imageSmoothingEnabled = false;
+        const layers = [
+            { speed: 0.8, alpha: 0.28, yOffset: 0.15, hRatio: 0.7 },
+            { speed: 1.4, alpha: 0.22, yOffset: 0.35, hRatio: 0.65 },
+            { speed: 0.5, alpha: 0.18, yOffset: 0.0, hRatio: 1.0 }
+        ];
+
+        for (let l = 0; l < layers.length; l++) {
+            const layer = layers[l];
+            const a = layer.alpha * currentFogDensity;
+            const fogGrad = targetCtx.createLinearGradient(0, h * layer.yOffset, 0, h * (layer.yOffset + layer.hRatio));
+            fogGrad.addColorStop(0, `rgba(230, 245, 255, 0)`);
+            fogGrad.addColorStop(0.3, `rgba(225, 242, 255, ${a.toFixed(3)})`);
+            fogGrad.addColorStop(0.7, `rgba(215, 238, 255, ${(a * 1.2).toFixed(3)})`);
+            fogGrad.addColorStop(1, `rgba(230, 245, 255, 0)`);
+
+            targetCtx.fillStyle = fogGrad;
+            targetCtx.fillRect(0, h * layer.yOffset, w, h * layer.hRatio);
+        }
         targetCtx.restore();
     }
 
     export function drawVignette(targetCtx, w, h) {
-        if (!fabulousGraphics || w <= 0 || h <= 0) return;
-        const cornerAlpha = Math.max(0, Math.min(0.55, 0.32 + caveSkyOpacity * 0.22));
+        if (!showVignette || (!fabulousGraphics && !advancedGraphics) || w <= 0 || h <= 0) return;
         targetCtx.save();
-        targetCtx.globalAlpha = cornerAlpha;
-        targetCtx.imageSmoothingEnabled = true;
-        targetCtx.drawImage(cachedFabulousVignetteCanvas, 0, 0, w, h);
-        targetCtx.imageSmoothingEnabled = false;
+        const maxDim = Math.hypot(w / 2, h / 2);
+        const vigGrad = targetCtx.createRadialGradient(w / 2, h / 2, Math.max(1, maxDim * 0.42), w / 2, h / 2, Math.max(2, maxDim));
+        const cornerAlpha = Math.max(0.18, Math.min(0.68, 0.28 + caveSkyOpacity * 0.35));
+        vigGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        vigGrad.addColorStop(0.6, `rgba(0, 0, 0, ${(cornerAlpha * 0.35).toFixed(3)})`);
+        vigGrad.addColorStop(1, `rgba(0, 0, 0, ${cornerAlpha.toFixed(3)})`);
+
+        targetCtx.fillStyle = vigGrad;
+        targetCtx.fillRect(0, 0, w, h);
         targetCtx.restore();
     }
 
@@ -5800,7 +5861,15 @@ export const SKIN_H = 32;
 
             for (let y = startRow; y <= endRow; y++) {
                 let block = world[x][y];
-                if (block !== IDS.AIR && block !== undefined) {
+                if (block === IDS.AIR) {
+                    // Ambient occlusion: soft ceiling drop shadow beneath cave roofs & subterranean overhangs
+                    if (advancedGraphics && cachedOverhangShadow && y > 0 && world[x][y - 1] !== IDS.AIR && y >= surfaceHeights[x]) {
+                        let drawY = y * TILE_SIZE - camY;
+                        ctx.drawImage(cachedOverhangShadow, drawX, drawY, TILE_SIZE, 12);
+                    }
+                    continue;
+                }
+                if (block !== undefined) {
                     let drawY = y * TILE_SIZE - camY;
                     
                     if (block === IDS.BED) {
