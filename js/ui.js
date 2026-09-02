@@ -15,6 +15,7 @@ import {
     getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
     TOOL_DURABILITY, ARMOR_DURABILITY, FPS_CAP_OPTIONS, diffDescriptions, DIFFICULTIES,
     LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS
+} from './engine.js';
 } from './engine.js?v=0.1.4';
 
 export const SKIN_W = 16;

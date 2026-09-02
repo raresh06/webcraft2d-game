@@ -3,6 +3,9 @@
 // Central Hub, Game State, Audio Engine, Game Simulation & Boot Sequence
 // =============================================================================
 
+import * as Network from './network.js';
+import * as Engine from './engine.js';
+import * as UI from './ui.js';
 import * as Network from './network.js?v=0.1.4';
 import * as Engine from './engine.js?v=0.1.4';
 import * as UI from './ui.js?v=0.1.4';
@@ -52,6 +55,7 @@ import {
     surfaceHeights, droppedItems, timeOfDay, dayCount, frameCount, STATE,
     currentDifficulty, currentWorldId,
     keepInventory, currentWorldAchievementsEnabled
+} from './engine.js';
 } from './engine.js?v=0.1.4';
 
 export {
