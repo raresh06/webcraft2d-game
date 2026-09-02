@@ -10,7 +10,7 @@ import {
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
-    setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setSelectedHotbarIndex,
+    setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex,
     setWorldDimensions, getMaxAnimals,
     getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
     TOOL_DURABILITY, ARMOR_DURABILITY, FPS_CAP_OPTIONS, diffDescriptions, DIFFICULTIES,
@@ -91,6 +91,41 @@ export let hotbarWheelLockUntil = 0;
 export let heldItemIndex = -1;
 export let heldItemObj = null;
 export let heldItemDraggedOutside = false;
+
+export function setSelectedHotbarIndex(idx) {
+    selectedHotbarIndex = idx;
+    if (typeof setEngineSelectedHotbarIndex === 'function') setEngineSelectedHotbarIndex(idx);
+    if (typeof window !== 'undefined') window.selectedHotbarIndex = idx;
+    if (typeof window !== 'undefined' && window.setMainSelectedHotbarIndex) {
+        window.setMainSelectedHotbarIndex(idx);
+    }
+}
+try { if (typeof window !== 'undefined') window.setSelectedHotbarIndex = setSelectedHotbarIndex; } catch(e) {}
+
+export function setHeldItemObj(obj) {
+    heldItemObj = obj;
+    if (typeof window !== 'undefined') window.heldItemObj = obj;
+    const dragEl = document.getElementById('dragged-item-container');
+    const dImg = document.getElementById('dragged-item-img');
+    const dCount = document.getElementById('dragged-item-count');
+    if (heldItemObj) {
+        if (dImg && textures[heldItemObj.id]) dImg.src = textures[heldItemObj.id].src;
+        if (dCount) dCount.innerText = heldItemObj.count > 1 ? heldItemObj.count : '';
+        if (dragEl) {
+            dragEl.style.display = 'block';
+            if (typeof window !== 'undefined' && window.mouse && window.mouse.clientX !== undefined) {
+                dragEl.style.left = (window.mouse.clientX - 20) + 'px';
+                dragEl.style.top = (window.mouse.clientY - 20) + 'px';
+            }
+        }
+    } else {
+        if (dragEl) dragEl.style.display = 'none';
+    }
+    if (typeof window !== 'undefined' && window.setMainHeldItemObj) {
+        window.setMainHeldItemObj(obj);
+    }
+}
+try { if (typeof window !== 'undefined') window.setHeldItemObj = setHeldItemObj; } catch(e) {}
 export let nonCollidableTreeWood = new Set();
 export let saplingGrowthQueue = new Map();
 export let dirtToGrassQueue = new Map();
@@ -4368,11 +4403,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function checkNearCraftingTable() {
-        let px = Math.floor((player.x + player.width / 2) / TILE_SIZE); 
-        let py = Math.floor((player.y + player.height / 2) / TILE_SIZE);
+        const p = player || (typeof window !== 'undefined' ? window.player : null);
+        if (!p) return false;
+        let px = Math.floor((p.x + p.width / 2) / TILE_SIZE); 
+        let py = Math.floor((p.y + p.height / 2) / TILE_SIZE);
+        const w = (typeof world !== 'undefined' && world) || (typeof window !== 'undefined' ? window.world : null);
+        if (!w) return false;
         for(let x = px - 3; x <= px + 3; x++) {
             for(let y = py - 3; y <= py + 3; y++) {
-                if(x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT && world[x][y] === IDS.CRAFTING_TABLE) return true;
+                if(x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT && w[x] && w[x][y] === IDS.CRAFTING_TABLE) return true;
             }
         }
         return false;
@@ -4657,9 +4696,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
         }
         
-        const dImg = document.getElementById('dragged-item-img'); const dCount = document.getElementById('dragged-item-count');
-        if (heldItemObj) { dImg.src = textures[heldItemObj.id].src; dCount.innerText = heldItemObj.count > 1 ? heldItemObj.count : ''; }
-        else { document.getElementById('dragged-item-container').style.display = 'none'; }
+        setHeldItemObj(heldItemObj);
         heldItemDraggedOutside = false;
         updateUI(false);
     }
@@ -4790,13 +4827,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function updateUI(refreshCrafting = true) {
+        const curSel = (typeof window !== 'undefined' && window.selectedHotbarIndex !== undefined) ? window.selectedHotbarIndex : selectedHotbarIndex;
         const hotbar = document.getElementById('hotbar');
         if (hotbar.children.length !== hotbarSize) {
             hotbar.innerHTML = '';
             for (let i = 0; i < hotbarSize; i++) {
                 let slot = document.createElement('div');
-                slot.className = `hotbar-slot w-12 h-12 flex items-center justify-center relative border-3 cursor-pointer ${i === selectedHotbarIndex ? 'active border-white bg-white/30' : 'border-gray-500 bg-black/60 hover:border-gray-300'}`;
-                slot.onclick = () => { selectedHotbarIndex = i; updateUI(); triggerHotbarItemPopup(); };
+                slot.className = `hotbar-slot w-12 h-12 flex items-center justify-center relative border-3 cursor-pointer ${i === curSel ? 'active' : ''}`;
+                slot.onclick = () => { setSelectedHotbarIndex(i); updateUI(); triggerHotbarItemPopup(); };
                 let num = document.createElement('span');
                 num.className = 'absolute top-0 left-1 text-xs text-gray-300 font-bold pointer-events-none';
                 num.innerText = i + 1;
@@ -4807,12 +4845,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         for (let i = 0; i < hotbarSize; i++) {
             let slot = hotbar.children[i];
             if (!slot) continue;
-            slot.className = `hotbar-slot w-12 h-12 flex items-center justify-center relative border-3 cursor-pointer ${i === selectedHotbarIndex ? 'active border-white bg-white/30' : 'border-gray-500 bg-black/60 hover:border-gray-300'}`;
+            slot.className = `hotbar-slot w-12 h-12 flex items-center justify-center relative border-3 cursor-pointer ${i === curSel ? 'active' : ''}`;
             while (slot.childNodes && slot.childNodes.length > 1) slot.removeChild(slot.lastChild);
             populateSlotItemDOM(slot, inventory[i]);
         }
 
-        let currSelItem = inventory[selectedHotbarIndex];
+        let currSelItem = inventory[curSel];
         let currSelId = currSelItem ? currSelItem.id : null;
         if (currSelId !== lastHotbarItemId) {
             lastHotbarItemId = currSelId;
@@ -5077,14 +5115,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 checkArmorAchievements();
                 updateArmorUI();
                 updateUI();
-                const dImg = document.getElementById('dragged-item-img');
-                const dCount = document.getElementById('dragged-item-count');
-                if (heldItemObj) {
-                    dImg.src = textures[heldItemObj.id].src;
-                    dCount.innerText = heldItemObj.count > 1 ? heldItemObj.count : '';
-                } else {
-                    document.getElementById('dragged-item-container').style.display = 'none';
-                }
+                setHeldItemObj(heldItemObj);
             }
         } else if (piece) {
             if (isShift) {
@@ -5104,11 +5135,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 playSound('pop');
                 updateArmorUI();
                 updateUI();
-                const dImg = document.getElementById('dragged-item-img');
-                const dCount = document.getElementById('dragged-item-count');
-                dImg.src = textures[heldItemObj.id].src;
-                dCount.innerText = '';
-                document.getElementById('dragged-item-container').style.display = 'block';
+                setHeldItemObj(heldItemObj);
             }
         }
     }

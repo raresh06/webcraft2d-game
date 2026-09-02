@@ -34,7 +34,7 @@ import {
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
-    setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setSelectedHotbarIndex, setAttackAnimationTimer,
+    setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex, setAttackAnimationTimer,
     drawMenuBackground, drawWorld, updateCamera,
     getSnowBiomeRatio, initCanvases, resizeCanvases, canvas, ctx,
     lightCanvas, lightCtx, LIGHT_SCALE, updateCachedVignette,
@@ -80,7 +80,7 @@ export {
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
-    setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setSelectedHotbarIndex, setAttackAnimationTimer,
+    setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setAttackAnimationTimer,
     drawMenuBackground, drawWorld, updateCamera,
     getSnowBiomeRatio, initCanvases, resizeCanvases, canvas, ctx,
     lightCanvas, lightCtx, LIGHT_SCALE, updateCachedVignette,
@@ -105,6 +105,21 @@ export let selectedHotbarIndex = 0;
 export let heldItemObj = null;
 export let heldItemIndex = -1;
 export let heldItemDraggedOutside = false;
+
+export function setSelectedHotbarIndex(idx) {
+    selectedHotbarIndex = idx;
+    if (typeof setEngineSelectedHotbarIndex === 'function') setEngineSelectedHotbarIndex(idx);
+    if (typeof UI !== 'undefined' && typeof UI.setSelectedHotbarIndex === 'function') UI.setSelectedHotbarIndex(idx);
+    if (typeof window !== 'undefined') window.selectedHotbarIndex = idx;
+}
+try { if (typeof window !== 'undefined') { window.setMainSelectedHotbarIndex = (idx) => { selectedHotbarIndex = idx; }; window.setSelectedHotbarIndex = setSelectedHotbarIndex; } } catch(e) {}
+
+export function setHeldItemObj(obj) {
+    heldItemObj = obj;
+    if (typeof UI !== 'undefined' && typeof UI.setHeldItemObj === 'function') UI.setHeldItemObj(obj);
+    if (typeof window !== 'undefined') window.heldItemObj = obj;
+}
+try { if (typeof window !== 'undefined') { window.setMainHeldItemObj = (obj) => { heldItemObj = obj; }; window.setHeldItemObj = setHeldItemObj; } } catch(e) {}
 export let openedFurnace = null;
 export let openedChest = null;
 export let isInventoryOpen = false;
@@ -121,7 +136,8 @@ export let frameDeltaMs = 16.6;
 export let lastPlayerActivityAt = Date.now();
 export let lastAutosaveTimestamp = Date.now();
 
-export function updateUI() { if (typeof window !== 'undefined' && typeof window.updateUI === 'function' && window.updateUI !== updateUI) return window.updateUI(); }
+export function updateUI(refreshCrafting = true) { if (typeof UI !== 'undefined' && typeof UI.updateUI === 'function') return UI.updateUI(refreshCrafting); if (typeof window !== 'undefined' && typeof window.updateUI === 'function' && window.updateUI !== updateUI) return window.updateUI(refreshCrafting); }
+export function triggerHotbarItemPopup() { if (typeof UI !== 'undefined' && typeof UI.triggerHotbarItemPopup === 'function') return UI.triggerHotbarItemPopup(); if (typeof window !== 'undefined' && typeof window.triggerHotbarItemPopup === 'function') return window.triggerHotbarItemPopup(); }
 export function updateHealthUI() { if (typeof window !== 'undefined' && typeof window.updateHealthUI === 'function' && window.updateHealthUI !== updateHealthUI) return window.updateHealthUI(); }
 export function updateHungerUI() { if (typeof window !== 'undefined' && typeof window.updateHungerUI === 'function' && window.updateHungerUI !== updateHungerUI) return window.updateHungerUI(); }
 export function updateTimeUI() { if (typeof window !== 'undefined' && typeof window.updateTimeUI === 'function' && window.updateTimeUI !== updateTimeUI) return window.updateTimeUI(); }
@@ -565,7 +581,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 if (typeof window !== 'undefined') window.keys = keys;
             }
             if (k >= '1' && k <= '9' && !isInventoryOpen) { 
-                selectedHotbarIndex = parseInt(k) - 1; 
+                setSelectedHotbarIndex(parseInt(k) - 1); 
                 updateUI();
                 triggerHotbarItemPopup();
             }
@@ -580,11 +596,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
     });
     window.addEventListener('mousedown', (e) => {
         lastPlayerActivityAt = Date.now();
-        if (e.button !== 0 || !isInventoryOpen || !heldItemObj || !heldItemDraggedOutside) return;
+        const curHeld = (typeof window !== 'undefined' && window.heldItemObj) ? window.heldItemObj : heldItemObj;
+        if (e.button !== 0 || !isInventoryOpen || !curHeld || !heldItemDraggedOutside) return;
         const clickedInventory = e.target && typeof e.target.closest === 'function' && e.target.closest('#inventory-menu');
         if (clickedInventory) return;
-        dropItemForWorld(heldItemObj.id, player.x + player.width / 2, player.y, heldItemObj.count);
-        heldItemObj = null;
+        dropItemForWorld(curHeld.id, player.x + player.width / 2, player.y, curHeld.count);
+        setHeldItemObj(null);
         heldItemIndex = -1;
         heldItemDraggedOutside = false;
         document.getElementById('dragged-item-container').style.display = 'none';
@@ -593,13 +610,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
     window.addEventListener('wheel', (e) => {
         if (e.deltaY === 0 || isInventoryOpen || STATE !== 'PLAYING' || performance.now() < hotbarWheelLockUntil) return;
         e.preventDefault();
-        const dir = (e.deltaY > 0 ? 1 : -1) * (invertScrollWheel ? -1 : 1);
-        const step = dir * (scrollSensitivity || 1);
-        if (hotbarWrapAround) {
-            selectedHotbarIndex = (selectedHotbarIndex + (step % hotbarSize) + hotbarSize) % hotbarSize;
+        const invert = (typeof UI !== 'undefined' && UI.invertScrollWheel !== undefined) ? UI.invertScrollWheel : ((typeof window !== 'undefined' && window.invertScrollWheel) || false);
+        const sens = (typeof UI !== 'undefined' && UI.scrollSensitivity !== undefined) ? UI.scrollSensitivity : ((typeof window !== 'undefined' && window.scrollSensitivity) || 1);
+        const wrap = (typeof UI !== 'undefined' && UI.hotbarWrapAround !== undefined) ? UI.hotbarWrapAround : (typeof window !== 'undefined' && window.hotbarWrapAround !== undefined ? window.hotbarWrapAround : true);
+        const dir = (e.deltaY > 0 ? 1 : -1) * (invert ? -1 : 1);
+        const step = dir * (sens || 1);
+        const curIdx = (typeof window !== 'undefined' && window.selectedHotbarIndex !== undefined) ? window.selectedHotbarIndex : selectedHotbarIndex;
+        let nextIdx;
+        if (wrap) {
+            nextIdx = (curIdx + (step % hotbarSize) + hotbarSize) % hotbarSize;
         } else {
-            selectedHotbarIndex = Math.max(0, Math.min(hotbarSize - 1, selectedHotbarIndex + step));
+            nextIdx = Math.max(0, Math.min(hotbarSize - 1, curIdx + step));
         }
+        setSelectedHotbarIndex(nextIdx);
         updateUI();
         triggerHotbarItemPopup();
     }, { passive: false });
@@ -609,7 +632,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         mouse.clientX = e.clientX; mouse.clientY = e.clientY;
         
         const dragEl = document.getElementById('dragged-item-container');
-        if (heldItemObj) {
+        const curHeld = (typeof window !== 'undefined' && window.heldItemObj) ? window.heldItemObj : heldItemObj;
+        if (curHeld) {
             dragEl.style.display = 'block';
             dragEl.style.left = (e.clientX - 20) + 'px'; 
             dragEl.style.top = (e.clientY - 20) + 'px';
@@ -618,7 +642,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         } else { dragEl.style.display = 'none'; }
         
         let target = (e.target && typeof e.target.closest === 'function') ? e.target.closest('.slot, .armor-slot, .offhand-slot') : null;
-        if(target && !heldItemObj && STATE === 'PLAYING' && isInventoryOpen) {
+        if(target && !curHeld && STATE === 'PLAYING' && isInventoryOpen) {
             let title = null;
             if (target.classList.contains('armor-slot')) {
                 let armorIdx = parseInt(target.id.replace('armor-slot-', ''), 10);
