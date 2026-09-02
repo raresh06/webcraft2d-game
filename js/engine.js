@@ -742,6 +742,50 @@ export function getMaxAnimals() {
             [IDS.DIAMOND_ORE]: { 1: '#c8ffff', 2: '#5decf2', 3: '#198c94' }
         };
         
+        function getOakWoodPixel(px, py) {
+            // Authentic Minecraft oak log side bark:
+            // Continuous vertical striations from y=0 to y=15 without harsh horizontal cutoff seams
+            const col = (px + Math.floor(Math.sin(py * 0.85 + (px % 3)) * 1.2) + 16) % 16;
+            const grooveX = [0, 4, 8, 12];
+            const isGroove = grooveX.some(gx => Math.abs(col - gx) === 0);
+            const isRidge = grooveX.some(gx => (col - gx + 16) % 16 === 1);
+            const jitter = ((px * 17 + py * 11 + (px ^ py)) % 5);
+            
+            if (isGroove && jitter < 4) return '#2e1c0d'; // Deep bark fissure cleft
+            if (isRidge) return jitter < 2 ? '#6e4c28' : '#583b1e'; // Bark ridge highlight / shadow
+            if (jitter === 1) return '#644524'; // Bark mid highlight
+            if (jitter === 2 || jitter === 3) return '#52371c'; // Main oak bark body
+            return '#442b15'; // Darker bark undertone
+        }
+
+        function getOakLeavesPixel(px, py) {
+            // Natural 2x2 and 3x2 leaf bunches with sunlit highlights, body foliage, depth shadows, and organic apertures
+            const cluster = ((Math.floor(px / 2) * 7 + Math.floor(py / 2) * 11 + (px ^ py)) % 13);
+            const sub = ((px + py * 3) % 4);
+            
+            // Natural negative space cutouts (clean, clustered apertures without 1px static noise)
+            if ((px % 5 === 1 && py % 5 === 2) || (px % 7 === 3 && py % 7 === 4)) {
+                return null; // transparent leaf gap
+            }
+
+            if (cluster === 0 || cluster === 4) {
+                // Sunlit foliage highlight cluster
+                if (sub === 0) return '#5fc43f';
+                if (sub === 1) return '#4ba631';
+                return '#3c8e26';
+            } else if (cluster === 1 || cluster === 7 || cluster === 10) {
+                // Deep foliage shadow cluster
+                if (sub === 0) return '#1a4611';
+                return '#235917';
+            } else {
+                // Lush rich leaf body
+                if (sub === 0) return '#4ba631';
+                if (sub === 1) return '#357f22';
+                if (sub === 2) return '#2d701d';
+                return '#398826';
+            }
+        }
+
         for (let x = 0; x < 16; x++) {
             for (let y = 0; y < 16; y++) {
                 if (id === IDS.DIRT) p(x, y, randColor(dirtColors));
@@ -756,13 +800,16 @@ export function getMaxAnimals() {
                     let c = stoneColors[(Math.floor(x/3) + Math.floor(y/3)) % stoneColors.length];
                     if (x%4===0 || y%4===0) c = '#4a4a4a'; p(x, y, c);
                 }
-                else if (id === IDS.WOOD) p(x, y, (x===0||x===15||y===0||y===15) ? '#2e1d0f' : (x % 3 === 0 ? '#3b2613' : randColor(woodColors)));
+                else if (id === IDS.WOOD) {
+                    p(x, y, getOakWoodPixel(x, y));
+                }
                 else if (id === IDS.PLANKS) {
                     let c = ['#9e7b4f', '#a68254'][x%2];
                     if (y % 4 === 0 || (y%4===2 && x%8===0)) c = '#59442a'; p(x, y, c);
                 }
                 else if (id === IDS.LEAVES) {
-                    if(Math.random() > 0.15) p(x, y, randColor(['#2e7025', '#24591d', '#398a2e', '#1c4516']));
+                    const leafCol = getOakLeavesPixel(x, y);
+                    if (leafCol) p(x, y, leafCol);
                 }
                 else if (id === IDS.SAPLING) {
                     if (x >= 7 && x <= 8 && y >= 5 && y <= 14) p(x, y, '#6b4931');
@@ -4147,19 +4194,27 @@ export const SKIN_H = 32;
                 }
             }
             else {
+                // Classic full-canopy Minecraft oak tree
                 const th = Math.floor(seededRandom() * 3) + 4;
                 for (let i = 1; i <= th; i++) setTrunk(tx, sy - i);
                 const top = sy - th;
-                for (let lx = -3; lx <= 3; lx++) {
-                    for (let ly = -2; ly <= 1; ly++) {
-                        if (Math.abs(lx) + Math.abs(ly) <= 4 && !(Math.abs(lx) === 3 && Math.abs(ly) === 1)) {
-                            setLeaf(tx + lx, top + ly);
-                        }
+
+                // Base canopy layer (width 5, height 2)
+                for (let lx = -2; lx <= 2; lx++) {
+                    for (let ly = -1; ly <= 1; ly++) {
+                        if (Math.abs(lx) === 2 && Math.abs(ly) === 1 && seededRandom() < 0.35) continue;
+                        setLeaf(tx + lx, top + ly);
                     }
                 }
-                setLeaf(tx, top - 3);
-                setLeaf(tx - 1, top - 2);
-                setLeaf(tx + 1, top - 2);
+                // Upper dome layer (width 3, height 2)
+                for (let lx = -1; lx <= 1; lx++) {
+                    for (let ly = -3; ly <= -2; ly++) {
+                        if (Math.abs(lx) === 1 && ly === -3 && seededRandom() < 0.45) continue;
+                        setLeaf(tx + lx, top + ly);
+                    }
+                }
+                // Peak crown top leaf
+                setLeaf(tx, top - 4);
             }
         }
 
@@ -5204,25 +5259,48 @@ export const SKIN_H = 32;
             blocks[x] = col;
         }
 
-        // 2. Oak trees with wood trunks and leaf canopies
-        for (let x = 4; x < WORLD_WIDTH - 4; x += 6) {
-            if (menuRandom() < 0.65) {
+        // 2. Beautiful Oak trees with seamless bark trunks and full rounded leaf canopies
+        for (let x = 6; x < WORLD_WIDTH - 6; x += 7) {
+            if (menuRandom() < 0.70) {
                 const sy = terrain[x];
-                const treeH = 4 + Math.floor(menuRandom() * 2);
+                const treeH = 4 + Math.floor(menuRandom() * 3);
+                // Wood trunk
                 for (let ty = sy - treeH; ty < sy; ty++) {
                     if (ty >= 0) blocks[x][ty] = IDS.WOOD;
                 }
-                const leafBottom = sy - treeH - 1;
-                for (let lx = x - 2; lx <= x + 2; lx++) {
-                    if (lx < 0 || lx >= WORLD_WIDTH) continue;
-                    for (let ly = leafBottom - 2; ly <= leafBottom + 1; ly++) {
-                        if (ly < 0) continue;
-                        if (Math.abs(lx - x) + Math.abs(ly - (leafBottom - 1)) <= 3) {
-                            if (blocks[lx][ly] === IDS.AIR || blocks[lx][ly] === undefined) {
-                                blocks[lx][ly] = IDS.LEAVES;
-                            }
+                const top = sy - treeH;
+
+                // Base canopy layer (width 5, height 2)
+                for (let lx = -2; lx <= 2; lx++) {
+                    const wx = x + lx;
+                    if (wx < 0 || wx >= WORLD_WIDTH) continue;
+                    for (let ly = -1; ly <= 1; ly++) {
+                        const wy = top + ly;
+                        if (wy < 0) continue;
+                        if (Math.abs(lx) === 2 && Math.abs(ly) === 1 && menuRandom() < 0.35) continue;
+                        if (blocks[wx][wy] === IDS.AIR || blocks[wx][wy] === undefined) {
+                            blocks[wx][wy] = IDS.LEAVES;
                         }
                     }
+                }
+
+                // Upper dome layer (width 3, height 2)
+                for (let lx = -1; lx <= 1; lx++) {
+                    const wx = x + lx;
+                    if (wx < 0 || wx >= WORLD_WIDTH) continue;
+                    for (let ly = -3; ly <= -2; ly++) {
+                        const wy = top + ly;
+                        if (wy < 0) continue;
+                        if (Math.abs(lx) === 1 && ly === -3 && menuRandom() < 0.45) continue;
+                        if (blocks[wx][wy] === IDS.AIR || blocks[wx][wy] === undefined) {
+                            blocks[wx][wy] = IDS.LEAVES;
+                        }
+                    }
+                }
+
+                // Crown peak top leaf
+                if (top - 4 >= 0 && (blocks[x][top - 4] === IDS.AIR || blocks[x][top - 4] === undefined)) {
+                    blocks[x][top - 4] = IDS.LEAVES;
                 }
             }
         }
