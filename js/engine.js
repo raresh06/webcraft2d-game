@@ -5219,6 +5219,29 @@ export const SKIN_H = 32;
         targetCtx.lineTo(w, h);
         targetCtx.closePath();
         targetCtx.fill();
+
+        // Layer 3: Rolling Forest & Plains Woodland Canopies (fabulousGraphics)
+        if (fabulousGraphics) {
+            let r3 = Math.floor(22 * darkFactor), g3 = Math.floor(52 * darkFactor), b3 = Math.floor(32 * darkFactor);
+            // Warmer emerald/amber during sunset
+            if (time > 0.38 && time <= 0.5) {
+                r3 = Math.floor(58 * darkFactor);
+                g3 = Math.floor(48 * darkFactor);
+                b3 = Math.floor(24 * darkFactor);
+            }
+            targetCtx.fillStyle = `rgb(${r3},${g3},${b3})`;
+            targetCtx.beginPath();
+            targetCtx.moveTo(0, h);
+            for (let x = 0; x <= w + 16; x += 16) {
+                let wx = x + camX * 0.32 + offsetX * 0.9;
+                let canopyDomes = Math.abs(Math.sin(wx * 0.04)) * 16 + Math.abs(Math.cos(wx * 0.08)) * 8;
+                let my = h - 68 - Math.sin(wx * 0.006) * 45 - Math.sin(wx * 0.015) * 22 - canopyDomes + offsetY * 0.8;
+                targetCtx.lineTo(x, my);
+            }
+            targetCtx.lineTo(w, h);
+            targetCtx.closePath();
+            targetCtx.fill();
+        }
     }
 
     export let menuCamX = 0;
@@ -5719,7 +5742,7 @@ export const SKIN_H = 32;
     export let currentBiomeHue = { r: 0, g: 0, b: 0, a: 0 };
     export let currentFogDensity = 0;
     export const fabulousAmbientParticles = [];
-    export const MAX_FABULOUS_PARTICLES = 60;
+    export const MAX_FABULOUS_PARTICLES = 90;
 
     export function getActiveBiomeAt(gridX) {
         if (!Array.isArray(world) || !Array.isArray(surfaceHeights) || surfaceHeights.length === 0) return 'plains';
@@ -5802,11 +5825,25 @@ export const SKIN_H = 32;
         } else if (activeBiome === 'desert') {
             targetR = 255; targetG = 175; targetB = 45; targetA = 0.16;
         } else if (activeBiome === 'forest') {
-            targetR = 50; targetG = 205; targetB = 90; targetA = 0.08;
+            // Plain Woods: Rich lush emerald canopy grade with golden sun accents
+            if (timeOfDay >= 0.38 && timeOfDay <= 0.52) {
+                targetR = 255; targetG = 155; targetB = 60; targetA = 0.20;
+            } else if (timeOfDay > 0.52 && timeOfDay < 0.88) {
+                targetR = 24; targetG = 48; targetB = 92; targetA = 0.16;
+            } else {
+                targetR = 75; targetG = 215; targetB = 95; targetA = 0.14;
+            }
         } else if (activeBiome === 'mountains') {
             targetR = 155; targetG = 190; targetB = 250; targetA = 0.11;
         } else {
-            targetR = 255; targetG = 230; targetB = 165; targetA = 0.05;
+            // Open Plains: Warm sun-drenched golden-meadow tint
+            if (timeOfDay >= 0.38 && timeOfDay <= 0.52) {
+                targetR = 255; targetG = 160; targetB = 65; targetA = 0.20;
+            } else if (timeOfDay > 0.52 && timeOfDay < 0.88) {
+                targetR = 28; targetG = 52; targetB = 98; targetA = 0.15;
+            } else {
+                targetR = 145; targetG = 225; targetB = 85; targetA = 0.13;
+            }
         }
 
         if (isNaN(currentBiomeHue.r)) currentBiomeHue.r = targetR;
@@ -5885,6 +5922,136 @@ export const SKIN_H = 32;
         targetCtx.restore();
     }
 
+    export function drawForestGodRays(targetCtx, w, h, camX, camY) {
+        if (!fabulousGraphics || caveSkyOpacity > 0.45 || w <= 0 || h <= 0 || !player) return;
+        const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
+        const activeBiome = getActiveBiomeAt(playerGridX);
+        if (activeBiome !== 'forest' && activeBiome !== 'plains') return;
+
+        const isDaytime = (timeOfDay > 0.88 || timeOfDay < 0.48);
+        const isSunset = (timeOfDay >= 0.38 && timeOfDay <= 0.48);
+        const isSunrise = (timeOfDay >= 0.88 || timeOfDay <= 0.06);
+        const isNight = (timeOfDay > 0.52 && timeOfDay < 0.86);
+
+        // Intensity based on daylight & caveSkyOpacity
+        const skyClear = Math.max(0, 1.0 - caveSkyOpacity * 2.2);
+        if (skyClear <= 0.01) return;
+
+        targetCtx.save();
+        targetCtx.globalCompositeOperation = 'lighter';
+
+        // Calculate sun/moon ray tilt angle across the sky
+        let tilt = 0;
+        if (isDaytime) {
+            if (timeOfDay > 0.88) {
+                tilt = 0.45 - ((timeOfDay - 0.88) / 0.12) * 0.35; // Morning rays slant rightwards
+            } else if (timeOfDay <= 0.20) {
+                tilt = 0.10 - (timeOfDay / 0.20) * 0.15; // Midday rays near vertical
+            } else {
+                tilt = -0.05 - ((timeOfDay - 0.20) / 0.28) * 0.45; // Afternoon / Sunset rays slant leftwards
+            }
+        } else if (isNight) {
+            tilt = Math.sin((timeOfDay - 0.5) * Math.PI * 3) * 0.25; // Moonbeams
+        }
+
+        const numRays = 7;
+        const baseSpacing = w / (numRays - 1);
+        const parallaxOffset = (camX * 0.15) % baseSpacing;
+
+        for (let i = 0; i < numRays; i++) {
+            const rayPulse = Math.sin(frameCount * 0.018 + i * 1.4) * 0.5 + 0.5;
+            const driftX = Math.sin(frameCount * 0.01 + i * 0.9) * 35;
+            const topCenterX = i * baseSpacing - parallaxOffset + driftX;
+            const topHalfWidth = 35 + Math.sin(i * 1.8) * 15;
+            const bottomHalfWidth = topHalfWidth * (1.8 + Math.cos(i) * 0.4);
+
+            const topX1 = topCenterX - topHalfWidth;
+            const topX2 = topCenterX + topHalfWidth;
+            const bottomCenterX = topCenterX + tilt * h;
+            const bottomX1 = bottomCenterX - bottomHalfWidth;
+            const bottomX2 = bottomCenterX + bottomHalfWidth;
+
+            const rayGrad = targetCtx.createLinearGradient(topCenterX, 0, bottomCenterX, h * 0.95);
+            let alpha = 0;
+
+            if (isSunset) {
+                alpha = (0.09 + rayPulse * 0.06) * skyClear;
+                rayGrad.addColorStop(0, `rgba(255, 190, 110, ${(alpha * 1.2).toFixed(3)})`);
+                rayGrad.addColorStop(0.45, `rgba(255, 140, 60, ${alpha.toFixed(3)})`);
+                rayGrad.addColorStop(0.85, `rgba(220, 100, 30, ${(alpha * 0.4).toFixed(3)})`);
+                rayGrad.addColorStop(1, 'rgba(255, 120, 40, 0)');
+            } else if (isSunrise) {
+                alpha = (0.08 + rayPulse * 0.05) * skyClear;
+                rayGrad.addColorStop(0, `rgba(255, 230, 160, ${(alpha * 1.1).toFixed(3)})`);
+                rayGrad.addColorStop(0.5, `rgba(255, 190, 120, ${alpha.toFixed(3)})`);
+                rayGrad.addColorStop(1, 'rgba(255, 180, 100, 0)');
+            } else if (isDaytime) {
+                alpha = (activeBiome === 'forest' ? 0.075 : 0.055) + rayPulse * 0.04;
+                alpha *= skyClear;
+                // Golden sunlight with subtle canopy emerald refraction
+                rayGrad.addColorStop(0, `rgba(255, 252, 215, ${(alpha * 1.2).toFixed(3)})`);
+                rayGrad.addColorStop(0.4, `rgba(245, 250, 180, ${alpha.toFixed(3)})`);
+                rayGrad.addColorStop(0.75, `rgba(195, 245, 145, ${(alpha * 0.5).toFixed(3)})`);
+                rayGrad.addColorStop(1, 'rgba(180, 240, 130, 0)');
+            } else if (isNight) {
+                alpha = (0.035 + rayPulse * 0.025) * skyClear;
+                // Ethereal silvery-blue moonbeams
+                rayGrad.addColorStop(0, `rgba(190, 220, 255, ${(alpha * 1.2).toFixed(3)})`);
+                rayGrad.addColorStop(0.5, `rgba(165, 205, 250, ${alpha.toFixed(3)})`);
+                rayGrad.addColorStop(1, 'rgba(150, 190, 245, 0)');
+            }
+
+            if (alpha > 0.005) {
+                targetCtx.fillStyle = rayGrad;
+                targetCtx.beginPath();
+                targetCtx.moveTo(topX1, 0);
+                targetCtx.lineTo(topX2, 0);
+                targetCtx.lineTo(bottomX2, h);
+                targetCtx.lineTo(bottomX1, h);
+                targetCtx.closePath();
+                targetCtx.fill();
+            }
+        }
+        targetCtx.restore();
+    }
+
+    export function drawPlainsWindBreeze(targetCtx, w, h, camX, camY) {
+        if (!fabulousGraphics || caveSkyOpacity > 0.4 || w <= 0 || h <= 0 || !player) return;
+        const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
+        const activeBiome = getActiveBiomeAt(playerGridX);
+        if (activeBiome !== 'plains' && activeBiome !== 'forest') return;
+
+        targetCtx.save();
+        const numGusts = 3;
+        const t = frameCount * 0.015;
+
+        for (let g = 0; g < numGusts; g++) {
+            const gustSpeed = 1.4 + g * 0.5;
+            const gustCycle = (frameCount * gustSpeed * 2.0 + g * 350) % (w + 600) - 300;
+            const startX = gustCycle;
+            const baseY = h * (0.55 + g * 0.12) + Math.sin(t + g * 2.0) * 18;
+            const gustLength = 180 + g * 60;
+
+            const breezeGrad = targetCtx.createLinearGradient(startX, baseY, startX + gustLength, baseY);
+            breezeGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+            breezeGrad.addColorStop(0.35, 'rgba(235, 255, 210, 0.08)');
+            breezeGrad.addColorStop(0.7, 'rgba(215, 250, 195, 0.06)');
+            breezeGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+            targetCtx.strokeStyle = breezeGrad;
+            targetCtx.lineWidth = 3 + g;
+            targetCtx.beginPath();
+            targetCtx.moveTo(startX, baseY);
+            targetCtx.bezierCurveTo(
+                startX + gustLength * 0.33, baseY - 8 + Math.sin(t * 2 + g) * 6,
+                startX + gustLength * 0.66, baseY + 8 - Math.cos(t * 2 + g) * 6,
+                startX + gustLength, baseY - 2
+            );
+            targetCtx.stroke();
+        }
+        targetCtx.restore();
+    }
+
     export function updateAndDrawFabulousParticles(targetCtx, camX, camY, w, h) {
         if (!fabulousGraphics || w <= 0 || h <= 0 || !player) return;
         initFabulousParticles();
@@ -5903,7 +6070,7 @@ export const SKIN_H = 32;
             if (p.life <= 0 || p.x < camX - 100 || p.x > camX + w + 100 || p.y < camY - 100 || p.y > camY + h + 100) {
                 p.x = camX + Math.random() * (w + 160) - 80;
                 p.y = camY + Math.random() * (h + 160) - 80;
-                p.maxLife = 120 + Math.random() * 100;
+                p.maxLife = 130 + Math.random() * 110;
                 p.life = p.maxLife;
 
                 if (isUnderground) {
@@ -5931,24 +6098,110 @@ export const SKIN_H = 32;
                     p.vx = (Math.random() - 0.5) * 0.8;
                     p.vy = (Math.random() - 0.5) * 0.8;
                 } else {
-                    p.type = 'spore';
-                    p.size = 1.8 + Math.random() * 1.8;
-                    p.color = 'rgba(210, 245, 170, 0.55)';
-                    p.vx = (Math.random() - 0.5) * 0.5;
-                    p.vy = -0.2 - Math.random() * 0.35;
+                    // Daytime Plains & Plain Woods (Forest)
+                    const pRoll = Math.random();
+                    if (activeBiome === 'forest' || pRoll < 0.38) {
+                        // Fluttering Oak Leaves
+                        p.type = 'leaf';
+                        p.size = 3.0 + Math.random() * 1.5;
+                        p.swayPhase = Math.random() * Math.PI * 2;
+                        p.swaySpeed = 0.05 + Math.random() * 0.04;
+                        p.fallSpeed = 0.55 + Math.random() * 0.45;
+                        p.leafColorChoice = Math.floor(Math.random() * 4);
+                        p.vx = 0.4;
+                        p.vy = p.fallSpeed;
+                    } else if (pRoll < 0.74) {
+                        // Floating Dandelion Fluff / Meadow Seeds
+                        p.type = 'dandelion';
+                        p.size = 2.0 + Math.random() * 1.2;
+                        p.swayPhase = Math.random() * Math.PI * 2;
+                        p.vx = 0.8 + Math.random() * 0.6;
+                        p.vy = -0.1 + (Math.random() - 0.5) * 0.25;
+                    } else {
+                        // Drifting Flower Petals
+                        p.type = 'petal';
+                        p.size = 2.5 + Math.random() * 1.2;
+                        p.petalType = Math.floor(Math.random() * 3);
+                        p.swayPhase = Math.random() * Math.PI * 2;
+                        p.vx = 0.5 + Math.random() * 0.5;
+                        p.vy = 0.3 + Math.random() * 0.3;
+                    }
                 }
             }
-
-            p.x += p.vx;
-            p.y += p.vy;
 
             if (p.type === 'firefly') {
                 p.vx += (Math.random() - 0.5) * 0.15;
                 p.vy += (Math.random() - 0.5) * 0.15;
+                p.x += p.vx;
+                p.y += p.vy;
                 const pulse = Math.sin(frameCount * 0.1 + i) * 0.5 + 0.5;
-                targetCtx.fillStyle = `rgba(180, 255, 80, ${(pulse * 0.8).toFixed(2)})`;
-                targetCtx.fillRect(Math.floor(p.x - camX), Math.floor(p.y - camY), p.size, p.size);
+                const fx = Math.floor(p.x - camX);
+                const fy = Math.floor(p.y - camY);
+                targetCtx.fillStyle = `rgba(180, 255, 80, ${(pulse * 0.25).toFixed(2)})`;
+                targetCtx.fillRect(fx - 2, fy - 2, p.size + 4, p.size + 4);
+                targetCtx.fillStyle = `rgba(225, 255, 140, ${(pulse * 0.9 + 0.1).toFixed(2)})`;
+                targetCtx.fillRect(fx, fy, p.size, p.size);
+            } else if (p.type === 'leaf') {
+                p.swayPhase = (p.swayPhase || 0) + (p.swaySpeed || 0.06);
+                p.vx = 0.4 + Math.sin(p.swayPhase) * 1.1;
+                p.vy = (p.fallSpeed || 0.7);
+                p.x += p.vx;
+                p.y += p.vy;
+
+                const lx = Math.floor(p.x - camX);
+                const ly = Math.floor(p.y - camY);
+                const alpha = Math.max(0, Math.min(1.0, (p.life / p.maxLife) * 1.6));
+                targetCtx.globalAlpha = alpha;
+
+                const leafColors = [
+                    ['#388e3c', '#4caf50'], // Vibrant grass leaf
+                    ['#2e7d32', '#1b5e20'], // Deep forest oak leaf
+                    ['#7cb342', '#8bc34a'], // Golden sunlit leaf
+                    ['#f57f17', '#e65100']  // Autumn amber leaf
+                ];
+                const pair = leafColors[p.leafColorChoice || 0] || leafColors[0];
+                targetCtx.fillStyle = pair[0];
+                targetCtx.fillRect(lx, ly, 3, 2);
+                targetCtx.fillStyle = pair[1];
+                targetCtx.fillRect(lx + 1, ly + 1, 2, 2);
+                targetCtx.globalAlpha = 1.0;
+            } else if (p.type === 'dandelion') {
+                p.swayPhase = (p.swayPhase || 0) + 0.04;
+                p.vx = 0.7 + Math.sin(p.swayPhase) * 0.4;
+                p.vy = Math.sin(p.swayPhase * 0.7) * 0.2;
+                p.x += p.vx;
+                p.y += p.vy;
+
+                const dx = Math.floor(p.x - camX);
+                const dy = Math.floor(p.y - camY);
+                const alpha = Math.max(0, Math.min(0.85, (p.life / p.maxLife) * 1.4));
+                targetCtx.globalAlpha = alpha;
+
+                targetCtx.fillStyle = '#ffffff';
+                targetCtx.fillRect(dx, dy, 2, 2);
+                targetCtx.fillStyle = 'rgba(230, 240, 215, 0.7)';
+                targetCtx.fillRect(dx - 1, dy + 2, 1, 2);
+                targetCtx.globalAlpha = 1.0;
+            } else if (p.type === 'petal') {
+                p.swayPhase = (p.swayPhase || 0) + 0.05;
+                p.vx = 0.5 + Math.sin(p.swayPhase) * 0.6;
+                p.vy = 0.35 + Math.cos(p.swayPhase) * 0.2;
+                p.x += p.vx;
+                p.y += p.vy;
+
+                const px = Math.floor(p.x - camX);
+                const py = Math.floor(p.y - camY);
+                const alpha = Math.max(0, Math.min(0.9, (p.life / p.maxLife) * 1.5));
+                targetCtx.globalAlpha = alpha;
+
+                const petalPalette = ['#e53935', '#fdd835', '#f48fb1'];
+                targetCtx.fillStyle = petalPalette[p.petalType || 0] || '#e53935';
+                targetCtx.fillRect(px, py, 2, 2);
+                targetCtx.fillRect(px + 1, py + 1, 1, 2);
+                targetCtx.globalAlpha = 1.0;
             } else {
+                p.x += p.vx;
+                p.y += p.vy;
                 const alpha = Math.max(0, Math.min(1.0, (p.life / p.maxLife) * 1.4));
                 targetCtx.fillStyle = p.color;
                 targetCtx.globalAlpha = alpha;
@@ -6192,6 +6445,22 @@ export const SKIN_H = 32;
                         }
                         if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE);
                         ctx.restore();
+                    } else if (fabulousGraphics && (block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || block === IDS.SAPLING)) {
+                        // Gentle meadow wind sway on flowers and grass in fabulous graphics
+                        const sway = Math.sin(frameCount * 0.045 + x * 0.7) * 2.0;
+                        ctx.save();
+                        ctx.translate(drawX + TILE_SIZE / 2, drawY + TILE_SIZE);
+                        ctx.transform(1, 0, sway * 0.04, 1, 0, 0); // shear sway from bottom
+                        if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE / 2, -TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                        ctx.restore();
+                    } else if (fabulousGraphics && block === IDS.LEAVES && isDaytime) {
+                        if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
+                        // Subtle dappled sunlit shimmer on tree canopy tops
+                        const leafGlint = Math.sin(frameCount * 0.035 + x * 0.8 + y * 1.2);
+                        if (leafGlint > 0.72) {
+                            ctx.fillStyle = `rgba(240, 255, 185, ${((leafGlint - 0.72) * 0.45).toFixed(3)})`;
+                            ctx.fillRect(drawX + 6, drawY + 2, 8, 4);
+                        }
                     } else {
                         if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
                     }
@@ -6613,6 +6882,8 @@ export const SKIN_H = 32;
         }
 
         if (showHeatShimmer) drawDesertHeatShimmer(ctx, canvas.width, canvas.height, camera.x);
+        drawForestGodRays(ctx, canvas.width, canvas.height, camera.x, camera.y);
+        drawPlainsWindBreeze(ctx, canvas.width, canvas.height, camera.x, camera.y);
         updateAndDrawFabulousParticles(ctx, camera.x, camera.y, canvas.width, canvas.height);
         if (showBiomeGrading) drawBiomeGrading(ctx, canvas.width, canvas.height);
         if (showVignette) drawVignette(ctx, canvas.width, canvas.height);
@@ -7269,6 +7540,8 @@ try { if (typeof drawCharacterHead !== "undefined") window.drawCharacterHead = d
 try { if (typeof drawCharacterLeg !== "undefined") window.drawCharacterLeg = drawCharacterLeg; } catch(e) {}
 try { if (typeof drawCharacterTorso !== "undefined") window.drawCharacterTorso = drawCharacterTorso; } catch(e) {}
 try { if (typeof drawDesertHeatShimmer !== "undefined") window.drawDesertHeatShimmer = drawDesertHeatShimmer; } catch(e) {}
+try { if (typeof drawForestGodRays !== "undefined") window.drawForestGodRays = drawForestGodRays; } catch(e) {}
+try { if (typeof drawPlainsWindBreeze !== "undefined") window.drawPlainsWindBreeze = drawPlainsWindBreeze; } catch(e) {}
 try { if (typeof drawDynamicSky !== "undefined") window.drawDynamicSky = drawDynamicSky; } catch(e) {}
 try { if (typeof drawMenuBackground !== "undefined") window.drawMenuBackground = drawMenuBackground; } catch(e) {}
 try { if (typeof drawMinimap !== "undefined") window.drawMinimap = drawMinimap; } catch(e) {}
