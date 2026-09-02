@@ -32,6 +32,23 @@ export function giveItem(id, amount = 1) { if (typeof window !== 'undefined' && 
 export function damageSelectedTool(amount = 1) { if (typeof window !== 'undefined' && typeof window.damageSelectedTool === 'function' && window.damageSelectedTool !== damageSelectedTool) return window.damageSelectedTool(amount); }
 export function ensureToolDurability(item) { if (typeof window !== 'undefined' && typeof window.ensureToolDurability === 'function' && window.ensureToolDurability !== ensureToolDurability) return window.ensureToolDurability(item); return item; }
 export function isTool(id) { if (typeof window !== 'undefined' && typeof window.isTool === 'function' && window.isTool !== isTool) return window.isTool(id); return false; }
+export function updateArmorUI() { if (typeof window !== 'undefined' && typeof window.updateArmorUI === 'function' && window.updateArmorUI !== updateArmorUI) return window.updateArmorUI(); }
+export function updateHealthUI() { if (typeof window !== 'undefined' && typeof window.updateHealthUI === 'function' && window.updateHealthUI !== updateHealthUI) return window.updateHealthUI(); }
+export function updateHungerUI() { if (typeof window !== 'undefined' && typeof window.updateHungerUI === 'function' && window.updateHungerUI !== updateHungerUI) return window.updateHungerUI(); }
+export function updateOxygenUI(isSubmerged) { if (typeof window !== 'undefined' && typeof window.updateOxygenUI === 'function' && window.updateOxygenUI !== updateOxygenUI) return window.updateOxygenUI(isSubmerged); }
+export function updateUI(refreshCrafting) { if (typeof window !== 'undefined' && typeof window.updateUI === 'function' && window.updateUI !== updateUI) return window.updateUI(refreshCrafting); }
+export function updateTutorialUI() { if (typeof window !== 'undefined' && typeof window.updateTutorialUI === 'function' && window.updateTutorialUI !== updateTutorialUI) return window.updateTutorialUI(); }
+export function updateHudArmorBar() { if (typeof window !== 'undefined' && typeof window.updateHudArmorBar === 'function' && window.updateHudArmorBar !== updateHudArmorBar) return window.updateHudArmorBar(); }
+export function unlockAchievement(id) { if (typeof window !== 'undefined' && typeof window.unlockAchievement === 'function' && window.unlockAchievement !== unlockAchievement) return window.unlockAchievement(id); }
+export function damageRemotePlayer(id, amt, isPoison) { if (typeof window !== 'undefined' && typeof window.damageRemotePlayer === 'function' && window.damageRemotePlayer !== damageRemotePlayer) return window.damageRemotePlayer(id, amt, isPoison); }
+export function syncBlock(x, y, newId, extraData) { if (typeof window !== 'undefined' && typeof window.syncBlock === 'function' && window.syncBlock !== syncBlock) return window.syncBlock(x, y, newId, extraData); }
+export function syncFluidState() { if (typeof window !== 'undefined' && typeof window.syncFluidState === 'function' && window.syncFluidState !== syncFluidState) return window.syncFluidState(); }
+export function syncLocalPlayerState(immediate) { if (typeof window !== 'undefined' && typeof window.syncLocalPlayerState === 'function' && window.syncLocalPlayerState !== syncLocalPlayerState) return window.syncLocalPlayerState(immediate); }
+export function broadcastDataPacket(packet) { if (typeof window !== 'undefined' && typeof window.broadcastDataPacket === 'function' && window.broadcastDataPacket !== broadcastDataPacket) return window.broadcastDataPacket(packet); }
+export function deleteWorld(id, prompt) { if (typeof window !== 'undefined' && typeof window.deleteWorld === 'function' && window.deleteWorld !== deleteWorld) return window.deleteWorld(id, prompt); }
+export function spawnDroppedItem(itemId, x, y, count = 1) { if (typeof window !== 'undefined' && typeof window.spawnDroppedItem === 'function' && window.spawnDroppedItem !== spawnDroppedItem) return window.spawnDroppedItem(itemId, x, y, count); }
+export function toggleBackgroundBuildMode(mode) { if (typeof window !== 'undefined' && typeof window.toggleBackgroundBuildMode === 'function' && window.toggleBackgroundBuildMode !== toggleBackgroundBuildMode) return window.toggleBackgroundBuildMode(mode); }
+export function isMultiplayerAuthority() { if (typeof window !== 'undefined' && typeof window.isMultiplayerAuthority === 'function' && window.isMultiplayerAuthority !== isMultiplayerAuthority) return window.isMultiplayerAuthority(); return true; }
 export let currentAccentColor = '#4f46e5';
 export function getAccentPalette(baseHex) {
     if (typeof window !== 'undefined' && typeof window.getAccentPalette === 'function' && window.getAccentPalette !== getAccentPalette) {
@@ -1717,15 +1734,11 @@ export const SKIN_H = 32;
     export class PhysicsEntity {
         constructor(x, y, w, h) {
             this.x = x; this.y = y; this.width = w; this.height = h;
-            this.prevX = x; this.prevY = y;
-            this.renderX = x; this.renderY = y;
             this.vx = 0; this.vy = 0; this.isGrounded = false;
             this.fallStartY = y;
         }
 
         applyPhysics() {
-            this.prevX = this.x;
-            this.prevY = this.y;
             const wasGrounded = this.isGrounded;
             const prevVy = this.vy;
             if (this.isGrounded) {
@@ -1796,21 +1809,12 @@ export const SKIN_H = 32;
         }
 
         handleCollisions(isAxisX) {
-            // Safety insets: Inset perpendicular axis to avoid false collisions
-            // When moving horizontally (X axis), inset Y so the floor beneath feet is never treated as a horizontal wall.
-            // When moving vertically (Y axis), inset X so side walls are never treated as floors/ceilings.
-            const verticalSkin = isAxisX ? 2.0 : 0;
-            const horizontalSkin = isAxisX ? 0 : 1.0;
-
-            let curLeft = this.x + horizontalSkin;
-            let curRight = this.x + this.width - horizontalSkin;
-            let curTop = this.y + verticalSkin;
-            let curBottom = this.y + this.height - verticalSkin;
-
-            let leftTile = Math.floor(curLeft / TILE_SIZE);
-            let rightTile = Math.floor(curRight / TILE_SIZE);
-            let topTile = Math.floor(curTop / TILE_SIZE);
-            let bottomTile = Math.floor(curBottom / TILE_SIZE);
+            const eps = 0.05; 
+            
+            let leftTile = Math.floor((this.x + (isAxisX ? 0 : eps)) / TILE_SIZE);
+            let rightTile = Math.floor((this.x + this.width - (isAxisX ? 0 : eps)) / TILE_SIZE);
+            let topTile = Math.floor((this.y + (isAxisX ? eps : 0)) / TILE_SIZE);
+            let bottomTile = Math.floor((this.y + this.height - (isAxisX ? eps : 0)) / TILE_SIZE);
 
             leftTile = Math.max(0, Math.min(leftTile, WORLD_WIDTH - 1));
             rightTile = Math.max(0, Math.min(rightTile, WORLD_WIDTH - 1));
@@ -1832,6 +1836,11 @@ export const SKIN_H = 32;
                             bMaxX = x * TILE_SIZE + 12.5;
                         }
 
+                        let curLeft = this.x + (isAxisX ? 0 : eps);
+                        let curRight = this.x + this.width - (isAxisX ? 0 : eps);
+                        let curTop = this.y + (isAxisX ? eps : 0);
+                        let curBottom = this.y + this.height - (isAxisX ? eps : 0);
+
                         let isStairRight = (block === IDS.WOODEN_STAIRS_RIGHT || block === IDS.COBBLESTONE_STAIRS_RIGHT);
                         let isStairLeft = (block === IDS.WOODEN_STAIRS_LEFT || block === IDS.COBBLESTONE_STAIRS_LEFT);
 
@@ -1844,16 +1853,16 @@ export const SKIN_H = 32;
 
                             if (hitSlab || hitStep) {
                                 if (isAxisX) {
-                                    if (this.vx > 0) this.x = (hitStep ? stepMinX : bMinX) - this.width;
-                                    else if (this.vx < 0) this.x = (hitStep ? stepMaxX : bMaxX);
+                                    if (this.vx > 0) this.x = (hitStep ? stepMinX : bMinX) - this.width - 0.1;
+                                    else if (this.vx < 0) this.x = (hitStep ? stepMaxX : bMaxX) + 0.1;
                                     this.vx = 0;
                                 } else {
                                     if (this.vy > 0) {
                                         let floorY = (hitStep ? bMinY : slabMinY);
-                                        this.y = floorY - this.height;
+                                        this.y = floorY - this.height - 0.1;
                                         this.isGrounded = true;
                                     } else if (this.vy < 0) {
-                                        this.y = bMaxY;
+                                        this.y = bMaxY + 0.1;
                                     }
                                     this.vy = 0;
                                 }
@@ -1863,15 +1872,15 @@ export const SKIN_H = 32;
 
                         if (curRight > bMinX && curLeft < bMaxX && curBottom > bMinY && curTop < bMaxY) {
                             if (isAxisX) {
-                                if (this.vx > 0) this.x = bMinX - this.width;
-                                else if (this.vx < 0) this.x = bMaxX;
+                                if (this.vx > 0) this.x = bMinX - this.width - 0.1;
+                                else if (this.vx < 0) this.x = bMaxX + 0.1;
                                 this.vx = 0;
                             } else {
                                 if (this.vy > 0) {
-                                    this.y = bMinY - this.height;
+                                    this.y = bMinY - this.height - 0.1;
                                     this.isGrounded = true;
                                 } else if (this.vy < 0) {
-                                    this.y = bMaxY;
+                                    this.y = bMaxY + 0.1;
                                 }
                                 this.vy = 0;
                             }
@@ -2692,10 +2701,12 @@ export const SKIN_H = 32;
             
             floatingTexts.push(new FloatingText(this.x + this.width/2, this.y - 10, "-" + finalAmt, "#ff3333"));
 
-            let flash = document.createElement('div');
-            flash.className = 'fixed inset-0 bg-red-600/30 pointer-events-none z-50 transition-opacity duration-300';
-            document.body.appendChild(flash);
-            setTimeout(() => { flash.style.opacity = '0'; setTimeout(()=>flash.remove(), 300); }, 50);
+            if (typeof document !== 'undefined' && document.body) {
+                let flash = document.createElement('div');
+                flash.className = 'fixed inset-0 bg-red-600/30 pointer-events-none z-50 transition-opacity duration-300';
+                document.body.appendChild(flash);
+                setTimeout(() => { flash.style.opacity = '0'; setTimeout(()=>flash.remove(), 300); }, 50);
+            }
 
             if (this.health <= 0) {
                 this.health = 0; this.isDead = true; this.poisonTimer = 0;
@@ -2711,14 +2722,14 @@ export const SKIN_H = 32;
                 }
                 if(diff.permadeath && !isMultiplayer) {
                     deleteWorld(currentWorldId, false);
-                    document.getElementById('death-subtitle').innerText = "Hardcore Mode: World Deleted!";
-                    document.getElementById('respawn-btn').classList.add('hidden');
+                    const sub = document.getElementById('death-subtitle'); if (sub) sub.innerText = "Hardcore Mode: World Deleted!";
+                    const rBtn = document.getElementById('respawn-btn'); if (rBtn) rBtn.classList.add('hidden');
                 } else {
-                    document.getElementById('death-subtitle').innerText = "Game Over";
-                    document.getElementById('respawn-btn').classList.remove('hidden');
+                    const sub = document.getElementById('death-subtitle'); if (sub) sub.innerText = "Game Over";
+                    const rBtn = document.getElementById('respawn-btn'); if (rBtn) rBtn.classList.remove('hidden');
                 }
-                document.getElementById('death-menu').classList.remove('hidden');
-                document.getElementById('hud').style.display = 'none';
+                const dMenu = document.getElementById('death-menu'); if (dMenu) dMenu.classList.remove('hidden');
+                const hud = document.getElementById('hud'); if (hud) hud.style.display = 'none';
             } else if (isMultiplayer && window.user && currentMpRoom) {
                 syncLocalPlayerState(true);
             }
@@ -3907,6 +3918,7 @@ export const SKIN_H = 32;
             }
             return Math.max(35, Math.min(WORLD_HEIGHT - 35, Math.floor(weightedHeight / totalWeight)));
         });
+        if (typeof window !== 'undefined') window.surfaceHeights = surfaceHeights;
 
         for (let x = 0; x < WORLD_WIDTH; x++) {
             let biome = biomes[x];

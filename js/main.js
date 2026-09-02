@@ -1714,8 +1714,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 });
             }
             entities.forEach(e => {
-                const isNearAnyPlayer = playerXPositions.some(px => Math.abs(e.x - px) < 1400);
-                if (isNearAnyPlayer || frameCount % 6 === 0) {
+                const isNearAnyPlayer = playerXPositions.some(px => Math.abs(e.x - px) < 1800);
+                if (isNearAnyPlayer || !e.isGrounded || frameCount % 6 === 0) {
                     e.update();
                 }
             });

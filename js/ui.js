@@ -3312,8 +3312,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         entities = []; furnaces = []; timeOfDay = 0.15; dayCount = 1; frameCount = 0;
         let initialAnimals = Math.min(getMaxAnimals(), Math.floor(getMaxAnimals() * 0.7));
         const centerSpawnX = Math.floor(spawn.x / TILE_SIZE);
-        const curSurfaces = surfaceHeights || (typeof window !== 'undefined' ? window.surfaceHeights : []);
-        const curWorld = world || (typeof window !== 'undefined' ? window.world : []);
+        const curSurfaces = (typeof window !== 'undefined' && window.surfaceHeights && window.surfaceHeights.length === WORLD_WIDTH) ? window.surfaceHeights : ((surfaceHeights && surfaceHeights.length === WORLD_WIDTH) ? surfaceHeights : []);
+        const curWorld = (typeof window !== 'undefined' && window.world && window.world.length === WORLD_WIDTH) ? window.world : (world || []);
         for (let i = 0; i < initialAnimals; i++) {
             // Evenly segment the world to guarantee nice, widespread distribution
             let segmentMin = Math.floor(15 + (i / initialAnimals) * (WORLD_WIDTH - 30));
@@ -3356,17 +3356,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         let wInfo = worlds.find(w => w.id === currentWorldId);
         if(wInfo) { wInfo.lastPlayed = Date.now(); wInfo.dayCount = dayCount; wInfo.difficulty = currentDifficulty; wInfo.gameVersion = GAME_VERSION; wInfo.gameBuild = GAME_BUILD; wInfo.achievementsEnabled = currentWorldAchievementsEnabled; }
         
+        const liveWorld = (typeof window !== 'undefined' && window.world) ? window.world : world;
+        const liveBgWorld = (typeof window !== 'undefined' && window.bgWorld) ? window.bgWorld : bgWorld;
+        const livePlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+        const liveEntities = (typeof window !== 'undefined' && Array.isArray(window.entities)) ? window.entities : entities;
+        const liveInventory = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+        const liveEquippedArmor = (typeof window !== 'undefined' && Array.isArray(window.equippedArmor)) ? window.equippedArmor : equippedArmor;
+
         let saveData = {
             worldSize: currentWorldSize, worldWidth: WORLD_WIDTH, worldHeight: WORLD_HEIGHT,
-            worldRle: compressWorld(world || window.world), bgWorldRle: compressWorld(bgWorld || window.bgWorld), fluids: Object.fromEntries(fluids), timeOfDay: timeOfDay, dayCount: dayCount, frameCount: frameCount, difficulty: currentDifficulty, keepInventory, achievementsEnabled: currentWorldAchievementsEnabled, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
-            player: { x: player.x, y: player.y, health: player.health, hunger: player.hunger, exhaustion: player.exhaustion, oxygen: player.oxygen, poisonTimer: player.poisonTimer || 0, facingRight: player.facingRight },
-            inventory: inventory, equippedArmor: equippedArmor, furnaces: furnaces,
+            worldRle: compressWorld(liveWorld), bgWorldRle: compressWorld(liveBgWorld), fluids: Object.fromEntries(fluids), timeOfDay: timeOfDay, dayCount: dayCount, frameCount: frameCount, difficulty: currentDifficulty, keepInventory, achievementsEnabled: currentWorldAchievementsEnabled, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
+            player: { x: livePlayer.x, y: livePlayer.y, health: livePlayer.health, hunger: livePlayer.hunger, exhaustion: livePlayer.exhaustion, oxygen: livePlayer.oxygen, poisonTimer: livePlayer.poisonTimer || 0, facingRight: livePlayer.facingRight },
+            inventory: liveInventory, equippedArmor: liveEquippedArmor, furnaces: furnaces,
             chests: Object.fromEntries(chests),
             saplingGrowthQueue: Object.fromEntries(saplingGrowthQueue),
             dirtToGrassQueue: Object.fromEntries(dirtToGrassQueue),
             snowRegrowthQueue: Object.fromEntries(snowRegrowthQueue),
             treeWoodCells: [...nonCollidableTreeWood],
-            entities: entities.map(e => ({ type: e.constructor.name, x: e.x, y: e.y, health: e.health, dir: e.dir || 1 }))
+            entities: liveEntities.map(e => ({ type: e.constructor.name, x: e.x, y: e.y, health: e.health, dir: e.dir || 1 }))
         };
         const serializedSaveData = JSON.stringify(saveData);
         try {
@@ -4316,12 +4323,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function updateHealthUI() {
+        const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+        if (!curPlayer) return;
         const hb = document.getElementById('health-bar');
         if (hb) {
             hb.innerHTML = '';
-            let fullHearts = Math.floor(player.health / 2);
-            let hasHalf = (player.health % 2) === 1;
-            let isPoisoned = player.poisonTimer > 0;
+            let fullHearts = Math.floor(curPlayer.health / 2);
+            let hasHalf = (curPlayer.health % 2) === 1;
+            let isPoisoned = curPlayer.poisonTimer > 0;
             for (let i = 0; i < 10; i++) { 
                 let h = document.createElement('div'); 
                 if (i < fullHearts) h.className = isPoisoned ? 'heart heart-poison-full' : 'heart heart-full';
@@ -4333,10 +4342,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         updateHudArmorBar();
     }
     export function updateHungerUI() {
-        const hb = document.getElementById('hunger-bar'); hb.innerHTML = '';
-        hb.classList.toggle('shake-ui', player.hunger === 0);
-        let fullShanks = Math.floor(player.hunger / 2);
-        let hasHalf = (player.hunger % 2) === 1;
+        const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+        if (!curPlayer) return;
+        const hb = document.getElementById('hunger-bar'); 
+        if (!hb) return;
+        hb.innerHTML = '';
+        hb.classList.toggle('shake-ui', curPlayer.hunger === 0);
+        let fullShanks = Math.floor(curPlayer.hunger / 2);
+        let hasHalf = (curPlayer.hunger % 2) === 1;
         for (let i = 0; i < 10; i++) { 
             let m = document.createElement('div'); 
             if (i < fullShanks) m.className = 'hunger hunger-full';
@@ -4347,13 +4360,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         updateOxygenUI();
     }
     export function updateOxygenUI(isSubmerged = false) {
+        const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+        if (!curPlayer) return;
         const oxygenBar = document.getElementById('oxygen-bar');
         if (!oxygenBar) return;
-        oxygenBar.classList.toggle('visible', isSubmerged || player.oxygen < player.maxOxygen);
+        oxygenBar.classList.toggle('visible', isSubmerged || curPlayer.oxygen < curPlayer.maxOxygen);
         oxygenBar.innerHTML = '';
-        for (let i = 0; i < player.maxOxygen; i++) {
+        for (let i = 0; i < curPlayer.maxOxygen; i++) {
             const bubble = document.createElement('div');
-            bubble.className = `oxygen-bubble${i < Math.ceil(player.oxygen) ? '' : ' empty'}`;
+            bubble.className = `oxygen-bubble${i < Math.ceil(curPlayer.oxygen) ? '' : ' empty'}`;
             oxygenBar.appendChild(bubble);
         }
     }
