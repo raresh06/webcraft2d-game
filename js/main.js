@@ -1835,9 +1835,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
 
                 const dbgEl = document.getElementById('debug-info');
                 if (dbgEl) {
+                    const curGraphicsMode = (typeof window !== 'undefined' && window.graphicsMode) ? window.graphicsMode : graphicsMode;
                     dbgEl.innerText = 
                         `Webcraft2D (${GAME_VERSION})\n` +
-                        `Graphics: ${graphicsMode === 'fabulous' ? 'Fabulous (Shaders & VFX)' : (graphicsMode === 'advanced' ? 'Advanced' : 'Base')}\n` +
+                        `Graphics: ${curGraphicsMode === 'fabulous' ? 'Fabulous (Shaders & VFX)' : (curGraphicsMode === 'advanced' ? 'Advanced' : 'Base')}\n` +
                         `FPS: ${currentFps} (${frameDeltaMs.toFixed(1)} ms) | Cap: ${fpsCap === 0 ? 'Unlimited' : fpsCap}\n` +
                         `TPS: ${PHYSICS_TICK_RATE} (Fixed 60Hz)\n` +
                         `XYZ: ${px.toFixed(2)} / ${py.toFixed(2)} / 0.00\n` +
