@@ -30,7 +30,7 @@ import {
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
-    setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState, setGameState,
+    setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState, setGameState as setEngineGameState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
@@ -76,7 +76,7 @@ export {
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
-    setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState, setGameState,
+    setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
@@ -120,6 +120,20 @@ export function setHeldItemObj(obj) {
     if (typeof window !== 'undefined') window.heldItemObj = obj;
 }
 try { if (typeof window !== 'undefined') { window.setMainHeldItemObj = (obj) => { heldItemObj = obj; }; window.setHeldItemObj = setHeldItemObj; } } catch(e) {}
+
+export function setGameState(newState) {
+    if (typeof setEngineState === 'function') setEngineState(newState);
+    if (typeof UI !== 'undefined' && typeof UI.setUIState === 'function') UI.setUIState(newState);
+    if (typeof window !== 'undefined') window.STATE = newState;
+}
+try { if (typeof window !== 'undefined') window.setGameState = setGameState; } catch(e) {}
+
+export function setMainIsBackgroundBuildMode(mode) {
+    isBackgroundBuildMode = mode;
+    if (typeof window !== 'undefined') window.isBackgroundBuildMode = mode;
+    if (typeof setEngineIsBackgroundBuildMode === 'function') setEngineIsBackgroundBuildMode(mode);
+}
+try { if (typeof window !== 'undefined') window.setMainIsBackgroundBuildMode = setMainIsBackgroundBuildMode; } catch(e) {}
 export let openedFurnace = null;
 export let openedChest = null;
 export let isInventoryOpen = false;
@@ -965,7 +979,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         
         if (Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE > REACH) { miningTarget.progress = 0; return; }
 
-        if (isBackgroundBuildMode) {
+        const curBgMode = (typeof window !== 'undefined' && window.isBackgroundBuildMode !== undefined) ? window.isBackgroundBuildMode : isBackgroundBuildMode;
+        if (curBgMode) {
             let bgBlockId = bgWorld[gridX]?.[gridY] || IDS.AIR;
             if (bgBlockId === IDS.AIR) { miningTarget.progress = 0; return; }
 
@@ -1260,7 +1275,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         let bCX = gx * TILE_SIZE + TILE_SIZE / 2; let bCY = gy * TILE_SIZE + TILE_SIZE / 2;
         if (Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE > REACH) return false;
 
-        if (isBackgroundBuildMode) {
+        const curBgMode = (typeof window !== 'undefined' && window.isBackgroundBuildMode !== undefined) ? window.isBackgroundBuildMode : isBackgroundBuildMode;
+        if (curBgMode) {
             if (!isBackgroundBuildingBlock(sel.id)) {
                 showToast('Only building blocks can be placed in the background!');
                 return false;
@@ -1530,13 +1546,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         physicsAccumulator = 0;
         Object.keys(keys).forEach(k => delete keys[k]);
 
-        setEngineState('PLAYING'); updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateTutorialUI(); updateArmorUI(); updateHudArmorBar();
+        setGameState('PLAYING'); updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateTutorialUI(); updateArmorUI(); updateHudArmorBar();
         if(!isMultiplayer) saveCurrentWorld();
     }
 
 
     export function pauseGame() {
-        setEngineState('PAUSED');
+        setGameState('PAUSED');
         document.getElementById('pause-menu').classList.remove('hidden');
         const mpBtn = document.getElementById('btn-pause-multiplayer');
         if (mpBtn) {
@@ -1547,7 +1563,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         physicsAccumulator = 0;
     }
     export function resumeGame() { 
-        setEngineState('PLAYING'); 
+        setGameState('PLAYING'); 
         document.getElementById('pause-menu').classList.add('hidden'); 
         document.getElementById('settings-menu').classList.add('hidden'); 
         Object.keys(keys).forEach(k => delete keys[k]); 

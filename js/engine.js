@@ -700,8 +700,47 @@ export function getMaxAnimals() {
         const randColor = (colors) => colors[Math.floor(Math.random() * colors.length)];
 
         const dirtColors = ['#79553a', '#6b4931', '#855d40'];
-        const stoneColors = ['#7d7d7d', '#707070', '#8a8a8a', '#636363'];
+        const stoneColors = ['#747474', '#6c6c6c', '#7d7d7d', '#636363'];
         const woodColors = ['#452e19', '#3b2613', '#523720'];
+
+        function getStonePixel(px, py) {
+            const base = '#737373';
+            const light = '#7d7d7d';
+            const mid = '#686868';
+            const dark = '#5c5c5c';
+            const n = ((px * 7 + py * 13 + (px ^ py) * 3) % 17);
+            if (n === 0 || n === 5) return dark;
+            if (n === 1 || n === 8 || n === 12) return mid;
+            if (n === 3 || n === 7 || n === 14) return light;
+            return base;
+        }
+
+        const ORE_VEIN_MAP = [
+            [2, 2, 1], [3, 2, 2], [4, 2, 1],
+            [2, 3, 2], [3, 3, 2], [4, 3, 3],
+            [3, 4, 3],
+            [10, 2, 1], [11, 2, 2], [12, 2, 1],
+            [9, 3, 1], [10, 3, 2], [11, 3, 2], [12, 3, 3],
+            [10, 4, 3], [11, 4, 3],
+            [6, 6, 1], [7, 6, 2],
+            [5, 7, 1], [6, 7, 2], [7, 7, 2], [8, 7, 3],
+            [5, 8, 2], [6, 8, 3], [7, 8, 3],
+            [11, 8, 1], [12, 8, 2],
+            [10, 9, 1], [11, 9, 2], [12, 9, 3], [13, 9, 3],
+            [10, 10, 2], [11, 10, 3], [12, 10, 3],
+            [2, 11, 1], [3, 11, 2], [4, 11, 1],
+            [2, 12, 2], [3, 12, 2], [4, 12, 3],
+            [3, 13, 3], [4, 13, 3],
+            [7, 12, 1], [8, 12, 2], [9, 12, 1],
+            [7, 13, 2], [8, 13, 3], [9, 13, 3]
+        ];
+
+        const ORE_PALETTES = {
+            [IDS.COAL_ORE]: { 1: '#3e3e3e', 2: '#222222', 3: '#111111' },
+            [IDS.IRON_ORE]: { 1: '#f4d7c5', 2: '#d8af93', 3: '#8a6249' },
+            [IDS.GOLD_ORE]: { 1: '#fff99a', 2: '#fcee4b', 3: '#b88d18' },
+            [IDS.DIAMOND_ORE]: { 1: '#c8ffff', 2: '#5decf2', 3: '#198c94' }
+        };
         
         for (let x = 0; x < 16; x++) {
             for (let y = 0; y < 16; y++) {
@@ -710,7 +749,9 @@ export function getMaxAnimals() {
                     if (y < 4) p(x, y, randColor(['#42b035', '#359929', '#4dcf3e', '#51db42']));
                     else p(x, y, randColor(dirtColors));
                 }
-                else if (id === IDS.STONE) p(x, y, randColor(stoneColors));
+                else if (id === IDS.STONE || id === IDS.COAL_ORE || id === IDS.IRON_ORE || id === IDS.GOLD_ORE || id === IDS.DIAMOND_ORE) {
+                    p(x, y, getStonePixel(x, y));
+                }
                 else if (id === IDS.COBBLESTONE) {
                     let c = stoneColors[(Math.floor(x/3) + Math.floor(y/3)) % stoneColors.length];
                     if (x%4===0 || y%4===0) c = '#4a4a4a'; p(x, y, c);
@@ -779,10 +820,6 @@ export function getMaxAnimals() {
                     ];
                     seedDots.forEach(([sx, sy, scol]) => p(sx, sy, scol));
                 }
-                else if (id === IDS.COAL_ORE) { p(x, y, randColor(stoneColors)); if(Math.random()<0.18) p(x,y,'#222'); }
-                else if (id === IDS.IRON_ORE) { p(x, y, randColor(stoneColors)); if(Math.random()<0.18) p(x,y,'#c27b55'); }
-                else if (id === IDS.GOLD_ORE) { p(x, y, randColor(stoneColors)); if(Math.random()<0.18) p(x,y,'#ffcf33'); }
-                else if (id === IDS.DIAMOND_ORE) { p(x, y, randColor(stoneColors)); if(Math.random()<0.14) p(x,y,'#55e6e6'); }
                 else if (id === IDS.CRAFTING_TABLE) {
                     if (y < 4) p(x, y, x%2===y%2 ? '#d1a775' : '#8a6233'); 
                     else if (y === 4) p(x, y, '#4a3321');
@@ -1069,6 +1106,13 @@ export function getMaxAnimals() {
                         p(x, y, c);
                     }
                 }
+            }
+        }
+        if (ORE_PALETTES[id]) {
+            const pal = ORE_PALETTES[id];
+            for (let i = 0; i < ORE_VEIN_MAP.length; i++) {
+                const [vx, vy, vType] = ORE_VEIN_MAP[i];
+                p(vx, vy, pal[vType]);
             }
         }
         tempCanvas.src = tempCanvas.toDataURL ? tempCanvas.toDataURL() : '';
@@ -5029,65 +5073,33 @@ export const SKIN_H = 32;
         else if (time > 0.9) darkFactor = 0.2 + (time - 0.9) * 8;
         darkFactor = Math.max(0.1, Math.min(1, darkFactor));
 
-        const STEP = 8; 
-
+        // Layer 1: Distant Misty Ridge (smooth path fill)
         let r1 = Math.floor(45 * darkFactor), g1 = Math.floor(62 * darkFactor), b1 = Math.floor(80 * darkFactor);
-        let topR1 = Math.floor(75 * darkFactor), topG1 = Math.floor(92 * darkFactor), topB1 = Math.floor(110 * darkFactor);
-
-        const color1 = 'rgb(' + r1 + ',' + g1 + ',' + b1 + ')';
-        const topColor1 = 'rgb(' + topR1 + ',' + topG1 + ',' + topB1 + ')';
-
-        const maxCols = Math.ceil(w / STEP) + 2;
-        if (!drawMountains.yArr || drawMountains.yArr.length < maxCols) {
-            drawMountains.yArr = new Int32Array(maxCols);
+        targetCtx.fillStyle = `rgb(${r1},${g1},${b1})`;
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, h);
+        for (let x = 0; x <= w + 20; x += 20) {
+            let wx = x + camX * 0.08 + offsetX * 0.4;
+            let my = h - 180 - Math.sin(wx * 0.003) * 110 - Math.sin(wx * 0.01) * 50 + offsetY * 0.3;
+            targetCtx.lineTo(x, my);
         }
-        const yArr = drawMountains.yArr;
+        targetCtx.lineTo(w, h);
+        targetCtx.closePath();
+        targetCtx.fill();
 
-        let idx = 0;
-        for (let x = 0; x <= w + STEP; x += STEP) {
-            let wx = x + camX * 0.1 + offsetX * 0.4;
-            let rawY = h - 180 - Math.sin(wx * 0.003) * 100 - Math.sin(wx * 0.01) * 50 + offsetY * 0.3;
-            yArr[idx++] = Math.floor(rawY / STEP) * STEP;
+        // Layer 2: Mid Silhouette Foothills (smooth path fill)
+        let r2 = Math.floor(32 * darkFactor), g2 = Math.floor(48 * darkFactor), b2 = Math.floor(58 * darkFactor);
+        targetCtx.fillStyle = `rgb(${r2},${g2},${b2})`;
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, h);
+        for (let x = 0; x <= w + 20; x += 20) {
+            let wx = x + camX * 0.20 + offsetX * 0.7;
+            let my = h - 110 - Math.sin(wx * 0.005) * 75 - Math.cos(wx * 0.015) * 35 + offsetY * 0.6;
+            targetCtx.lineTo(x, my);
         }
-
-        targetCtx.fillStyle = color1;
-        idx = 0;
-        for (let x = 0; x <= w + STEP; x += STEP) {
-            let my = yArr[idx++];
-            targetCtx.fillRect(x, my, STEP, h - my);
-        }
-        targetCtx.fillStyle = topColor1;
-        idx = 0;
-        for (let x = 0; x <= w + STEP; x += STEP) {
-            let my = yArr[idx++];
-            targetCtx.fillRect(x, my, STEP, STEP);
-        }
-
-        let r2 = Math.floor(59 * darkFactor), g2 = Math.floor(82 * darkFactor), b2 = Math.floor(73 * darkFactor);
-        let topR2 = Math.floor(89 * darkFactor), topG2 = Math.floor(112 * darkFactor), topB2 = Math.floor(103 * darkFactor);
-
-        const color2 = 'rgb(' + r2 + ',' + g2 + ',' + b2 + ')';
-        const topColor2 = 'rgb(' + topR2 + ',' + topG2 + ',' + topB2 + ')';
-
-        idx = 0;
-        for (let x = 0; x <= w + STEP; x += STEP) {
-            let wx = x + camX * 0.25 + offsetX * 0.7;
-            let rawY = h - 110 - Math.sin(wx * 0.005) * 70 - Math.cos(wx * 0.015) * 35 + offsetY * 0.6;
-            yArr[idx++] = Math.floor(rawY / STEP) * STEP;
-        }
-
-        targetCtx.fillStyle = color2;
-        idx = 0;
-        for (let x = 0; x <= w + STEP; x += STEP) {
-            let my = yArr[idx++];
-            targetCtx.fillRect(x, my, STEP, h - my);
-        }
-        targetCtx.fillStyle = topColor2;
-        idx = 0;
-        for (let x = 0; x <= w + STEP; x += STEP) {
-            let my = yArr[idx++];
-            targetCtx.fillRect(x, my, STEP, STEP);
-        }
+        targetCtx.lineTo(w, h);
+        targetCtx.closePath();
+        targetCtx.fill();
     }
 
     export let menuCamX = 0;
@@ -5097,8 +5109,44 @@ export const SKIN_H = 32;
     export let menuWorld = { terrain: [], surfaceHeights: [], blocks: [], trees: [], animals: [], fireflies: [], stars: [], width: 240 };
     export let menuWorldInitialized = false;
     export let menuEntities = [];
-    export let menuTime = 0.18 + Math.random() * 0.16;
+    export let menuTime = 0.20 + Math.random() * 0.15;
     export let menuLastFrame = performance.now();
+
+    export let menuFireflies = Array.from({ length: 36 }, () => ({
+        x: Math.random() * 2000,
+        y: Math.random() * 800,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.25,
+        phase: Math.random() * Math.PI * 2,
+        size: 2 + Math.random() * 2
+    }));
+
+    export function drawMenuFireflies(targetCtx, w, h, camX, camY) {
+        targetCtx.save();
+        for (let i = 0; i < menuFireflies.length; i++) {
+            const f = menuFireflies[i];
+            f.x += f.vx;
+            f.y += f.vy;
+            f.phase += 0.04;
+            if (f.x < camX - 100) f.x = camX + w + 50;
+            if (f.x > camX + w + 100) f.x = camX - 50;
+            if (f.y < camY - 50) f.y = camY + h;
+            if (f.y > camY + h + 50) f.y = camY;
+
+            const screenX = f.x - camX;
+            const screenY = f.y - camY;
+            if (screenX >= -10 && screenX <= w + 10 && screenY >= -10 && screenY <= h + 10) {
+                const pulse = (Math.sin(f.phase) + 1) * 0.5;
+                if (pulse > 0.08) {
+                    targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.85})`;
+                    targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), f.size, f.size);
+                    targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.25})`;
+                    targetCtx.fillRect(Math.floor(screenX - 2), Math.floor(screenY - 2), f.size + 4, f.size + 4);
+                }
+            }
+        }
+        targetCtx.restore();
+    }
 
     export function menuRandom() {
         menuWorldSeed = (menuWorldSeed * 1664525 + 1013904223) >>> 0;
@@ -5106,59 +5154,105 @@ export const SKIN_H = 32;
     }
 
     export function generateMenuWorld() {
+        if ((menuWorldInitialized || (typeof window !== 'undefined' && window.menuWorldInitialized)) && menuWorld && menuWorld.blocks && menuWorld.blocks.length === WORLD_WIDTH) {
+            return;
+        }
+
         menuWorldSeed = (Math.random() * 0xffffffff) >>> 0;
-        menuTime = Math.random() < 0.72 ? 0.16 + Math.random() * 0.2 : Math.random();
+        menuTime = 0.22;
         const baseH = Math.floor(WORLD_HEIGHT / 2);
         const terrain = new Array(WORLD_WIDTH);
         const blocks = new Array(WORLD_WIDTH);
+
+        // 1. Generate full terrain column for all columns (Surface down to WORLD_HEIGHT)
         for (let x = 0; x < WORLD_WIDTH; x++) {
-            const h = baseH + Math.round(Math.sin(x * 0.035) * 8 + Math.cos(x * 0.08) * 4);
+            const h = baseH + Math.round(Math.sin(x * 0.035) * 6 + Math.cos(x * 0.07) * 3);
             terrain[x] = h;
             const col = new Array(WORLD_HEIGHT).fill(IDS.AIR);
+
+            // Grass surface
             col[h] = IDS.GRASS;
-            for (let y = h + 1; y < Math.min(WORLD_HEIGHT, h + 5); y++) col[y] = IDS.DIRT;
-            for (let y = h + 5; y < Math.min(WORLD_HEIGHT, h + 22); y++) col[y] = IDS.STONE;
+
+            // Dirt (3-4 layers below grass)
+            for (let y = h + 1; y < Math.min(WORLD_HEIGHT, h + 4); y++) {
+                col[y] = IDS.DIRT;
+            }
+
+            // Stone & Ores (filling all the way down through the bottom of the world)
+            for (let y = h + 4; y < WORLD_HEIGHT; y++) {
+                // Natural organic cave pockets
+                const caveNoise = Math.sin(x * 0.14 + y * 0.2) + Math.cos(x * 0.18 - y * 0.14);
+                if (y > h + 7 && caveNoise > 1.35) {
+                    col[y] = IDS.AIR;
+                    continue;
+                }
+
+                const r = menuRandom();
+                if (r < 0.055) col[y] = IDS.COAL_ORE;
+                else if (r < 0.09) col[y] = IDS.IRON_ORE;
+                else if (y > h + 10 && r < 0.115) col[y] = IDS.GOLD_ORE;
+                else if (y > h + 14 && r < 0.13) col[y] = IDS.DIAMOND_ORE;
+                else col[y] = IDS.STONE;
+            }
+
+            // Surface foliage: flowers and short grass
+            if (menuRandom() < 0.3) {
+                const flowerR = menuRandom();
+                col[h - 1] = flowerR < 0.35 ? IDS.FLOWER_RED : (flowerR < 0.65 ? IDS.FLOWER_YELLOW : IDS.SHORT_GRASS);
+            }
+
             blocks[x] = col;
         }
-        // Place decorative trees
-        for (let x = 6; x < WORLD_WIDTH - 6; x += 10) {
+
+        // 2. Oak trees with wood trunks and leaf canopies
+        for (let x = 4; x < WORLD_WIDTH - 4; x += 6) {
             if (menuRandom() < 0.65) {
                 const sy = terrain[x];
-                for (let ty = sy - 4; ty < sy; ty++) {
-                    if (blocks[x]) blocks[x][ty] = IDS.WOOD;
+                const treeH = 4 + Math.floor(menuRandom() * 2);
+                for (let ty = sy - treeH; ty < sy; ty++) {
+                    if (ty >= 0) blocks[x][ty] = IDS.WOOD;
                 }
+                const leafBottom = sy - treeH - 1;
                 for (let lx = x - 2; lx <= x + 2; lx++) {
-                    for (let ly = sy - 6; ly <= sy - 4; ly++) {
-                        if (blocks[lx] && blocks[lx][ly] === IDS.AIR) blocks[lx][ly] = IDS.LEAVES;
+                    if (lx < 0 || lx >= WORLD_WIDTH) continue;
+                    for (let ly = leafBottom - 2; ly <= leafBottom + 1; ly++) {
+                        if (ly < 0) continue;
+                        if (Math.abs(lx - x) + Math.abs(ly - (leafBottom - 1)) <= 3) {
+                            if (blocks[lx][ly] === IDS.AIR || blocks[lx][ly] === undefined) {
+                                blocks[lx][ly] = IDS.LEAVES;
+                            }
+                        }
                     }
                 }
             }
         }
+
+        // 3. Animals
         const animals = [];
         ['sheep', 'pig', 'chicken', 'sheep', 'pig', 'chicken'].forEach((type, index) => {
             const x = 12 + menuRandom() * (WORLD_WIDTH - 24);
             const entity = type === 'sheep' ? new Sheep(x * TILE_SIZE, 0) : type === 'pig' ? new Pig(x * TILE_SIZE, 0) : new Chicken(x * TILE_SIZE, 0);
             entity.dir = menuRandom() > 0.5 ? 1 : -1;
-            entity.menuSpeed = 0.8 + menuRandom() * 0.6;
+            entity.menuSpeed = 0.7 + menuRandom() * 0.4;
             entity.y = (terrain[Math.floor(x)] || baseH) * TILE_SIZE - entity.height;
             entity.isGrounded = true;
             animals.push({ type, entity, timer: 60 + menuRandom() * 120 });
         });
         menuEntities = animals;
+
         menuWorld = {
             terrain,
             surfaceHeights: terrain,
             blocks,
             animals,
-            width: WORLD_WIDTH,
-            fireflies: Array.from({ length: 48 }, () => ({ x: menuRandom(), y: 0.43 + menuRandom() * 0.42, phase: menuRandom() * 6.28 })),
-            stars: Array.from({ length: 90 }, () => ({ x: menuRandom(), y: menuRandom() * 0.54, size: 1 + menuRandom() * 2, twinkle: menuRandom() * 6.28 }))
+            width: WORLD_WIDTH
         };
         menuWorldInitialized = true;
+        if (typeof window !== 'undefined') window.menuWorldInitialized = true;
     }
 
     export function drawMenuBackground() {
-        if (!menuWorldInitialized || !menuWorld.terrain || !menuWorld.terrain.length) {
+        if (!menuWorldInitialized || !menuWorld.blocks || !menuWorld.blocks.length) {
             generateMenuWorld();
         }
         const now = performance.now();
@@ -5168,74 +5262,92 @@ export const SKIN_H = 32;
         const motion = (typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 0 : delta;
         const pointerX = Math.max(-1, Math.min(1, (mouse.clientX - window.innerWidth / 2) / Math.max(1, window.innerWidth / 2)));
         const pointerY = Math.max(-1, Math.min(1, (mouse.clientY - window.innerHeight / 2) / Math.max(1, window.innerHeight / 2)));
-        const targetPX = pointerX * 18;
-        const targetPY = pointerY * 10;
-        menuParallaxX += (targetPX - menuParallaxX) * 0.08;
-        menuParallaxY += (targetPY - menuParallaxY) * 0.08;
-        menuCamX = (menuCamX + motion * 0.025) % (WORLD_WIDTH * TILE_SIZE);
+        menuParallaxX += (pointerX * 24 - menuParallaxX) * 0.08;
+        menuParallaxY += (pointerY * 14 - menuParallaxY) * 0.08;
+        menuCamX = (menuCamX + motion * 0.035) % (WORLD_WIDTH * TILE_SIZE);
         const width = menuBgCanvas.width, height = menuBgCanvas.height;
+
+        // 1. Dynamic Celestial Sky
         drawDynamicSky(menuCtx, width, height, menuTime);
+
+        // 2. Parallax Mountain Ridges (Ultra-fast vector path filling)
         drawMountains(menuCtx, menuCamX, height, menuTime, width, menuParallaxX, menuParallaxY);
-        const lightStrength = menuTime > 0.08 && menuTime < 0.42 ? 0.16 : menuTime > 0.84 || menuTime < 0.08 ? 0.09 : 0.025;
-        const worldLight = menuCtx.createRadialGradient(width * 0.68, height * 0.22, 8, width * 0.68, height * 0.22, height * 0.78);
-        worldLight.addColorStop(0, `rgba(255, 218, 132, ${lightStrength})`); worldLight.addColorStop(0.34, `rgba(255, 164, 86, ${lightStrength * 0.35})`); worldLight.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        menuCtx.save(); menuCtx.globalCompositeOperation = 'screen'; menuCtx.fillStyle = worldLight; menuCtx.fillRect(0, 0, width, height); menuCtx.restore();
-        const cameraX = menuCamX;
-        const cameraY = (WORLD_HEIGHT * TILE_SIZE / 2) - height * 0.38;
-        const startCol = Math.floor(cameraX / TILE_SIZE) - 1;
-        const endCol = startCol + Math.ceil(width / TILE_SIZE) + 2;
-        menuCtx.imageSmoothingEnabled = false;
-        for (let x = startCol; x <= endCol; x++) {
-            const wrappedX = ((x % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH;
-            const surfaceY = (menuWorld.surfaceHeights && menuWorld.surfaceHeights[wrappedX] !== undefined) ? menuWorld.surfaceHeights[wrappedX] : surfaceHeights[wrappedX];
-            if (surfaceY === undefined) continue;
-            for (let y = Math.max(0, Math.floor(cameraY / TILE_SIZE)); y <= surfaceY; y++) {
-                const block = menuWorld.blocks?.[wrappedX]?.[y];
-                if (block === undefined || block === IDS.AIR) continue;
-                const drawX = Math.floor(x * TILE_SIZE - cameraX);
-                const drawY = Math.floor(y * TILE_SIZE - cameraY);
-                if (textures[block]) menuCtx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
-            }
-            const caveEndY = Math.min(WORLD_HEIGHT - 1, surfaceY + 18);
-            menuCtx.globalAlpha = 0.78;
-            for (let y = surfaceY + 1; y <= caveEndY; y++) {
-                const drawY = Math.floor(y * TILE_SIZE - cameraY);
-                const undergroundBlock = menuWorld.blocks?.[wrappedX]?.[y];
-                if (drawY > height || drawY + TILE_SIZE < 0) continue;
-                if (undergroundBlock === IDS.AIR || undergroundBlock === undefined) {
-                    menuCtx.fillStyle = 'rgba(8, 10, 14, 0.86)';
-                    menuCtx.fillRect(Math.floor(x * TILE_SIZE - cameraX), drawY, TILE_SIZE, TILE_SIZE);
-                } else if (textures[undergroundBlock]) {
-                    menuCtx.drawImage(textures[undergroundBlock], Math.floor(x * TILE_SIZE - cameraX), drawY, TILE_SIZE, TILE_SIZE);
-                }
-            }
-            menuCtx.globalAlpha = 1.0;
-        }
-        menuEntities.forEach(entry => {
-            const entity = entry.entity;
-            entity.timer = (entity.timer || 60) - motion * 0.06;
-            if (entity.timer <= 0) {
-                entity.dir = menuRandom() > 0.5 ? 1 : -1;
-                if (menuRandom() < 0.3) entity.dir = 0;
-                entity.timer = 60 + menuRandom() * 120;
-            }
-            entity.x += entity.dir * (entity.menuSpeed || 0.9) * (motion * 0.06);
-            if (entity.x <= 0) { entity.x = WORLD_WIDTH * TILE_SIZE - entity.width - 1; entity.dir = 1; }
-            if (entity.x >= WORLD_WIDTH * TILE_SIZE - entity.width) { entity.x = 1; entity.dir = -1; }
-            const gx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.width / 2) / TILE_SIZE)));
-            const groundY = (menuWorld.surfaceHeights && menuWorld.surfaceHeights[gx] !== undefined) ? menuWorld.surfaceHeights[gx] : Math.floor(WORLD_HEIGHT / 2);
-            entity.y = groundY * TILE_SIZE - entity.height;
-            entity.draw(menuCtx, cameraX, cameraY);
-        });
+
+        // 3. Drifting Clouds
+        clouds.forEach(c => c.draw(menuCtx, menuCamX * 0.6));
+
+        // 4. Atmospheric Sun Glow / Godrays
+        const lightStrength = menuTime > 0.08 && menuTime < 0.42 ? 0.22 : (menuTime > 0.84 || menuTime < 0.08 ? 0.12 : 0.03);
+        const sunX = width * 0.72 + menuParallaxX * 0.3;
+        const sunY = height * 0.20 + menuParallaxY * 0.3;
+        const worldLight = menuCtx.createRadialGradient(sunX, sunY, 10, sunX, sunY, height * 0.85);
+        worldLight.addColorStop(0, `rgba(255, 225, 140, ${lightStrength})`);
+        worldLight.addColorStop(0.35, `rgba(255, 170, 90, ${lightStrength * 0.4})`);
+        worldLight.addColorStop(1, 'rgba(0, 0, 0, 0)');
         menuCtx.save();
         menuCtx.globalCompositeOperation = 'screen';
-        menuCtx.globalAlpha = 0.08;
-        menuCtx.fillStyle = '#ffd37d';
-        menuCtx.fillRect(0, Math.floor(height * 0.18), width, Math.max(2, Math.floor(height * 0.012)));
+        menuCtx.fillStyle = worldLight;
+        menuCtx.fillRect(0, 0, width, height);
         menuCtx.restore();
-        const vignette = menuCtx.createRadialGradient(width / 2, height * 0.46, height * 0.28, width / 2, height * 0.46, height * 0.82);
-        vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(2,8,12,0.46)');
-        menuCtx.fillStyle = vignette; menuCtx.fillRect(0, 0, width, height);
+
+        // 5. Foreground Living World (Trees, Foliage, Grass, Dirt, Stone & Ore Strata)
+        const cameraX = menuCamX;
+        const cameraY = (WORLD_HEIGHT * TILE_SIZE / 2) - height * 0.38 + menuParallaxY * 0.8;
+        const startCol = Math.floor(cameraX / TILE_SIZE) - 1;
+        const endCol = startCol + Math.ceil(width / TILE_SIZE) + 2;
+        const startRow = Math.max(0, Math.floor(cameraY / TILE_SIZE) - 2);
+        const endRow = Math.min(WORLD_HEIGHT - 1, Math.ceil((cameraY + height) / TILE_SIZE) + 1);
+
+        menuCtx.imageSmoothingEnabled = false;
+
+        for (let x = startCol; x <= endCol; x++) {
+            const wrappedX = ((x % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH;
+            const drawX = Math.round(x * TILE_SIZE - cameraX);
+            const col = menuWorld.blocks?.[wrappedX];
+            if (!col) continue;
+
+            for (let y = startRow; y <= endRow; y++) {
+                const block = col[y];
+                if (block === undefined || block === IDS.AIR) continue;
+                const drawY = Math.round(y * TILE_SIZE - cameraY);
+                if (drawY + TILE_SIZE < 0 || drawY > height) continue;
+
+                if (textures[block]) {
+                    menuCtx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
+                }
+            }
+        }
+
+        // 6. Draw Living Animated Animals
+        if (menuEntities && menuEntities.length) {
+            menuEntities.forEach(entry => {
+                const entity = entry.entity;
+                entity.timer = (entity.timer || 60) - motion * 0.06;
+                if (entity.timer <= 0) {
+                    entity.dir = menuRandom() > 0.5 ? 1 : -1;
+                    if (menuRandom() < 0.3) entity.dir = 0;
+                    entity.timer = 60 + menuRandom() * 140;
+                }
+                entity.x += entity.dir * (entity.menuSpeed || 0.8) * (motion * 0.06);
+                if (entity.x <= 0) { entity.x = WORLD_WIDTH * TILE_SIZE - entity.width - 1; entity.dir = 1; }
+                if (entity.x >= WORLD_WIDTH * TILE_SIZE - entity.width) { entity.x = 1; entity.dir = -1; }
+                const gx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.width / 2) / TILE_SIZE)));
+                const groundY = (menuWorld.terrain && menuWorld.terrain[gx] !== undefined) ? menuWorld.terrain[gx] : Math.floor(WORLD_HEIGHT / 2);
+                entity.y = groundY * TILE_SIZE - entity.height;
+                entity.draw(menuCtx, cameraX, cameraY);
+            });
+        }
+
+        // 7. Glowing Animated Fireflies
+        drawMenuFireflies(menuCtx, width, height, cameraX, cameraY);
+
+        // 8. Cinematic Dark Edge Vignette
+        const vignette = menuCtx.createRadialGradient(width / 2, height * 0.46, height * 0.28, width / 2, height * 0.46, height * 0.85);
+        vignette.addColorStop(0, 'rgba(0,0,0,0)');
+        vignette.addColorStop(0.7, 'rgba(4,8,14,0.30)');
+        vignette.addColorStop(1, 'rgba(2,5,10,0.65)');
+        menuCtx.fillStyle = vignette;
+        menuCtx.fillRect(0, 0, width, height);
         menuLastFrame = now;
     }
 
@@ -5830,12 +5942,12 @@ export const SKIN_H = 32;
         const visibleLightSources = [];
 
         for (let x = startCol; x <= endCol; x++) {
-            let drawX = x * TILE_SIZE - camX;
+            let drawX = Math.round(x * TILE_SIZE - camX);
             // Infinite ocean bounds masking for cutoff fix
             if (x < 0 || x >= WORLD_WIDTH) {
                 for(let y = startRow; y <= endRow; y++) {
                     if (y >= Math.floor(WORLD_HEIGHT/2)) {
-                        let drawY = y * TILE_SIZE - camY;
+                        let drawY = Math.round(y * TILE_SIZE - camY);
                         // Sea level
                         ctx.fillStyle = (y === Math.floor(WORLD_HEIGHT/2)) ? 'rgba(30, 144, 255, 0.7)' : 'rgba(20, 100, 200, 0.9)';
                         ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
@@ -5854,7 +5966,7 @@ export const SKIN_H = 32;
                 for (let y = startRow; y <= endRow; y++) {
                     let bgBlock = bgWorld[x][y];
                     if (bgBlock !== undefined && bgBlock !== IDS.AIR && textures[bgBlock]) {
-                        let drawY = y * TILE_SIZE - camY;
+                        let drawY = Math.round(y * TILE_SIZE - camY);
                         ctx.drawImage(textures[bgBlock], drawX, drawY, TILE_SIZE, TILE_SIZE);
                         ctx.fillStyle = 'rgba(0, 0, 0, 0.48)';
                         ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
@@ -5867,13 +5979,13 @@ export const SKIN_H = 32;
                 if (block === IDS.AIR) {
                     // Ambient occlusion: soft ceiling drop shadow beneath cave roofs & subterranean overhangs
                     if (advancedGraphics && cachedOverhangShadow && y > 0 && world[x][y - 1] !== IDS.AIR && y >= surfaceHeights[x]) {
-                        let drawY = y * TILE_SIZE - camY;
+                        let drawY = Math.round(y * TILE_SIZE - camY);
                         ctx.drawImage(cachedOverhangShadow, drawX, drawY, TILE_SIZE, 12);
                     }
                     continue;
                 }
                 if (block !== undefined) {
-                    let drawY = y * TILE_SIZE - camY;
+                    let drawY = Math.round(y * TILE_SIZE - camY);
                     
                     if (block === IDS.BED) {
                         if (!isBedRenderStart(x, y)) continue;
@@ -6183,12 +6295,13 @@ export const SKIN_H = 32;
             if (hX >= 0 && hX < WORLD_WIDTH && hY >= 0 && hY < WORLD_HEIGHT) {
                 if (Math.hypot(pCX-hCX, pCY-hCY) / TILE_SIZE <= REACH) {
                     let drawX = hX * TILE_SIZE - camX; let drawY = hY * TILE_SIZE - camY;
-                    ctx.strokeStyle = isBackgroundBuildMode ? 'rgba(245, 158, 11, 0.95)' : 'rgba(255, 255, 255, 0.5)';
-                    ctx.lineWidth = isBackgroundBuildMode ? 2.5 : 2;
+                    const curBgMode = (typeof window !== 'undefined' && window.isBackgroundBuildMode !== undefined) ? window.isBackgroundBuildMode : isBackgroundBuildMode;
+                    ctx.strokeStyle = curBgMode ? 'rgba(245, 158, 11, 0.95)' : 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = curBgMode ? 2.5 : 2;
                     ctx.strokeRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
 
                     if (miningTarget.x === hX && miningTarget.y === hY && miningTarget.progress > 0) {
-                        let activeBlock = isBackgroundBuildMode ? (bgWorld[hX]?.[hY] || IDS.AIR) : world[hX][hY];
+                        let activeBlock = curBgMode ? (bgWorld[hX]?.[hY] || IDS.AIR) : world[hX][hY];
                         let ratio = miningTarget.progress / (HARDNESS[activeBlock] || 100);
                         const crackPixels = [
                             [3, 3], [4, 4], [5, 5], [6, 6], [7, 7], [8, 8], [9, 9], [10, 10],
@@ -6196,7 +6309,7 @@ export const SKIN_H = 32;
                             [3, 8], [4, 8], [5, 8], [10, 7], [11, 7], [12, 7], [7, 3], [7, 4]
                         ];
                         const pixelSize = Math.max(2, Math.floor(TILE_SIZE / 16));
-                        ctx.fillStyle = isBackgroundBuildMode ? 'rgba(245, 158, 11, 0.85)' : 'rgba(20,20,20,0.82)';
+                        ctx.fillStyle = curBgMode ? 'rgba(245, 158, 11, 0.85)' : 'rgba(20,20,20,0.82)';
                         crackPixels.forEach(([pixelX, pixelY], index) => {
                             if (ratio >= (index + 1) / crackPixels.length) ctx.fillRect(drawX + pixelX * pixelSize, drawY + pixelY * pixelSize, pixelSize, pixelSize);
                         });
@@ -6326,7 +6439,8 @@ export const SKIN_H = 32;
         if (showVignette) drawVignette(ctx, canvas.width, canvas.height);
 
         // Smoothly darken the game view in Background Build Mode so the player knows
-        const targetBgDarkness = isBackgroundBuildMode ? 0.32 : 0;
+        const curBgModeForDarkness = (typeof window !== 'undefined' && window.isBackgroundBuildMode !== undefined) ? window.isBackgroundBuildMode : isBackgroundBuildMode;
+        const targetBgDarkness = curBgModeForDarkness ? 0.45 : 0;
         bgBuildDarknessAlpha += (targetBgDarkness - bgBuildDarknessAlpha) * 0.18;
         if (bgBuildDarknessAlpha > 0.005) {
             ctx.save();
@@ -6498,8 +6612,8 @@ export const SKIN_H = 32;
         let tilesAcross = 64; 
         let startX = pGridX - Math.floor(tilesAcross / 2);
         let startY = pGridY - Math.floor(tilesAcross / 2);
-        let halfHeight = Math.floor(WORLD_HEIGHT / 2);
-        const isCircle = minimapShape === 'circle';
+        const curShape = (typeof window !== 'undefined' && window.minimapShape) ? window.minimapShape : minimapShape;
+        const isCircle = curShape === 'circle';
         const circleLimitSq = 27.5 * 27.5;
         
         let idx = 0;
@@ -6603,6 +6717,8 @@ export const SKIN_H = 32;
 
 
     export function buildFullOffscreenMap() {
+        const curWorld = world || (typeof window !== 'undefined' && window.world);
+        if (!curWorld) return;
         if (!offscreenMapCanvas) {
             offscreenMapCanvas = document.createElement('canvas');
             offscreenMapCtx = offscreenMapCanvas.getContext('2d', { alpha: false });
@@ -6616,10 +6732,12 @@ export const SKIN_H = 32;
         offscreenMapCtx.fillStyle = '#101726';
         offscreenMapCtx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
 
+        const curBgWorld = bgWorld || (typeof window !== 'undefined' && window.bgWorld);
+
         // Batch rasterize blocks and fluids
         for (let x = 0; x < WORLD_WIDTH; x++) {
             for (let y = 0; y < WORLD_HEIGHT; y++) {
-                let block = world[x]?.[y];
+                let block = curWorld[x]?.[y];
                 if (block !== undefined && block !== IDS.AIR && block !== IDS.TORCH) {
                     offscreenMapCtx.fillStyle = getMapBlockColor(block);
                     offscreenMapCtx.fillRect(x, y, 1, 1);

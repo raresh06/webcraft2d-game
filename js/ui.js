@@ -10,7 +10,9 @@ import {
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
-    setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex,
+    setEngineIsBackgroundBuildMode, setMinimapShape, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex,
+    buildFullOffscreenMap, renderWorldMapLoop,
+    generateMenuWorld, menuWorldInitialized, drawMenuBackground,
     setWorldDimensions, getMaxAnimals,
     getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
     TOOL_DURABILITY, ARMOR_DURABILITY, FPS_CAP_OPTIONS, diffDescriptions, DIFFICULTIES,
@@ -126,6 +128,11 @@ export function setHeldItemObj(obj) {
     }
 }
 try { if (typeof window !== 'undefined') window.setHeldItemObj = setHeldItemObj; } catch(e) {}
+export function setUIState(newState) {
+    STATE = newState;
+    if (typeof window !== 'undefined') window.STATE = newState;
+}
+try { if (typeof window !== 'undefined') window.setUIState = setUIState; } catch(e) {}
 export let nonCollidableTreeWood = new Set();
 export let saplingGrowthQueue = new Map();
 export let dirtToGrassQueue = new Map();
@@ -577,15 +584,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function toggleMinimapShape() {
         minimapShape = minimapShape === 'square' ? 'circle' : 'square';
+        if (typeof window !== 'undefined') window.minimapShape = minimapShape;
+        if (typeof setMinimapShape === 'function') setMinimapShape(minimapShape);
         applyMinimapShape();
         saveCurrentSettings();
     }
 
     export function applyMinimapShape() {
         if (typeof document === 'undefined') return;
+        const curShape = (typeof window !== 'undefined' && window.minimapShape) ? window.minimapShape : minimapShape;
+        const isCircle = curShape === 'circle';
         const wrap = document.querySelector('.hud-minimap-wrap');
         const mm = document.getElementById('minimap');
-        const isCircle = minimapShape === 'circle';
         if (wrap) wrap.classList.toggle('shape-circle', isCircle);
         if (mm) mm.classList.toggle('shape-circle', isCircle);
         const btn = document.getElementById('btn-toggle-minimap-shape');
@@ -3082,15 +3092,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function showMainMenu() {
+        const isMenuInit = (typeof window !== 'undefined' && window.menuWorldInitialized) || menuWorldInitialized;
         const splashEl = document.getElementById('splash-text');
-        if (!splashEl || !splashEl.innerText || !menuWorldInitialized) {
+        if (!splashEl || !splashEl.innerText || !isMenuInit) {
             setRandomSplashText();
         }
         document.getElementById('worlds-menu').classList.add('hidden');
         document.getElementById('multiplayer-modal').classList.add('hidden');
         document.getElementById('shared-menu-bg').classList.remove('hidden');
         document.getElementById('main-menu').classList.remove('hidden');
-        if (!menuWorldInitialized) {
+        if (!isMenuInit) {
             generateMenuWorld();
         }
         if (typeof drawMenuBackground === 'function') drawMenuBackground();
@@ -4212,7 +4223,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             chatSeenMessageIds = new Set();
             updateTutorialUI();
         }
-        STATE = 'MENU'; document.getElementById('pause-menu').classList.add('hidden'); document.getElementById('death-menu').classList.add('hidden');
+        setUIState('MENU');
+        if (typeof setEngineState === 'function') setEngineState('MENU');
+        document.getElementById('pause-menu').classList.add('hidden'); document.getElementById('death-menu').classList.add('hidden');
         inventory = new Array(INVENTORY_SIZE).fill(null);
         equippedArmor = [null, null, null, null];
         currentWorldId = null;
@@ -4424,13 +4437,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             container.classList.remove('hidden');
             keys = {};
             updateUI();
-            tooltipEl.style.display = 'none';
+            const tip = typeof document !== 'undefined' ? (document.getElementById('item-tooltip') || document.getElementById('tooltip')) : null;
+            if (tip) tip.style.display = 'none';
             unlockAchievement('taking_inventory');
         } 
         else {
             container.classList.add('hidden');
             hotbarWheelLockUntil = performance.now() + 500;
-            if (heldItemObj) { if(!giveItem(heldItemObj.id, heldItemObj.count)) { } heldItemObj = null; heldItemIndex = -1; }
+            if (heldItemObj) { 
+                if(!giveItem(heldItemObj.id, heldItemObj.count)) { } 
+                setHeldItemObj(null); 
+                heldItemIndex = -1; 
+            }
             openedFurnace = null;
             openedChest = null;
             const searchInput = document.getElementById('crafting-search');
@@ -4438,7 +4456,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 searchInput.blur();
             }
         }
-        window.dispatchEvent(new MouseEvent('mousemove', {clientX: mouse.clientX, clientY: mouse.clientY}));
+        if (typeof MouseEvent !== 'undefined' && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+            window.dispatchEvent(new MouseEvent('mousemove', {clientX: mouse ? mouse.clientX : 0, clientY: mouse ? mouse.clientY : 0}));
+        }
     }
 
     export function updateHealthUI() {
@@ -5146,10 +5166,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (newState === isWorldMapOpen) return;
         
         if (newState) {
-            if (STATE !== 'PLAYING') return;
+            const curState = (typeof window !== 'undefined' && window.STATE) ? window.STATE : STATE;
+            if (curState !== 'PLAYING') return;
             if (isInventoryOpen) toggleInventory();
             isWorldMapOpen = true;
-            document.getElementById('world-map-modal').classList.remove('hidden');
+            const mapModal = document.getElementById('world-map-modal');
+            if (mapModal) mapModal.classList.remove('hidden');
             
             buildFullOffscreenMap();
             updateMapWorldBadge();
@@ -5159,7 +5181,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             unlockAchievement('cartographer');
         } else {
             isWorldMapOpen = false;
-            document.getElementById('world-map-modal').classList.add('hidden');
+            const mapModal = document.getElementById('world-map-modal');
+            if (mapModal) mapModal.classList.add('hidden');
             if (mapAnimFrameId) {
                 cancelAnimationFrame(mapAnimFrameId);
                 mapAnimFrameId = null;
@@ -5171,6 +5194,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         let newState = forceState !== undefined ? forceState : !isBackgroundBuildMode;
         if (newState === isBackgroundBuildMode) return;
         isBackgroundBuildMode = newState;
+        if (typeof window !== 'undefined') window.isBackgroundBuildMode = newState;
+        if (typeof setEngineIsBackgroundBuildMode === 'function') setEngineIsBackgroundBuildMode(newState);
         playSound('click');
         const indicator = document.getElementById('bg-build-indicator');
         if (indicator) {
@@ -5194,8 +5219,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function centerMapOnPlayer() {
-        mapPanX = player.x / TILE_SIZE;
-        mapPanY = (player.y + player.height / 2) / TILE_SIZE;
+        const curPlayer = player || (typeof window !== 'undefined' && window.player);
+        if (curPlayer) {
+            mapPanX = curPlayer.x / TILE_SIZE;
+            mapPanY = (curPlayer.y + (curPlayer.height || TILE_SIZE) / 2) / TILE_SIZE;
+        } else {
+            mapPanX = WORLD_WIDTH / 2;
+            mapPanY = WORLD_HEIGHT / 2;
+        }
     }
 
     export function resetMapView() {
