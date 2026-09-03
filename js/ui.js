@@ -727,6 +727,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         return defaultSkin;
     }
 
+    export function getSkinSaveData() {
+        if (Array.isArray(playerSkinData) && playerSkinData.length === SKIN_W * SKIN_H) {
+            return playerSkinData;
+        }
+        if (typeof window !== 'undefined' && Array.isArray(window.playerSkinData) && window.playerSkinData.length === SKIN_W * SKIN_H) {
+            return window.playerSkinData;
+        }
+        return playerSkinData;
+    }
+    try { if (typeof window !== 'undefined') window.getSkinSaveData = getSkinSaveData; } catch(e) {}
+
     export function getSavedSkins() {
         try {
             const savedSkins = JSON.parse(localStorage.getItem('swc_skins_v1'));
@@ -1250,8 +1261,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export let currentUploadPrice = 0;
 
     export function openSkinUploadModal(skinId, name, skinData) {
+        const candidateData = (skinData && Array.isArray(skinData)) ? skinData.slice() : getSkinSaveData();
+        const paintedPixels = candidateData.filter(c => c && c !== 'transparent').length;
+        if (paintedPixels < 16) {
+            showToast('Cannot upload an empty or blank skin! Paint your skin first.');
+            return;
+        }
+
         pendingUploadSkinId = skinId;
-        pendingUploadSkinData = (skinData && Array.isArray(skinData)) ? skinData.slice() : getSkinSaveData();
+        pendingUploadSkinData = candidateData;
         const nameInput = document.getElementById('skin-upload-name-input');
         if (nameInput) nameInput.value = name || 'My Skin';
 
@@ -1282,14 +1300,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function updateSkinUploadPriceDisplay(val) {
-        const num = Math.min(100, Math.max(0, parseInt(val, 10) || 0));
-        currentUploadPrice = num;
+        currentUploadPrice = parseInt(val, 10) || 0;
+        const disp = document.getElementById('skin-upload-price-display');
+        if (disp) disp.innerText = currentUploadPrice === 0 ? 'FREE' : `${currentUploadPrice} Emeralds`;
         const label = document.getElementById('skin-upload-price-val');
         if (label) {
-            if (num === 0) {
+            if (currentUploadPrice === 0) {
                 label.innerHTML = `${getPixelEmeraldSvg(16)} <span class="text-[#85ffc7] font-bold text-xl">0 (Free)</span>`;
             } else {
-                label.innerHTML = `${getPixelEmeraldSvg(16)} <span class="text-[#4eed99] font-bold text-xl">${num} Emeralds</span>`;
+                label.innerHTML = `${getPixelEmeraldSvg(16)} <span class="text-[#4eed99] font-bold text-xl">${currentUploadPrice} Emeralds</span>`;
             }
         }
         document.querySelectorAll('.skin-upload-presets-grid .mc-btn').forEach(btn => {
@@ -1313,6 +1332,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (btn) {
             btn.disabled = true;
             btn.innerText = 'Publishing...';
+        }
+
+        const paintedPixels = (pendingUploadSkinData || []).filter(c => c && c !== 'transparent').length;
+        if (paintedPixels < 16) {
+            showToast('Cannot upload an empty or blank skin! Paint your skin first.');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = 'Publish';
+            }
+            return;
         }
 
         // Validate: Cannot upload unmodified default Steve skin
@@ -1967,7 +1996,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function exportSkin() {
-        let blob = new Blob([JSON.stringify(getSkinSaveData())], {type: "application/json"});
+        const currentData = getSkinSaveData();
+        const paintedPixels = currentData.filter(c => c && c !== 'transparent').length;
+        if (paintedPixels < 16) {
+            showToast('Cannot export an empty or blank skin! Paint your skin first.');
+            return;
+        }
+        let blob = new Blob([JSON.stringify(currentData)], {type: "application/json"});
         let url = URL.createObjectURL(blob);
         let a = document.createElement('a'); a.href = url;
         a.download = `webcraft2d_skin.json`;
@@ -2982,11 +3017,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function openWhatsNewOnce() {
         if (whatsNewShownThisLoad || !whatsNewStartupEnabled) return;
         whatsNewShownThisLoad = true;
-        const lastSeenVer = localStorage.getItem('swc_last_seen_version_v1');
-        if (lastSeenVer !== GAME_VERSION) {
-            localStorage.setItem('swc_last_seen_version_v1', GAME_VERSION);
-            openWhatsNew();
-        }
+        openWhatsNew();
     }
 
     export function updateWhatsNewStartupToggle() {

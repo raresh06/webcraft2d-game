@@ -443,32 +443,152 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
     export const INVENTORY_SIZE = 28;
 
 
+    export const escHandlersStack = [];
+    export function pushEscHandler(fn) {
+        if (typeof fn === 'function') escHandlersStack.push(fn);
+    }
+    export function popEscHandler() {
+        return escHandlersStack.pop();
+    }
+    try {
+        if (typeof window !== 'undefined') {
+            window.escHandlersStack = escHandlersStack;
+            window.pushEscHandler = pushEscHandler;
+            window.popEscHandler = popEscHandler;
+        }
+    } catch(e) {}
+
     export function closeForegroundScreen() {
+        // 1. Check custom programmatic ESC handler stack first
+        while (escHandlersStack.length > 0) {
+            const handler = escHandlersStack.pop();
+            try {
+                if (typeof handler === 'function') {
+                    const res = handler();
+                    if (res !== false) return true;
+                }
+            } catch(err) {
+                console.error("Error executing custom ESC handler:", err);
+            }
+        }
+
+        const callClose = (fnName, ...args) => {
+            if (typeof UI !== 'undefined' && typeof UI[fnName] === 'function') {
+                UI[fnName](...args);
+                return true;
+            }
+            if (typeof window !== 'undefined' && typeof window[fnName] === 'function') {
+                window[fnName](...args);
+                return true;
+            }
+            return false;
+        };
+
         const isVisible = id => {
             const el = document.getElementById(id);
-            return el && !el.classList.contains('hidden') && el.style.display !== 'none';
+            if (!el) return false;
+            if (el.classList.contains('hidden') || el.style.display === 'none') return false;
+            return (el.offsetWidth > 0 || el.offsetHeight > 0 || (typeof window.getComputedStyle === 'function' && window.getComputedStyle(el).display !== 'none'));
         };
-        if (isChatOpen) { closeChat(); return true; }
-        if (isVisible('game-intro')) { advanceIntro(); return true; }
-        if (isVisible('loading-screen')) { cancelMultiplayerConnection(); return true; }
-        if (isVisible('world-map-modal') || isWorldMapOpen) { toggleWorldMap(false); return true; }
-        if (isVisible('new-world-modal')) { closeNewWorldModal(); return true; }
-        if (isVisible('create-room-modal') || isVisible('join-room-modal')) { closeRoomDialogs(); return true; }
-        if (isVisible('publish-multiplayer-modal')) { closePublishMultiplayerModal(); return true; }
-        if (isVisible('skin-upload-modal')) { closeSkinUploadModal(); return true; }
-        if (isVisible('skin-owned-modal')) { closeSkinOwnedModal(); return true; }
-        if (isVisible('achievements-modal')) { closeAchievements(); return true; }
-        if (isVisible('credits-modal')) { closeCredits(); return true; }
-        if (isVisible('accent-color-popover')) { closeAccentColorPicker(); return true; }
-        if (isVisible('settings-menu')) { closeSettings(); return true; }
-        if (isVisible('skin-editor-container')) { closeSkinMaker(); return true; }
-        if (isVisible('skins-menu')) { closeSkins(); return true; }
-        if (isVisible('whats-new-modal')) { closeWhatsNew(); return true; }
-        if (isVisible('multiplayer-modal')) { closeMultiplayerMenu(); return true; }
-        if (isVisible('worlds-menu')) { closeWorldsMenu(); return true; }
-        if (isInventoryOpen) { toggleInventory(); return true; }
-        if (isVisible('pause-menu') || STATE === 'PAUSED') { resumeGame(); return true; }
-        if (STATE === 'PLAYING') { pauseGame(); return true; }
+
+        // 2. High-priority instant overrides (Chat, Loading, Kick, Accent Popover)
+        const isChatActive = (typeof UI !== 'undefined' && UI.isChatOpen) || (typeof window !== 'undefined' && window.isChatOpen);
+        if (isChatActive) { callClose('closeChat'); return true; }
+        if (isVisible('loading-screen')) { callClose('cancelMultiplayerConnection'); return true; }
+        if (isVisible('kick-modal')) { callClose('dismissKickModal'); return true; }
+        if (isVisible('accent-color-popover')) { callClose('closeAccentColorPicker'); return true; }
+
+        // 3. Dynamic Universal Stacking Scanner: Detect ALL visible modal overlays & dialogs
+        const candidateOverlays = Array.from(document.querySelectorAll(
+            '.menu-overlay, [role="dialog"], [aria-modal="true"], .modal, .dialog, .popup, [data-modal]'
+        ));
+
+        const visibleOverlays = candidateOverlays.filter(el => {
+            if (!el || el.id === 'main-menu' || el.id === 'shared-menu-bg') return false;
+            if (el.classList.contains('hidden') || el.style.display === 'none') return false;
+            return (el.offsetWidth > 0 || el.offsetHeight > 0 || (typeof window.getComputedStyle === 'function' && window.getComputedStyle(el).display !== 'none'));
+        });
+
+        if (visibleOverlays.length > 0) {
+            // Sort by effective stacking order: computed z-index descending, then later in DOM
+            visibleOverlays.sort((a, b) => {
+                const za = parseInt(window.getComputedStyle ? window.getComputedStyle(a).zIndex : a.style.zIndex, 10) || 0;
+                const zb = parseInt(window.getComputedStyle ? window.getComputedStyle(b).zIndex : b.style.zIndex, 10) || 0;
+                if (za !== zb) return zb - za;
+                return (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING) ? -1 : 1;
+            });
+
+            // Process topmost visible overlay
+            for (const topOverlay of visibleOverlays) {
+                const overlayId = topOverlay.id;
+
+                // Dedicated handlers for known built-in modals:
+                if (overlayId === 'tutorial-modal') {
+                    if (!callClose('closeTutorialModal')) topOverlay.classList.add('hidden');
+                    return true;
+                }
+                if (overlayId === 'credits-modal') { callClose('closeCredits'); return true; }
+                if (overlayId === 'skin-upload-modal') { callClose('closeSkinUploadModal'); return true; }
+                if (overlayId === 'skin-owned-modal') { callClose('closeSkinOwnedModal'); return true; }
+                if (overlayId === 'publish-multiplayer-modal') { callClose('closePublishMultiplayerModal'); return true; }
+                if (overlayId === 'new-world-modal') { callClose('closeNewWorldModal'); return true; }
+                if (overlayId === 'create-room-modal' || overlayId === 'join-room-modal') { callClose('closeRoomDialogs'); return true; }
+                if (overlayId === 'world-map-modal' || isWorldMapOpen) { if (!callClose('toggleWorldMap', false)) topOverlay.classList.add('hidden'); return true; }
+                if (overlayId === 'settings-menu') { callClose('closeSettings'); return true; }
+                if (overlayId === 'achievements-modal') { callClose('closeAchievements'); return true; }
+                if (overlayId === 'whats-new-modal') { callClose('closeWhatsNew'); return true; }
+                if (overlayId === 'skins-menu') {
+                    const skinEditor = document.getElementById('skin-editor-container');
+                    if (skinEditor && !skinEditor.classList.contains('hidden') && skinEditor.style.display !== 'none') {
+                        callClose('closeSkinMaker');
+                    } else {
+                        callClose('closeSkins');
+                    }
+                    return true;
+                }
+                if (overlayId === 'multiplayer-modal') { callClose('closeMultiplayerMenu'); return true; }
+                if (overlayId === 'worlds-menu') { callClose('closeWorldsMenu'); return true; }
+                if (overlayId === 'game-intro') { callClose('advanceIntro'); return true; }
+                if (overlayId === 'pause-menu') { callClose('resumeGame'); return true; }
+
+                // --- Universal Handler for ANY Future UI / Menu ---
+                // 1. Check for standard action attributes or class names:
+                const actionBtn = topOverlay.querySelector(
+                    '[data-esc-back], [data-action="back"], [data-action="close"], .btn-close, .modal-close-btn, .close-btn, .back-btn, ' +
+                    'button[aria-label*="close" i], button[aria-label*="back" i], button[title*="close" i], button[title*="back" i]'
+                );
+                if (actionBtn && typeof actionBtn.click === 'function') {
+                    actionBtn.click();
+                    return true;
+                }
+
+                // 2. Search all buttons inside this overlay for standard back/close labels:
+                const allButtons = Array.from(topOverlay.querySelectorAll('button, .mc-btn, a.btn'));
+                const backTextBtn = allButtons.find(btn => {
+                    const txt = (btn.textContent || '').trim().toLowerCase();
+                    return /^(x|✕|back|cancel|close|done|skip|exit|return|understand|cancel connection)$/i.test(txt);
+                });
+                if (backTextBtn && typeof backTextBtn.click === 'function') {
+                    backTextBtn.click();
+                    return true;
+                }
+
+                // 3. Fallback: hide overlay so user is never trapped by any future UI
+                topOverlay.classList.add('hidden');
+                topOverlay.style.display = 'none';
+                try {
+                    topOverlay.dispatchEvent(new CustomEvent('cancel', { bubbles: true }));
+                    topOverlay.dispatchEvent(new CustomEvent('close', { bubbles: true }));
+                } catch(e) {}
+                return true;
+            }
+        }
+
+        // 4. In-Game HUD Elements & Overlays
+        if (isVisible('world-map-modal') || isWorldMapOpen) { if (!callClose('toggleWorldMap', false)) { const wmm = document.getElementById('world-map-modal'); if (wmm) wmm.classList.add('hidden'); } return true; }
+        if (isInventoryOpen) { callClose('toggleInventory'); return true; }
+        if (isVisible('pause-menu') || STATE === 'PAUSED') { callClose('resumeGame'); return true; }
+        if (STATE === 'PLAYING') { callClose('pauseGame'); return true; }
         return false;
     }
 
@@ -483,12 +603,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             if (e.ctrlKey || e.metaKey) {
                 if (k === 'z' && !e.shiftKey) {
                     e.preventDefault();
-                    undoSkinEdit();
+                    if (typeof UI.undoSkinEdit === 'function') UI.undoSkinEdit();
+                    else if (typeof window.undoSkinEdit === 'function') window.undoSkinEdit();
                     return;
                 }
                 if (k === 'y' || (k === 'z' && e.shiftKey)) {
                     e.preventDefault();
-                    redoSkinEdit();
+                    if (typeof UI.redoSkinEdit === 'function') UI.redoSkinEdit();
+                    else if (typeof window.redoSkinEdit === 'function') window.redoSkinEdit();
                     return;
                 }
             }
@@ -501,14 +623,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
 
         if (k === ' ' && !document.getElementById('game-intro').classList.contains('hidden')) {
             e.preventDefault();
-            advanceIntro();
+            if (typeof UI.advanceIntro === 'function') UI.advanceIntro();
+            else if (typeof window.advanceIntro === 'function') window.advanceIntro();
             return;
         }
 
-        if (isChatOpen) {
+        const isChatActive = (typeof UI !== 'undefined' && UI.isChatOpen) || (typeof window !== 'undefined' && window.isChatOpen);
+        if (isChatActive) {
             if (isEscape) {
                 e.preventDefault();
-                closeChat();
+                if (typeof UI.closeChat === 'function') UI.closeChat();
+                else if (typeof window.closeChat === 'function') window.closeChat();
             }
             return;
         }
