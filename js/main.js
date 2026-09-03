@@ -523,8 +523,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 const overlayId = topOverlay.id;
 
                 // Dedicated handlers for known built-in modals:
+                if (overlayId === 'guest-confirm-modal') { callClose('cancelGuestPrompt'); return true; }
                 if (overlayId === 'profile-details-modal') { callClose('closeProfileDetailsModal'); return true; }
-                if (overlayId === 'auth-profile-modal') { callClose('closeAuthProfileModal'); return true; }
+                if (overlayId === 'auth-profile-modal') { callClose('promptGuestOnAuthClose'); return true; }
                 if (overlayId === 'tutorial-modal') {
                     if (!callClose('closeTutorialModal')) topOverlay.classList.add('hidden');
                     return true;

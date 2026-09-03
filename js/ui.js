@@ -2441,6 +2441,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function unlockAchievement(achId) {
         if (!currentWorldAchievementsEnabled) return;
+
+        // Achievements and Emerald rewards are exclusively granted to registered Webcraft accounts
+        loadUserProfile();
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        if (isGuest) {
+            return;
+        }
+
         const ach = ACHIEVEMENTS.find(a => a.id === achId);
         if (!ach) return;
 
@@ -2607,6 +2615,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (!list) return;
         list.innerHTML = '';
 
+        loadUserProfile();
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        const guestBanner = document.getElementById('ach-guest-banner');
+        if (guestBanner) {
+            guestBanner.classList.toggle('hidden', !isGuest);
+        }
+
         const spData = getAchievementsStorage('sp');
         const mpData = getAchievementsStorage('mp');
 
@@ -2658,17 +2673,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             titleRow.className = 'flex items-center justify-between gap-2';
 
             const title = document.createElement('span');
-            title.className = `text-2xl font-bold font-['VT323'] ${isUnlocked ? 'text-[var(--mc-accent-color)]' : 'text-gray-400'}`;
+            title.className = `font-bold text-xl font-['VT323'] ${isUnlocked ? 'text-white' : 'text-gray-400'}`;
             title.innerText = ach.title;
             titleRow.appendChild(title);
 
             const badgeGroup = document.createElement('div');
             badgeGroup.className = 'flex items-center gap-1.5 flex-shrink-0';
 
-            const emeraldBadge = document.createElement('span');
-            emeraldBadge.className = 'ach-emerald-badge';
-            emeraldBadge.innerHTML = `${getPixelEmeraldSvg(13)} +${rewardAmt}`;
-            badgeGroup.appendChild(emeraldBadge);
+            const rewardBadge = document.createElement('span');
+            rewardBadge.className = 'achievement-reward-badge';
+            rewardBadge.innerHTML = `+${rewardAmt} ${getPixelEmeraldSvg(14)}`;
+            badgeGroup.appendChild(rewardBadge);
 
             const diffClass = ach.difficulty === 'Easy' ? 'ach-badge-easy'
                 : ach.difficulty === 'Medium' ? 'ach-badge-medium'
@@ -2693,7 +2708,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (isUnlocked) {
                 statusRow.innerHTML = `<span class="text-green-400 font-bold">✓ Unlocked:</span> <span class="text-gray-300">${formatAchievementDate(unlockedAt)}</span> ${isClaimed ? `<span class="text-[#4eed99] font-bold ml-1 font-['VT323'] text-sm inline-flex items-center gap-0.5">[+${rewardAmt} ${getPixelEmeraldSvg(12)} Claimed]</span>` : ''}`;
             } else {
-                statusRow.innerHTML = `<span class="text-gray-500 font-bold">🔒 Locked</span> <span class="text-gray-600">(${currentAchievementsTab === 'mp' ? 'Multiplayer' : 'Singleplayer'})</span>`;
+                const guestNotice = isGuest ? ` <span class="text-amber-400 font-bold ml-1">(Guest - Log in to earn)</span>` : '';
+                statusRow.innerHTML = `<span class="text-gray-500 font-bold">🔒 Locked</span> <span class="text-gray-600">(${currentAchievementsTab === 'mp' ? 'Multiplayer' : 'Singleplayer'})</span>${guestNotice}`;
             }
             info.appendChild(statusRow);
 
@@ -3241,10 +3257,49 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function closeAuthProfileModal() {
         const modal = document.getElementById('auth-profile-modal');
         if (modal) modal.classList.add('hidden');
+        const confirmModal = document.getElementById('guest-confirm-modal');
+        if (confirmModal) confirmModal.classList.add('hidden');
         const menuButtons = document.getElementById('main-menu-buttons');
         if (menuButtons) menuButtons.classList.remove('hidden');
         authModalHasBeenDismissedThisSession = true;
         updateMainMenuProfileBadge();
+    }
+
+    export function promptGuestOnAuthClose() {
+        const confirmModal = document.getElementById('guest-confirm-modal');
+        if (confirmModal) {
+            confirmModal.classList.remove('hidden');
+        } else {
+            handleAuthSkipToGuest(true);
+        }
+    }
+
+    export function confirmContinueAsGuest() {
+        const confirmModal = document.getElementById('guest-confirm-modal');
+        if (confirmModal) confirmModal.classList.add('hidden');
+        handleAuthSkipToGuest(true);
+    }
+
+    export function cancelGuestPrompt() {
+        const confirmModal = document.getElementById('guest-confirm-modal');
+        if (confirmModal) confirmModal.classList.add('hidden');
+    }
+
+    export function handleUnderConstruction(featureName = 'Multiplayer', btnEl = null) {
+        if (btnEl) {
+            if (!btnEl.dataset.originalText) {
+                btnEl.dataset.originalText = btnEl.innerText;
+            }
+            btnEl.innerText = "Under Construction!";
+            btnEl.classList.add('btn-construction-active');
+            setTimeout(() => {
+                if (btnEl && btnEl.dataset.originalText) {
+                    btnEl.innerText = btnEl.dataset.originalText;
+                    btnEl.classList.remove('btn-construction-active');
+                }
+            }, 2200);
+        }
+        showToast(`🚧 ${featureName} is currently Under Construction!`);
     }
 
     export function switchAuthTab(tab) {
@@ -3370,11 +3425,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
     }
 
-    export async function handleAuthSkipToGuest() {
+    export async function handleAuthSkipToGuest(skipRecommend = false) {
         try {
             const profile = await loginAsGuest();
             currentUserProfile = profile;
-            openAuthProfileModal('recommend');
+            if (skipRecommend) {
+                closeAuthProfileModal();
+            } else {
+                openAuthProfileModal('recommend');
+            }
         } catch(e) {
             closeAuthProfileModal();
         }
@@ -7016,6 +7075,7 @@ try { if (typeof handleAuthRecommend !== "undefined") window.handleAuthRecommend
 try { if (typeof openProfileDetailsModal !== "undefined") window.openProfileDetailsModal = openProfileDetailsModal; } catch(e) {}
 try { if (typeof closeProfileDetailsModal !== "undefined") window.closeProfileDetailsModal = closeProfileDetailsModal; } catch(e) {}
 try { if (typeof handleProfileSignOut !== "undefined") window.handleProfileSignOut = handleProfileSignOut; } catch(e) {}
-
-
-
+try { if (typeof promptGuestOnAuthClose !== "undefined") window.promptGuestOnAuthClose = promptGuestOnAuthClose; } catch(e) {}
+try { if (typeof confirmContinueAsGuest !== "undefined") window.confirmContinueAsGuest = confirmContinueAsGuest; } catch(e) {}
+try { if (typeof cancelGuestPrompt !== "undefined") window.cancelGuestPrompt = cancelGuestPrompt; } catch(e) {}
+try { if (typeof handleUnderConstruction !== "undefined") window.handleUnderConstruction = handleUnderConstruction; } catch(e) {}

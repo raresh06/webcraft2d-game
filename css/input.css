@@ -815,6 +815,28 @@
             align-items: center;
             text-align: center;
         }
+        .disabled-construction-btn {
+            opacity: 0.65 !important;
+            filter: grayscale(40%) !important;
+            cursor: not-allowed !important;
+            position: relative;
+            user-select: none;
+        }
+        .disabled-construction-btn:hover {
+            filter: grayscale(20%) !important;
+            opacity: 0.8 !important;
+        }
+        .disabled-construction-btn.btn-construction-active {
+            background: #5c2020 !important;
+            border-top-color: #ef4444 !important;
+            border-left-color: #ef4444 !important;
+            border-bottom-color: #2b0b0b !important;
+            border-right-color: #2b0b0b !important;
+            color: #ffd34d !important;
+            opacity: 1 !important;
+            filter: none !important;
+            transform: scale(0.98) !important;
+        }
         .profile-details-modal {
             background-color: rgba(5, 7, 10, 0.85);
             backdrop-filter: blur(8px);
