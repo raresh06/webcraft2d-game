@@ -1623,6 +1623,15 @@ export const SKIN_H = 32;
         ctx.restore();
     }
 
+    export function drawPlayerHead(ctx, skinCanvas, x, y, size) {
+        if (!skinCanvas) return;
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        // Head in skinCanvas (16x32) is 8x8 pixels at source x: 4, y: 0, w: 8, h: 8
+        ctx.drawImage(skinCanvas, 4, 0, 8, 8, Math.round(x), Math.round(y), Math.round(size), Math.round(size));
+        ctx.restore();
+    }
+
     export function renderStaticPlayerPreview() {
         let pCanvas = document.getElementById('player-preview-canvas');
         if (!pCanvas) return;
@@ -7862,6 +7871,7 @@ try { if (typeof dirtToGrassQueue !== "undefined") window.dirtToGrassQueue = dir
 try { if (typeof drawBiomeGrading !== "undefined") window.drawBiomeGrading = drawBiomeGrading; } catch(e) {}
 try { if (typeof drawCharacter !== "undefined") window.drawCharacter = drawCharacter; } catch(e) {}
 try { if (typeof drawFrontCharacter !== "undefined") window.drawFrontCharacter = drawFrontCharacter; } catch(e) {}
+try { if (typeof drawPlayerHead !== "undefined") window.drawPlayerHead = drawPlayerHead; } catch(e) {}
 try { if (typeof drawCharacterArm !== "undefined") window.drawCharacterArm = drawCharacterArm; } catch(e) {}
 try { if (typeof drawCharacterHead !== "undefined") window.drawCharacterHead = drawCharacterHead; } catch(e) {}
 try { if (typeof drawCharacterLeg !== "undefined") window.drawCharacterLeg = drawCharacterLeg; } catch(e) {}

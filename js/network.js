@@ -66,16 +66,17 @@ export async function initFirebaseSdk() {
     if (window.fbAuth) return true;
     try {
         const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-        const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        const authModule = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
         const firestore = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
 
-        fbSignInAnonymously = signInAnonymously;
-        fbSignInWithCustomToken = signInWithCustomToken;
+        fbSignInAnonymously = authModule.signInAnonymously;
+        fbSignInWithCustomToken = authModule.signInWithCustomToken;
+        window.fbAuthModule = authModule;
 
         if (firebaseConfig) {
             app = initializeApp(firebaseConfig);
             db = firestore.getFirestore(app);
-            auth = getAuth(app);
+            auth = authModule.getAuth(app);
 
             window.fbDb = db;
             window.fbAuth = auth;
@@ -89,6 +90,169 @@ export async function initFirebaseSdk() {
     }
 }
 
+export async function saveUserProfileToCloud(profileData) {
+    if (!profileData || !profileData.uid || profileData.isGuest) return false;
+    try {
+        if (!window.fbDb || !window.fbModules) {
+            await initFirebaseSdk();
+        }
+        if (!window.fbDb || !window.fbModules) return false;
+        const { doc, setDoc } = window.fbModules;
+        const profRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'user_profiles', profileData.uid);
+        await setDoc(profRef, profileData, { merge: true });
+        return true;
+    } catch (e) {
+        console.warn("Failed saving profile to Firestore", e);
+        return false;
+    }
+}
+
+export async function getUserProfileFromCloud(uid) {
+    if (!uid) return null;
+    try {
+        if (!window.fbDb || !window.fbModules) {
+            await initFirebaseSdk();
+        }
+        if (!window.fbDb || !window.fbModules) return null;
+        const { doc, getDoc } = window.fbModules;
+        const profRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'user_profiles', uid);
+        const snap = await getDoc(profRef);
+        if (snap.exists()) {
+            return snap.data();
+        }
+        return null;
+    } catch (e) {
+        console.warn("Failed getting profile from Firestore", e);
+        return null;
+    }
+}
+
+export async function registerWebcraftAccount(username, email, password, initialSkinData = null) {
+    await initFirebaseSdk();
+    if (!window.fbAuth || !window.fbAuthModule?.createUserWithEmailAndPassword) {
+        throw new Error("Firebase Authentication is not available.");
+    }
+    const { createUserWithEmailAndPassword, updateProfile } = window.fbAuthModule;
+    const userCredential = await createUserWithEmailAndPassword(window.fbAuth, email, password);
+    const user = userCredential.user;
+    window.user = user;
+
+    try {
+        if (updateProfile) {
+            await updateProfile(user, { displayName: username });
+        }
+    } catch (e) {
+        console.warn("Could not update auth displayName", e);
+    }
+
+    const profileData = {
+        uid: user.uid,
+        username: username,
+        email: email,
+        isGuest: false,
+        activeSkinId: 'custom',
+        skinData: initialSkinData || null,
+        emeralds: parseInt(localStorage.getItem('swc_emeralds_count') || '0', 10),
+        createdAt: Date.now(),
+        lastLogin: Date.now()
+    };
+
+    // Persist to Cloud Firestore
+    await saveUserProfileToCloud(profileData);
+
+    // Save locally
+    localStorage.setItem('webcraft_user_profile', JSON.stringify(profileData));
+    localStorage.setItem('swc_player_name', username);
+    playerName = username;
+
+    return profileData;
+}
+
+export async function loginWebcraftAccount(email, password) {
+    await initFirebaseSdk();
+    if (!window.fbAuth || !window.fbAuthModule?.signInWithEmailAndPassword) {
+        throw new Error("Firebase Authentication is not available.");
+    }
+    const { signInWithEmailAndPassword } = window.fbAuthModule;
+    const userCredential = await signInWithEmailAndPassword(window.fbAuth, email, password);
+    const user = userCredential.user;
+    window.user = user;
+
+    // Fetch cloud profile from Firestore
+    let cloudProfile = await getUserProfileFromCloud(user.uid);
+    if (!cloudProfile) {
+        cloudProfile = {
+            uid: user.uid,
+            username: user.displayName || email.split('@')[0] || 'Player',
+            email: email,
+            isGuest: false,
+            activeSkinId: 'steve',
+            skinData: null,
+            emeralds: parseInt(localStorage.getItem('swc_emeralds_count') || '0', 10),
+            createdAt: Date.now(),
+            lastLogin: Date.now()
+        };
+        await saveUserProfileToCloud(cloudProfile);
+    } else {
+        cloudProfile.lastLogin = Date.now();
+        await saveUserProfileToCloud(cloudProfile);
+    }
+
+    localStorage.setItem('webcraft_user_profile', JSON.stringify(cloudProfile));
+    localStorage.setItem('swc_player_name', cloudProfile.username);
+    playerName = cloudProfile.username;
+
+    return cloudProfile;
+}
+
+export async function loginAsGuest(guestName = null) {
+    await initFirebaseSdk();
+    const finalName = guestName && guestName.trim() ? guestName.trim() : ('Guest_' + Math.floor(1000 + Math.random() * 9000));
+    let uid = 'guest_' + Date.now();
+
+    try {
+        if (window.fbAuth && window.fbAuthModule?.signInAnonymously) {
+            const cred = await window.fbAuthModule.signInAnonymously(window.fbAuth);
+            if (cred && cred.user) {
+                uid = cred.user.uid;
+                window.user = cred.user;
+            }
+        }
+    } catch (e) {
+        console.warn("Guest anonymous auth fallback to local session", e);
+    }
+
+    const guestProfile = {
+        uid: uid,
+        username: finalName,
+        email: null,
+        isGuest: true,
+        activeSkinId: 'steve',
+        skinData: null,
+        emeralds: parseInt(localStorage.getItem('swc_emeralds_count') || '0', 10),
+        createdAt: Date.now(),
+        lastLogin: Date.now()
+    };
+
+    localStorage.setItem('webcraft_user_profile', JSON.stringify(guestProfile));
+    localStorage.setItem('swc_player_name', finalName);
+    playerName = finalName;
+
+    return guestProfile;
+}
+
+export async function logoutWebcraftAccount() {
+    try {
+        if (window.fbAuth && window.fbAuthModule?.signOut) {
+            await window.fbAuthModule.signOut(window.fbAuth);
+        }
+    } catch (e) {
+        console.warn("Sign out error", e);
+    }
+    localStorage.removeItem('webcraft_user_profile');
+    window.user = null;
+}
+
 window.initFirebase = async () => {
     if (!window.fbAuth) {
         await initFirebaseSdk();
@@ -97,6 +261,8 @@ window.initFirebase = async () => {
     try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token && fbSignInWithCustomToken) {
             await fbSignInWithCustomToken(window.fbAuth, __initial_auth_token);
+        } else if (window.fbAuth.currentUser) {
+            window.user = window.fbAuth.currentUser;
         } else if (fbSignInAnonymously) {
             await fbSignInAnonymously(window.fbAuth);
         }
@@ -1583,3 +1749,9 @@ try { if (typeof syncFluidState !== "undefined") window.syncFluidState = syncFlu
 try { if (typeof syncLocalPlayerState !== "undefined") window.syncLocalPlayerState = syncLocalPlayerState; } catch(e) {}
 try { if (typeof syncMultiplayerWorldState !== "undefined") window.syncMultiplayerWorldState = syncMultiplayerWorldState; } catch(e) {}
 try { if (typeof tryCompleteMultiplayerSleep !== "undefined") window.tryCompleteMultiplayerSleep = tryCompleteMultiplayerSleep; } catch(e) {}
+try { if (typeof registerWebcraftAccount !== "undefined") window.registerWebcraftAccount = registerWebcraftAccount; } catch(e) {}
+try { if (typeof loginWebcraftAccount !== "undefined") window.loginWebcraftAccount = loginWebcraftAccount; } catch(e) {}
+try { if (typeof loginAsGuest !== "undefined") window.loginAsGuest = loginAsGuest; } catch(e) {}
+try { if (typeof logoutWebcraftAccount !== "undefined") window.logoutWebcraftAccount = logoutWebcraftAccount; } catch(e) {}
+try { if (typeof saveUserProfileToCloud !== "undefined") window.saveUserProfileToCloud = saveUserProfileToCloud; } catch(e) {}
+try { if (typeof getUserProfileFromCloud !== "undefined") window.getUserProfileFromCloud = getUserProfileFromCloud; } catch(e) {}

@@ -384,6 +384,244 @@
             --mc-accent-glow: rgba(255, 211, 77, 0.35);
         }
         /* ============================================================
+           TOP LEFT CORNER STACK: PROFILE BADGE + EMERALD BADGE
+           ============================================================ */
+        .main-menu-corner-stack {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            z-index: 50;
+        }
+        .main-menu-corner-stack .main-menu-emerald-badge {
+            position: relative;
+            top: auto;
+            left: auto;
+        }
+        .main-menu-profile-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 12px 5px 6px;
+            background: linear-gradient(135deg, #252c34 0%, #171b21 100%);
+            border: 2px solid;
+            border-top-color: #7b8a97;
+            border-left-color: #7b8a97;
+            border-right-color: #080a0c;
+            border-bottom-color: #080a0c;
+            box-shadow: inset 0 0 0 1px #2b333e, 0 0 0 1px #080a0c, 4px 4px 0 rgba(0,0,0,0.55);
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s ease, background 0.1s ease, border-color 0.1s ease;
+        }
+        .main-menu-profile-badge:hover {
+            background: linear-gradient(135deg, #2d3642 0%, #1d222a 100%);
+            border-top-color: #fbbf24;
+            border-left-color: #fbbf24;
+            transform: translateY(-2px);
+            box-shadow: inset 0 0 0 1px #3a4655, 0 0 0 1px #080a0c, 4px 6px 0 rgba(0,0,0,0.65), 0 0 10px rgba(251,191,36,0.25);
+        }
+        .main-menu-profile-badge:active {
+            transform: translateY(1px);
+            box-shadow: inset 0 0 0 1px #080a0c, 2px 2px 0 rgba(0,0,0,0.4);
+        }
+        .profile-avatar-frame {
+            width: 36px;
+            height: 36px;
+            background: #11151a;
+            border: 2px solid #080a0c;
+            box-shadow: inset 2px 2px 0 #000000, 0 0 0 1px #3f4d5b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .profile-head-art {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            display: block;
+        }
+        .profile-badge-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .profile-name-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .profile-name-text {
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            color: #ffffff;
+            line-height: 1;
+            text-shadow: 1px 1px 0 #000;
+            max-width: 130px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .main-menu-profile-badge:hover .profile-name-text {
+            color: #fbbf24;
+        }
+        .profile-tag-pill {
+            font-size: 11px;
+            font-weight: bold;
+            color: #4ade80;
+            text-shadow: 0 0 4px rgba(74, 222, 128, 0.4);
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+        .profile-tag-pill.guest {
+            color: #94a3b8;
+            text-shadow: none;
+        }
+
+        /* ============================================================
+           WEBCRAFT AUTH & PROFILE ONBOARDING MODAL
+           ============================================================ */
+        .auth-profile-modal {
+            background-color: rgba(5, 7, 10, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .auth-profile-panel {
+            width: 100%;
+            max-width: 440px;
+            background: linear-gradient(180deg, #242b33 0%, #181d24 100%);
+            border: 3px solid;
+            border-top-color: #6d7b88;
+            border-left-color: #6d7b88;
+            border-right-color: #0c0f12;
+            border-bottom-color: #0c0f12;
+            box-shadow: inset 0 0 0 2px #2d353f, 0 8px 32px rgba(0,0,0,0.85);
+            padding: 24px 24px 20px;
+            color: #ffffff;
+            position: relative;
+        }
+        .auth-title-badge {
+            display: inline-block;
+            background: #855b14;
+            color: #fef08a;
+            border: 1px solid #d97706;
+            font-size: 10px;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            padding: 2px 8px;
+            margin-bottom: 6px;
+            text-shadow: 1px 1px 0 #000;
+        }
+        .auth-main-title {
+            font-family: 'VT323', monospace;
+            font-size: 38px;
+            color: #ffffff;
+            line-height: 1;
+            text-shadow: 2px 2px 0 #000;
+            margin-bottom: 4px;
+        }
+        .auth-subtitle {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.35;
+        }
+        .auth-tab-btn {
+            flex: 1;
+            background: #151a21;
+            border: 2px solid #333f4d;
+            color: #8fa0b0;
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            padding: 6px 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .auth-tab-btn:hover {
+            color: #ffffff;
+            background: #1c232d;
+            border-color: #4a5a6d;
+        }
+        .auth-tab-btn.active {
+            background: #2b3542;
+            border-color: #fbbf24;
+            color: #fbbf24;
+            box-shadow: inset 0 0 0 1px #fbbf24, 0 0 8px rgba(251,191,36,0.2);
+        }
+        .auth-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .auth-input {
+            width: 100%;
+            background: #101419;
+            border: 2px solid #2d3744;
+            padding: 8px 10px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 14px;
+            color: #ffffff;
+            outline: none;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .auth-input:focus {
+            border-color: #fbbf24;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5), 0 0 0 1px #fbbf24;
+        }
+        .auth-feedback {
+            padding: 8px 10px;
+            font-size: 13px;
+            line-height: 1.3;
+            border: 1px solid;
+        }
+        .auth-feedback.error {
+            background: rgba(185, 28, 28, 0.25);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+        .auth-feedback.success {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: #10b981;
+            color: #6ee7b7;
+        }
+        .profile-details-modal {
+            background-color: rgba(5, 7, 10, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .profile-details-panel {
+            width: 100%;
+            max-width: 380px;
+            background: linear-gradient(180deg, #242b33 0%, #181d24 100%);
+            border: 3px solid;
+            border-top-color: #6d7b88;
+            border-left-color: #6d7b88;
+            border-right-color: #0c0f12;
+            border-bottom-color: #0c0f12;
+            box-shadow: inset 0 0 0 2px #2d353f, 0 8px 32px rgba(0,0,0,0.85);
+            padding: 20px 20px 16px;
+            color: #ffffff;
+        }
+
+        /* ============================================================
            EMERALD CURRENCY & SKINS SHOP SYSTEM (GEOMETRY DASH STYLE)
            ============================================================ */
         .main-menu-emerald-badge {

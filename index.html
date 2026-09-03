@@ -158,72 +158,90 @@
     </div>
 
     <div id="main-menu" class="menu-overlay bg-black/30 backdrop-blur-[2px]">
-        <!-- Top Left Emerald Balance Badge (Enhanced Corner UI) -->
-        <div id="main-menu-emerald-box" class="main-menu-emerald-badge" onclick="openAchievements('sp')" title="Emeralds earned from Achievements (Click to view Achievements)">
-            <div class="emerald-gem-socket">
-                <svg class="emerald-pixel-art" viewBox="0 0 16 16" width="20" height="20">
-                    <rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/>
-                    <rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/>
-                    <rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/>
-                    <rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/>
-                    <rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/>
-                    <rect x="11" y="5" width="3" height="6" fill="#136d33"/>
-                    <rect x="5" y="13" width="6" height="1" fill="#136d33"/>
-                    <rect x="10" y="11" width="3" height="2" fill="#136d33"/>
-                    <rect x="8" y="12" width="3" height="1" fill="#0e5326"/>
-                    <rect x="5" y="2" width="6" height="1" fill="#1b9549"/>
-                    <rect x="4" y="4" width="8" height="1" fill="#46f381"/>
-                    <rect x="3" y="5" width="8" height="6" fill="#17c858"/>
-                    <rect x="3" y="11" width="7" height="1" fill="#17c858"/>
-                    <rect x="4" y="12" width="4" height="1" fill="#136d33"/>
-                    <rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/>
-                    <rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/>
-                    <rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/>
-                    <rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/>
-                    <rect x="5" y="3" width="3" height="2" fill="#ffffff"/>
-                    <rect x="4" y="4" width="2" height="1" fill="#ffffff"/>
-                    <rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/>
-                </svg>
-            </div>
-            <div class="emerald-badge-content">
-                <div class="emerald-badge-count-row">
-                    <span id="main-menu-emeralds-count" class="emerald-count-text">0</span>
-                    <span class="emerald-label-text">EMERALDS</span>
+        <!-- Top Left Corner Profile & Emerald Stack -->
+        <div id="main-menu-top-left-stack" class="main-menu-corner-stack">
+            <!-- Player Profile Square Box (Head Avatar + Name) -->
+            <div id="main-menu-profile-box" class="main-menu-profile-badge" onclick="openProfileDetailsModal()" title="View Player Profile & Account">
+                <div class="profile-avatar-frame">
+                    <canvas id="profile-head-canvas" width="36" height="36" class="profile-head-art"></canvas>
                 </div>
-                <div class="emerald-badge-sublabel">
-                    <span class="emerald-hint-default">
-                        <svg class="trophy-pixel-art inline" viewBox="0 0 12 12" width="13" height="13" style="image-rendering: pixelated; shape-rendering: crispEdges; vertical-align: -1px; margin-right: 2px;">
-                            <rect x="2" y="1" width="8" height="1" fill="#3a280b"/>
-                            <rect x="3" y="1" width="6" height="1" fill="#ffd34d"/>
-                            <rect x="2" y="2" width="8" height="3" fill="#ffd34d"/>
-                            <rect x="2" y="2" width="1" height="3" fill="#3a280b"/>
-                            <rect x="9" y="2" width="1" height="3" fill="#3a280b"/>
-                            <rect x="3" y="2" width="2" height="1" fill="#fef08a"/>
-                            <rect x="7" y="3" width="2" height="2" fill="#b45309"/>
-                            <rect x="1" y="2" width="1" height="2" fill="#ffd34d"/>
-                            <rect x="0" y="2" width="1" height="2" fill="#3a280b"/>
-                            <rect x="10" y="2" width="1" height="2" fill="#ffd34d"/>
-                            <rect x="11" y="2" width="1" height="2" fill="#3a280b"/>
-                            <rect x="3" y="5" width="6" height="1" fill="#f59e0b"/>
-                            <rect x="4" y="6" width="4" height="1" fill="#f59e0b"/>
-                            <rect x="5" y="7" width="2" height="2" fill="#d97706"/>
-                            <rect x="3" y="9" width="6" height="1" fill="#ffd34d"/>
-                            <rect x="2" y="10" width="8" height="1" fill="#78350f"/>
-                        </svg>
-                        Achievements
-                    </span>
-                    <span class="emerald-hint-hover">Click to View ➔</span>
+                <div class="profile-badge-content">
+                    <div class="profile-name-row">
+                        <span id="profile-player-name" class="profile-name-text">Player</span>
+                    </div>
+                    <div class="profile-badge-sublabel">
+                        <span id="profile-account-tag" class="profile-tag-pill">● Online</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Left Emerald Balance Badge (Enhanced Corner UI) -->
+            <div id="main-menu-emerald-box" class="main-menu-emerald-badge" onclick="openAchievements('sp')" title="Emeralds earned from Achievements (Click to view Achievements)">
+                <div class="emerald-gem-socket">
+                    <svg class="emerald-pixel-art" viewBox="0 0 16 16" width="20" height="20">
+                        <rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/>
+                        <rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/>
+                        <rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/>
+                        <rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/>
+                        <rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/>
+                        <rect x="11" y="5" width="3" height="6" fill="#136d33"/>
+                        <rect x="5" y="13" width="6" height="1" fill="#136d33"/>
+                        <rect x="10" y="11" width="3" height="2" fill="#136d33"/>
+                        <rect x="8" y="12" width="3" height="1" fill="#0e5326"/>
+                        <rect x="5" y="2" width="6" height="1" fill="#1b9549"/>
+                        <rect x="4" y="4" width="8" height="1" fill="#46f381"/>
+                        <rect x="3" y="5" width="8" height="6" fill="#17c858"/>
+                        <rect x="3" y="11" width="7" height="1" fill="#17c858"/>
+                        <rect x="4" y="12" width="4" height="1" fill="#136d33"/>
+                        <rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/>
+                        <rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/>
+                        <rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/>
+                        <rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/>
+                        <rect x="5" y="3" width="3" height="2" fill="#ffffff"/>
+                        <rect x="4" y="4" width="2" height="1" fill="#ffffff"/>
+                        <rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/>
+                    </svg>
+                </div>
+                <div class="emerald-badge-content">
+                    <div class="emerald-badge-count-row">
+                        <span id="main-menu-emeralds-count" class="emerald-count-text">0</span>
+                        <span class="emerald-label-text">EMERALDS</span>
+                    </div>
+                    <div class="emerald-badge-sublabel">
+                        <span class="emerald-hint-default">
+                            <svg class="trophy-pixel-art inline" viewBox="0 0 12 12" width="13" height="13" style="image-rendering: pixelated; shape-rendering: crispEdges; vertical-align: -1px; margin-right: 2px;">
+                                <rect x="2" y="1" width="8" height="1" fill="#3a280b"/>
+                                <rect x="3" y="1" width="6" height="1" fill="#ffd34d"/>
+                                <rect x="2" y="2" width="8" height="3" fill="#ffd34d"/>
+                                <rect x="2" y="2" width="1" height="3" fill="#3a280b"/>
+                                <rect x="9" y="2" width="1" height="3" fill="#3a280b"/>
+                                <rect x="3" y="2" width="2" height="1" fill="#fef08a"/>
+                                <rect x="7" y="3" width="2" height="2" fill="#b45309"/>
+                                <rect x="1" y="2" width="1" height="2" fill="#ffd34d"/>
+                                <rect x="0" y="2" width="1" height="2" fill="#3a280b"/>
+                                <rect x="10" y="2" width="1" height="2" fill="#ffd34d"/>
+                                <rect x="11" y="2" width="1" height="2" fill="#3a280b"/>
+                                <rect x="3" y="5" width="6" height="1" fill="#f59e0b"/>
+                                <rect x="4" y="6" width="4" height="1" fill="#f59e0b"/>
+                                <rect x="5" y="7" width="2" height="2" fill="#d97706"/>
+                                <rect x="3" y="9" width="6" height="1" fill="#ffd34d"/>
+                                <rect x="2" y="10" width="8" height="1" fill="#78350f"/>
+                            </svg>
+                            Achievements
+                        </span>
+                        <span class="emerald-hint-hover">Click to View ➔</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -234,7 +252,7 @@
                 <span id="menu-splash" class="mc-splash">Multiplayer!</span>
             </div>
             
-            <div class="flex flex-col gap-2 w-[260px]">
+            <div id="main-menu-buttons" class="flex flex-col gap-2 w-[260px]">
                 <button class="mc-btn" onclick="openWorldsMenu()">Singleplayer</button>
                 <button class="mc-btn" onclick="openMultiplayerMenu()">Multiplayer</button>
                 <button class="mc-btn" onclick="openAchievements('sp')">Achievements</button>
@@ -252,6 +270,150 @@
             <button class="menu-skin-preview-button" onclick="openSkins()" title="Change Skin" aria-label="Change Skin">Change</button>
         </div>
         <button class="menu-news-button" type="button" onclick="openWhatsNew()" title="Read What's New" aria-label="Read What's New">📰</button>
+    </div>
+
+    <!-- Webcraft User Profile & Account Modal (Welcome & Customization Flow) -->
+    <div id="auth-profile-modal" class="menu-overlay auth-profile-modal hidden z-[280]" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+        <div class="auth-profile-panel">
+            <!-- Stage 1: Welcoming Credentials / Profile Setup -->
+            <div id="auth-stage-credentials" class="auth-stage-panel">
+                <div class="auth-header text-center mb-4">
+                    <div class="auth-title-badge">WEBCRAFT PROFILES</div>
+                    <h2 id="auth-modal-title" class="auth-main-title">Welcome to Webcraft</h2>
+                    <p class="auth-subtitle">Create or link your profile to save skins, cloud stats & join the community</p>
+                </div>
+
+                <!-- Tab Switcher -->
+                <div class="auth-tabs flex gap-2 justify-center mb-4">
+                    <button id="auth-tab-signup" type="button" class="auth-tab-btn active" onclick="switchAuthTab('signup')">Sign Up</button>
+                    <button id="auth-tab-login" type="button" class="auth-tab-btn" onclick="switchAuthTab('login')">Log In</button>
+                    <button id="auth-tab-guest" type="button" class="auth-tab-btn" onclick="switchAuthTab('guest')">Play as Guest</button>
+                </div>
+
+                <!-- Live Profile Head Preview & Input Form -->
+                <form id="auth-credentials-form" onsubmit="handleAuthSubmit(event)">
+                    <div class="auth-avatar-card mb-4 flex items-center gap-3 p-2 bg-[#12161b] border-2 border-[#333e48]">
+                        <div class="profile-avatar-frame !w-12 !h-12 flex-shrink-0">
+                            <canvas id="auth-preview-head-canvas" width="48" height="48" class="profile-head-art"></canvas>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[#a0afba] text-xs uppercase tracking-wide">Avatar Identity</div>
+                            <div id="auth-preview-name-label" class="text-amber-400 font-bold text-lg truncate font-['VT323']">Player</div>
+                        </div>
+                    </div>
+
+                    <!-- Username Field -->
+                    <div id="auth-group-username" class="auth-input-group mb-3">
+                        <label for="auth-input-username" class="auth-label">Character Name</label>
+                        <input id="auth-input-username" type="text" class="auth-input" maxlength="16" placeholder="e.g. SteveCraft" required autocomplete="nickname" oninput="updateAuthAvatarPreview(this.value)">
+                    </div>
+
+                    <!-- Email Field -->
+                    <div id="auth-group-email" class="auth-input-group mb-3">
+                        <label for="auth-input-email" class="auth-label">Email Address</label>
+                        <input id="auth-input-email" type="email" class="auth-input" placeholder="player@example.com" autocomplete="email">
+                    </div>
+
+                    <!-- Password Field -->
+                    <div id="auth-group-password" class="auth-input-group mb-4">
+                        <div class="flex justify-between items-center">
+                            <label for="auth-input-password" class="auth-label">Password</label>
+                            <button type="button" class="text-xs text-amber-400/80 hover:text-amber-300" onclick="toggleAuthPasswordVisibility()">Show</button>
+                        </div>
+                        <input id="auth-input-password" type="password" class="auth-input" placeholder="At least 6 characters" minlength="6" autocomplete="current-password">
+                    </div>
+
+                    <!-- Feedback Alert -->
+                    <div id="auth-feedback-msg" class="auth-feedback hidden mb-3"></div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col gap-2 mt-2">
+                        <button id="auth-submit-btn" type="submit" class="mc-btn !w-full !py-2 !text-2xl flex items-center justify-center">Create Profile & Sign Up</button>
+                        <button type="button" class="auth-skip-btn text-xs text-stone-400 hover:text-stone-200 mt-1 underline" onclick="handleAuthSkipToGuest()">Skip and play as guest for now</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Stage 2: Post-Registration Customization Recommendation -->
+            <div id="auth-stage-recommend" class="auth-stage-panel hidden">
+                <div class="auth-header text-center mb-3">
+                    <div class="auth-title-badge !bg-emerald-800/80 !border-emerald-500">PROFILE READY</div>
+                    <h2 class="auth-main-title">Welcome to Webcraft!</h2>
+                    <p class="auth-subtitle">Hello, <strong id="recommend-player-name" class="text-amber-300">Player</strong>! Your profile is connected.</p>
+                </div>
+
+                <!-- Showcase Preview Card -->
+                <div class="auth-recommend-card p-4 bg-[#141920] border-2 border-[#414d59] flex flex-col items-center text-center my-4">
+                    <div class="profile-avatar-frame !w-16 !h-16 mb-2 border-2 border-amber-400/60 shadow-[0_0_12px_rgba(251,191,36,0.3)]">
+                        <canvas id="recommend-avatar-canvas" width="64" height="64" class="profile-head-art"></canvas>
+                    </div>
+                    <h3 class="text-white text-lg font-bold">Customize Your Appearance</h3>
+                    <p class="text-[#9bb0be] text-sm max-w-xs mt-1">Stand out in singleplayer and multiplayer servers! Create your own pixel skin or pick from the community Skins Shop.</p>
+                </div>
+
+                <!-- Recommendation Action Buttons -->
+                <div class="flex flex-col gap-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" class="mc-btn !w-full !px-2 !py-2 !text-xl !bg-[#1c4b2e] hover:!bg-[#245f3a] !text-white flex items-center justify-center gap-1.5" onclick="handleAuthRecommend('maker')">
+                            <span>🎨</span> Skin Studio
+                        </button>
+                        <button type="button" class="mc-btn !w-full !px-2 !py-2 !text-xl !bg-[#243b5e] hover:!bg-[#2d4974] !text-white flex items-center justify-center gap-1.5" onclick="handleAuthRecommend('shop')">
+                            <span>🛍️</span> Skins Shop
+                        </button>
+                    </div>
+                    <button type="button" class="mc-btn !w-full !py-2 !text-2xl !bg-[#8a651a] hover:!bg-[#a3771f] !text-white flex items-center justify-center mt-1" onclick="handleAuthRecommend('play')">
+                        ⚔️ Enter Webcraft
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Details & Account Management Modal -->
+    <div id="profile-details-modal" class="menu-overlay profile-details-modal hidden z-[270]" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+        <div class="profile-details-panel">
+            <div class="flex justify-between items-center pb-2 border-b-2 border-[#3b4752] mb-3">
+                <h2 id="profile-modal-title" class="text-2xl font-bold text-amber-400 font-['VT323'] tracking-wider">PLAYER PROFILE</h2>
+                <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !text-white flex items-center justify-center leading-none" onclick="closeProfileDetailsModal()" aria-label="Close modal">X</button>
+            </div>
+
+            <!-- Profile Info Body -->
+            <div class="flex items-center gap-3 p-3 bg-[#13171d] border-2 border-[#333e49] mb-3">
+                <div class="profile-avatar-frame !w-16 !h-16 flex-shrink-0 border-2 border-amber-400/50">
+                    <canvas id="profile-details-head-canvas" width="64" height="64" class="profile-head-art"></canvas>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div id="profile-details-name" class="text-2xl font-bold text-white truncate font-['VT323']">Player</div>
+                    <div id="profile-details-type" class="text-xs text-amber-400 uppercase tracking-wider font-mono">Cloud Account</div>
+                    <div id="profile-details-email" class="text-xs text-[#8a9ba8] truncate mt-0.5 font-mono">player@example.com</div>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div class="p-2 bg-[#171d24] border border-[#2b353f] text-center">
+                    <div class="text-[#8e9fae] text-xs uppercase">Emeralds</div>
+                    <div id="profile-details-emeralds" class="text-emerald-400 font-bold text-xl font-['VT323']">0</div>
+                </div>
+                <div class="p-2 bg-[#171d24] border border-[#2b353f] text-center">
+                    <div class="text-[#8e9fae] text-xs uppercase">Skin Status</div>
+                    <div id="profile-details-skin-status" class="text-cyan-400 font-bold text-xl font-['VT323']">Active</div>
+                </div>
+            </div>
+
+            <!-- Profile Actions -->
+            <div class="flex flex-col gap-2">
+                <button type="button" class="mc-btn !w-full !py-1.5 !text-xl flex items-center justify-center gap-1.5" onclick="closeProfileDetailsModal(); openSkins();">
+                    <span>👕</span> Change Character Skin
+                </button>
+                <button type="button" class="mc-btn !w-full !py-1.5 !text-xl !bg-[#5b2323] hover:!bg-[#782c2c] !text-white flex items-center justify-center gap-1.5" onclick="handleProfileSignOut()">
+                    <span>🚪</span> Sign Out / Switch Profile
+                </button>
+                <button type="button" class="mc-btn !w-full !py-1 !text-lg !bg-[#2a343e] hover:!bg-[#364350] flex items-center justify-center mt-1" onclick="closeProfileDetailsModal()">
+                    Back
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="whats-new-modal" class="menu-overlay whats-new-modal hidden" role="dialog" aria-modal="true" aria-labelledby="whats-new-title">

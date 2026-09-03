@@ -11,7 +11,7 @@ import {
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
     setEngineIsBackgroundBuildMode, setMinimapShape, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex,
-    setEngineAccentColor, drawTimeClock,
+    setEngineAccentColor, drawTimeClock, drawPlayerHead,
     buildFullOffscreenMap, renderWorldMapLoop,
     setIsWorldMapOpen, setMapPan, setMapZoom,
     generateMenuWorld, menuWorldInitialized, drawMenuBackground,
@@ -21,9 +21,17 @@ import {
     LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS
 } from './engine.js';
 
+import {
+    registerWebcraftAccount, loginWebcraftAccount, loginAsGuest, logoutWebcraftAccount,
+    saveUserProfileToCloud, getUserProfileFromCloud
+} from './network.js';
+
 export const SKIN_W = 16;
 export const SKIN_H = 32;
 export let playerSkinData = new Array(SKIN_W * SKIN_H).fill(null);
+export let currentUserProfile = null;
+export let currentAuthTab = 'signup';
+export let authModalHasBeenDismissedThisSession = false;
 // =============================================================================
 // WEBCRAFT 2D - UI MODULE (ui.js)
 // DOM Event Listeners, Inventory, Crafting, Aseprite Skin Maker & Menus
@@ -1470,6 +1478,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
         if (typeof staticPreviewDrawn !== 'undefined') staticPreviewDrawn = false;
         if (typeof drawPlayerPreview === 'function') drawPlayerPreview();
+        if (typeof updateMainMenuProfileBadge === 'function') updateMainMenuProfileBadge();
     }
 
     export function getSkinToneFromContext(sCtx) {
@@ -3138,6 +3147,283 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         openMultiplayerMenu();
     }
 
+    // =========================================================================
+    // WEBCRAFT USER PROFILE & AUTHENTICATION CONTROLLER
+    // =========================================================================
+
+    export function loadUserProfile() {
+        try {
+            const raw = localStorage.getItem('webcraft_user_profile');
+            if (raw) {
+                currentUserProfile = JSON.parse(raw);
+                if (currentUserProfile && currentUserProfile.username) {
+                    localStorage.setItem('swc_player_name', currentUserProfile.username);
+                }
+            }
+        } catch (e) {
+            console.warn("Could not load user profile from localStorage", e);
+        }
+    }
+
+    export function checkProfileOnStartup() {
+        loadUserProfile();
+        const menuButtons = document.getElementById('main-menu-buttons');
+        if (!currentUserProfile && !authModalHasBeenDismissedThisSession) {
+            // First time or not connected: hide menu buttons and display the welcome auth modal
+            if (menuButtons) menuButtons.classList.add('hidden');
+            openAuthProfileModal('credentials');
+        } else {
+            if (menuButtons) menuButtons.classList.remove('hidden');
+            updateMainMenuProfileBadge();
+        }
+    }
+
+    export function updateMainMenuProfileBadge() {
+        loadUserProfile();
+        const nameEl = document.getElementById('profile-player-name');
+        const tagEl = document.getElementById('profile-account-tag');
+        const activeName = currentUserProfile?.username || localStorage.getItem('swc_player_name') || 'Player';
+        
+        if (nameEl) nameEl.innerText = activeName;
+        if (tagEl) {
+            if (currentUserProfile && !currentUserProfile.isGuest) {
+                tagEl.innerText = '● Online';
+                tagEl.className = 'profile-tag-pill';
+            } else {
+                tagEl.innerText = '● Guest';
+                tagEl.className = 'profile-tag-pill guest';
+            }
+        }
+
+        // Draw Player Head on badges and modals
+        const canvases = [
+            document.getElementById('profile-head-canvas'),
+            document.getElementById('auth-preview-head-canvas'),
+            document.getElementById('recommend-avatar-canvas'),
+            document.getElementById('profile-details-head-canvas')
+        ];
+
+        const skinCanvas = (typeof window !== 'undefined' && window.skinCanvasObj) ? window.skinCanvasObj : skinCanvasObj;
+        if (skinCanvas) {
+            canvases.forEach(cv => {
+                if (!cv) return;
+                const ctx = cv.getContext('2d');
+                ctx.clearRect(0, 0, cv.width, cv.height);
+                ctx.imageSmoothingEnabled = false;
+                if (typeof drawPlayerHead === 'function') {
+                    drawPlayerHead(ctx, skinCanvas, 0, 0, cv.width);
+                }
+            });
+        }
+    }
+
+    export function openAuthProfileModal(stage = 'credentials') {
+        const modal = document.getElementById('auth-profile-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+
+        const credStage = document.getElementById('auth-stage-credentials');
+        const recStage = document.getElementById('auth-stage-recommend');
+
+        if (stage === 'credentials') {
+            if (credStage) credStage.classList.remove('hidden');
+            if (recStage) recStage.classList.add('hidden');
+            switchAuthTab(currentAuthTab || 'signup');
+        } else {
+            if (credStage) credStage.classList.add('hidden');
+            if (recStage) recStage.classList.remove('hidden');
+            const recName = document.getElementById('recommend-player-name');
+            if (recName) recName.innerText = currentUserProfile?.username || 'Player';
+        }
+        updateMainMenuProfileBadge();
+    }
+
+    export function closeAuthProfileModal() {
+        const modal = document.getElementById('auth-profile-modal');
+        if (modal) modal.classList.add('hidden');
+        const menuButtons = document.getElementById('main-menu-buttons');
+        if (menuButtons) menuButtons.classList.remove('hidden');
+        authModalHasBeenDismissedThisSession = true;
+        updateMainMenuProfileBadge();
+    }
+
+    export function switchAuthTab(tab) {
+        currentAuthTab = tab;
+        ['signup', 'login', 'guest'].forEach(t => {
+            const btn = document.getElementById(`auth-tab-${t}`);
+            if (btn) btn.classList.toggle('active', t === tab);
+        });
+
+        const grpUser = document.getElementById('auth-group-username');
+        const grpEmail = document.getElementById('auth-group-email');
+        const grpPass = document.getElementById('auth-group-password');
+        const submitBtn = document.getElementById('auth-submit-btn');
+        const userInput = document.getElementById('auth-input-username');
+        const emailInput = document.getElementById('auth-input-email');
+        const passInput = document.getElementById('auth-input-password');
+        const feedback = document.getElementById('auth-feedback-msg');
+
+        if (feedback) feedback.classList.add('hidden');
+
+        if (tab === 'signup') {
+            if (grpUser) grpUser.classList.remove('hidden');
+            if (grpEmail) grpEmail.classList.remove('hidden');
+            if (grpPass) grpPass.classList.remove('hidden');
+            if (userInput) { userInput.required = true; userInput.placeholder = "e.g. SteveCraft"; }
+            if (emailInput) emailInput.required = true;
+            if (passInput) passInput.required = true;
+            if (submitBtn) submitBtn.innerText = "Create Profile & Sign Up";
+        } else if (tab === 'login') {
+            if (grpUser) grpUser.classList.add('hidden');
+            if (grpEmail) grpEmail.classList.remove('hidden');
+            if (grpPass) grpPass.classList.remove('hidden');
+            if (userInput) userInput.required = false;
+            if (emailInput) emailInput.required = true;
+            if (passInput) passInput.required = true;
+            if (submitBtn) submitBtn.innerText = "Log In to Webcraft";
+        } else if (tab === 'guest') {
+            if (grpUser) grpUser.classList.remove('hidden');
+            if (grpEmail) grpEmail.classList.add('hidden');
+            if (grpPass) grpPass.classList.add('hidden');
+            if (userInput) { userInput.required = false; userInput.placeholder = "Guest Name (optional)"; }
+            if (emailInput) emailInput.required = false;
+            if (passInput) passInput.required = false;
+            if (submitBtn) submitBtn.innerText = "Continue as Guest";
+        }
+    }
+
+    export function updateAuthAvatarPreview(name) {
+        const previewName = document.getElementById('auth-preview-name-label');
+        if (previewName) previewName.innerText = name && name.trim() ? name.trim() : 'Player';
+    }
+
+    export function toggleAuthPasswordVisibility() {
+        const input = document.getElementById('auth-input-password');
+        if (!input) return;
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    export async function handleAuthSubmit(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        const feedback = document.getElementById('auth-feedback-msg');
+        const submitBtn = document.getElementById('auth-submit-btn');
+
+        const showMsg = (msg, isErr = true) => {
+            if (!feedback) return;
+            feedback.innerText = msg;
+            feedback.className = `auth-feedback mb-3 ${isErr ? 'error' : 'success'}`;
+            feedback.classList.remove('hidden');
+        };
+
+        const userInput = document.getElementById('auth-input-username');
+        const emailInput = document.getElementById('auth-input-email');
+        const passInput = document.getElementById('auth-input-password');
+
+        const username = userInput ? userInput.value.trim() : '';
+        const email = emailInput ? emailInput.value.trim() : '';
+        const pass = passInput ? passInput.value : '';
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Connecting to Firebase...';
+        }
+
+        try {
+            if (currentAuthTab === 'signup') {
+                if (!username || username.length < 2) throw new Error("Character name must be at least 2 characters.");
+                if (!email || !email.includes('@')) throw new Error("Please enter a valid email address.");
+                if (!pass || pass.length < 6) throw new Error("Password must be at least 6 characters.");
+
+                const profile = await registerWebcraftAccount(username, email, pass, playerSkinData);
+                currentUserProfile = profile;
+                showToast(`Profile created! Welcome, ${username}!`);
+                openAuthProfileModal('recommend');
+            } else if (currentAuthTab === 'login') {
+                if (!email || !email.includes('@')) throw new Error("Please enter your account email.");
+                if (!pass) throw new Error("Please enter your password.");
+
+                const profile = await loginWebcraftAccount(email, pass);
+                currentUserProfile = profile;
+                showToast(`Signed in as ${profile.username}!`);
+                openAuthProfileModal('recommend');
+            } else if (currentAuthTab === 'guest') {
+                const profile = await loginAsGuest(username);
+                currentUserProfile = profile;
+                showToast(`Playing as ${profile.username}!`);
+                openAuthProfileModal('recommend');
+            }
+        } catch (err) {
+            console.error("Auth submit error:", err);
+            let userMsg = err.message || "Authentication failed. Please check your details.";
+            if (userMsg.includes('auth/email-already-in-use')) userMsg = "This email is already registered. Please Log In instead.";
+            if (userMsg.includes('auth/invalid-credential') || userMsg.includes('auth/wrong-password') || userMsg.includes('auth/user-not-found')) userMsg = "Incorrect email or password. Please try again.";
+            if (userMsg.includes('auth/weak-password')) userMsg = "Password should be at least 6 characters.";
+            if (userMsg.includes('auth/invalid-email')) userMsg = "The email address is formatted incorrectly.";
+            showMsg(userMsg, true);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                if (currentAuthTab === 'signup') submitBtn.innerText = "Create Profile & Sign Up";
+                else if (currentAuthTab === 'login') submitBtn.innerText = "Log In to Webcraft";
+                else submitBtn.innerText = "Continue as Guest";
+            }
+        }
+    }
+
+    export async function handleAuthSkipToGuest() {
+        try {
+            const profile = await loginAsGuest();
+            currentUserProfile = profile;
+            openAuthProfileModal('recommend');
+        } catch(e) {
+            closeAuthProfileModal();
+        }
+    }
+
+    export function handleAuthRecommend(action) {
+        closeAuthProfileModal();
+        if (action === 'maker') {
+            openSkinMaker();
+        } else if (action === 'shop') {
+            openSkins();
+            if (typeof switchSkinTab === 'function') switchSkinTab('shop');
+        }
+        // If action === 'play', closeAuthProfileModal() unhides #main-menu-buttons and loads menu normally!
+    }
+
+    export function openProfileDetailsModal() {
+        loadUserProfile();
+        const modal = document.getElementById('profile-details-modal');
+        if (!modal) return;
+
+        const nameEl = document.getElementById('profile-details-name');
+        const typeEl = document.getElementById('profile-details-type');
+        const emailEl = document.getElementById('profile-details-email');
+        const emeraldsEl = document.getElementById('profile-details-emeralds');
+        const skinStatusEl = document.getElementById('profile-details-skin-status');
+
+        if (nameEl) nameEl.innerText = currentUserProfile?.username || localStorage.getItem('swc_player_name') || 'Player';
+        if (typeEl) typeEl.innerText = currentUserProfile?.isGuest ? 'Guest Session' : 'Firebase Cloud Account';
+        if (emailEl) emailEl.innerText = currentUserProfile?.email || 'No email associated (Guest)';
+        if (emeraldsEl) emeraldsEl.innerText = document.getElementById('main-menu-emeralds-count')?.innerText || '0';
+        if (skinStatusEl) skinStatusEl.innerText = 'Active';
+
+        updateMainMenuProfileBadge();
+        modal.classList.remove('hidden');
+    }
+
+    export function closeProfileDetailsModal() {
+        const modal = document.getElementById('profile-details-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    export async function handleProfileSignOut() {
+        await logoutWebcraftAccount();
+        currentUserProfile = null;
+        closeProfileDetailsModal();
+        openAuthProfileModal('credentials');
+    }
+
     export function showMainMenu() {
         const isMenuInit = (typeof window !== 'undefined' && window.menuWorldInitialized) || menuWorldInitialized;
         const splashEl = document.getElementById('splash-text');
@@ -3153,6 +3439,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
         if (typeof drawMenuBackground === 'function') drawMenuBackground();
         if (typeof drawPlayerPreview === 'function') drawPlayerPreview();
+        updateMainMenuProfileBadge();
+        checkProfileOnStartup();
         openWhatsNewOnce();
     }
 
@@ -6712,6 +7000,22 @@ try { if (typeof getTutorialTextureSrc !== "undefined") window.getTutorialTextur
 try { if (typeof renderItemFrameHtml !== "undefined") window.renderItemFrameHtml = renderItemFrameHtml; } catch(e) {}
 try { if (typeof isTutorialOnboardingMode !== "undefined") window.isTutorialOnboardingMode = isTutorialOnboardingMode; } catch(e) {}
 try { if (typeof tutorialOnboardingCallback !== "undefined") window.tutorialOnboardingCallback = tutorialOnboardingCallback; } catch(e) {}
+try { if (typeof currentUserProfile !== "undefined") window.currentUserProfile = currentUserProfile; } catch(e) {}
+try { if (typeof currentAuthTab !== "undefined") window.currentAuthTab = currentAuthTab; } catch(e) {}
+try { if (typeof loadUserProfile !== "undefined") window.loadUserProfile = loadUserProfile; } catch(e) {}
+try { if (typeof checkProfileOnStartup !== "undefined") window.checkProfileOnStartup = checkProfileOnStartup; } catch(e) {}
+try { if (typeof updateMainMenuProfileBadge !== "undefined") window.updateMainMenuProfileBadge = updateMainMenuProfileBadge; } catch(e) {}
+try { if (typeof openAuthProfileModal !== "undefined") window.openAuthProfileModal = openAuthProfileModal; } catch(e) {}
+try { if (typeof closeAuthProfileModal !== "undefined") window.closeAuthProfileModal = closeAuthProfileModal; } catch(e) {}
+try { if (typeof switchAuthTab !== "undefined") window.switchAuthTab = switchAuthTab; } catch(e) {}
+try { if (typeof updateAuthAvatarPreview !== "undefined") window.updateAuthAvatarPreview = updateAuthAvatarPreview; } catch(e) {}
+try { if (typeof toggleAuthPasswordVisibility !== "undefined") window.toggleAuthPasswordVisibility = toggleAuthPasswordVisibility; } catch(e) {}
+try { if (typeof handleAuthSubmit !== "undefined") window.handleAuthSubmit = handleAuthSubmit; } catch(e) {}
+try { if (typeof handleAuthSkipToGuest !== "undefined") window.handleAuthSkipToGuest = handleAuthSkipToGuest; } catch(e) {}
+try { if (typeof handleAuthRecommend !== "undefined") window.handleAuthRecommend = handleAuthRecommend; } catch(e) {}
+try { if (typeof openProfileDetailsModal !== "undefined") window.openProfileDetailsModal = openProfileDetailsModal; } catch(e) {}
+try { if (typeof closeProfileDetailsModal !== "undefined") window.closeProfileDetailsModal = closeProfileDetailsModal; } catch(e) {}
+try { if (typeof handleProfileSignOut !== "undefined") window.handleProfileSignOut = handleProfileSignOut; } catch(e) {}
 
 
 
