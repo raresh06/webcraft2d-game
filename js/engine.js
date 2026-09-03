@@ -842,13 +842,160 @@ export function getMaxAnimals() {
             }
         }
 
+        function getDirtPixel(px, py) {
+            // Rich authentic Minecraft soil: base loam with dark crevices and small lighter pebbles
+            const n = ((px * 7 + py * 13 + (px ^ py) * 3) % 23);
+            const sub = ((px * 11 + py * 17) % 5);
+
+            // Occasional small pebbles / gravel grains
+            if ((px === 3 && py === 5) || (px === 11 && py === 9) || (px === 7 && py === 14) || (px === 14 && py === 2)) {
+                return '#9e7956'; // Pebble highlight
+            }
+            if ((px === 4 && py === 5) || (px === 12 && py === 9) || (px === 8 && py === 14)) {
+                return '#8a6544'; // Pebble body
+            }
+            if ((px === 4 && py === 6) || (px === 12 && py === 10)) {
+                return '#50351e'; // Pebble under-shadow
+            }
+
+            // Deep soil fissures / dark crevices
+            if (n === 0 || n === 7 || n === 15) {
+                return sub < 2 ? '#482e1a' : '#573a23';
+            }
+            // Mid-dark soil
+            if (n === 2 || n === 9 || n === 18) {
+                return '#68472d';
+            }
+            // Light loam flecks
+            if (n === 4 || n === 12 || n === 20) {
+                return sub === 0 ? '#916d4d' : '#856242';
+            }
+            // Standard rich brown soil body
+            return (sub === 1 || sub === 3) ? '#745235' : '#7b583a';
+        }
+
+        const GRASS_HANG_DEPTH = [
+            4, 4, 5, 6, 5, 4, 3, 5, 7, 6, 4, 3, 4, 6, 5, 4
+        ];
+
+        function getGrassBlockPixel(px, py) {
+            const hangY = GRASS_HANG_DEPTH[px % 16];
+
+            if (py < hangY) {
+                // Inside green grass turf
+                const n = ((px * 13 + py * 7 + (px ^ py) * 3) % 17);
+                const isHangingTip = (py === hangY - 1 && hangY > 4);
+                const isTurfSurface = (py === 0);
+
+                if (isTurfSurface) {
+                    // Sunlit top edge highlight
+                    if (n === 1 || n === 5 || n === 11) return '#6be845';
+                    if (n === 3 || n === 8) return '#58d234';
+                    return '#49be28';
+                } else if (isHangingTip) {
+                    // Hanging blade tip: slightly darker, shadowed green
+                    return (n % 2 === 0) ? '#2d781b' : '#368e21';
+                } else if (py >= hangY - 2 && hangY >= 5) {
+                    // Lower blade body
+                    return (n % 3 === 0) ? '#3c9e25' : '#32861e';
+                } else {
+                    // Rich turf interior
+                    if (n === 2 || n === 9) return '#5fd53a';
+                    if (n === 0 || n === 6 || n === 14) return '#348d20';
+                    return '#42aa28';
+                }
+            } else if (py === hangY && hangY >= 4) {
+                // Darkened soil shadow under hanging blades
+                return ((px + py) % 2 === 0) ? '#382313' : '#452c19';
+            } else {
+                // Rich dirt body below grass
+                return getDirtPixel(px, py);
+            }
+        }
+
+        function getShortGrassPixel(px, py) {
+            // Blade 1: Left leaning
+            if (px === 2 && py === 8) return '#6ce842';
+            if (px === 3 && (py === 9 || py === 10)) return '#46b82b';
+            if (px === 4 && (py >= 11 && py <= 15)) return py >= 14 ? '#246b14' : '#3aa523';
+
+            // Blade 2: Left-center
+            if (px === 5 && py === 5) return '#6ce842';
+            if (px === 5 && (py >= 6 && py <= 8)) return '#5cd934';
+            if (px === 6 && (py >= 9 && py <= 13)) return '#46b82b';
+            if (px === 6 && (py >= 14 && py <= 15)) return '#1b540f';
+
+            // Blade 3: Center tall spike
+            if (px === 8 && py === 3) return '#7cf54e';
+            if (px === 8 && (py === 4 || py === 5)) return '#6ce842';
+            if (px === 7 && (py >= 5 && py <= 9)) return '#5cd934';
+            if (px === 8 && (py >= 6 && py <= 12)) return '#46b82b';
+            if (px === 7 && (py >= 10 && py <= 15)) return '#3aa523';
+            if (px === 8 && (py >= 13 && py <= 15)) return '#246b14';
+
+            // Blade 4: Right-center
+            if (px === 10 && py === 5) return '#6ce842';
+            if (px === 10 && (py >= 6 && py <= 8)) return '#5cd934';
+            if (px === 9 && (py >= 8 && py <= 13)) return '#46b82b';
+            if (px === 9 && (py >= 14 && py <= 15)) return '#1b540f';
+
+            // Blade 5: Right leaning
+            if (px === 13 && py === 7) return '#6ce842';
+            if (px === 12 && (py >= 8 && py <= 10)) return '#46b82b';
+            if (px === 11 && (py >= 10 && py <= 15)) return py >= 14 ? '#246b14' : '#3aa523';
+
+            // Inter-blade cross tufts
+            if (px === 7 && py === 12) return '#46b82b';
+            if (px === 9 && py === 11) return '#5cd934';
+            if (px === 5 && py === 13) return '#3aa523';
+            if (px === 10 && py === 13) return '#3aa523';
+
+            return null;
+        }
+
+        function getTallGrassPixel(px, py) {
+            // Central primary plume
+            if (px === 7 && py === 1) return '#7cf54e';
+            if ((px === 7 || px === 8) && (py === 2 || py === 3)) return '#6ce842';
+            if (px === 6 && (py >= 3 && py <= 6)) return '#5cd934';
+            if (px === 7 && (py >= 4 && py <= 10)) return '#46b82b';
+            if (px === 8 && (py >= 4 && py <= 9)) return '#5cd934';
+            if ((px === 7 || px === 8) && (py >= 11 && py <= 15)) return py >= 14 ? '#1b540f' : '#2e821b';
+
+            // Left arching fronds
+            if (px === 4 && py === 3) return '#6ce842';
+            if (px === 5 && (py >= 4 && py <= 6)) return '#5cd934';
+            if (px === 4 && (py >= 6 && py <= 9)) return '#46b82b';
+            if (px === 5 && (py >= 8 && py <= 13)) return '#3aa523';
+            if (px === 6 && (py >= 10 && py <= 15)) return '#246b14';
+
+            if (px === 2 && py === 6) return '#6ce842';
+            if (px === 3 && (py >= 7 && py <= 10)) return '#46b82b';
+            if (px === 4 && (py >= 10 && py <= 15)) return '#3aa523';
+
+            // Right arching fronds
+            if (px === 11 && py === 3) return '#6ce842';
+            if (px === 10 && (py >= 4 && py <= 6)) return '#5cd934';
+            if (px === 11 && (py >= 6 && py <= 9)) return '#46b82b';
+            if (px === 10 && (py >= 8 && py <= 13)) return '#3aa523';
+            if (px === 9 && (py >= 10 && py <= 15)) return '#246b14';
+
+            if (px === 13 && py === 6) return '#6ce842';
+            if (px === 12 && (py >= 7 && py <= 10)) return '#46b82b';
+            if (px === 11 && (py >= 10 && py <= 15)) return '#3aa523';
+
+            // Secondary inner density
+            if (px === 6 && (py === 7 || py === 8)) return '#46b82b';
+            if (px === 9 && (py === 7 || py === 8)) return '#5cd934';
+            if (px === 8 && py === 10) return '#3aa523';
+
+            return null;
+        }
+
         for (let x = 0; x < 16; x++) {
             for (let y = 0; y < 16; y++) {
-                if (id === IDS.DIRT) p(x, y, randColor(dirtColors));
-                else if (id === IDS.GRASS) {
-                    if (y < 4) p(x, y, randColor(['#42b035', '#359929', '#4dcf3e', '#51db42']));
-                    else p(x, y, randColor(dirtColors));
-                }
+                if (id === IDS.DIRT) p(x, y, getDirtPixel(x, y));
+                else if (id === IDS.GRASS) p(x, y, getGrassBlockPixel(x, y));
                 else if (id === IDS.STONE || id === IDS.COAL_ORE || id === IDS.IRON_ORE || id === IDS.GOLD_ORE || id === IDS.DIAMOND_ORE) {
                     p(x, y, getStonePixel(x, y));
                 }
@@ -872,24 +1019,12 @@ export function getMaxAnimals() {
                     if (x >= 5 && x <= 10 && y >= 2 && y <= 6 && (x + y) % 3 !== 0) p(x, y, '#4caf50');
                 }
                 else if (id === IDS.SHORT_GRASS) {
-                    if (y >= 8 && y <= 15) {
-                        if (x === 4 && y >= 11) p(x, y, '#4caf50');
-                        if (x === 5 && y >= 9) p(x, y, '#388e3c');
-                        if (x === 6 && y >= 10) p(x, y, '#4caf50');
-                        if (x === 7 && y >= 8) p(x, y, '#2e7d32');
-                        if (x === 8 && y >= 8) p(x, y, '#4caf50');
-                        if (x === 9 && y >= 10) p(x, y, '#388e3c');
-                        if (x === 10 && y >= 9) p(x, y, '#4caf50');
-                        if (x === 11 && y >= 12) p(x, y, '#2e7d32');
-                    }
+                    const c = getShortGrassPixel(x, y);
+                    if (c) p(x, y, c);
                 }
                 else if (id === IDS.TALL_GRASS) {
-                    if (y >= 2 && y <= 15) {
-                        if ((x === 4 || x === 11) && y >= 9) p(x, y, '#388e3c');
-                        if ((x === 5 || x === 10) && y >= 5) p(x, y, '#4caf50');
-                        if ((x === 6 || x === 9) && y >= 3) p(x, y, '#2e7d32');
-                        if ((x === 7 || x === 8) && y >= 2) p(x, y, (x + y) % 2 === 0 ? '#4caf50' : '#43a047');
-                    }
+                    const c = getTallGrassPixel(x, y);
+                    if (c) p(x, y, c);
                 }
                 else if (id === IDS.FLOWER_RED) {
                     if (x >= 7 && x <= 8 && y >= 7 && y <= 15) p(x, y, '#2e7d32');
@@ -1461,13 +1596,29 @@ export const SKIN_H = 32;
         ctx.restore();
     }
 
+    export function drawFrontCharacter(ctx, skinCanvas, x, y, w, h, bounceOffset = 0) {
+        if (!skinCanvas) return;
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+
+        // Calculate aspect-fit centered rectangle for 16x32 front-facing character
+        const scale = Math.min(w / 16, h / 32);
+        const drawW = Math.round(16 * scale);
+        const drawH = Math.round(32 * scale);
+        const drawX = Math.round(x + (w - drawW) / 2);
+        const drawY = Math.round(y + (h - drawH) / 2 - bounceOffset);
+
+        ctx.drawImage(skinCanvas, 0, 0, 16, 32, drawX, drawY, drawW, drawH);
+        ctx.restore();
+    }
+
     export function renderStaticPlayerPreview() {
         let pCanvas = document.getElementById('player-preview-canvas');
         if (!pCanvas) return;
         let pCtx = pCanvas.getContext('2d');
         pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
         pCtx.imageSmoothingEnabled = false;
-        drawCharacter(pCtx, skinCanvasObj, 0, 0, pCanvas.width, pCanvas.height, true, 0, false, false, null, null, false, null, false, [null, null, null, null]);
+        drawFrontCharacter(pCtx, skinCanvasObj, 0, 0, pCanvas.width, pCanvas.height, 0);
         staticPreviewDrawn = true;
     }
 
@@ -1485,7 +1636,7 @@ export const SKIN_H = 32;
         isPreviewWalking = true;
         staticPreviewDrawn = false;
         let startTime = performance.now();
-        let duration = 2200; // ms
+        let duration = 1600; // ms
 
         if (previewWalkAnimId) {
             cancelAnimationFrame(previewWalkAnimId);
@@ -1508,8 +1659,9 @@ export const SKIN_H = 32;
             let pCtx = pCanvas.getContext('2d');
             pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
             pCtx.imageSmoothingEnabled = false;
-            let walkAnimPhase = (elapsed / 1000) * (Math.PI * 4); // Constant smooth ~2 steps/sec
-            drawCharacter(pCtx, skinCanvasObj, 0, 0, pCanvas.width, pCanvas.height, true, walkAnimPhase, true, false, null, null, false, null, false, [null, null, null, null]);
+            // Cheerful front-facing bounce hop
+            const bounce = Math.abs(Math.sin((elapsed / 1000) * Math.PI * 3)) * 8;
+            drawFrontCharacter(pCtx, skinCanvasObj, 0, 0, pCanvas.width, pCanvas.height, bounce);
 
             previewWalkAnimId = requestAnimationFrame(animLoop);
         }
@@ -4127,12 +4279,13 @@ export const SKIN_H = 32;
                     if (biome === "desert") world[x][y] = IDS.SAND;
                     else if (biome === "snow") world[x][y] = IDS.SNOW;
                     else if (biome === "mountains" && y < baseHeight - 35) world[x][y] = IDS.SNOW;
+                    else if (biome === "mountains" && y >= baseHeight - 14) world[x][y] = IDS.GRASS;
                     else if (biome === "mountains") world[x][y] = IDS.STONE;
                     else world[x][y] = IDS.GRASS;
                 }
                 else if (y > surfaceY && y < surfaceY + seededRandom() * 3 + 3) {
                     if (biome === "desert") world[x][y] = IDS.SAND;
-                    else if (biome === "snow" || biome === "plains" || biome === "forest") world[x][y] = IDS.DIRT;
+                    else if (biome === "snow" || biome === "plains" || biome === "forest" || (biome === "mountains" && surfaceY >= baseHeight - 14)) world[x][y] = IDS.DIRT;
                     else world[x][y] = IDS.STONE;
                 }
                 else {
@@ -4393,22 +4546,44 @@ export const SKIN_H = 32;
                 for (let i = 1; i <= cactusHeight; i++) world[x][surfaceY - i] = IDS.CACTUS;
             }
 
-            // Natural Ground Cover: Grass & Flowers
+            // Natural Ground Cover: Organic Meadows, Grass Waves & Clustered Wildflower Patches
             if (topBlock === IDS.GRASS && world[x][surfaceY - 1] === IDS.AIR && !isNearWater(x)) {
+                const meadowDensity = Math.sin(x * 0.12 + worldSeed * 0.3) * 0.5 + Math.sin(x * 0.04) * 0.5;
+                const flowerCluster = Math.sin(x * 0.22 + worldSeed * 1.7);
                 let vegRoll = seededRandom();
+
                 if (biome === "plains") {
-                    if (vegRoll < 0.28) world[x][surfaceY - 1] = IDS.SHORT_GRASS;
-                    else if (vegRoll < 0.48) world[x][surfaceY - 1] = IDS.TALL_GRASS;
-                    else if (vegRoll < 0.55) world[x][surfaceY - 1] = IDS.FLOWER_RED;
-                    else if (vegRoll < 0.62) world[x][surfaceY - 1] = IDS.FLOWER_YELLOW;
+                    // Wildflower patches in plains
+                    if (flowerCluster > 0.82 && vegRoll < 0.45) {
+                        world[x][surfaceY - 1] = IDS.FLOWER_RED;
+                    } else if (flowerCluster < -0.82 && vegRoll < 0.45) {
+                        world[x][surfaceY - 1] = IDS.FLOWER_YELLOW;
+                    } else if (meadowDensity > 0.15) {
+                        // Dense waving meadow
+                        if (vegRoll < 0.42) world[x][surfaceY - 1] = IDS.SHORT_GRASS;
+                        else if (vegRoll < 0.70) world[x][surfaceY - 1] = IDS.TALL_GRASS;
+                        else if (vegRoll < 0.75) world[x][surfaceY - 1] = IDS.FLOWER_RED;
+                        else if (vegRoll < 0.80) world[x][surfaceY - 1] = IDS.FLOWER_YELLOW;
+                    } else {
+                        // Open grassy clearing
+                        if (vegRoll < 0.20) world[x][surfaceY - 1] = IDS.SHORT_GRASS;
+                        else if (vegRoll < 0.30) world[x][surfaceY - 1] = IDS.TALL_GRASS;
+                    }
                 } else if (biome === "forest") {
-                    if (vegRoll < 0.22) world[x][surfaceY - 1] = IDS.SHORT_GRASS;
-                    else if (vegRoll < 0.40) world[x][surfaceY - 1] = IDS.TALL_GRASS;
-                    else if (vegRoll < 0.46) world[x][surfaceY - 1] = IDS.FLOWER_RED;
-                    else if (vegRoll < 0.52) world[x][surfaceY - 1] = IDS.FLOWER_YELLOW;
+                    // Forest floor under-canopy ferns & shaded flowers
+                    if (flowerCluster > 0.85 && vegRoll < 0.38) {
+                        world[x][surfaceY - 1] = IDS.FLOWER_RED;
+                    } else if (meadowDensity > 0.10) {
+                        if (vegRoll < 0.38) world[x][surfaceY - 1] = IDS.SHORT_GRASS;
+                        else if (vegRoll < 0.62) world[x][surfaceY - 1] = IDS.TALL_GRASS;
+                    } else {
+                        if (vegRoll < 0.18) world[x][surfaceY - 1] = IDS.SHORT_GRASS;
+                        else if (vegRoll < 0.28) world[x][surfaceY - 1] = IDS.TALL_GRASS;
+                    }
                 } else if (biome === "mountains" && topBlock === IDS.GRASS) {
-                    if (vegRoll < 0.18) world[x][surfaceY - 1] = IDS.SHORT_GRASS;
-                    else if (vegRoll < 0.28) world[x][surfaceY - 1] = IDS.FLOWER_YELLOW;
+                    // Alpine foothill meadows
+                    if (vegRoll < 0.24) world[x][surfaceY - 1] = IDS.SHORT_GRASS;
+                    else if (vegRoll < 0.34) world[x][surfaceY - 1] = IDS.FLOWER_YELLOW;
                 }
             }
         }
@@ -5029,6 +5204,11 @@ export const SKIN_H = 32;
                             if (hasNearbyGrass) {
                                 scheduleDirtToGrass(randX, surfY);
                             }
+                        }
+                        // If an existing grass block has become covered by a solid block, smother it back into dirt
+                        else if (block === IDS.GRASS && isSolidWorldBlock(randX, surfY - 1, world[randX]?.[surfY - 1])) {
+                            world[randX][surfY] = IDS.DIRT;
+                            syncBlock(randX, surfY, IDS.DIRT);
                         }
                     }
                 }
@@ -7670,6 +7850,7 @@ try { if (typeof diffDescriptions !== "undefined") window.diffDescriptions = dif
 try { if (typeof dirtToGrassQueue !== "undefined") window.dirtToGrassQueue = dirtToGrassQueue; } catch(e) {}
 try { if (typeof drawBiomeGrading !== "undefined") window.drawBiomeGrading = drawBiomeGrading; } catch(e) {}
 try { if (typeof drawCharacter !== "undefined") window.drawCharacter = drawCharacter; } catch(e) {}
+try { if (typeof drawFrontCharacter !== "undefined") window.drawFrontCharacter = drawFrontCharacter; } catch(e) {}
 try { if (typeof drawCharacterArm !== "undefined") window.drawCharacterArm = drawCharacterArm; } catch(e) {}
 try { if (typeof drawCharacterHead !== "undefined") window.drawCharacterHead = drawCharacterHead; } catch(e) {}
 try { if (typeof drawCharacterLeg !== "undefined") window.drawCharacterLeg = drawCharacterLeg; } catch(e) {}

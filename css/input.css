@@ -39,9 +39,9 @@
             pointer-events: auto;  padding: 12px;
         }
         .hidden { display: none !important; }
-        #game-intro { position: fixed; inset: 0; z-index: 500; overflow: hidden; background: #000; color: #fff; transition: background 1.2s ease; }
-        #game-intro.message-stage { background: transparent; }
-        #intro-message-screen { position: absolute; z-index: 1; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transition: opacity 1.2s ease, visibility 0s linear 1.2s; }
+        #game-intro { position: fixed; inset: 0; z-index: 500; overflow: hidden; background: #000; color: #fff; transition: background 1.2s ease, backdrop-filter 1.2s ease, -webkit-backdrop-filter 1.2s ease; }
+        #game-intro.message-stage { background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        #intro-message-screen { position: absolute; z-index: 1; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: opacity 1.2s ease, visibility 0s linear 1.2s; }
         #intro-message-screen.visible { opacity: 1; visibility: visible; transition-delay: 0s; }
         #intro-message { width: min(760px, calc(100vw - 40px)); max-height: calc(100vh - 48px); overflow-y: auto; color: #fff; text-align: center; font-size: clamp(20px, 2.3vw, 30px); line-height: 1.15; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000; opacity: 0; transform: translateY(12px); transition: opacity 1.2s ease 0.35s, transform 1.2s ease 0.35s; }
         #intro-message-screen.visible #intro-message { opacity: 1; transform: translateY(0); }

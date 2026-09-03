@@ -1639,6 +1639,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 syncBlock(gx + offset, gy, sel.id);
                 checkSandFallAbove(gx + offset, gy);
                 if (sel.id === IDS.DIRT) scheduleDirtToGrass(gx + offset, gy);
+                // If placed directly on top of a grass block, smother the grass into rich dirt
+                if (gy < WORLD_HEIGHT - 1 && world[gx + offset]?.[gy + 1] === IDS.GRASS && isSolidWorldBlock(gx + offset, gy, sel.id)) {
+                    world[gx + offset][gy + 1] = IDS.DIRT;
+                    syncBlock(gx + offset, gy + 1, IDS.DIRT);
+                }
             }
             if (sel.id === IDS.FURNACE) {
                 furnaces.push({x: gx, y: gy, input: null, fuel: null, output: null, progress: 0, burnTime: 0, maxBurnTime: 0});

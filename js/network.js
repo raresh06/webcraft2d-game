@@ -854,7 +854,12 @@ initFirebaseSdk().then(() => {
         let starterItems = gameMode === 'survival' && document.getElementById('mp-starter-items').checked;
         let roomKeepInventory = gameMode === 'survival' && mpCreateDifficulty !== 'hardcore' && document.getElementById('mp-keep-inventory').checked;
         let roomAchievementsEnabled = gameMode === 'survival' && (!starterItems && !roomKeepInventory);
-        if (!name) { showToast("Enter a character name first."); return; }
+        if (!name) {
+            showToast("Enter a character name first.");
+            const nameInput = document.getElementById('mp-player-name');
+            if (nameInput) nameInput.focus();
+            return;
+        }
         if (!worldName) { showToast("Enter a world name."); return; }
         if (!/^\d{4,}$/.test(password)) { showToast("Password must contain at least 4 digits."); return; }
 
@@ -980,7 +985,12 @@ initFirebaseSdk().then(() => {
         let password = document.getElementById('mp-join-password').value.trim();
         if (!/^\d{4,}$/.test(password) || await hashRoomPassword(password) !== selectedJoinRoom.passwordHash) { showToast("Incorrect world password."); return; }
         let name = document.getElementById('mp-player-name').value.trim();
-        if (!name) { showToast("Enter a character name first."); closeRoomDialogs(); return; }
+        if (!name) {
+            showToast("Enter a character name first.");
+            const nameInput = document.getElementById('mp-player-name');
+            if (nameInput) nameInput.focus();
+            return;
+        }
 
         const isFirstTime = typeof localStorage !== 'undefined' && !localStorage.getItem('webcraft_tutorial_seen');
         if (isFirstTime && typeof window.openTutorialModal === 'function') {

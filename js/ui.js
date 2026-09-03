@@ -36,7 +36,7 @@ export let showClouds = true;
 export let showDebug = false;
 export let showTutorial = true;
 export let autoJumpEnabled = true;
-export let introEnabled = true;
+export let introEnabled = typeof localStorage !== 'undefined' ? localStorage.getItem('swc_intro_enabled') !== 'false' : true;
 export let graphicsMode = 'advanced';
 export let advancedGraphics = true;
 export let fabulousGraphics = false;

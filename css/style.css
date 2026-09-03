@@ -1800,10 +1800,12 @@ body, html {
   overflow: hidden;
   background: #000;
   color: #fff;
-  transition: background 1.2s ease;
+  transition: background 1.2s ease, backdrop-filter 1.2s ease, -webkit-backdrop-filter 1.2s ease;
 }
 #game-intro.message-stage {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 #intro-message-screen {
   position: absolute;
@@ -1815,6 +1817,8 @@ body, html {
   padding: 24px;
   opacity: 0;
   visibility: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition: opacity 1.2s ease, visibility 0s linear 1.2s;
 }
 #intro-message-screen.visible {
