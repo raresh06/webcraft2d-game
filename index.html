@@ -284,7 +284,7 @@
             
             <div id="main-menu-buttons" class="flex flex-col gap-2 w-[260px]">
                 <button class="mc-btn" onclick="openWorldsMenu()">Singleplayer</button>
-                <button id="btn-main-multiplayer" class="mc-btn disabled-construction-btn" onclick="handleUnderConstruction('Multiplayer', this)" title="Multiplayer is currently Under Construction">Multiplayer</button>
+                <button id="btn-main-multiplayer" class="mc-btn disabled-construction-btn" onclick="handleUnderConstruction('Multiplayer')" title="Multiplayer is currently Under Construction">Multiplayer</button>
                 <button class="mc-btn" onclick="openAchievements('sp')">Achievements</button>
                 <button class="mc-btn" onclick="openTutorialModal()">How to Play</button>
                 <button class="mc-btn" onclick="openSettings()">Settings</button>
@@ -1549,7 +1549,7 @@
         <section>
         <h1 class="screen-title mc-title mb-6 text-white">Game Paused</h1>
         <button class="mc-btn mb-3" onclick="resumeGame()">Back to Game</button>
-        <button id="btn-pause-multiplayer" class="mc-btn mb-3 disabled-construction-btn" onclick="handleUnderConstruction('Open to Multiplayer', this)" title="Open to Multiplayer is currently Under Construction">Open to Multiplayer</button>
+        <button id="btn-pause-multiplayer" class="mc-btn mb-3 disabled-construction-btn" onclick="handleUnderConstruction('Open to Multiplayer')" title="Open to Multiplayer is currently Under Construction">Open to Multiplayer</button>
         <button class="mc-btn mb-3" onclick="openAchievementsFromPause()">Achievements</button>
         <button class="mc-btn mb-3" onclick="openTutorialModal()">How to Play</button>
         <button class="mc-btn mb-3" onclick="openSettingsFromPause()">Settings</button>

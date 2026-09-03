@@ -299,10 +299,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     setRandomSplashText();
 
-    export function showToast(msg) {
+    export function showToast(msg, iconHtml = null) {
         const c = document.getElementById('toast-container');
+        if (!c) return;
         const t = document.createElement('div');
-        t.className = 'toast'; t.innerText = msg;
+        t.className = 'toast flex items-center gap-2.5';
+        if (iconHtml) {
+            t.innerHTML = `${iconHtml}<span>${msg}</span>`;
+        } else {
+            t.innerText = msg;
+        }
         c.appendChild(t);
         setTimeout(() => { if(t.parentElement) t.remove(); }, 3000);
     }
@@ -2673,17 +2679,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             titleRow.className = 'flex items-center justify-between gap-2';
 
             const title = document.createElement('span');
-            title.className = `font-bold text-xl font-['VT323'] ${isUnlocked ? 'text-white' : 'text-gray-400'}`;
+            title.className = `text-2xl font-bold font-['VT323'] ${isUnlocked ? 'text-[var(--mc-accent-color)]' : 'text-gray-400'}`;
             title.innerText = ach.title;
             titleRow.appendChild(title);
 
             const badgeGroup = document.createElement('div');
             badgeGroup.className = 'flex items-center gap-1.5 flex-shrink-0';
 
-            const rewardBadge = document.createElement('span');
-            rewardBadge.className = 'achievement-reward-badge';
-            rewardBadge.innerHTML = `+${rewardAmt} ${getPixelEmeraldSvg(14)}`;
-            badgeGroup.appendChild(rewardBadge);
+            const emeraldBadge = document.createElement('span');
+            emeraldBadge.className = 'ach-emerald-badge';
+            emeraldBadge.innerHTML = `${getPixelEmeraldSvg(13)} +${rewardAmt}`;
+            badgeGroup.appendChild(emeraldBadge);
 
             const diffClass = ach.difficulty === 'Easy' ? 'ach-badge-easy'
                 : ach.difficulty === 'Medium' ? 'ach-badge-medium'
@@ -3285,21 +3291,26 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (confirmModal) confirmModal.classList.add('hidden');
     }
 
-    export function handleUnderConstruction(featureName = 'Multiplayer', btnEl = null) {
-        if (btnEl) {
-            if (!btnEl.dataset.originalText) {
-                btnEl.dataset.originalText = btnEl.innerText;
-            }
-            btnEl.innerText = "Under Construction!";
-            btnEl.classList.add('btn-construction-active');
-            setTimeout(() => {
-                if (btnEl && btnEl.dataset.originalText) {
-                    btnEl.innerText = btnEl.dataset.originalText;
-                    btnEl.classList.remove('btn-construction-active');
-                }
-            }, 2200);
-        }
-        showToast(`🚧 ${featureName} is currently Under Construction!`);
+    export function handleUnderConstruction(featureName = 'Multiplayer') {
+        const iconSvg = `<svg viewBox="0 0 16 16" width="22" height="22" class="flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+            <rect x="7" y="11" width="2" height="5" fill="#78350f"/>
+            <rect x="8" y="11" width="1" height="5" fill="#451a03"/>
+            <rect x="1" y="1" width="14" height="1" fill="#78350f"/>
+            <rect x="1" y="10" width="14" height="1" fill="#451a03"/>
+            <rect x="1" y="2" width="1" height="8" fill="#78350f"/>
+            <rect x="14" y="2" width="1" height="8" fill="#451a03"/>
+            <rect x="2" y="2" width="12" height="8" fill="#f59e0b"/>
+            <rect x="3" y="2" width="2" height="2" fill="#1e293b"/>
+            <rect x="2" y="4" width="2" height="2" fill="#1e293b"/>
+            <rect x="7" y="2" width="2" height="2" fill="#1e293b"/>
+            <rect x="5" y="4" width="2" height="3" fill="#1e293b"/>
+            <rect x="3" y="7" width="2" height="3" fill="#1e293b"/>
+            <rect x="11" y="2" width="2" height="2" fill="#1e293b"/>
+            <rect x="9" y="4" width="2" height="3" fill="#1e293b"/>
+            <rect x="7" y="7" width="2" height="3" fill="#1e293b"/>
+            <rect x="11" y="7" width="2" height="3" fill="#1e293b"/>
+        </svg>`;
+        showToast(`${featureName} is currently Under Construction!`, iconSvg);
     }
 
     export function switchAuthTab(tab) {
@@ -3414,6 +3425,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (userMsg.includes('auth/invalid-credential') || userMsg.includes('auth/wrong-password') || userMsg.includes('auth/user-not-found')) userMsg = "Incorrect email or password. Please try again.";
             if (userMsg.includes('auth/weak-password')) userMsg = "Password should be at least 6 characters.";
             if (userMsg.includes('auth/invalid-email')) userMsg = "The email address is formatted incorrectly.";
+            if (userMsg.includes('auth/operation-not-allowed') || userMsg.includes('operation-not-allowed')) {
+                userMsg = "Email/Password provider is not enabled in Firebase Console. (Enable it under Authentication > Sign-in method in Firebase Console).";
+            }
             showMsg(userMsg, true);
         } finally {
             if (submitBtn) {
