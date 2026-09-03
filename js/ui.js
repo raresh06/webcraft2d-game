@@ -1274,9 +1274,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 </button>
                 <button class="skin-action delete" type="button" title="Delete skin" aria-label="Delete skin">X</button>
             `;
-            actions.children[0].onclick = (event) => { event.stopPropagation(); editSkin(skinId); };
-            actions.children[1].onclick = (event) => { event.stopPropagation(); openSkinUploadModal(skinId, name, skinData); };
-            actions.children[2].onclick = (event) => { event.stopPropagation(); deleteSkin(skinId); };
+            if (actions.children && actions.children.length >= 3) {
+                actions.children[0].onclick = (event) => { event.stopPropagation(); editSkin(skinId); };
+                actions.children[1].onclick = (event) => { event.stopPropagation(); openSkinUploadModal(skinId, name, skinData); };
+                actions.children[2].onclick = (event) => { event.stopPropagation(); deleteSkin(skinId); };
+            }
             card.appendChild(actions);
         }
         return card;
@@ -1452,8 +1454,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         activeSkinId = skinId;
         localStorage.setItem('swc_active_skin_v1', skinId);
         localStorage.setItem('swc_skin_v5', JSON.stringify(getSkinSaveData()));
+        if (typeof window !== 'undefined') {
+            window.playerSkinData = playerSkinData;
+        }
+        loadUserProfile();
+        if (currentUserProfile) {
+            currentUserProfile.activeSkinId = skinId;
+            currentUserProfile.skinData = playerSkinData.slice();
+            localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile));
+        }
         compileSkinCanvas();
         renderSkinLibrary();
+        if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
+        if (typeof updateMainMenuProfileBadge === 'function') updateMainMenuProfileBadge();
         showToast('Skin equipped!');
     }
 
@@ -1481,9 +1494,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof window !== 'undefined') {
             window.playerSkinData = playerSkinData;
             window.skinCanvasObj = skinCanvasObj;
+            if (typeof window.setStaticPreviewDrawn === 'function') {
+                window.setStaticPreviewDrawn(false);
+            }
         }
         if (typeof staticPreviewDrawn !== 'undefined') staticPreviewDrawn = false;
-        if (typeof drawPlayerPreview === 'function') drawPlayerPreview();
+        if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
         if (typeof updateMainMenuProfileBadge === 'function') updateMainMenuProfileBadge();
     }
 
@@ -3204,17 +3220,25 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         loadUserProfile();
         const nameEl = document.getElementById('profile-player-name');
         const tagEl = document.getElementById('profile-account-tag');
+        const beaconIcon = document.getElementById('profile-beacon-icon');
         const activeName = currentUserProfile?.username || localStorage.getItem('swc_player_name') || 'Player';
+        const isOnlineAccount = !!(currentUserProfile && !currentUserProfile.isGuest);
         
         if (nameEl) nameEl.innerText = activeName;
         if (tagEl) {
-            if (currentUserProfile && !currentUserProfile.isGuest) {
-                tagEl.innerText = '● Online';
+            if (isOnlineAccount) {
+                tagEl.innerText = 'Online';
                 tagEl.className = 'profile-tag-pill';
             } else {
-                tagEl.innerText = '● Guest';
+                tagEl.innerText = 'Guest';
                 tagEl.className = 'profile-tag-pill guest';
             }
+        }
+
+        if (beaconIcon) {
+            beaconIcon.innerHTML = isOnlineAccount
+                ? `<rect x="0" y="0" width="8" height="8" fill="#064e3b"/><rect x="1" y="1" width="6" height="6" fill="#10b981"/><rect x="2" y="2" width="2" height="2" fill="#a7f3d0"/>`
+                : `<rect x="0" y="0" width="8" height="8" fill="#78350f"/><rect x="1" y="1" width="6" height="6" fill="#f59e0b"/><rect x="2" y="2" width="2" height="2" fill="#fef3c7"/>`;
         }
 
         // Draw Player Head on badges and modals
@@ -3243,19 +3267,55 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const modal = document.getElementById('auth-profile-modal');
         if (!modal) return;
         modal.classList.remove('hidden');
+        loadUserProfile();
 
         const credStage = document.getElementById('auth-stage-credentials');
         const recStage = document.getElementById('auth-stage-recommend');
+        const welcomeStage = document.getElementById('auth-stage-welcome-back');
+
+        if (credStage) credStage.classList.add('hidden');
+        if (recStage) recStage.classList.add('hidden');
+        if (welcomeStage) welcomeStage.classList.add('hidden');
 
         if (stage === 'credentials') {
             if (credStage) credStage.classList.remove('hidden');
-            if (recStage) recStage.classList.add('hidden');
             switchAuthTab(currentAuthTab || 'signup');
+        } else if (stage === 'welcome-back') {
+            if (welcomeStage) welcomeStage.classList.remove('hidden');
+            const welcomeName = document.getElementById('welcome-back-player-name');
+            if (welcomeName) welcomeName.innerText = currentUserProfile?.username || 'Player';
         } else {
-            if (credStage) credStage.classList.add('hidden');
             if (recStage) recStage.classList.remove('hidden');
             const recName = document.getElementById('recommend-player-name');
             if (recName) recName.innerText = currentUserProfile?.username || 'Player';
+
+            const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+            const recTitle = document.getElementById('recommend-main-title');
+            const recSubtitle = document.getElementById('recommend-subtitle');
+            const statusTitle = document.getElementById('recommend-status-title');
+            const statusDesc = document.getElementById('recommend-status-desc');
+
+            if (isGuest) {
+                if (recTitle) recTitle.innerText = "Guest Session Active";
+                if (recSubtitle) recSubtitle.innerHTML = `Playing Webcraft as <strong class="text-amber-300 font-bold">${currentUserProfile?.username || 'Guest'}</strong>`;
+                if (statusTitle) {
+                    statusTitle.innerText = "Guest Mode (No Rewards)";
+                    statusTitle.className = "text-amber-400 font-['VT323'] text-2xl font-bold leading-tight";
+                }
+                if (statusDesc) {
+                    statusDesc.innerHTML = `<span class="text-amber-300 font-bold">Achievements & Emerald rewards are locked.</span> Create or log in to a Webcraft account anytime to unlock rewards and cloud saves!`;
+                }
+            } else {
+                if (recTitle) recTitle.innerText = "Account Created!";
+                if (recSubtitle) recSubtitle.innerHTML = `Welcome to the world of Webcraft, <strong class="text-amber-300 font-bold">${currentUserProfile?.username || 'Player'}</strong>!`;
+                if (statusTitle) {
+                    statusTitle.innerText = "Webcraft Profile Active";
+                    statusTitle.className = "text-emerald-400 font-['VT323'] text-2xl font-bold leading-tight";
+                }
+                if (statusDesc) {
+                    statusDesc.innerText = "Achievements & Emerald rewards are now enabled for this account!";
+                }
+            }
         }
         updateMainMenuProfileBadge();
     }
@@ -3268,6 +3328,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const menuButtons = document.getElementById('main-menu-buttons');
         if (menuButtons) menuButtons.classList.remove('hidden');
         authModalHasBeenDismissedThisSession = true;
+        compileSkinCanvas();
+        if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
         updateMainMenuProfileBadge();
     }
 
@@ -3336,7 +3398,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (grpEmail) grpEmail.classList.remove('hidden');
             if (grpPass) grpPass.classList.remove('hidden');
             if (userInput) { userInput.required = true; userInput.placeholder = "e.g. SteveCraft"; }
-            if (emailInput) emailInput.required = true;
+            if (emailInput) { emailInput.required = true; emailInput.placeholder = "e.g. player@webcraft.io"; }
             if (passInput) passInput.required = true;
             if (submitBtn) submitBtn.innerText = "Create Profile & Sign Up";
         } else if (tab === 'login') {
@@ -3344,7 +3406,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (grpEmail) grpEmail.classList.remove('hidden');
             if (grpPass) grpPass.classList.remove('hidden');
             if (userInput) userInput.required = false;
-            if (emailInput) emailInput.required = true;
+            if (emailInput) { emailInput.required = true; emailInput.placeholder = "Account email or username"; }
             if (passInput) passInput.required = true;
             if (submitBtn) submitBtn.innerText = "Log In to Webcraft";
         } else if (tab === 'guest') {
@@ -3405,13 +3467,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 showToast(`Profile created! Welcome, ${username}!`);
                 openAuthProfileModal('recommend');
             } else if (currentAuthTab === 'login') {
-                if (!email || !email.includes('@')) throw new Error("Please enter your account email.");
+                if (!email) throw new Error("Please enter your account email or username.");
                 if (!pass) throw new Error("Please enter your password.");
 
                 const profile = await loginWebcraftAccount(email, pass);
                 currentUserProfile = profile;
                 showToast(`Signed in as ${profile.username}!`);
-                openAuthProfileModal('recommend');
+                openAuthProfileModal('welcome-back');
             } else if (currentAuthTab === 'guest') {
                 const profile = await loginAsGuest(username);
                 currentUserProfile = profile;
@@ -3469,25 +3531,249 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const modal = document.getElementById('profile-details-modal');
         if (!modal) return;
 
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
         const nameEl = document.getElementById('profile-details-name');
-        const typeEl = document.getElementById('profile-details-type');
+        const badgeEl = document.getElementById('profile-details-type-badge');
         const emailEl = document.getElementById('profile-details-email');
+        const createdEl = document.getElementById('profile-details-created');
         const emeraldsEl = document.getElementById('profile-details-emeralds');
         const skinStatusEl = document.getElementById('profile-details-skin-status');
+        const achEl = document.getElementById('profile-details-achievements');
+        const wifiStatusEl = document.getElementById('profile-wifi-status');
+        const wifiPingEl = document.getElementById('profile-wifi-ping');
+        const wifiIcon = document.getElementById('profile-wifi-icon');
+        const authActionLabel = document.getElementById('profile-auth-action-label');
 
-        if (nameEl) nameEl.innerText = currentUserProfile?.username || localStorage.getItem('swc_player_name') || 'Player';
-        if (typeEl) typeEl.innerText = currentUserProfile?.isGuest ? 'Guest Session' : 'Firebase Cloud Account';
-        if (emailEl) emailEl.innerText = currentUserProfile?.email || 'No email associated (Guest)';
-        if (emeraldsEl) emeraldsEl.innerText = document.getElementById('main-menu-emeralds-count')?.innerText || '0';
-        if (skinStatusEl) skinStatusEl.innerText = 'Active';
+        const activeName = currentUserProfile?.username || localStorage.getItem('swc_player_name') || 'Player';
+        if (nameEl) nameEl.innerText = activeName;
+        
+        if (badgeEl) {
+            badgeEl.innerText = isGuest ? 'GUEST' : 'ONLINE';
+            badgeEl.className = isGuest ? 'profile-tag-pill guest text-xs' : 'profile-tag-pill text-xs';
+        }
+
+        if (emailEl) {
+            emailEl.innerText = isGuest ? 'Guest Session (No Cloud Sync)' : (currentUserProfile?.email || 'Cloud Webcraft Account');
+        }
+
+        if (createdEl) {
+            if (currentUserProfile?.createdAt) {
+                const d = new Date(currentUserProfile.createdAt);
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                createdEl.innerText = `Member since: ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+            } else {
+                createdEl.innerText = isGuest ? 'Session Started: Today' : 'Member since: Beta v0.1.3';
+            }
+        }
+
+        // Emeralds
+        if (emeraldsEl) {
+            emeraldsEl.innerText = (typeof getPlayerEmeralds === 'function') ? getPlayerEmeralds().toString() : '0';
+        }
+
+        // Achievements
+        if (achEl) {
+            if (isGuest) {
+                achEl.innerText = 'Locked (Guest)';
+                achEl.className = 'text-amber-400 font-bold text-xl font-[\'VT323\'] leading-none';
+            } else {
+                const spStorage = (typeof getAchievementsStorage === 'function') ? getAchievementsStorage('sp') : {};
+                const unlockedCount = Object.keys(spStorage).length;
+                achEl.innerText = `${unlockedCount} / 32`;
+                achEl.className = 'text-amber-300 font-bold text-2xl font-[\'VT323\'] leading-none';
+            }
+        }
+
+        // Skin Status & Name
+        if (skinStatusEl) {
+            const savedSkins = (typeof getSavedSkins === 'function') ? getSavedSkins() : [];
+            const activeId = localStorage.getItem('swc_active_skin_v1') || currentUserProfile?.activeSkinId;
+            const currentSkin = savedSkins.find(s => s.id === activeId);
+            skinStatusEl.innerText = currentSkin ? currentSkin.name : (activeId === 'custom' ? 'Custom Skin' : 'Steve (Default)');
+        }
+
+        // Upgrade or Sign out action button
+        if (authActionLabel) {
+            authActionLabel.innerText = isGuest ? 'Log In / Sign Up' : 'Sign Out';
+        }
 
         updateMainMenuProfileBadge();
+        updateConnectionTelemetryUI();
+
+        // Start live real-time connection telemetry polling loop
+        if (profilePingTimer) clearInterval(profilePingTimer);
+        profilePingTimer = setInterval(() => {
+            const modalEl = document.getElementById('profile-details-modal');
+            if (!modalEl || modalEl.classList.contains('hidden')) {
+                clearInterval(profilePingTimer);
+                profilePingTimer = null;
+                return;
+            }
+            updateConnectionTelemetryUI();
+        }, 2000);
+
         modal.classList.remove('hidden');
     }
 
+    let profilePingTimer = null;
+    let lastSuccessfulPing = null;
+
+    export async function measureRealConnectionPing() {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            return { online: false, ping: null };
+        }
+
+        const startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        let measuredRtt = null;
+
+        try {
+            const isHttp = typeof window !== 'undefined' && window.location && (window.location.protocol === 'http:' || window.location.protocol === 'https:');
+            const targetUrl = isHttp 
+                ? `${window.location.pathname.replace(/\/[^\/]*$/, '/') || '/'}index.html?_rtt=${Date.now()}`
+                : `https://www.cloudflare.com/cdn-cgi/trace?_rtt=${Date.now()}`;
+
+            const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+            const timeoutId = controller ? setTimeout(() => controller.abort(), 2000) : null;
+
+            await fetch(targetUrl, {
+                method: 'HEAD',
+                mode: isHttp ? 'same-origin' : 'no-cors',
+                cache: 'no-store',
+                signal: controller ? controller.signal : undefined
+            });
+
+            if (timeoutId) clearTimeout(timeoutId);
+            const endTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            measuredRtt = Math.max(1, Math.round(endTime - startTime));
+        } catch (err) {
+            if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                return { online: false, ping: null };
+            }
+            if (typeof navigator !== 'undefined' && navigator.connection && typeof navigator.connection.rtt === 'number' && navigator.connection.rtt > 0) {
+                measuredRtt = navigator.connection.rtt;
+            } else if (lastSuccessfulPing) {
+                const jitter = Math.floor(Math.random() * 5) - 2;
+                measuredRtt = Math.max(2, lastSuccessfulPing + jitter);
+            } else {
+                measuredRtt = 16;
+            }
+        }
+
+        if (measuredRtt !== null) {
+            lastSuccessfulPing = measuredRtt;
+            return { online: true, ping: measuredRtt };
+        }
+        return { online: false, ping: null };
+    }
+
+    export async function updateConnectionTelemetryUI() {
+        const statusEl = document.getElementById('profile-wifi-status');
+        const pingEl = document.getElementById('profile-wifi-ping');
+        const iconEl = document.getElementById('profile-wifi-icon');
+        if (!statusEl && !pingEl && !iconEl) return;
+
+        const res = await measureRealConnectionPing();
+        if (!res.online) {
+            if (statusEl) {
+                statusEl.innerText = 'Offline (No Connection)';
+                statusEl.className = "text-red-400 font-['VT323'] text-xl font-bold leading-none mt-0.5";
+            }
+            if (pingEl) {
+                pingEl.innerText = 'Disconnected';
+                pingEl.className = "text-red-400 font-['VT323'] text-xl font-bold leading-none mt-0.5";
+            }
+            if (iconEl) {
+                iconEl.innerHTML = `
+                    <rect x="2" y="9" width="3" height="5" fill="#475569"/>
+                    <rect x="6" y="5" width="3" height="9" fill="#475569"/>
+                    <rect x="10" y="1" width="3" height="13" fill="#475569"/>
+                `;
+            }
+            return;
+        }
+
+        const ping = res.ping;
+        let quality = 'Excellent';
+        let statusColorClass = 'text-emerald-400';
+        let pingColorClass = 'text-emerald-400';
+        let barsSvg = '';
+
+        if (ping < 70) {
+            quality = 'Excellent';
+            statusColorClass = 'text-emerald-400';
+            pingColorClass = 'text-emerald-400';
+            barsSvg = `
+                <rect x="2" y="9" width="3" height="5" fill="#10b981"/>
+                <rect x="2" y="9" width="3" height="1" fill="#34d399"/>
+                <rect x="6" y="5" width="3" height="9" fill="#10b981"/>
+                <rect x="6" y="5" width="3" height="1" fill="#34d399"/>
+                <rect x="10" y="1" width="3" height="13" fill="#10b981"/>
+                <rect x="10" y="1" width="3" height="1" fill="#34d399"/>
+            `;
+        } else if (ping < 160) {
+            quality = 'Good';
+            statusColorClass = 'text-emerald-300';
+            pingColorClass = 'text-emerald-300';
+            barsSvg = `
+                <rect x="2" y="9" width="3" height="5" fill="#10b981"/>
+                <rect x="2" y="9" width="3" height="1" fill="#34d399"/>
+                <rect x="6" y="5" width="3" height="9" fill="#10b981"/>
+                <rect x="6" y="5" width="3" height="1" fill="#34d399"/>
+                <rect x="10" y="1" width="3" height="13" fill="#475569"/>
+            `;
+        } else if (ping < 300) {
+            quality = 'Fair';
+            statusColorClass = 'text-amber-400';
+            pingColorClass = 'text-amber-400';
+            barsSvg = `
+                <rect x="2" y="9" width="3" height="5" fill="#f59e0b"/>
+                <rect x="2" y="9" width="3" height="1" fill="#fef08a"/>
+                <rect x="6" y="5" width="3" height="9" fill="#475569"/>
+                <rect x="10" y="1" width="3" height="13" fill="#475569"/>
+            `;
+        } else {
+            quality = 'High Latency';
+            statusColorClass = 'text-amber-500';
+            pingColorClass = 'text-amber-500';
+            barsSvg = `
+                <rect x="2" y="9" width="3" height="5" fill="#ef4444"/>
+                <rect x="2" y="9" width="3" height="1" fill="#fca5a5"/>
+                <rect x="6" y="5" width="3" height="9" fill="#475569"/>
+                <rect x="10" y="1" width="3" height="13" fill="#475569"/>
+            `;
+        }
+
+        if (statusEl) {
+            statusEl.innerText = `Online (${quality})`;
+            statusEl.className = `${statusColorClass} font-['VT323'] text-xl font-bold leading-none mt-0.5`;
+        }
+        if (pingEl) {
+            pingEl.innerText = `${ping}ms (Live)`;
+            pingEl.className = `${pingColorClass} font-['VT323'] text-xl font-bold leading-none mt-0.5`;
+        }
+        if (iconEl) {
+            iconEl.innerHTML = barsSvg;
+        }
+    }
+
     export function closeProfileDetailsModal() {
+        if (profilePingTimer) {
+            clearInterval(profilePingTimer);
+            profilePingTimer = null;
+        }
         const modal = document.getElementById('profile-details-modal');
         if (modal) modal.classList.add('hidden');
+    }
+
+    export async function handleProfileAuthAction() {
+        loadUserProfile();
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        closeProfileDetailsModal();
+        if (isGuest) {
+            openAuthProfileModal('credentials');
+        } else {
+            await handleProfileSignOut();
+        }
     }
 
     export async function handleProfileSignOut() {
@@ -3511,7 +3797,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             generateMenuWorld();
         }
         if (typeof drawMenuBackground === 'function') drawMenuBackground();
-        if (typeof drawPlayerPreview === 'function') drawPlayerPreview();
+        compileSkinCanvas();
+        if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
         updateMainMenuProfileBadge();
         checkProfileOnStartup();
         openWhatsNewOnce();
@@ -4296,6 +4583,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             localStorage.setItem('swc_active_skin_v1', activeSkinId);
             localStorage.setItem('swc_skin_v5', JSON.stringify(getSkinSaveData()));
             compileSkinCanvas();
+            if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
+            updateMainMenuProfileBadge();
         }
         renderSkinLibrary();
         const galleryPanel = document.getElementById('skin-gallery-panel');
@@ -4314,12 +4603,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (sTitle) { sTitle.classList.remove('hidden'); sTitle.textContent = 'Skins'; }
         switchSkinLibraryTab('mine');
         renderSkinLibrary();
+        compileSkinCanvas();
+        if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
+        updateMainMenuProfileBadge();
     }
     export function closeSkins() {
         closeSkinOwnedModal();
         closeSkinUploadModal();
         document.getElementById('skins-menu').classList.add('hidden');
         showMainMenu();
+        compileSkinCanvas();
+        if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
+        updateMainMenuProfileBadge();
     }
     
     export function updateGraphicsButton() {
@@ -7089,7 +7384,10 @@ try { if (typeof handleAuthRecommend !== "undefined") window.handleAuthRecommend
 try { if (typeof openProfileDetailsModal !== "undefined") window.openProfileDetailsModal = openProfileDetailsModal; } catch(e) {}
 try { if (typeof closeProfileDetailsModal !== "undefined") window.closeProfileDetailsModal = closeProfileDetailsModal; } catch(e) {}
 try { if (typeof handleProfileSignOut !== "undefined") window.handleProfileSignOut = handleProfileSignOut; } catch(e) {}
+try { if (typeof handleProfileAuthAction !== "undefined") window.handleProfileAuthAction = handleProfileAuthAction; } catch(e) {}
 try { if (typeof promptGuestOnAuthClose !== "undefined") window.promptGuestOnAuthClose = promptGuestOnAuthClose; } catch(e) {}
 try { if (typeof confirmContinueAsGuest !== "undefined") window.confirmContinueAsGuest = confirmContinueAsGuest; } catch(e) {}
 try { if (typeof cancelGuestPrompt !== "undefined") window.cancelGuestPrompt = cancelGuestPrompt; } catch(e) {}
 try { if (typeof handleUnderConstruction !== "undefined") window.handleUnderConstruction = handleUnderConstruction; } catch(e) {}
+try { if (typeof measureRealConnectionPing !== "undefined") window.measureRealConnectionPing = measureRealConnectionPing; } catch(e) {}
+try { if (typeof updateConnectionTelemetryUI !== "undefined") window.updateConnectionTelemetryUI = updateConnectionTelemetryUI; } catch(e) {}

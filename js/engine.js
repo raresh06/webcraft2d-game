@@ -1632,18 +1632,29 @@ export const SKIN_H = 32;
         ctx.restore();
     }
 
+    export function setStaticPreviewDrawn(val) {
+        staticPreviewDrawn = !!val;
+        if (typeof window !== 'undefined') window.staticPreviewDrawn = staticPreviewDrawn;
+    }
+
     export function renderStaticPlayerPreview() {
         let pCanvas = document.getElementById('player-preview-canvas');
         if (!pCanvas) return;
         let pCtx = pCanvas.getContext('2d');
         pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
         pCtx.imageSmoothingEnabled = false;
-        drawFrontCharacter(pCtx, skinCanvasObj, 0, 0, pCanvas.width, pCanvas.height, 0);
+        const activeCanvas = (typeof window !== 'undefined' && window.skinCanvasObj) ? window.skinCanvasObj : skinCanvasObj;
+        drawFrontCharacter(pCtx, activeCanvas, 0, 0, pCanvas.width, pCanvas.height, 0);
         staticPreviewDrawn = true;
+        if (typeof window !== 'undefined') window.staticPreviewDrawn = true;
     }
 
-    export function drawPlayerPreview() {
-        if (!isPreviewWalking && !staticPreviewDrawn) {
+    export function drawPlayerPreview(force = false) {
+        if (force) {
+            staticPreviewDrawn = false;
+            if (typeof window !== 'undefined') window.staticPreviewDrawn = false;
+        }
+        if (!isPreviewWalking && (!staticPreviewDrawn || force)) {
             renderStaticPlayerPreview();
         }
     }
@@ -1655,6 +1666,7 @@ export const SKIN_H = 32;
 
         isPreviewWalking = true;
         staticPreviewDrawn = false;
+        if (typeof window !== 'undefined') window.staticPreviewDrawn = false;
         let startTime = performance.now();
         let duration = 1600; // ms
 
@@ -1680,7 +1692,8 @@ export const SKIN_H = 32;
             pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
             pCtx.imageSmoothingEnabled = false;
             let walkAnimPhase = (elapsed / 1000) * (Math.PI * 4); // Constant smooth ~2 steps/sec
-            drawCharacter(pCtx, skinCanvasObj, 0, 0, pCanvas.width, pCanvas.height, true, walkAnimPhase, true, false, null, null, false, null, false, [null, null, null, null]);
+            const activeCanvas = (typeof window !== 'undefined' && window.skinCanvasObj) ? window.skinCanvasObj : skinCanvasObj;
+            drawCharacter(pCtx, activeCanvas, 0, 0, pCanvas.width, pCanvas.height, true, walkAnimPhase, true, false, null, null, false, null, false, [null, null, null, null]);
 
             previewWalkAnimId = requestAnimationFrame(animLoop);
         }
@@ -8027,6 +8040,7 @@ try { if (typeof seededRandom !== "undefined") window.seededRandom = seededRando
 try { if (typeof setFluid !== "undefined") window.setFluid = setFluid; } catch(e) {}
 try { if (typeof setEngineAccentColor !== "undefined") window.setEngineAccentColor = setEngineAccentColor; } catch(e) {}
 try { if (typeof skinCanvasObj !== "undefined") window.skinCanvasObj = skinCanvasObj; } catch(e) {}
+try { if (typeof setStaticPreviewDrawn !== "undefined") window.setStaticPreviewDrawn = setStaticPreviewDrawn; } catch(e) {}
 try { if (typeof skyBottomColor !== "undefined") window.skyBottomColor = skyBottomColor; } catch(e) {}
 try { if (typeof skyTopColor !== "undefined") window.skyTopColor = skyTopColor; } catch(e) {}
 try { if (typeof sleepStartTime !== "undefined") window.sleepStartTime = sleepStartTime; } catch(e) {}

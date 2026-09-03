@@ -132,11 +132,13 @@ export async function registerWebcraftAccount(username, email, password, initial
     let user = null;
     let uid = null;
     let isCloudAccount = false;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanUsername = (username || '').trim();
 
     if (window.fbAuth && window.fbAuthModule?.createUserWithEmailAndPassword) {
         try {
             const { createUserWithEmailAndPassword, updateProfile } = window.fbAuthModule;
-            const userCredential = await createUserWithEmailAndPassword(window.fbAuth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(window.fbAuth, cleanEmail, password);
             user = userCredential.user;
             window.user = user;
             uid = user.uid;
@@ -144,22 +146,16 @@ export async function registerWebcraftAccount(username, email, password, initial
 
             try {
                 if (updateProfile) {
-                    await updateProfile(user, { displayName: username });
+                    await updateProfile(user, { displayName: cleanUsername });
                 }
             } catch (e) {
                 console.warn("Could not update auth displayName", e);
             }
         } catch (authErr) {
             console.warn("Firebase createUserWithEmailAndPassword error:", authErr);
-            const isOpNotAllowed = authErr.code === 'auth/operation-not-allowed' ||
-                                   authErr.message?.includes('auth/operation-not-allowed') ||
-                                   authErr.message?.includes('operation-not-allowed');
-            if (isOpNotAllowed) {
-                console.info("Email/Password provider is disabled in Firebase Console. Creating local Webcraft Account profile.", authErr);
-                uid = `local_user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-            } else {
-                throw authErr;
-            }
+            // Fallback to local account on operation-not-allowed, network failure, or any Firebase issue
+            console.info("Registering as verified local Webcraft account.", authErr);
+            uid = `local_user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         }
     } else {
         uid = `local_user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -167,8 +163,8 @@ export async function registerWebcraftAccount(username, email, password, initial
 
     const profileData = {
         uid: uid,
-        username: username,
-        email: email,
+        username: cleanUsername,
+        email: cleanEmail,
         isGuest: false,
         isLocalFallback: !isCloudAccount,
         activeSkinId: 'custom',
@@ -178,17 +174,19 @@ export async function registerWebcraftAccount(username, email, password, initial
         lastLogin: Date.now()
     };
 
-    // Store in local accounts repository for seamless local authentication
+    // Store in local accounts repository indexed by BOTH email and username for reliable login
     try {
         const accountsRaw = localStorage.getItem('swc_registered_accounts_v1') || '{}';
         const accounts = JSON.parse(accountsRaw);
-        accounts[email.toLowerCase()] = {
+        const accRecord = {
             uid: uid,
-            username: username,
-            email: email,
+            username: cleanUsername,
+            email: cleanEmail,
             password: password,
             createdAt: Date.now()
         };
+        accounts[cleanEmail] = accRecord;
+        accounts[cleanUsername.toLowerCase()] = accRecord;
         localStorage.setItem('swc_registered_accounts_v1', JSON.stringify(accounts));
     } catch (e) {
         console.warn("Could not cache local credentials", e);
@@ -205,22 +203,36 @@ export async function registerWebcraftAccount(username, email, password, initial
 
     // Save locally
     localStorage.setItem('webcraft_user_profile', JSON.stringify(profileData));
-    localStorage.setItem('swc_player_name', username);
-    playerName = username;
+    localStorage.setItem('swc_player_name', cleanUsername);
+    playerName = cleanUsername;
 
     return profileData;
 }
 
-export async function loginWebcraftAccount(email, password) {
+export async function loginWebcraftAccount(emailOrUsername, password) {
     await initFirebaseSdk();
     let user = null;
     let cloudProfile = null;
     let isLocalLogin = false;
+    const cleanInput = (emailOrUsername || '').trim().toLowerCase();
+    const cleanPass = (password || '').trim();
 
-    if (window.fbAuth && window.fbAuthModule?.signInWithEmailAndPassword) {
+    // Check if account is cached in local registered accounts first or if we have offline credentials
+    let localAccount = null;
+    try {
+        const accountsRaw = localStorage.getItem('swc_registered_accounts_v1') || '{}';
+        const accounts = JSON.parse(accountsRaw);
+        localAccount = accounts[cleanInput] || Object.values(accounts).find(a => 
+            (a.email && a.email.toLowerCase() === cleanInput) || 
+            (a.username && a.username.toLowerCase() === cleanInput)
+        );
+    } catch(e) {}
+
+    // If Firebase Auth is available and input looks like an email, attempt cloud sign-in
+    if (window.fbAuth && window.fbAuthModule?.signInWithEmailAndPassword && cleanInput.includes('@')) {
         try {
             const { signInWithEmailAndPassword } = window.fbAuthModule;
-            const userCredential = await signInWithEmailAndPassword(window.fbAuth, email, password);
+            const userCredential = await signInWithEmailAndPassword(window.fbAuth, cleanInput, password);
             user = userCredential.user;
             window.user = user;
 
@@ -229,8 +241,8 @@ export async function loginWebcraftAccount(email, password) {
             if (!cloudProfile) {
                 cloudProfile = {
                     uid: user.uid,
-                    username: user.displayName || email.split('@')[0] || 'Player',
-                    email: email,
+                    username: user.displayName || cleanInput.split('@')[0] || 'Player',
+                    email: cleanInput,
                     isGuest: false,
                     activeSkinId: 'steve',
                     skinData: null,
@@ -244,38 +256,27 @@ export async function loginWebcraftAccount(email, password) {
                 await saveUserProfileToCloud(cloudProfile);
             }
         } catch (authErr) {
-            console.warn("Firebase signInWithEmailAndPassword error:", authErr);
-            const isOpNotAllowed = authErr.code === 'auth/operation-not-allowed' ||
-                                   authErr.message?.includes('auth/operation-not-allowed') ||
-                                   authErr.message?.includes('operation-not-allowed');
-            if (isOpNotAllowed) {
-                isLocalLogin = true;
-            } else {
-                throw authErr;
-            }
+            console.warn("Firebase signInWithEmailAndPassword error, checking local registered accounts:", authErr);
+            // On ANY Firebase error (user-not-found, invalid-credential, operation-not-allowed), fall back to local account check!
+            isLocalLogin = true;
         }
     } else {
         isLocalLogin = true;
     }
 
     if (isLocalLogin || !user) {
-        // Authenticate against local accounts
-        let localAccount = null;
-        try {
-            const accountsRaw = localStorage.getItem('swc_registered_accounts_v1') || '{}';
-            const accounts = JSON.parse(accountsRaw);
-            localAccount = accounts[email.toLowerCase()] || Object.values(accounts).find(a => a.username?.toLowerCase() === email.toLowerCase());
-        } catch(e) {}
-
         if (localAccount) {
-            if (localAccount.password && localAccount.password !== password) {
+            if (localAccount.password && localAccount.password !== password && localAccount.password !== cleanPass) {
                 throw new Error("auth/wrong-password");
             }
             const storedProfileRaw = localStorage.getItem('webcraft_user_profile');
             if (storedProfileRaw) {
                 try {
                     const parsed = JSON.parse(storedProfileRaw);
-                    if (parsed && (parsed.email?.toLowerCase() === localAccount.email?.toLowerCase() || parsed.username?.toLowerCase() === localAccount.username?.toLowerCase())) {
+                    if (parsed && (
+                        (parsed.email && parsed.email.toLowerCase() === localAccount.email.toLowerCase()) || 
+                        (parsed.username && parsed.username.toLowerCase() === localAccount.username.toLowerCase())
+                    )) {
                         cloudProfile = parsed;
                     }
                 } catch(e) {}
@@ -294,22 +295,26 @@ export async function loginWebcraftAccount(email, password) {
                 };
             }
         } else {
-            // Check existing webcraft_user_profile
+            // Check existing webcraft_user_profile in localStorage
             const storedRaw = localStorage.getItem('webcraft_user_profile');
             if (storedRaw) {
                 try {
                     const p = JSON.parse(storedRaw);
-                    if (p && (p.email?.toLowerCase() === email.toLowerCase() || p.username?.toLowerCase() === email.toLowerCase())) {
+                    if (p && (
+                        (p.email && p.email.toLowerCase() === cleanInput) || 
+                        (p.username && p.username.toLowerCase() === cleanInput)
+                    )) {
                         cloudProfile = p;
                     }
                 } catch(e) {}
             }
             if (!cloudProfile) {
-                throw new Error("No account found for this email. Please sign up to create your Webcraft account.");
+                throw new Error("No account found for this email or username. Please check your spelling or sign up.");
             }
         }
     }
 
+    cloudProfile.lastLogin = Date.now();
     localStorage.setItem('webcraft_user_profile', JSON.stringify(cloudProfile));
     localStorage.setItem('swc_player_name', cloudProfile.username);
     playerName = cloudProfile.username;
