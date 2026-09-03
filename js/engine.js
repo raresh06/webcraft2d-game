@@ -842,55 +842,6 @@ export function getMaxAnimals() {
             }
         }
 
-        const OAK_LEAVES_MAP = [
-            // y = 0
-            [3, 4, 5, 4, 3, 0, 4, 5, 4, 3, 3, 4, 5, 4, 3, 0],
-            // y = 1
-            [4, 5, 5, 4, 2, 3, 5, 5, 4, 2, 4, 5, 5, 4, 2, 3],
-            // y = 2
-            [3, 4, 3, 2, 1, 4, 4, 3, 2, 1, 3, 4, 3, 2, 1, 4],
-            // y = 3
-            [2, 3, 2, 1, 0, 3, 3, 2, 1, 0, 2, 3, 2, 1, 0, 3],
-            // y = 4
-            [0, 4, 5, 4, 3, 0, 4, 5, 4, 3, 0, 4, 5, 4, 3, 0],
-            // y = 5
-            [3, 5, 5, 5, 4, 3, 5, 5, 5, 4, 3, 5, 5, 5, 4, 3],
-            // y = 6
-            [4, 5, 4, 3, 2, 4, 5, 4, 3, 2, 4, 5, 4, 3, 2, 4],
-            // y = 7
-            [3, 3, 2, 1, 0, 3, 3, 2, 1, 0, 3, 3, 2, 1, 0, 3],
-            // y = 8
-            [4, 5, 4, 3, 0, 4, 5, 4, 3, 0, 4, 5, 4, 3, 0, 4],
-            // y = 9
-            [5, 5, 5, 4, 3, 5, 5, 5, 4, 3, 5, 5, 5, 4, 3, 5],
-            // y = 10
-            [4, 4, 3, 2, 2, 4, 4, 3, 2, 2, 4, 4, 3, 2, 2, 4],
-            // y = 11
-            [3, 2, 1, 0, 1, 3, 2, 1, 0, 1, 3, 2, 1, 0, 1, 3],
-            // y = 12
-            [0, 4, 5, 4, 3, 0, 4, 5, 4, 3, 0, 4, 5, 4, 3, 0],
-            // y = 13
-            [3, 5, 5, 4, 2, 3, 5, 5, 4, 2, 3, 5, 5, 4, 2, 3],
-            // y = 14
-            [4, 4, 3, 2, 1, 4, 4, 3, 2, 1, 4, 4, 3, 2, 1, 4],
-            // y = 15
-            [2, 3, 2, 1, 0, 2, 3, 2, 1, 0, 2, 3, 2, 1, 0, 2]
-        ];
-
-        const OAK_LEAVES_PALETTE = {
-            1: '#163b0e', // deep foliage shadow
-            2: '#245e17', // leaf shadow
-            3: '#3b8a24', // lush leaf body
-            4: '#4ea632', // vibrant leaf midtone
-            5: '#6bc944'  // sunlit leaf highlight
-        };
-
-        function getOakLeavesPixel(px, py) {
-            const val = OAK_LEAVES_MAP[py]?.[px] || 0;
-            if (val === 0) return null; // organic transparent aperture
-            return OAK_LEAVES_PALETTE[val] || '#3b8a24';
-        }
-
         for (let x = 0; x < 16; x++) {
             for (let y = 0; y < 16; y++) {
                 if (id === IDS.DIRT) p(x, y, randColor(dirtColors));
@@ -913,8 +864,7 @@ export function getMaxAnimals() {
                     if (y % 4 === 0 || (y%4===2 && x%8===0)) c = '#59442a'; p(x, y, c);
                 }
                 else if (id === IDS.LEAVES) {
-                    const leafCol = getOakLeavesPixel(x, y);
-                    if (leafCol) p(x, y, leafCol);
+                    if(Math.random() > 0.15) p(x, y, randColor(['#2e7025', '#24591d', '#398a2e', '#1c4516']));
                 }
                 else if (id === IDS.SAPLING) {
                     if (x >= 7 && x <= 8 && y >= 5 && y <= 14) p(x, y, '#6b4931');
@@ -1323,6 +1273,9 @@ export const SKIN_H = 32;
     export let staticPreviewDrawn = false;
 
     export function getSkinSaveData() {
+        if (typeof window !== 'undefined' && typeof window.playerSkinData !== 'undefined' && Array.isArray(window.playerSkinData) && window.playerSkinData.length === SKIN_W * SKIN_H) {
+            return window.playerSkinData.slice(0, SKIN_W * SKIN_H);
+        }
         return playerSkinData.slice(0, SKIN_W * SKIN_H);
     }
 
@@ -5234,33 +5187,35 @@ export const SKIN_H = 32;
         darkFactor = Math.max(0.12, Math.min(1, darkFactor));
 
         const isSunset = (time > 0.35 && time <= 0.5);
+        const step = 8;
+        const maxCols = Math.ceil(w / step) + 4;
+
+        if (!drawMountains.y1 || drawMountains.y1.length < maxCols) {
+            drawMountains.y1 = new Int32Array(maxCols);
+            drawMountains.y2 = new Int32Array(maxCols);
+            drawMountains.y3 = new Int32Array(maxCols);
+        }
+        const y1 = drawMountains.y1;
+        const y2 = drawMountains.y2;
+        const y3 = drawMountains.y3;
 
         // ====================================================
-        // LAYER 1: Distant Glacial Peaks & Summits (8px voxels)
+        // LAYER 1: Distant Glacial Summits (8px voxels)
         // ====================================================
-        const step1 = 8;
         const factor1 = 0.045;
         const baseH1 = h * 0.70 + offsetY * 0.25;
         const snowLine1 = h * 0.46 + offsetY * 0.25;
 
-        let c1R = Math.floor(62 * darkFactor);
-        let c1G = Math.floor(78 * darkFactor);
-        let c1B = Math.floor(102 * darkFactor);
-        let s1R = Math.floor(235 * darkFactor);
-        let s1G = Math.floor(245 * darkFactor);
-        let s1B = Math.floor(255 * darkFactor);
-        let s1ShadowR = Math.floor(185 * darkFactor);
-        let s1ShadowG = Math.floor(200 * darkFactor);
-        let s1ShadowB = Math.floor(225 * darkFactor);
+        let c1R = Math.floor(62 * darkFactor), c1G = Math.floor(78 * darkFactor), c1B = Math.floor(102 * darkFactor);
+        let s1R = Math.floor(235 * darkFactor), s1G = Math.floor(245 * darkFactor), s1B = Math.floor(255 * darkFactor);
 
         if (isSunset) {
             c1R = Math.floor(88 * darkFactor); c1G = Math.floor(64 * darkFactor); c1B = Math.floor(92 * darkFactor);
             s1R = Math.floor(255 * darkFactor); s1G = Math.floor(195 * darkFactor); s1B = Math.floor(180 * darkFactor);
-            s1ShadowR = Math.floor(215 * darkFactor); s1ShadowG = Math.floor(145 * darkFactor); s1ShadowB = Math.floor(155 * darkFactor);
         }
 
-        const l1Cols = [];
-        for (let x = -step1; x <= w + step1; x += step1) {
+        let nCols1 = 0;
+        for (let x = -step; x <= w + step; x += step) {
             const wx = x + camX * factor1 + offsetX * 0.35;
             const s1 = Math.sin(wx * 0.0028);
             const s2 = Math.sin(wx * 0.0075 + 1.4);
@@ -5268,68 +5223,46 @@ export const SKIN_H = 32;
             const r1 = 1 - Math.abs(s1);
             const r2 = 1 - Math.abs(s2);
             const peak = (r1 * 0.7 + r2 * 0.3) * (r1 * 0.5 + 0.5);
-            const rawY = baseH1 - (peak * 210 + s3 * 50);
-            const y = Math.floor(rawY / step1) * step1;
-            l1Cols.push({ x, y });
+            y1[nCols1++] = Math.floor((baseH1 - (peak * 210 + s3 * 50)) / step) * step;
         }
 
-        // Stepped path fill for Layer 1
         targetCtx.fillStyle = `rgb(${c1R},${c1G},${c1B})`;
         targetCtx.beginPath();
         targetCtx.moveTo(0, h);
-        for (let i = 0; i < l1Cols.length; i++) {
-            const col = l1Cols[i];
-            targetCtx.lineTo(col.x, col.y);
-            targetCtx.lineTo(col.x + step1, col.y);
+        for (let i = 0; i < nCols1; i++) {
+            const x = -step + i * step;
+            targetCtx.lineTo(x, y1[i]);
+            targetCtx.lineTo(x + step, y1[i]);
         }
         targetCtx.lineTo(w, h);
         targetCtx.closePath();
         targetCtx.fill();
 
-        // Layer 1 Snow Caps and Stepped Overhangs
+        // Snow caps
         targetCtx.fillStyle = `rgb(${s1R},${s1G},${s1B})`;
-        for (let i = 0; i < l1Cols.length; i++) {
-            const col = l1Cols[i];
-            if (col.y < snowLine1) {
-                targetCtx.fillRect(col.x, col.y, step1, Math.min(step1, h - col.y));
-            }
-        }
-        targetCtx.fillStyle = `rgb(${s1ShadowR},${s1ShadowG},${s1ShadowB})`;
-        for (let i = 0; i < l1Cols.length; i++) {
-            const col = l1Cols[i];
-            const nextCol = l1Cols[i + 1];
-            if (col.y < snowLine1 - step1) {
-                targetCtx.fillRect(col.x, col.y + step1, step1, step1);
-            }
-            if (col.y < snowLine1 && nextCol && nextCol.y > col.y) {
-                targetCtx.fillRect(col.x + step1 - 2, col.y + step1, 2, Math.min(step1, nextCol.y - col.y));
+        for (let i = 0; i < nCols1; i++) {
+            const my = y1[i];
+            if (my < snowLine1) {
+                targetCtx.fillRect(-step + i * step, my, step, step);
             }
         }
 
         // ====================================================
-        // LAYER 2: Mid-Ground Stony Terraces & Cliffs (6px voxels)
+        // LAYER 2: Mid Stony Mountain Terraces (8px voxels)
         // ====================================================
-        const step2 = 6;
         const factor2 = 0.12;
         const baseH2 = h * 0.82 + offsetY * 0.50;
         const snowLine2 = h * 0.54 + offsetY * 0.50;
 
-        let c2R = Math.floor(48 * darkFactor);
-        let c2G = Math.floor(62 * darkFactor);
-        let c2B = Math.floor(78 * darkFactor);
-        let c2HighR = Math.floor(68 * darkFactor);
-        let c2HighG = Math.floor(84 * darkFactor);
-        let c2HighB = Math.floor(104 * darkFactor);
-        let c2DarkR = Math.floor(34 * darkFactor);
-        let c2DarkG = Math.floor(45 * darkFactor);
-        let c2DarkB = Math.floor(58 * darkFactor);
+        let c2R = Math.floor(48 * darkFactor), c2G = Math.floor(62 * darkFactor), c2B = Math.floor(78 * darkFactor);
+        let c2HighR = Math.floor(68 * darkFactor), c2HighG = Math.floor(84 * darkFactor), c2HighB = Math.floor(104 * darkFactor);
 
         if (isSunset) {
             c2HighR = Math.floor(105 * darkFactor); c2HighG = Math.floor(75 * darkFactor); c2HighB = Math.floor(70 * darkFactor);
         }
 
-        const l2Cols = [];
-        for (let x = -step2; x <= w + step2; x += step2) {
+        let nCols2 = 0;
+        for (let x = -step; x <= w + step; x += step) {
             const wx = x + camX * factor2 + offsetX * 0.65 + 650;
             const s1 = Math.sin(wx * 0.0038);
             const s2 = Math.sin(wx * 0.0102 + 1.4);
@@ -5337,127 +5270,105 @@ export const SKIN_H = 32;
             const r1 = 1 - Math.abs(s1);
             const r2 = 1 - Math.abs(s2);
             const peak = (r1 * 0.7 + r2 * 0.3) * (r1 * 0.5 + 0.5);
-            const rawY = baseH2 - (peak * 145 + s3 * 38);
-            const y = Math.floor(rawY / step2) * step2;
-            l2Cols.push({ x, y });
+            y2[nCols2++] = Math.floor((baseH2 - (peak * 145 + s3 * 38)) / step) * step;
         }
 
-        // Stepped path fill for Layer 2
         targetCtx.fillStyle = `rgb(${c2R},${c2G},${c2B})`;
         targetCtx.beginPath();
         targetCtx.moveTo(0, h);
-        for (let i = 0; i < l2Cols.length; i++) {
-            const col = l2Cols[i];
-            targetCtx.lineTo(col.x, col.y);
-            targetCtx.lineTo(col.x + step2, col.y);
+        for (let i = 0; i < nCols2; i++) {
+            const x = -step + i * step;
+            targetCtx.lineTo(x, y2[i]);
+            targetCtx.lineTo(x + step, y2[i]);
         }
         targetCtx.lineTo(w, h);
         targetCtx.closePath();
         targetCtx.fill();
 
-        // Layer 2 Highlights & Shadow Facets (Directional Minecraft Voxel Lighting)
-        for (let i = 0; i < l2Cols.length; i++) {
-            const col = l2Cols[i];
-            const nextCol = l2Cols[i + 1];
-            const prevCol = l2Cols[i - 1];
-
-            // Horizontal plateau highlight
-            targetCtx.fillStyle = `rgb(${c2HighR},${c2HighG},${c2HighB})`;
-            targetCtx.fillRect(col.x, col.y, step2, 2);
-
-            // Rising step facing light
-            if (prevCol && col.y < prevCol.y) {
-                targetCtx.fillRect(col.x, col.y, 2, prevCol.y - col.y);
-            } else if (nextCol && col.y < nextCol.y) {
-                // Falling step facing shadow
-                targetCtx.fillStyle = `rgb(${c2DarkR},${c2DarkG},${c2DarkB})`;
-                targetCtx.fillRect(col.x + step2 - 2, col.y, 2, nextCol.y - col.y);
-            }
-
-            // Snow patches on high terraces
-            if (col.y < snowLine2) {
-                targetCtx.fillStyle = `rgb(${Math.floor(220 * darkFactor)},${Math.floor(235 * darkFactor)},${Math.floor(250 * darkFactor)})`;
-                targetCtx.fillRect(col.x, col.y, step2, Math.min(step2, h - col.y));
-            }
+        // Facet highlights
+        targetCtx.fillStyle = `rgb(${c2HighR},${c2HighG},${c2HighB})`;
+        for (let i = 0; i < nCols2; i++) {
+            const x = -step + i * step;
+            targetCtx.fillRect(x, y2[i], step, 2);
         }
 
         // ====================================================
-        // LAYER 3: Near Horizon Taiga Foothills & Spruce Trees
+        // LAYER 3: Near Taiga Foothills & Spruce Trees (8px voxels)
         // ====================================================
-        const step3 = 6;
         const factor3 = 0.24;
         const baseH3 = h * 0.92 + offsetY * 0.80;
 
-        let c3R = Math.floor(26 * darkFactor);
-        let c3G = Math.floor(58 * darkFactor);
-        let c3B = Math.floor(36 * darkFactor);
-        let c3HighR = Math.floor(40 * darkFactor);
-        let c3HighG = Math.floor(82 * darkFactor);
-        let c3HighB = Math.floor(50 * darkFactor);
+        let c3R = Math.floor(26 * darkFactor), c3G = Math.floor(58 * darkFactor), c3B = Math.floor(36 * darkFactor);
+        let c3HighR = Math.floor(40 * darkFactor), c3HighG = Math.floor(82 * darkFactor), c3HighB = Math.floor(50 * darkFactor);
 
         if (isSunset) {
             c3HighR = Math.floor(75 * darkFactor); c3HighG = Math.floor(70 * darkFactor); c3HighB = Math.floor(30 * darkFactor);
         }
 
-        const l3Cols = [];
-        for (let x = -step3; x <= w + step3; x += step3) {
+        let nCols3 = 0;
+        for (let x = -step; x <= w + step; x += step) {
             const wx = x + camX * factor3 + offsetX * 0.95 + 1200;
-            const rawY = baseH3 - (Math.abs(Math.sin(wx * 0.0035)) * 70 + Math.cos(wx * 0.0085) * 24);
-            const y = Math.floor(rawY / step3) * step3;
-            l3Cols.push({ x, y, wx });
+            y3[nCols3++] = Math.floor((baseH3 - (Math.abs(Math.sin(wx * 0.0035)) * 70 + Math.cos(wx * 0.0085) * 24)) / step) * step;
         }
 
-        // Stepped path fill for Layer 3
         targetCtx.fillStyle = `rgb(${c3R},${c3G},${c3B})`;
         targetCtx.beginPath();
         targetCtx.moveTo(0, h);
-        for (let i = 0; i < l3Cols.length; i++) {
-            const col = l3Cols[i];
-            targetCtx.lineTo(col.x, col.y);
-            targetCtx.lineTo(col.x + step3, col.y);
+        for (let i = 0; i < nCols3; i++) {
+            const x = -step + i * step;
+            targetCtx.lineTo(x, y3[i]);
+            targetCtx.lineTo(x + step, y3[i]);
         }
         targetCtx.lineTo(w, h);
         targetCtx.closePath();
         targetCtx.fill();
 
-        // Grass ridge highlight
+        // Grass ridge highlights
         targetCtx.fillStyle = `rgb(${c3HighR},${c3HighG},${c3HighB})`;
-        for (let i = 0; i < l3Cols.length; i++) {
-            targetCtx.fillRect(l3Cols[i].x, l3Cols[i].y, step3, 2);
+        for (let i = 0; i < nCols3; i++) {
+            targetCtx.fillRect(-step + i * step, y3[i], step, 2);
         }
 
-        // Pixel-Art Spruce Trees along Foothill Terraces
-        let lastTreeX = -100;
+        // Pixel-Art Spruce Trees along Foothill Terraces (Smooth parallax, zero jiggling, nicely spaced)
         const trunkCol = `rgb(${Math.floor(62 * darkFactor)},${Math.floor(40 * darkFactor)},${Math.floor(22 * darkFactor)})`;
         const pineTopCol = `rgb(${Math.floor(18 * darkFactor)},${Math.floor(46 * darkFactor)},${Math.floor(26 * darkFactor)})`;
         const pineMidCol = `rgb(${Math.floor(24 * darkFactor)},${Math.floor(58 * darkFactor)},${Math.floor(34 * darkFactor)})`;
         const pineBotCol = `rgb(${Math.floor(26 * darkFactor)},${Math.floor(68 * darkFactor)},${Math.floor(38 * darkFactor)})`;
 
-        for (let i = 0; i < l3Cols.length; i++) {
-            const col = l3Cols[i];
-            const nextCol = l3Cols[i + 1];
-            if (nextCol && col.y === nextCol.y && (col.x - lastTreeX > 32)) {
-                const hash = Math.abs(Math.sin(col.wx * 0.123));
-                if (hash > 0.62 && col.y < h - 25) {
-                    lastTreeX = col.x;
-                    const tx = col.x + 2;
-                    const ty = col.y;
+        const layerX = camX * factor3 + offsetX * 0.95 + 1200;
+        const treeSpacing = 160; // Rarer and nicely spaced out
+        const minTreeWorldX = Math.floor((layerX - 40) / treeSpacing) * treeSpacing;
+        const maxTreeWorldX = Math.ceil((layerX + w + 40) / treeSpacing) * treeSpacing;
 
-                    // Trunk
-                    targetCtx.fillStyle = trunkCol;
-                    targetCtx.fillRect(tx, ty - 4, 2, 4);
+        for (let twx = minTreeWorldX; twx <= maxTreeWorldX; twx += treeSpacing) {
+            const jitter = Math.sin(twx * 0.045) * 40;
+            const treeWx = twx + jitter;
+            
+            // Deterministic hash to make trees rarer and natural
+            const treeHash = Math.abs(Math.sin(twx * 0.173 + 0.8));
+            if (treeHash < 0.45) continue;
 
-                    // Stepped Spruce foliage
-                    targetCtx.fillStyle = pineTopCol;
-                    targetCtx.fillRect(tx, ty - 18, 2, 3);
-                    targetCtx.fillStyle = pineMidCol;
-                    targetCtx.fillRect(tx - 2, ty - 15, 6, 3);
-                    targetCtx.fillStyle = pineTopCol;
-                    targetCtx.fillRect(tx - 4, ty - 12, 10, 4);
-                    targetCtx.fillStyle = pineBotCol;
-                    targetCtx.fillRect(tx - 6, ty - 8, 14, 4);
-                }
-            }
+            const rawY = baseH3 - (Math.abs(Math.sin(treeWx * 0.0035)) * 70 + Math.cos(treeWx * 0.0085) * 24);
+            const ty = Math.floor(rawY / step) * step;
+            if (ty >= h - 25) continue;
+
+            // Project smoothly onto screen X with zero jitter
+            const tx = Math.round(treeWx - layerX);
+            if (tx < -20 || tx > w + 20) continue;
+
+            // Trunk
+            targetCtx.fillStyle = trunkCol;
+            targetCtx.fillRect(tx, ty - 4, 2, 4);
+
+            // Stepped Spruce foliage
+            targetCtx.fillStyle = pineTopCol;
+            targetCtx.fillRect(tx, ty - 18, 2, 3);
+            targetCtx.fillStyle = pineMidCol;
+            targetCtx.fillRect(tx - 2, ty - 15, 6, 3);
+            targetCtx.fillStyle = pineTopCol;
+            targetCtx.fillRect(tx - 4, ty - 12, 10, 4);
+            targetCtx.fillStyle = pineBotCol;
+            targetCtx.fillRect(tx - 6, ty - 8, 14, 4);
         }
     }
 
@@ -6664,14 +6575,6 @@ export const SKIN_H = 32;
                         ctx.transform(1, 0, sway * 0.04, 1, 0, 0); // shear sway from bottom
                         if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE / 2, -TILE_SIZE, TILE_SIZE, TILE_SIZE);
                         ctx.restore();
-                    } else if (fabulousGraphics && block === IDS.LEAVES && isDaytime) {
-                        if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
-                        // Subtle dappled sunlit shimmer on tree canopy tops
-                        const leafGlint = Math.sin(frameCount * 0.035 + x * 0.8 + y * 1.2);
-                        if (leafGlint > 0.72) {
-                            ctx.fillStyle = `rgba(240, 255, 185, ${((leafGlint - 0.72) * 0.45).toFixed(3)})`;
-                            ctx.fillRect(drawX + 6, drawY + 2, 8, 4);
-                        }
                     } else {
                         if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
                     }
