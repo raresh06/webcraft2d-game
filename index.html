@@ -167,6 +167,7 @@
                 <button class="mc-btn" onclick="openWorldsMenu()">Singleplayer</button>
                 <button class="mc-btn" onclick="openMultiplayerMenu()">Multiplayer</button>
                 <button class="mc-btn" onclick="openAchievements('sp')">Achievements</button>
+                <button class="mc-btn" onclick="openTutorialModal()">How to Play</button>
                 <button class="mc-btn" onclick="openSettings()">Settings</button>
             </div>
 
@@ -1099,6 +1100,7 @@
         <button class="mc-btn mb-3" onclick="resumeGame()">Back to Game</button>
         <button id="btn-pause-multiplayer" class="mc-btn mb-3" onclick="openPublishMultiplayerModal()">Open to Multiplayer</button>
         <button class="mc-btn mb-3" onclick="openAchievementsFromPause()">Achievements</button>
+        <button class="mc-btn mb-3 !bg-yellow-700 hover:!bg-yellow-600 !text-white" onclick="openTutorialModal()">Tutorial & Guide</button>
         <button class="mc-btn mb-3" onclick="openSettingsFromPause()">Settings</button>
         <button id="btn-quit-to-menu" class="mc-btn" onclick="quitToMenu()">Save & Quit to Title</button>
         </section>
@@ -1140,6 +1142,60 @@
         <p id="death-subtitle" class="text-white text-2xl mb-6 font-bold drop-shadow">Game Over</p>
         <button id="respawn-btn" class="mc-btn mb-3 !bg-red-700 !text-white hover:!bg-red-600" onclick="respawn()">Respawn</button>
         <button class="mc-btn !bg-gray-400 !text-black" onclick="quitToMenu()">Disconnect / Quit</button>
+        </section>
+    </div>
+
+    <!-- Background Building Mode Warm Orange Glow Overlay -->
+    <div id="bg-build-overlay" class="fixed inset-0 pointer-events-none transition-opacity duration-300 z-[75] hidden" style="box-shadow: inset 0 0 100px rgba(255, 130, 0, 0.22), inset 0 0 0 3px rgba(255, 150, 20, 0.40);"></div>
+
+    <!-- Onboarding / Tutorial Guide Modal -->
+    <div id="tutorial-modal" class="menu-overlay hidden z-[260]" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+        <section class="tutorial-panel p-4">
+            <!-- Header -->
+            <div class="flex justify-between items-center pb-2 mb-2.5 border-b-2 border-[#46515a]">
+                <div class="flex items-center gap-3">
+                    <h2 id="tutorial-title" class="screen-title text-4xl font-bold text-[var(--mc-accent-color)] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323']">Survival Guide</h2>
+                    <span id="tutorial-step-indicator" class="bg-[#171b20] border-2 border-[var(--mc-accent-color)] text-[var(--mc-accent-color)] font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">1 / 6</span>
+                </div>
+                <button class="mc-btn !w-9 !h-9 !text-2xl !p-0 !m-0 !bg-red-600 !text-white hover:!bg-red-500 flex items-center justify-center leading-none" onclick="closeTutorialModal()" aria-label="Close Guide">X</button>
+            </div>
+
+            <!-- Step Navigation Tabs (6 clear categories) -->
+            <div class="tutorial-tabs-container" id="tutorial-step-tabs">
+                <button class="tutorial-tab-btn active" onclick="goToTutorialStep(0)">
+                    <span>1. The World</span>
+                </button>
+                <button class="tutorial-tab-btn" onclick="goToTutorialStep(1)">
+                    <span>2. Controls</span>
+                </button>
+                <button class="tutorial-tab-btn" onclick="goToTutorialStep(2)">
+                    <span>3. Crafting</span>
+                </button>
+                <button class="tutorial-tab-btn" onclick="goToTutorialStep(3)">
+                    <span>4. Mobs & Night</span>
+                </button>
+                <button class="tutorial-tab-btn" onclick="goToTutorialStep(4)">
+                    <span>5. Armor & Gear</span>
+                </button>
+                <button class="tutorial-tab-btn" onclick="goToTutorialStep(5)">
+                    <span>6. Multiplayer</span>
+                </button>
+            </div>
+
+            <!-- Dynamic Step Content Body with Custom Scrollbar -->
+            <div id="tutorial-step-content" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2.5 custom-scrollbar min-h-[360px] max-h-[440px]">
+                <!-- Rendered dynamically by renderTutorialStep -->
+            </div>
+
+            <!-- Footer Navigation Bar -->
+            <div class="tutorial-footer">
+                <button id="tutorial-prev-btn" class="mc-btn tutorial-nav-btn prev-btn" onclick="prevTutorialStep()">&lt; Previous</button>
+
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="mc-btn tutorial-nav-btn skip-btn" onclick="closeTutorialModal()">Skip</button>
+                    <button id="tutorial-next-btn" class="mc-btn tutorial-nav-btn next-btn" onclick="nextTutorialStep()">Next &gt;</button>
+                </div>
+            </div>
         </section>
     </div>
 

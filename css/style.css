@@ -4297,6 +4297,296 @@ input, textarea {
   border: 2px solid #ffffff !important;
   box-shadow: inset 0 0 0 1px #000, inset 0 -2px 0 rgba(0,0,0,0.35) !important;
 }
+
+/* ==========================================================================
+   TUTORIAL / ONBOARDING GUIDE MODAL (AESTHETIC PIXEL-ART GAME DESIGN)
+   ========================================================================== */
+#tutorial-modal {
+  background-color: rgba(10, 14, 18, 0.88) !important;
+  backdrop-filter: blur(8px);
+}
+.tutorial-panel {
+  width: min(860px, calc(100vw - 24px));
+  max-height: min(670px, calc(100vh - 32px));
+  background-color: #20252b !important;
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 5px);
+  border: 4px solid !important;
+  border-top-color: #69737b !important;
+  border-left-color: #69737b !important;
+  border-right-color: #080a0c !important;
+  border-bottom-color: #080a0c !important;
+  box-shadow: inset 0 0 0 2px #2a3036, 8px 8px 0 rgba(0,0,0,0.55) !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.tutorial-tabs-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+.tutorial-tab-btn {
+  flex: 1 1 auto;
+  min-width: 110px;
+  background: #333a41;
+  border: 2px solid #111820;
+  border-top-color: #69737b;
+  border-left-color: #69737b;
+  color: #aebac2;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  padding: 5px 8px;
+  cursor: pointer;
+  transition: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  text-shadow: 1px 1px 0 #000;
+}
+.tutorial-tab-btn:hover {
+  background: #46515a;
+  color: #fff;
+}
+.tutorial-tab-btn.active {
+  background: #506173;
+  border-color: #e5a823;
+  border-top-color: #ffd34d;
+  border-left-color: #ffd34d;
+  color: #ffd34d;
+  font-weight: bold;
+  box-shadow: inset 0 0 0 1px #080a0c, 0 0 8px rgba(229, 168, 35, 0.4);
+}
+.tutorial-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+.tutorial-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+@media (max-width: 640px) {
+  .tutorial-grid-2, .tutorial-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+.tutorial-card {
+  background: #171b20 !important;
+  border: 2px solid #333a41;
+  border-top-color: #46515a;
+  border-left-color: #46515a;
+  border-right-color: #080a0c;
+  border-bottom-color: #080a0c;
+  box-shadow: inset 0 0 0 1px #080a0c;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  color: #e2e8f0 !important; /* Never black! */
+}
+.tutorial-card-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.tutorial-card-title {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  font-weight: bold;
+  line-height: 1.1;
+  display: block;
+  margin-bottom: 2px;
+  text-shadow: 1px 1px 0 #000;
+}
+.tutorial-card-title.gold { color: #fde047 !important; }
+.tutorial-card-title.cyan { color: #67e8f9 !important; }
+.tutorial-card-title.orange { color: #fb923c !important; }
+.tutorial-card-title.green { color: #4ade80 !important; }
+.tutorial-card-title.purple { color: #c084fc !important; }
+
+.tutorial-card-desc {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  line-height: 1.22;
+  color: #e2e8f0 !important; /* High contrast silvery white */
+  margin: 0;
+  text-shadow: 1px 1px 0 #000;
+}
+.tutorial-tip-box {
+  width: 100%;
+  background: #241a10;
+  border: 2px solid #8c5020;
+  border-top-color: #c47930;
+  border-left-color: #c47930;
+  border-bottom-color: #0c0804;
+  border-right-color: #0c0804;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fef08a !important;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  line-height: 1.25;
+  text-shadow: 1px 1px 0 #000;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+}
+.tutorial-tip-box b {
+  color: #ffd34d;
+}
+.tutorial-preview-box {
+  background: #0d1014;
+  border: 3px solid #111820;
+  border-top-color: #080a0c;
+  border-left-color: #080a0c;
+  border-right-color: #46515a;
+  border-bottom-color: #46515a;
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.85);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+.tutorial-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.mc-keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 8px;
+  background: #2b333c;
+  border: 2px solid #111820;
+  border-top-color: #69737b;
+  border-left-color: #69737b;
+  border-right-color: #080a0c;
+  border-bottom-color: #080a0c;
+  box-shadow: 0 2px 0 #080a0c, inset 0 0 0 1px #1a2026;
+  color: #ffd34d;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 #000;
+  user-select: none;
+}
+.mc-mouse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  background: #3a2820;
+  border: 2px solid #111820;
+  border-top-color: #8c5b40;
+  border-left-color: #8c5b40;
+  border-right-color: #080a0c;
+  border-bottom-color: #080a0c;
+  box-shadow: 0 2px 0 #080a0c;
+  color: #ff9d66;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 #000;
+  user-select: none;
+}
+.mc-mouse-btn.blue {
+  background: #1e2c3a;
+  border-top-color: #436d8f;
+  border-left-color: #436d8f;
+  color: #7dc4ff;
+}
+
+/* Footer Navigation Controls (Strict fixed sizing, no stretching!) */
+.tutorial-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 2px solid #46515a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.tutorial-nav-btn {
+  font-size: 22px !important;
+  padding: 6px 14px !important;
+  margin: 0 !important;
+  height: 42px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  user-select: none;
+}
+.tutorial-nav-btn.prev-btn {
+  width: 130px !important;
+  background-color: #4a5560 !important;
+  border-top-color: #69737b !important;
+  border-left-color: #69737b !important;
+  border-bottom-color: #20252b !important;
+  border-right-color: #20252b !important;
+  color: #ffffff !important;
+  text-shadow: 1px 1px 0 #000 !important;
+}
+.tutorial-nav-btn.prev-btn:hover {
+  background-color: #5a6672 !important;
+}
+.tutorial-nav-btn.skip-btn {
+  width: 130px !important; /* Exactly matches Previous button size */
+  background-color: #333a41 !important;
+  border-top-color: #46515a !important;
+  border-left-color: #46515a !important;
+  border-bottom-color: #111820 !important;
+  border-right-color: #111820 !important;
+  color: #cbd5e1 !important;
+  text-shadow: 1px 1px 0 #000 !important;
+}
+.tutorial-nav-btn.skip-btn:hover {
+  background-color: #46515a !important;
+  color: #ffffff !important;
+}
+.tutorial-nav-btn.next-btn {
+  width: 150px !important;
+  background-color: #15803d !important;
+  border-top-color: #22c55e !important;
+  border-left-color: #22c55e !important;
+  border-bottom-color: #14532d !important;
+  border-right-color: #14532d !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+  text-shadow: 1px 1px 0 #000 !important;
+}
+.tutorial-nav-btn.next-btn:hover {
+  background-color: #16a34a !important;
+}
+.tutorial-nav-btn.finish-btn {
+  width: 160px !important;
+  background-color: #ca8a04 !important;
+  border-top-color: #facc15 !important;
+  border-left-color: #facc15 !important;
+  border-bottom-color: #713f12 !important;
+  border-right-color: #713f12 !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+  text-shadow: 1px 1px 0 #000 !important;
+}
+.tutorial-nav-btn.finish-btn:hover {
+  background-color: #eab308 !important;
+}
+
 #mp-chat-container {
   position: fixed;
   bottom: 74px;

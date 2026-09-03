@@ -622,7 +622,21 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         updateUI(false);
     });
     window.addEventListener('wheel', (e) => {
-        if (e.deltaY === 0 || isInventoryOpen || STATE !== 'PLAYING' || performance.now() < hotbarWheelLockUntil) return;
+        if (e.deltaY === 0) return;
+        const curInventoryOpen = (typeof window !== 'undefined' && window.isInventoryOpen !== undefined) ? window.isInventoryOpen : isInventoryOpen;
+        const overInventory = e.target && typeof e.target.closest === 'function' && e.target.closest('#inventory-container, #inventory-menu, #crafting-panel, #crafting-list, .menu-overlay');
+
+        if (curInventoryOpen || overInventory) {
+            // When inventory is open, route scrolling to recipes/crafting list and never scroll the hotbar!
+            const craftingList = document.getElementById('crafting-list');
+            if (craftingList && e.target && typeof e.target.closest === 'function' && e.target.closest('#crafting-panel, #crafting-list')) {
+                craftingList.scrollTop += e.deltaY;
+                e.preventDefault();
+            }
+            return;
+        }
+
+        if (STATE !== 'PLAYING' || performance.now() < hotbarWheelLockUntil) return;
         e.preventDefault();
         const invert = (typeof UI !== 'undefined' && UI.invertScrollWheel !== undefined) ? UI.invertScrollWheel : ((typeof window !== 'undefined' && window.invertScrollWheel) || false);
         const sens = (typeof UI !== 'undefined' && UI.scrollSensitivity !== undefined) ? UI.scrollSensitivity : ((typeof window !== 'undefined' && window.scrollSensitivity) || 1);

@@ -846,8 +846,6 @@ initFirebaseSdk().then(() => {
     }
 
     export async function createMultiplayerRoom() {
-        showMultiplayerLoading('Preparing multiplayer world');
-        if (!await ensureFirebase()) return;
         let name = document.getElementById('mp-player-name').value.trim();
         let worldName = document.getElementById('mp-world-name').value.trim();
         let password = document.getElementById('mp-create-password').value.trim();
@@ -859,6 +857,20 @@ initFirebaseSdk().then(() => {
         if (!name) { showToast("Enter a character name first."); return; }
         if (!worldName) { showToast("Enter a world name."); return; }
         if (!/^\d{4,}$/.test(password)) { showToast("Password must contain at least 4 digits."); return; }
+
+        const isFirstTime = typeof localStorage !== 'undefined' && !localStorage.getItem('webcraft_tutorial_seen');
+        if (isFirstTime && typeof window.openTutorialModal === 'function') {
+            window.openTutorialModal(0, {
+                onboarding: true,
+                onComplete: () => {
+                    createMultiplayerRoom();
+                }
+            });
+            return;
+        }
+
+        showMultiplayerLoading('Preparing multiplayer world');
+        if (!await ensureFirebase()) return;
         playerName = name.slice(0, 16); localStorage.setItem('swc_player_name', playerName);
         let roomName = 'room_' + window.user.uid + '_' + Date.now();
         const { doc, setDoc, collection } = window.fbModules;
@@ -969,6 +981,18 @@ initFirebaseSdk().then(() => {
         if (!/^\d{4,}$/.test(password) || await hashRoomPassword(password) !== selectedJoinRoom.passwordHash) { showToast("Incorrect world password."); return; }
         let name = document.getElementById('mp-player-name').value.trim();
         if (!name) { showToast("Enter a character name first."); closeRoomDialogs(); return; }
+
+        const isFirstTime = typeof localStorage !== 'undefined' && !localStorage.getItem('webcraft_tutorial_seen');
+        if (isFirstTime && typeof window.openTutorialModal === 'function') {
+            window.openTutorialModal(0, {
+                onboarding: true,
+                onComplete: () => {
+                    joinSelectedRoom();
+                }
+            });
+            return;
+        }
+
         playerName = name.slice(0, 16); localStorage.setItem('swc_player_name', playerName);
         showMultiplayerLoading(selectedJoinRoom.id);
         await connectToMultiplayerRoom(selectedJoinRoom.id, await hashRoomPassword(password), false, false /* isGuest */);

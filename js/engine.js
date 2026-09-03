@@ -807,47 +807,88 @@ export function getMaxAnimals() {
         };
         
         function getOakWoodPixel(px, py) {
-            // Authentic Minecraft oak log side bark:
-            // Continuous vertical striations from y=0 to y=15 without harsh horizontal cutoff seams
-            const col = (px + Math.floor(Math.sin(py * 0.85 + (px % 3)) * 1.2) + 16) % 16;
-            const grooveX = [0, 4, 8, 12];
-            const isGroove = grooveX.some(gx => Math.abs(col - gx) === 0);
-            const isRidge = grooveX.some(gx => (col - gx + 16) % 16 === 1);
-            const jitter = ((px * 17 + py * 11 + (px ^ py)) % 5);
+            // Handcrafted authentic oak log bark with straight vertical bark plates,
+            // deep fissure crevices, natural highlight ridges, and occasional bark knot
+            const fissureOffset = Math.floor(py / 6) % 2;
+            const col = (px + fissureOffset) % 16;
+            const isFissure = (col === 0 || col === 4 || col === 9 || col === 13);
+            const isSubFissure = (col === 2 && py % 5 === 0) || (col === 11 && py % 4 === 0);
             
-            if (isGroove && jitter < 4) return '#2e1c0d'; // Deep bark fissure cleft
-            if (isRidge) return jitter < 2 ? '#6e4c28' : '#583b1e'; // Bark ridge highlight / shadow
-            if (jitter === 1) return '#644524'; // Bark mid highlight
-            if (jitter === 2 || jitter === 3) return '#52371c'; // Main oak bark body
-            return '#442b15'; // Darker bark undertone
+            // Natural bark knot on face
+            const dx = px - 6;
+            const dy = py - 7;
+            const knotDist = dx * dx + dy * dy;
+            if (knotDist <= 1) return '#20160b'; // knot center
+            if (knotDist <= 4) return '#7c6142'; // knot ring highlight
+            if (knotDist <= 7) return '#3d2c1a'; // knot shadow ring
+
+            if (isFissure || isSubFissure) {
+                return (py % 3 === 0) ? '#22180d' : '#332415'; // Deep bark crevice
+            }
+            
+            const platePos = col % 4;
+            const jitter = (px * 13 + py * 7) % 5;
+            if (platePos === 1) {
+                // Ridge highlight
+                return jitter === 0 ? '#8a6e4d' : '#7a6042';
+            } else if (platePos === 2) {
+                // Warm midtone body
+                return jitter < 2 ? '#6c5337' : '#5e472e';
+            } else if (platePos === 3) {
+                // Secondary shadow
+                return '#4f3b25';
+            } else {
+                return '#43311e';
+            }
         }
 
-        function getOakLeavesPixel(px, py) {
-            // Natural 2x2 and 3x2 leaf bunches with sunlit highlights, body foliage, depth shadows, and organic apertures
-            const cluster = ((Math.floor(px / 2) * 7 + Math.floor(py / 2) * 11 + (px ^ py)) % 13);
-            const sub = ((px + py * 3) % 4);
-            
-            // Natural negative space cutouts (clean, clustered apertures without 1px static noise)
-            if ((px % 5 === 1 && py % 5 === 2) || (px % 7 === 3 && py % 7 === 4)) {
-                return null; // transparent leaf gap
-            }
+        const OAK_LEAVES_MAP = [
+            // y = 0
+            [3, 4, 5, 4, 3, 0, 4, 5, 4, 3, 3, 4, 5, 4, 3, 0],
+            // y = 1
+            [4, 5, 5, 4, 2, 3, 5, 5, 4, 2, 4, 5, 5, 4, 2, 3],
+            // y = 2
+            [3, 4, 3, 2, 1, 4, 4, 3, 2, 1, 3, 4, 3, 2, 1, 4],
+            // y = 3
+            [2, 3, 2, 1, 0, 3, 3, 2, 1, 0, 2, 3, 2, 1, 0, 3],
+            // y = 4
+            [0, 4, 5, 4, 3, 0, 4, 5, 4, 3, 0, 4, 5, 4, 3, 0],
+            // y = 5
+            [3, 5, 5, 5, 4, 3, 5, 5, 5, 4, 3, 5, 5, 5, 4, 3],
+            // y = 6
+            [4, 5, 4, 3, 2, 4, 5, 4, 3, 2, 4, 5, 4, 3, 2, 4],
+            // y = 7
+            [3, 3, 2, 1, 0, 3, 3, 2, 1, 0, 3, 3, 2, 1, 0, 3],
+            // y = 8
+            [4, 5, 4, 3, 0, 4, 5, 4, 3, 0, 4, 5, 4, 3, 0, 4],
+            // y = 9
+            [5, 5, 5, 4, 3, 5, 5, 5, 4, 3, 5, 5, 5, 4, 3, 5],
+            // y = 10
+            [4, 4, 3, 2, 2, 4, 4, 3, 2, 2, 4, 4, 3, 2, 2, 4],
+            // y = 11
+            [3, 2, 1, 0, 1, 3, 2, 1, 0, 1, 3, 2, 1, 0, 1, 3],
+            // y = 12
+            [0, 4, 5, 4, 3, 0, 4, 5, 4, 3, 0, 4, 5, 4, 3, 0],
+            // y = 13
+            [3, 5, 5, 4, 2, 3, 5, 5, 4, 2, 3, 5, 5, 4, 2, 3],
+            // y = 14
+            [4, 4, 3, 2, 1, 4, 4, 3, 2, 1, 4, 4, 3, 2, 1, 4],
+            // y = 15
+            [2, 3, 2, 1, 0, 2, 3, 2, 1, 0, 2, 3, 2, 1, 0, 2]
+        ];
 
-            if (cluster === 0 || cluster === 4) {
-                // Sunlit foliage highlight cluster
-                if (sub === 0) return '#5fc43f';
-                if (sub === 1) return '#4ba631';
-                return '#3c8e26';
-            } else if (cluster === 1 || cluster === 7 || cluster === 10) {
-                // Deep foliage shadow cluster
-                if (sub === 0) return '#1a4611';
-                return '#235917';
-            } else {
-                // Lush rich leaf body
-                if (sub === 0) return '#4ba631';
-                if (sub === 1) return '#357f22';
-                if (sub === 2) return '#2d701d';
-                return '#398826';
-            }
+        const OAK_LEAVES_PALETTE = {
+            1: '#163b0e', // deep foliage shadow
+            2: '#245e17', // leaf shadow
+            3: '#3b8a24', // lush leaf body
+            4: '#4ea632', // vibrant leaf midtone
+            5: '#6bc944'  // sunlit leaf highlight
+        };
+
+        function getOakLeavesPixel(px, py) {
+            const val = OAK_LEAVES_MAP[py]?.[px] || 0;
+            if (val === 0) return null; // organic transparent aperture
+            return OAK_LEAVES_PALETTE[val] || '#3b8a24';
         }
 
         for (let x = 0; x < 16; x++) {
@@ -5190,57 +5231,233 @@ export const SKIN_H = 32;
         if (time > 0.4 && time <= 0.5) darkFactor = 1 - (time - 0.4) * 8; 
         else if (time > 0.5 && time <= 0.9) darkFactor = 0.2;
         else if (time > 0.9) darkFactor = 0.2 + (time - 0.9) * 8;
-        darkFactor = Math.max(0.1, Math.min(1, darkFactor));
+        darkFactor = Math.max(0.12, Math.min(1, darkFactor));
 
-        // Layer 1: Distant Misty Ridge (smooth path fill)
-        let r1 = Math.floor(45 * darkFactor), g1 = Math.floor(62 * darkFactor), b1 = Math.floor(80 * darkFactor);
-        targetCtx.fillStyle = `rgb(${r1},${g1},${b1})`;
+        const isSunset = (time > 0.35 && time <= 0.5);
+
+        // ====================================================
+        // LAYER 1: Distant Glacial Peaks & Summits (8px voxels)
+        // ====================================================
+        const step1 = 8;
+        const factor1 = 0.045;
+        const baseH1 = h * 0.70 + offsetY * 0.25;
+        const snowLine1 = h * 0.46 + offsetY * 0.25;
+
+        let c1R = Math.floor(62 * darkFactor);
+        let c1G = Math.floor(78 * darkFactor);
+        let c1B = Math.floor(102 * darkFactor);
+        let s1R = Math.floor(235 * darkFactor);
+        let s1G = Math.floor(245 * darkFactor);
+        let s1B = Math.floor(255 * darkFactor);
+        let s1ShadowR = Math.floor(185 * darkFactor);
+        let s1ShadowG = Math.floor(200 * darkFactor);
+        let s1ShadowB = Math.floor(225 * darkFactor);
+
+        if (isSunset) {
+            c1R = Math.floor(88 * darkFactor); c1G = Math.floor(64 * darkFactor); c1B = Math.floor(92 * darkFactor);
+            s1R = Math.floor(255 * darkFactor); s1G = Math.floor(195 * darkFactor); s1B = Math.floor(180 * darkFactor);
+            s1ShadowR = Math.floor(215 * darkFactor); s1ShadowG = Math.floor(145 * darkFactor); s1ShadowB = Math.floor(155 * darkFactor);
+        }
+
+        const l1Cols = [];
+        for (let x = -step1; x <= w + step1; x += step1) {
+            const wx = x + camX * factor1 + offsetX * 0.35;
+            const s1 = Math.sin(wx * 0.0028);
+            const s2 = Math.sin(wx * 0.0075 + 1.4);
+            const s3 = Math.cos(wx * 0.0160 + 2.1);
+            const r1 = 1 - Math.abs(s1);
+            const r2 = 1 - Math.abs(s2);
+            const peak = (r1 * 0.7 + r2 * 0.3) * (r1 * 0.5 + 0.5);
+            const rawY = baseH1 - (peak * 210 + s3 * 50);
+            const y = Math.floor(rawY / step1) * step1;
+            l1Cols.push({ x, y });
+        }
+
+        // Stepped path fill for Layer 1
+        targetCtx.fillStyle = `rgb(${c1R},${c1G},${c1B})`;
         targetCtx.beginPath();
         targetCtx.moveTo(0, h);
-        for (let x = 0; x <= w + 20; x += 20) {
-            let wx = x + camX * 0.08 + offsetX * 0.4;
-            let my = h - 180 - Math.sin(wx * 0.003) * 110 - Math.sin(wx * 0.01) * 50 + offsetY * 0.3;
-            targetCtx.lineTo(x, my);
+        for (let i = 0; i < l1Cols.length; i++) {
+            const col = l1Cols[i];
+            targetCtx.lineTo(col.x, col.y);
+            targetCtx.lineTo(col.x + step1, col.y);
         }
         targetCtx.lineTo(w, h);
         targetCtx.closePath();
         targetCtx.fill();
 
-        // Layer 2: Mid Silhouette Foothills (smooth path fill)
-        let r2 = Math.floor(32 * darkFactor), g2 = Math.floor(48 * darkFactor), b2 = Math.floor(58 * darkFactor);
-        targetCtx.fillStyle = `rgb(${r2},${g2},${b2})`;
+        // Layer 1 Snow Caps and Stepped Overhangs
+        targetCtx.fillStyle = `rgb(${s1R},${s1G},${s1B})`;
+        for (let i = 0; i < l1Cols.length; i++) {
+            const col = l1Cols[i];
+            if (col.y < snowLine1) {
+                targetCtx.fillRect(col.x, col.y, step1, Math.min(step1, h - col.y));
+            }
+        }
+        targetCtx.fillStyle = `rgb(${s1ShadowR},${s1ShadowG},${s1ShadowB})`;
+        for (let i = 0; i < l1Cols.length; i++) {
+            const col = l1Cols[i];
+            const nextCol = l1Cols[i + 1];
+            if (col.y < snowLine1 - step1) {
+                targetCtx.fillRect(col.x, col.y + step1, step1, step1);
+            }
+            if (col.y < snowLine1 && nextCol && nextCol.y > col.y) {
+                targetCtx.fillRect(col.x + step1 - 2, col.y + step1, 2, Math.min(step1, nextCol.y - col.y));
+            }
+        }
+
+        // ====================================================
+        // LAYER 2: Mid-Ground Stony Terraces & Cliffs (6px voxels)
+        // ====================================================
+        const step2 = 6;
+        const factor2 = 0.12;
+        const baseH2 = h * 0.82 + offsetY * 0.50;
+        const snowLine2 = h * 0.54 + offsetY * 0.50;
+
+        let c2R = Math.floor(48 * darkFactor);
+        let c2G = Math.floor(62 * darkFactor);
+        let c2B = Math.floor(78 * darkFactor);
+        let c2HighR = Math.floor(68 * darkFactor);
+        let c2HighG = Math.floor(84 * darkFactor);
+        let c2HighB = Math.floor(104 * darkFactor);
+        let c2DarkR = Math.floor(34 * darkFactor);
+        let c2DarkG = Math.floor(45 * darkFactor);
+        let c2DarkB = Math.floor(58 * darkFactor);
+
+        if (isSunset) {
+            c2HighR = Math.floor(105 * darkFactor); c2HighG = Math.floor(75 * darkFactor); c2HighB = Math.floor(70 * darkFactor);
+        }
+
+        const l2Cols = [];
+        for (let x = -step2; x <= w + step2; x += step2) {
+            const wx = x + camX * factor2 + offsetX * 0.65 + 650;
+            const s1 = Math.sin(wx * 0.0038);
+            const s2 = Math.sin(wx * 0.0102 + 1.4);
+            const s3 = Math.cos(wx * 0.0220 + 2.1);
+            const r1 = 1 - Math.abs(s1);
+            const r2 = 1 - Math.abs(s2);
+            const peak = (r1 * 0.7 + r2 * 0.3) * (r1 * 0.5 + 0.5);
+            const rawY = baseH2 - (peak * 145 + s3 * 38);
+            const y = Math.floor(rawY / step2) * step2;
+            l2Cols.push({ x, y });
+        }
+
+        // Stepped path fill for Layer 2
+        targetCtx.fillStyle = `rgb(${c2R},${c2G},${c2B})`;
         targetCtx.beginPath();
         targetCtx.moveTo(0, h);
-        for (let x = 0; x <= w + 20; x += 20) {
-            let wx = x + camX * 0.20 + offsetX * 0.7;
-            let my = h - 110 - Math.sin(wx * 0.005) * 75 - Math.cos(wx * 0.015) * 35 + offsetY * 0.6;
-            targetCtx.lineTo(x, my);
+        for (let i = 0; i < l2Cols.length; i++) {
+            const col = l2Cols[i];
+            targetCtx.lineTo(col.x, col.y);
+            targetCtx.lineTo(col.x + step2, col.y);
         }
         targetCtx.lineTo(w, h);
         targetCtx.closePath();
         targetCtx.fill();
 
-        // Layer 3: Rolling Forest & Plains Woodland Canopies (fabulousGraphics)
-        if (fabulousGraphics) {
-            let r3 = Math.floor(22 * darkFactor), g3 = Math.floor(52 * darkFactor), b3 = Math.floor(32 * darkFactor);
-            // Warmer emerald/amber during sunset
-            if (time > 0.38 && time <= 0.5) {
-                r3 = Math.floor(58 * darkFactor);
-                g3 = Math.floor(48 * darkFactor);
-                b3 = Math.floor(24 * darkFactor);
+        // Layer 2 Highlights & Shadow Facets (Directional Minecraft Voxel Lighting)
+        for (let i = 0; i < l2Cols.length; i++) {
+            const col = l2Cols[i];
+            const nextCol = l2Cols[i + 1];
+            const prevCol = l2Cols[i - 1];
+
+            // Horizontal plateau highlight
+            targetCtx.fillStyle = `rgb(${c2HighR},${c2HighG},${c2HighB})`;
+            targetCtx.fillRect(col.x, col.y, step2, 2);
+
+            // Rising step facing light
+            if (prevCol && col.y < prevCol.y) {
+                targetCtx.fillRect(col.x, col.y, 2, prevCol.y - col.y);
+            } else if (nextCol && col.y < nextCol.y) {
+                // Falling step facing shadow
+                targetCtx.fillStyle = `rgb(${c2DarkR},${c2DarkG},${c2DarkB})`;
+                targetCtx.fillRect(col.x + step2 - 2, col.y, 2, nextCol.y - col.y);
             }
-            targetCtx.fillStyle = `rgb(${r3},${g3},${b3})`;
-            targetCtx.beginPath();
-            targetCtx.moveTo(0, h);
-            for (let x = 0; x <= w + 16; x += 16) {
-                let wx = x + camX * 0.32 + offsetX * 0.9;
-                let canopyDomes = Math.abs(Math.sin(wx * 0.04)) * 16 + Math.abs(Math.cos(wx * 0.08)) * 8;
-                let my = h - 68 - Math.sin(wx * 0.006) * 45 - Math.sin(wx * 0.015) * 22 - canopyDomes + offsetY * 0.8;
-                targetCtx.lineTo(x, my);
+
+            // Snow patches on high terraces
+            if (col.y < snowLine2) {
+                targetCtx.fillStyle = `rgb(${Math.floor(220 * darkFactor)},${Math.floor(235 * darkFactor)},${Math.floor(250 * darkFactor)})`;
+                targetCtx.fillRect(col.x, col.y, step2, Math.min(step2, h - col.y));
             }
-            targetCtx.lineTo(w, h);
-            targetCtx.closePath();
-            targetCtx.fill();
+        }
+
+        // ====================================================
+        // LAYER 3: Near Horizon Taiga Foothills & Spruce Trees
+        // ====================================================
+        const step3 = 6;
+        const factor3 = 0.24;
+        const baseH3 = h * 0.92 + offsetY * 0.80;
+
+        let c3R = Math.floor(26 * darkFactor);
+        let c3G = Math.floor(58 * darkFactor);
+        let c3B = Math.floor(36 * darkFactor);
+        let c3HighR = Math.floor(40 * darkFactor);
+        let c3HighG = Math.floor(82 * darkFactor);
+        let c3HighB = Math.floor(50 * darkFactor);
+
+        if (isSunset) {
+            c3HighR = Math.floor(75 * darkFactor); c3HighG = Math.floor(70 * darkFactor); c3HighB = Math.floor(30 * darkFactor);
+        }
+
+        const l3Cols = [];
+        for (let x = -step3; x <= w + step3; x += step3) {
+            const wx = x + camX * factor3 + offsetX * 0.95 + 1200;
+            const rawY = baseH3 - (Math.abs(Math.sin(wx * 0.0035)) * 70 + Math.cos(wx * 0.0085) * 24);
+            const y = Math.floor(rawY / step3) * step3;
+            l3Cols.push({ x, y, wx });
+        }
+
+        // Stepped path fill for Layer 3
+        targetCtx.fillStyle = `rgb(${c3R},${c3G},${c3B})`;
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, h);
+        for (let i = 0; i < l3Cols.length; i++) {
+            const col = l3Cols[i];
+            targetCtx.lineTo(col.x, col.y);
+            targetCtx.lineTo(col.x + step3, col.y);
+        }
+        targetCtx.lineTo(w, h);
+        targetCtx.closePath();
+        targetCtx.fill();
+
+        // Grass ridge highlight
+        targetCtx.fillStyle = `rgb(${c3HighR},${c3HighG},${c3HighB})`;
+        for (let i = 0; i < l3Cols.length; i++) {
+            targetCtx.fillRect(l3Cols[i].x, l3Cols[i].y, step3, 2);
+        }
+
+        // Pixel-Art Spruce Trees along Foothill Terraces
+        let lastTreeX = -100;
+        const trunkCol = `rgb(${Math.floor(62 * darkFactor)},${Math.floor(40 * darkFactor)},${Math.floor(22 * darkFactor)})`;
+        const pineTopCol = `rgb(${Math.floor(18 * darkFactor)},${Math.floor(46 * darkFactor)},${Math.floor(26 * darkFactor)})`;
+        const pineMidCol = `rgb(${Math.floor(24 * darkFactor)},${Math.floor(58 * darkFactor)},${Math.floor(34 * darkFactor)})`;
+        const pineBotCol = `rgb(${Math.floor(26 * darkFactor)},${Math.floor(68 * darkFactor)},${Math.floor(38 * darkFactor)})`;
+
+        for (let i = 0; i < l3Cols.length; i++) {
+            const col = l3Cols[i];
+            const nextCol = l3Cols[i + 1];
+            if (nextCol && col.y === nextCol.y && (col.x - lastTreeX > 32)) {
+                const hash = Math.abs(Math.sin(col.wx * 0.123));
+                if (hash > 0.62 && col.y < h - 25) {
+                    lastTreeX = col.x;
+                    const tx = col.x + 2;
+                    const ty = col.y;
+
+                    // Trunk
+                    targetCtx.fillStyle = trunkCol;
+                    targetCtx.fillRect(tx, ty - 4, 2, 4);
+
+                    // Stepped Spruce foliage
+                    targetCtx.fillStyle = pineTopCol;
+                    targetCtx.fillRect(tx, ty - 18, 2, 3);
+                    targetCtx.fillStyle = pineMidCol;
+                    targetCtx.fillRect(tx - 2, ty - 15, 6, 3);
+                    targetCtx.fillStyle = pineTopCol;
+                    targetCtx.fillRect(tx - 4, ty - 12, 10, 4);
+                    targetCtx.fillStyle = pineBotCol;
+                    targetCtx.fillRect(tx - 6, ty - 8, 14, 4);
+                }
+            }
         }
     }
 
@@ -5928,13 +6145,18 @@ export const SKIN_H = 32;
         const activeBiome = getActiveBiomeAt(playerGridX);
         if (activeBiome !== 'forest' && activeBiome !== 'plains') return;
 
+        // Intermittent presence: rays will not always appear (fades in and out during sunny intervals)
+        const rayCycle = Math.sin(frameCount * 0.0018 + playerGridX * 0.05);
+        if (rayCycle < 0.35) return;
+        const presence = Math.max(0, Math.min(1.0, (rayCycle - 0.35) / 0.65));
+
         const isDaytime = (timeOfDay > 0.88 || timeOfDay < 0.48);
         const isSunset = (timeOfDay >= 0.38 && timeOfDay <= 0.48);
         const isSunrise = (timeOfDay >= 0.88 || timeOfDay <= 0.06);
         const isNight = (timeOfDay > 0.52 && timeOfDay < 0.86);
 
-        // Intensity based on daylight & caveSkyOpacity
-        const skyClear = Math.max(0, 1.0 - caveSkyOpacity * 2.2);
+        // Subtle intensity based on daylight, presence & caveSkyOpacity
+        const skyClear = Math.max(0, 1.0 - caveSkyOpacity * 2.2) * presence;
         if (skyClear <= 0.01) return;
 
         targetCtx.save();
@@ -5944,72 +6166,60 @@ export const SKIN_H = 32;
         let tilt = 0;
         if (isDaytime) {
             if (timeOfDay > 0.88) {
-                tilt = 0.45 - ((timeOfDay - 0.88) / 0.12) * 0.35; // Morning rays slant rightwards
+                tilt = 0.40 - ((timeOfDay - 0.88) / 0.12) * 0.30;
             } else if (timeOfDay <= 0.20) {
-                tilt = 0.10 - (timeOfDay / 0.20) * 0.15; // Midday rays near vertical
+                tilt = 0.10 - (timeOfDay / 0.20) * 0.15;
             } else {
-                tilt = -0.05 - ((timeOfDay - 0.20) / 0.28) * 0.45; // Afternoon / Sunset rays slant leftwards
+                tilt = -0.05 - ((timeOfDay - 0.20) / 0.28) * 0.40;
             }
         } else if (isNight) {
-            tilt = Math.sin((timeOfDay - 0.5) * Math.PI * 3) * 0.25; // Moonbeams
+            tilt = Math.sin((timeOfDay - 0.5) * Math.PI * 3) * 0.20;
         }
 
-        const numRays = 7;
+        const numRays = 5;
         const baseSpacing = w / (numRays - 1);
-        const parallaxOffset = (camX * 0.15) % baseSpacing;
+        const parallaxOffset = (camX * 0.12) % baseSpacing;
+        const pixelStep = 8;
+        const sliceHeight = 16;
 
         for (let i = 0; i < numRays; i++) {
-            const rayPulse = Math.sin(frameCount * 0.018 + i * 1.4) * 0.5 + 0.5;
-            const driftX = Math.sin(frameCount * 0.01 + i * 0.9) * 35;
-            const topCenterX = i * baseSpacing - parallaxOffset + driftX;
-            const topHalfWidth = 35 + Math.sin(i * 1.8) * 15;
-            const bottomHalfWidth = topHalfWidth * (1.8 + Math.cos(i) * 0.4);
+            const rayPulse = Math.sin(frameCount * 0.016 + i * 1.5) * 0.5 + 0.5;
+            const driftX = Math.floor(Math.sin(frameCount * 0.008 + i * 0.8) * 24 / pixelStep) * pixelStep;
+            const topCenterX = Math.floor((i * baseSpacing - parallaxOffset + driftX) / pixelStep) * pixelStep;
+            const topHalfWidth = 24 + Math.floor(Math.sin(i * 1.8) * 8 / pixelStep) * pixelStep;
+            const bottomHalfWidth = topHalfWidth * 1.6;
 
-            const topX1 = topCenterX - topHalfWidth;
-            const topX2 = topCenterX + topHalfWidth;
-            const bottomCenterX = topCenterX + tilt * h;
-            const bottomX1 = bottomCenterX - bottomHalfWidth;
-            const bottomX2 = bottomCenterX + bottomHalfWidth;
-
-            const rayGrad = targetCtx.createLinearGradient(topCenterX, 0, bottomCenterX, h * 0.95);
-            let alpha = 0;
+            // Faint, subtle opacity adapted to pixel art
+            let baseAlpha = 0;
+            let r = 255, g = 250, b = 210;
 
             if (isSunset) {
-                alpha = (0.09 + rayPulse * 0.06) * skyClear;
-                rayGrad.addColorStop(0, `rgba(255, 190, 110, ${(alpha * 1.2).toFixed(3)})`);
-                rayGrad.addColorStop(0.45, `rgba(255, 140, 60, ${alpha.toFixed(3)})`);
-                rayGrad.addColorStop(0.85, `rgba(220, 100, 30, ${(alpha * 0.4).toFixed(3)})`);
-                rayGrad.addColorStop(1, 'rgba(255, 120, 40, 0)');
+                baseAlpha = (0.018 + rayPulse * 0.012) * skyClear;
+                r = 255; g = 165; b = 80;
             } else if (isSunrise) {
-                alpha = (0.08 + rayPulse * 0.05) * skyClear;
-                rayGrad.addColorStop(0, `rgba(255, 230, 160, ${(alpha * 1.1).toFixed(3)})`);
-                rayGrad.addColorStop(0.5, `rgba(255, 190, 120, ${alpha.toFixed(3)})`);
-                rayGrad.addColorStop(1, 'rgba(255, 180, 100, 0)');
+                baseAlpha = (0.016 + rayPulse * 0.010) * skyClear;
+                r = 255; g = 210; b = 130;
             } else if (isDaytime) {
-                alpha = (activeBiome === 'forest' ? 0.075 : 0.055) + rayPulse * 0.04;
-                alpha *= skyClear;
-                // Golden sunlight with subtle canopy emerald refraction
-                rayGrad.addColorStop(0, `rgba(255, 252, 215, ${(alpha * 1.2).toFixed(3)})`);
-                rayGrad.addColorStop(0.4, `rgba(245, 250, 180, ${alpha.toFixed(3)})`);
-                rayGrad.addColorStop(0.75, `rgba(195, 245, 145, ${(alpha * 0.5).toFixed(3)})`);
-                rayGrad.addColorStop(1, 'rgba(180, 240, 130, 0)');
+                baseAlpha = ((activeBiome === 'forest' ? 0.018 : 0.014) + rayPulse * 0.008) * skyClear;
+                r = 245; g = 250; b = 190;
             } else if (isNight) {
-                alpha = (0.035 + rayPulse * 0.025) * skyClear;
-                // Ethereal silvery-blue moonbeams
-                rayGrad.addColorStop(0, `rgba(190, 220, 255, ${(alpha * 1.2).toFixed(3)})`);
-                rayGrad.addColorStop(0.5, `rgba(165, 205, 250, ${alpha.toFixed(3)})`);
-                rayGrad.addColorStop(1, 'rgba(150, 190, 245, 0)');
+                baseAlpha = (0.010 + rayPulse * 0.006) * skyClear;
+                r = 180; g = 210; b = 255;
             }
 
-            if (alpha > 0.005) {
-                targetCtx.fillStyle = rayGrad;
-                targetCtx.beginPath();
-                targetCtx.moveTo(topX1, 0);
-                targetCtx.lineTo(topX2, 0);
-                targetCtx.lineTo(bottomX2, h);
-                targetCtx.lineTo(bottomX1, h);
-                targetCtx.closePath();
-                targetCtx.fill();
+            if (baseAlpha > 0.003) {
+                for (let y = 0; y < h; y += sliceHeight) {
+                    const yRatio = y / h;
+                    const fade = Math.max(0, 1.0 - yRatio * 0.85);
+                    const sliceAlpha = baseAlpha * fade;
+                    if (sliceAlpha <= 0.002) continue;
+
+                    const sliceCenterX = Math.floor((topCenterX + tilt * y) / pixelStep) * pixelStep;
+                    const sliceHalfWidth = Math.floor((topHalfWidth + yRatio * (bottomHalfWidth - topHalfWidth)) / pixelStep) * pixelStep;
+
+                    targetCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${sliceAlpha.toFixed(4)})`;
+                    targetCtx.fillRect(sliceCenterX - sliceHalfWidth, y, sliceHalfWidth * 2, sliceHeight);
+                }
             }
         }
         targetCtx.restore();
@@ -6228,7 +6438,8 @@ export const SKIN_H = 32;
         if (Math.abs(targetSnowOpacity - auroraSnowOpacity) < 0.005) auroraSnowOpacity = targetSnowOpacity;
 
         drawDynamicSky(ctx, canvas.width, canvas.height, timeOfDay);
-        drawMountains(ctx, camX, canvas.height, timeOfDay, canvas.width);
+        const verticalParallax = Math.max(-80, Math.min(80, (camY - (surfaceWorldY - canvas.height / 2)) * 0.08));
+        drawMountains(ctx, camX, canvas.height, timeOfDay, canvas.width, 0, verticalParallax);
         drawPixelAurora(ctx, canvas.width, canvas.height, timeOfDay);
         drawSnowFog(ctx, canvas.width, canvas.height, camX);
         clouds.forEach(c => c.draw(ctx, camX));
@@ -6888,14 +7099,35 @@ export const SKIN_H = 32;
         if (showBiomeGrading) drawBiomeGrading(ctx, canvas.width, canvas.height);
         if (showVignette) drawVignette(ctx, canvas.width, canvas.height);
 
-        // Smoothly darken the game view in Background Build Mode so the player knows
+        // Smoothly darken and illuminate orange frame in Background Build Mode
         const curBgModeForDarkness = (typeof window !== 'undefined' && window.isBackgroundBuildMode !== undefined) ? window.isBackgroundBuildMode : isBackgroundBuildMode;
         const targetBgDarkness = curBgModeForDarkness ? 0.45 : 0;
         bgBuildDarknessAlpha += (targetBgDarkness - bgBuildDarknessAlpha) * 0.18;
         if (bgBuildDarknessAlpha > 0.005) {
             ctx.save();
-            ctx.fillStyle = `rgba(0, 0, 0, ${bgBuildDarknessAlpha})`;
+            // Subtle backdrop tint
+            ctx.fillStyle = `rgba(18, 12, 6, ${bgBuildDarknessAlpha * 0.55})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Light warm orange radial vignette around entire screen
+            const maxR = Math.hypot(canvas.width / 2, canvas.height / 2);
+            const orangeVig = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, Math.max(1, maxR * 0.35),
+                canvas.width / 2, canvas.height / 2, Math.max(2, maxR)
+            );
+            const edgeAlpha = (bgBuildDarknessAlpha * 0.45).toFixed(3);
+            const midAlpha = (bgBuildDarknessAlpha * 0.20).toFixed(3);
+            orangeVig.addColorStop(0, 'rgba(255, 160, 40, 0.02)');
+            orangeVig.addColorStop(0.65, `rgba(255, 140, 30, ${midAlpha})`);
+            orangeVig.addColorStop(1.0, `rgba(255, 115, 15, ${edgeAlpha})`);
+            ctx.fillStyle = orangeVig;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Glowing light orange perimeter frame border
+            const frameAlpha = (bgBuildDarknessAlpha * 0.75).toFixed(3);
+            ctx.strokeStyle = `rgba(255, 150, 30, ${frameAlpha})`;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
             ctx.restore();
         }
     }

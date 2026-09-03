@@ -3418,7 +3418,21 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         
         document.getElementById('btn-quit-to-menu').innerText = "Save & Quit to Title";
         document.getElementById('room-indicator').classList.add('hidden');
-        startGameplay();
+
+        const isFirstTime = typeof localStorage !== 'undefined' && !localStorage.getItem('webcraft_tutorial_seen');
+        if (isFirstTime) {
+            openTutorialModal(0, {
+                onboarding: true,
+                onComplete: () => {
+                    if (typeof showSingleplayerLoading === 'function') {
+                        showSingleplayerLoading(name);
+                    }
+                    setTimeout(() => startGameplay(), 250);
+                }
+            });
+        } else {
+            startGameplay();
+        }
     }
 
     export function saveCurrentWorld(forceSaveMp = false) {
@@ -4279,32 +4293,50 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function respawn() {
-        document.getElementById('death-menu').classList.add('hidden');
-        document.getElementById('hud').style.display = 'block';
-        const spawn = getInitialSpawnPoint();
-        player.x = spawn.x;
-        player.y = spawn.y;
-        player.vx = 0;
-        player.vy = 0;
-        player.damageCooldown = 60;
-        player.fallStartY = player.y;
-        player.isGrounded = true;
-        player.health = player.maxHealth;
-        player.isDead = false;
-        player.hunger = 20;
-        player.exhaustion = 0;
-        player.oxygen = player.maxOxygen;
-        player.poisonTimer = 0;
-        updateHealthUI();
+        const deathMenu = document.getElementById('death-menu');
+        if (deathMenu) deathMenu.classList.add('hidden');
+        const hud = document.getElementById('hud');
+        if (hud) hud.style.display = 'block';
 
-        camera.x = player.x + player.width / 2 - canvas.width / 2;
-        camera.y = player.y + player.height / 2 - canvas.height / 2;
-        camera.x = Math.max(-canvas.width / 3, Math.min(camera.x, WORLD_WIDTH * TILE_SIZE - canvas.width + canvas.width / 3));
-        camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT * TILE_SIZE - canvas.height));
+        const curPlayer = player || (typeof window !== 'undefined' && window.player);
+        if (!curPlayer) return;
 
-        caveSkyOpacity = getPlayerCaveSkyOpacity();
+        const spawn = (typeof getInitialSpawnPoint === 'function') ? getInitialSpawnPoint() : { x: 50 * TILE_SIZE, y: 50 * TILE_SIZE };
+        curPlayer.x = spawn.x;
+        curPlayer.y = spawn.y;
+        curPlayer.vx = 0;
+        curPlayer.vy = 0;
+        curPlayer.damageCooldown = 60;
+        curPlayer.fallStartY = curPlayer.y;
+        curPlayer.isGrounded = true;
+        curPlayer.health = curPlayer.maxHealth || 20;
+        curPlayer.isDead = false;
+        curPlayer.hunger = 20;
+        curPlayer.exhaustion = 0;
+        curPlayer.oxygen = curPlayer.maxOxygen || 10;
+        curPlayer.poisonTimer = 0;
+
+        player = curPlayer;
+        if (typeof window !== 'undefined') window.player = curPlayer;
+        if (typeof setEnginePlayer === 'function') setEnginePlayer(curPlayer);
+
+        const curCanvas = (typeof canvas !== 'undefined' ? canvas : null) || (typeof window !== 'undefined' && window.canvas) || (typeof document !== 'undefined' ? (document.getElementById('game-canvas') || document.getElementById('gameCanvas')) : null);
+        const cW = curCanvas ? curCanvas.width : 1280;
+        const cH = curCanvas ? curCanvas.height : 720;
+
+        camera.x = curPlayer.x + (curPlayer.width || 24) / 2 - cW / 2;
+        camera.y = curPlayer.y + (curPlayer.height || 48) / 2 - cH / 2;
+        camera.x = Math.max(-cW / 3, Math.min(camera.x, WORLD_WIDTH * TILE_SIZE - cW + cW / 3));
+        camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT * TILE_SIZE - cH));
+
+        caveSkyOpacity = (typeof getPlayerCaveSkyOpacity === 'function') ? getPlayerCaveSkyOpacity() : 0;
         keys = {};
+
         STATE = 'PLAYING';
+        if (typeof window !== 'undefined') window.STATE = 'PLAYING';
+        if (typeof setEngineState === 'function') setEngineState('PLAYING');
+        if (typeof window.setGameState === 'function') window.setGameState('PLAYING');
+
         updateHealthUI();
         updateHungerUI();
         updateOxygenUI(false);
@@ -4314,7 +4346,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         if (isMultiplayer && window.user && currentMpRoom) {
             syncLocalPlayerState(true);
-        } else if (!isMultiplayer) {
+        } else if (!isMultiplayer && typeof saveCurrentWorld === 'function') {
             saveCurrentWorld();
         }
     }
@@ -4433,9 +4465,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function toggleInventory() {
         isInventoryOpen = !isInventoryOpen;
+        if (typeof window !== 'undefined') window.isInventoryOpen = isInventoryOpen;
+        if (typeof setEngineIsInventoryOpen === 'function') setEngineIsInventoryOpen(isInventoryOpen);
         const container = document.getElementById('inventory-container');
         if (isInventoryOpen) {
-            container.classList.remove('hidden');
+            if (container) container.classList.remove('hidden');
             keys = {};
             updateUI();
             const tip = typeof document !== 'undefined' ? (document.getElementById('item-tooltip') || document.getElementById('tooltip')) : null;
@@ -4443,7 +4477,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             unlockAchievement('taking_inventory');
         } 
         else {
-            container.classList.add('hidden');
+            if (container) container.classList.add('hidden');
             hotbarWheelLockUntil = performance.now() + 500;
             if (heldItemObj) { 
                 if(!giveItem(heldItemObj.id, heldItemObj.count)) { } 
@@ -5206,6 +5240,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (indicator) {
             indicator.classList.toggle('hidden', !isBackgroundBuildMode);
         }
+        const overlay = document.getElementById('bg-build-overlay');
+        if (overlay) {
+            overlay.classList.toggle('hidden', !isBackgroundBuildMode);
+        }
         showToast(isBackgroundBuildMode ? 'Background Build Mode: ON' : 'Background Build Mode: OFF');
     }
 
@@ -5411,6 +5449,901 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             default: return "Block #" + id;
         }
     }
+
+    // =========================================================================
+    // =========================================================================
+    // ONBOARDING & TUTORIAL GUIDE SYSTEM (AUTHENTIC PIXEL-ART GAME DESIGN)
+    // =========================================================================
+    export let currentTutorialStep = 0;
+    export const TOTAL_TUTORIAL_STEPS = 6;
+
+    export function getTutorialTextureSrc(id) {
+        if (typeof textures !== 'undefined' && textures && textures[id]) {
+            return textures[id].src || '';
+        }
+        return '';
+    }
+
+    export function renderItemFrameHtml(id, label = '') {
+        const src = getTutorialTextureSrc(id);
+        const imgHtml = src ? `<img src="${src}" class="w-8 h-8 pixelated" alt="${label}" />` : `<div class="w-6 h-6 bg-amber-600/40"></div>`;
+        return `<div class="achievement-icon-frame" title="${label}">${imgHtml}</div>`;
+    }
+
+    export const TUTORIAL_STEPS = [
+        {
+            title: "The Infinite Sandbox",
+            badge: "World & Biomes",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-preview-box w-full mb-2">
+                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
+                        </div>
+                        <div class="tutorial-grid-2">
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.GRASS, "Biomes")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">Vibrant Biomes</span>
+                                    <p class="tutorial-card-desc">Explore lush Plains, dense Plain Woods, scorching Deserts with cactuses, and snowy peaks with auroras.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.DIAMOND_ORE, "Minerals")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">Mineral Veins</span>
+                                    <p class="tutorial-card-desc">Excavate subterranean caverns beneath the soil to discover Coal, Iron, Gold, and precious Diamond veins.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.TORCH, "Light & Dark")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title orange">Day & Night Dynamics</span>
+                                    <p class="tutorial-card-desc">Daylight provides a calm window for gathering resources. Nightfall brings dangerous monsters to unlit lands.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.COBBLESTONE, "Building")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title green">Complete Creative Freedom</span>
+                                    <p class="tutorial-card-desc">Place solid foreground blocks and background walls [B] to build reinforced shelters and grand castles.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                drawTutorialWorldScene();
+            }
+        },
+        {
+            title: "Controls & Navigation",
+            badge: "How to Play",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-grid-2 mb-2">
+                            <div class="tutorial-card">
+                                <div class="flex gap-1.5 min-w-[70px] justify-center">
+                                    <span class="mc-keycap">A</span>
+                                    <span class="mc-keycap">D</span>
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">Horizontal Movement</span>
+                                    <p class="tutorial-card-desc">Walk and sprint left or right across the terrain.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1.5 min-w-[70px] justify-center">
+                                    <span class="mc-keycap">SPACE</span>
+                                    <span class="mc-keycap">W</span>
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">Jump & Climb</span>
+                                    <p class="tutorial-card-desc">Leap over blocks and ascend vertical ladders.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="min-w-[70px] flex justify-center">
+                                    <span class="mc-mouse-btn">HOLD L-CLICK</span>
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title orange">Mine / Attack</span>
+                                    <p class="tutorial-card-desc">Break target blocks in range or strike hostile mobs.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="min-w-[70px] flex justify-center">
+                                    <span class="mc-mouse-btn blue">R-CLICK</span>
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">Place / Interact</span>
+                                    <p class="tutorial-card-desc">Place held item, open chests & furnaces, sleep in bed.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="min-w-[70px] flex justify-center">
+                                    <span class="mc-keycap">E</span>
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">Inventory & Crafting</span>
+                                    <p class="tutorial-card-desc">Manage hotbar, backpack storage, and craft recipes.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="min-w-[70px] flex justify-center">
+                                    <span class="mc-keycap">B</span>
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title orange">Background Build Mode</span>
+                                    <p class="tutorial-card-desc">Toggles orange screen overlay to place cozy back-wall blocks.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="min-w-[70px] flex justify-center">
+                                    <span class="mc-keycap">M</span>
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title green">World Map</span>
+                                    <p class="tutorial-card-desc">Open full interactive world map with smooth pan and zoom.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1 min-w-[70px] justify-center">
+                                    <span class="mc-keycap">1-9</span>
+                                    <span class="mc-keycap">WHEEL</span>
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">Hotbar Select</span>
+                                    <p class="tutorial-card-desc">Select active tool or block to hold in your hand.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tutorial-tip-box">
+                            ${renderItemFrameHtml(IDS.TORCH, "Light Tip")}
+                            <span><b>PRO TIP:</b> Toggle Background Build Mode with <b>'B'</b> to seal houses with background walls. Monsters cannot spawn inside closed houses!</span>
+                        </div>
+                    </div>
+                `;
+            }
+        },
+        {
+            title: "Crafting & Tool Progression",
+            badge: "Tech Tree",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-preview-box w-full mb-2">
+                            <canvas id="tutorial-preview-canvas" width="760" height="125" class="tutorial-canvas"></canvas>
+                        </div>
+                        <div class="tutorial-grid-2">
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.WOOD, "Wood Logs")}
+                                    ${renderItemFrameHtml(IDS.PLANKS, "Planks")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title orange">1. Harvest Timber</span>
+                                    <p class="tutorial-card-desc">Chop oak trees to obtain Wood Logs. In inventory [E], refine logs into Planks and Sticks.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.CRAFTING_TABLE, "Crafting Table")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">2. Build Crafting Table</span>
+                                    <p class="tutorial-card-desc">Combine 4 Planks to build a Crafting Table. Place it and Right-Click to unlock the 3x3 recipe grid!</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.WOOD_PICKAXE, "Wood")}
+                                    ${renderItemFrameHtml(IDS.IRON_PICKAXE, "Iron")}
+                                    ${renderItemFrameHtml(IDS.DIAMOND_PICKAXE, "Diamond")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">3. Tool Tiers</span>
+                                    <p class="tutorial-card-desc">Wood -> Stone -> Iron -> Gold -> Diamond. Stronger pickaxes harvest harder minerals (Iron for Diamond).</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.FURNACE, "Furnace")}
+                                    ${renderItemFrameHtml(IDS.IRON_INGOT, "Ingot")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title orange">4. Smelting & Metal Ore</span>
+                                    <p class="tutorial-card-desc">Craft a Furnace with 8 Cobblestone. Fuel it with Coal or Wood to smelt raw Iron & Gold ores into ingots!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                drawTutorialCraftingScene();
+            }
+        },
+        {
+            title: "Wildlife & Night Survival",
+            badge: "Survival & Combat",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-preview-box w-full mb-2">
+                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
+                        </div>
+                        <div class="tutorial-grid-3">
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.RAW_PORKCHOP, "Porkchop")}
+                                    ${renderItemFrameHtml(IDS.WOOL, "Wool")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title green">Peaceful Wildlife</span>
+                                    <p class="tutorial-card-desc">Hunt Pigs for Porkchops to replenish hunger and heal. Shear Sheep for Wool.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.IRON_SWORD, "Sword")}
+                                    ${renderItemFrameHtml(IDS.BONE, "Bone")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title orange">Monsters in the Dark</span>
+                                    <p class="tutorial-card-desc">Zombies, Skeletons, and Creepers spawn in the dark. Craft a Sword to fight back!</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.BED, "Bed")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">Sleep Through Night</span>
+                                    <p class="tutorial-card-desc">Combine 3 Planks + 3 Wool. Right-Click a Bed at dusk to fast-forward to morning safely.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                drawTutorialMobsScene();
+            }
+        },
+        {
+            title: "Armor & Equipment",
+            badge: "Defense & Storage",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-preview-box w-full mb-2">
+                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
+                        </div>
+                        <div class="tutorial-grid-2">
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.HELMET_IRON, "Helmet")}
+                                    ${renderItemFrameHtml(IDS.CHESTPLATE_IRON, "Chestplate")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">Head & Torso Defense</span>
+                                    <p class="tutorial-card-desc">Helmets and Chestplates provide primary damage absorption against monster attacks and falling debris.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.LEGGINGS_IRON, "Leggings")}
+                                    ${renderItemFrameHtml(IDS.BOOTS_IRON, "Boots")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">Leggings & Boots</span>
+                                    <p class="tutorial-card-desc">Complete your suit with Leggings and Boots to soften high impacts and cushion falls from underground caverns.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.IRON_INGOT, "Ingot")}
+                                    ${renderItemFrameHtml(IDS.DIAMOND, "Diamond")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">Tier Progression</span>
+                                    <p class="tutorial-card-desc">Leather -> Iron -> Gold -> Diamond. Diamond armor offers peak damage reduction and the greatest durability.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.CHEST, "Chest")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title orange">Item Safeguarding</span>
+                                    <p class="tutorial-card-desc">Craft Chests (8 Planks) to stash your valuable minerals, backup tools, and armor so they are never lost upon death.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                drawTutorialArmorScene();
+            }
+        },
+        {
+            title: "Multiplayer & Custom Skins",
+            badge: "Online Co-Op & Skins",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-preview-box w-full mb-2">
+                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
+                        </div>
+                        <div class="tutorial-grid-2">
+                            <div class="tutorial-card">
+                                <div class="achievement-icon-frame font-['VT323'] text-2xl text-emerald-400 font-bold">MP</div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title green">Instant P2P Hosting</span>
+                                    <p class="tutorial-card-desc">Press Esc -> 'Open to Multiplayer' in any singleplayer world. Set a room name and optional password to invite friends!</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="achievement-icon-frame font-['VT323'] text-2xl text-cyan-400 font-bold">SV</div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">Server Browser</span>
+                                    <p class="tutorial-card-desc">Browse active public rooms in the Multiplayer Lobby. Join survival adventures or build together in real-time.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="achievement-icon-frame font-['VT323'] text-2xl text-amber-400 font-bold">KEY</div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title orange">Private Co-Op Security</span>
+                                    <p class="tutorial-card-desc">Protect your private worlds with a password so only your invited friends can join and build with you.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="achievement-icon-frame font-['VT323'] text-2xl text-purple-400 font-bold">SK</div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title purple">Pixel Skin Studio</span>
+                                    <p class="tutorial-card-desc">Open the built-in Skin Maker in the main menu to paint, save, and wear your own unique pixel-art character skin!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                drawTutorialMultiplayerScene();
+            }
+        }
+    ];
+
+    function drawTutorialBlock(ctx, id, x, y, size = 32) {
+        if (typeof textures !== 'undefined' && textures && textures[id]) {
+            try {
+                ctx.drawImage(textures[id], Math.floor(x), Math.floor(y), size, size);
+                return;
+            } catch(e) {}
+        }
+        ctx.fillStyle = '#5c4033';
+        ctx.fillRect(Math.floor(x), Math.floor(y), size, size);
+    }
+
+    export function drawTutorialWorldScene() {
+        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        const w = c.width, h = c.height;
+        ctx.imageSmoothingEnabled = false;
+
+        // Sky gradient
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+        skyGrad.addColorStop(0, '#4a8ee8');
+        skyGrad.addColorStop(0.65, '#99caff');
+        skyGrad.addColorStop(1, '#d8edff');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Sun with ray glow
+        ctx.fillStyle = 'rgba(255, 240, 150, 0.12)';
+        ctx.fillRect(w - 90, 0, 55, h);
+        ctx.fillRect(w - 75, 10, 32, 32);
+        ctx.fillStyle = '#fff480';
+        ctx.fillRect(w - 71, 14, 24, 24);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(w - 67, 18, 10, 10);
+
+        // Rolling Mountains in background
+        ctx.fillStyle = '#5c8299';
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        for (let x = 0; x <= w; x += 16) {
+            ctx.lineTo(x, h - 55 - Math.sin(x * 0.015) * 16 - Math.cos(x * 0.03) * 6);
+        }
+        ctx.lineTo(w, h);
+        ctx.fill();
+
+        // Woodland horizon layer
+        ctx.fillStyle = '#426848';
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        for (let x = 0; x <= w; x += 12) {
+            ctx.lineTo(x, h - 42 - Math.sin(x * 0.025) * 8);
+        }
+        ctx.lineTo(w, h);
+        ctx.fill();
+
+        // Biome Terrain Surface:
+        const bSize = 24;
+        const groundY = h - 46;
+
+        for (let x = 0; x < w; x += bSize) {
+            let topBlock = IDS.GRASS;
+            if (x < 180) topBlock = IDS.SAND;
+            else if (x >= 560) topBlock = IDS.SNOW;
+
+            drawTutorialBlock(ctx, topBlock, x, groundY, bSize);
+            drawTutorialBlock(ctx, topBlock === IDS.SAND ? IDS.SAND : IDS.DIRT, x, groundY + bSize, bSize);
+        }
+
+        // Subterranean Ores in the underground slice:
+        drawTutorialBlock(ctx, IDS.STONE, 240, groundY + bSize, bSize);
+        drawTutorialBlock(ctx, IDS.COAL_ORE, 264, groundY + bSize, bSize);
+        drawTutorialBlock(ctx, IDS.IRON_ORE, 288, groundY + bSize, bSize);
+        drawTutorialBlock(ctx, IDS.DIAMOND_ORE, 312, groundY + bSize, bSize);
+        drawTutorialBlock(ctx, IDS.STONE, 336, groundY + bSize, bSize);
+
+        // Desert Cactuses
+        drawTutorialBlock(ctx, IDS.CACTUS, 80, groundY - bSize, bSize);
+        drawTutorialBlock(ctx, IDS.CACTUS, 80, groundY - bSize * 2, bSize);
+
+        // Plains Oak Tree (authentic wood and leaves textures!)
+        const treeX = 450;
+        drawTutorialBlock(ctx, IDS.WOOD, treeX, groundY - bSize, bSize);
+        drawTutorialBlock(ctx, IDS.WOOD, treeX, groundY - bSize * 2, bSize);
+        drawTutorialBlock(ctx, IDS.WOOD, treeX, groundY - bSize * 3, bSize);
+        for (let lx = -bSize * 1.5; lx <= bSize * 1.5; lx += bSize) {
+            for (let ly = -bSize * 2; ly <= 0; ly += bSize) {
+                drawTutorialBlock(ctx, IDS.LEAVES, treeX + lx, groundY - bSize * 3 + ly, bSize);
+            }
+        }
+
+        // Flowers & Vegetation
+        drawTutorialBlock(ctx, IDS.FLOWER_RED, 230, groundY - bSize + 6, bSize);
+        drawTutorialBlock(ctx, IDS.FLOWER_YELLOW, 290, groundY - bSize + 6, bSize);
+        drawTutorialBlock(ctx, IDS.SHORT_GRASS, 350, groundY - bSize + 8, bSize);
+
+        // Player Character standing on grass
+        const px = 250, py = groundY - 44;
+        ctx.fillStyle = '#1c6ca8';
+        ctx.fillRect(px, py + 20, 12, 16);
+        ctx.fillStyle = '#299cd2';
+        ctx.fillRect(px - 1, py + 8, 14, 13);
+        ctx.fillStyle = '#f8b584';
+        ctx.fillRect(px + 1, py - 4, 11, 12);
+        ctx.fillStyle = '#4a2c16';
+        ctx.fillRect(px, py - 6, 13, 5);
+        drawTutorialBlock(ctx, IDS.DIAMOND_PICKAXE, px + 12, py + 2, 20);
+    }
+
+    export function drawTutorialCraftingScene() {
+        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        const w = c.width, h = c.height;
+        ctx.imageSmoothingEnabled = false;
+
+        // Dark workshop stone backdrop
+        ctx.fillStyle = '#15191d';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = '#1d232a';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < w; x += 24) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+
+        const items = [
+            { id: IDS.WOOD, name: "Wood" },
+            { id: IDS.PLANKS, name: "Planks" },
+            { id: IDS.CRAFTING_TABLE, name: "Table" },
+            { id: IDS.STONE_PICKAXE, name: "Pickaxe" },
+            { id: IDS.FURNACE, name: "Furnace" },
+            { id: IDS.IRON_INGOT, name: "Ingot" },
+            { id: IDS.DIAMOND, name: "Diamond" }
+        ];
+
+        const slotSize = 44;
+        const spacing = w / items.length;
+
+        for (let i = 0; i < items.length; i++) {
+            const it = items[i];
+            const cx = Math.floor(i * spacing + spacing / 2);
+            const cy = Math.floor(h / 2) - 8;
+
+            ctx.fillStyle = '#101418';
+            ctx.fillRect(cx - slotSize / 2, cy - slotSize / 2, slotSize, slotSize);
+            ctx.strokeStyle = '#333a41';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(cx - slotSize / 2, cy - slotSize / 2, slotSize, slotSize);
+            ctx.strokeStyle = '#46515a';
+            ctx.beginPath();
+            ctx.moveTo(cx - slotSize / 2, cy + slotSize / 2);
+            ctx.lineTo(cx - slotSize / 2, cy - slotSize / 2);
+            ctx.lineTo(cx + slotSize / 2, cy - slotSize / 2);
+            ctx.stroke();
+
+            drawTutorialBlock(ctx, it.id, cx - 15, cy - 15, 30);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 20px VT323, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(it.name, cx, cy + slotSize / 2 + 18);
+
+            if (i < items.length - 1) {
+                ctx.fillStyle = '#ffd34d';
+                ctx.font = '24px VT323, monospace';
+                ctx.fillText('▶', cx + spacing / 2, cy + 6);
+            }
+        }
+    }
+
+    export function drawTutorialMobsScene() {
+        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        const w = c.width, h = c.height;
+        ctx.imageSmoothingEnabled = false;
+
+        const halfW = Math.floor(w / 2);
+
+        // Day half on left
+        const dayGrad = ctx.createLinearGradient(0, 0, halfW, 0);
+        dayGrad.addColorStop(0, '#4a8ee8');
+        dayGrad.addColorStop(1, '#9cd1ff');
+        ctx.fillStyle = dayGrad;
+        ctx.fillRect(0, 0, halfW, h);
+
+        // Night half on right
+        const nightGrad = ctx.createLinearGradient(halfW, 0, w, 0);
+        nightGrad.addColorStop(0, '#101728');
+        nightGrad.addColorStop(1, '#080c16');
+        ctx.fillStyle = nightGrad;
+        ctx.fillRect(halfW, 0, halfW, h);
+
+        // Night twinkling pixel stars
+        ctx.fillStyle = '#ffffff';
+        const stars = [[halfW + 40, 20], [halfW + 110, 45], [halfW + 190, 15], [halfW + 260, 35], [halfW + 320, 25]];
+        stars.forEach(([sx, sy]) => ctx.fillRect(sx, sy, 2, 2));
+
+        // Golden divider
+        ctx.strokeStyle = '#ffd34d';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(halfW, 0);
+        ctx.lineTo(halfW, h);
+        ctx.stroke();
+
+        // Day Ground
+        const bSize = 24;
+        const groundY = h - 36;
+        for (let x = 0; x < halfW; x += bSize) {
+            drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
+            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
+        }
+
+        // Night Ground
+        for (let x = halfW; x < w; x += bSize) {
+            drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
+            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
+        }
+        ctx.fillStyle = 'rgba(5, 10, 20, 0.45)';
+        ctx.fillRect(halfW, groundY, halfW, 40);
+
+        // Banners
+        ctx.fillStyle = '#22c55e';
+        ctx.font = 'bold 20px VT323, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('DAY: PEACEFUL FAUNA', halfW / 2, 22);
+
+        ctx.fillStyle = '#f87171';
+        ctx.fillText('NIGHT: DANGEROUS MONSTERS', halfW + halfW / 2, 22);
+
+        // Animals
+        try {
+            if (typeof Pig === 'function') {
+                const p = new Pig(80, groundY - 24);
+                p.dir = 1;
+                p.draw(ctx, 0, 0);
+            }
+            if (typeof Sheep === 'function') {
+                const s = new Sheep(210, groundY - 28);
+                s.dir = 1;
+                s.draw(ctx, 0, 0);
+            }
+        } catch(e) {}
+
+        // Red Flower
+        drawTutorialBlock(ctx, IDS.FLOWER_RED, 150, groundY - 20, 20);
+
+        // Shelter on right with Bed & Torch
+        drawTutorialBlock(ctx, IDS.BED, w - 80, groundY - 18, 36);
+        drawTutorialBlock(ctx, IDS.TORCH, w - 110, groundY - 24, 20);
+        const tGlow = ctx.createRadialGradient(w - 100, groundY - 14, 2, w - 100, groundY - 14, 35);
+        tGlow.addColorStop(0, 'rgba(255, 180, 50, 0.35)');
+        tGlow.addColorStop(1, 'rgba(255, 180, 50, 0)');
+        ctx.fillStyle = tGlow;
+        ctx.fillRect(w - 135, groundY - 49, 70, 70);
+
+        // Monsters
+        try {
+            if (typeof Zombie === 'function') {
+                const z = new Zombie(halfW + 65, groundY - 50);
+                z.facingRight = false;
+                z.draw(ctx, 0, 0);
+            }
+            if (typeof Creeper === 'function') {
+                const cr = new Creeper(halfW + 165, groundY - 46);
+                cr.facingRight = false;
+                cr.draw(ctx, 0, 0);
+            }
+        } catch(e) {}
+    }
+
+    export function drawTutorialArmorScene() {
+        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        const w = c.width, h = c.height;
+        ctx.imageSmoothingEnabled = false;
+
+        // Dark armory stone backdrop
+        ctx.fillStyle = '#13171c';
+        ctx.fillRect(0, 0, w, h);
+
+        // Subtle armory stone grid
+        ctx.strokeStyle = '#1d232a';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < w; x += 24) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+
+        // Top centered banner
+        ctx.fillStyle = '#1a222a';
+        ctx.fillRect(w / 2 - 200, 7, 400, 24);
+        ctx.strokeStyle = '#ffd34d';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(w / 2 - 200, 7, 400, 24);
+
+        ctx.fillStyle = '#ffd34d';
+        ctx.font = 'bold 18px VT323, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("ARMOR & GEAR: +15 SUIT DEFENSE (60% DAMAGE REDUCTION)", w / 2, 24);
+
+        // 5 Armor & Weapon slots, perfectly centered in canvas
+        const armors = [
+            { id: IDS.HELMET_IRON, name: "Helmet", def: "+2 Armor" },
+            { id: IDS.CHESTPLATE_IRON, name: "Chestplate", def: "+6 Armor" },
+            { id: IDS.LEGGINGS_IRON, name: "Leggings", def: "+5 Armor" },
+            { id: IDS.BOOTS_IRON, name: "Boots", def: "+2 Armor" },
+            { id: IDS.IRON_SWORD, name: "Sword", def: "6 Attack" }
+        ];
+
+        const slotSize = 46;
+        const spacing = 110;
+        const totalW = (armors.length - 1) * spacing + slotSize;
+        const startX = Math.floor((w - totalW) / 2);
+        const sy = 40;
+
+        for (let i = 0; i < armors.length; i++) {
+            const it = armors[i];
+            const sx = startX + i * spacing;
+
+            // Slot shadow / base
+            ctx.fillStyle = '#0a0d10';
+            ctx.fillRect(sx, sy, slotSize, slotSize);
+            ctx.strokeStyle = '#333a41';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(sx, sy, slotSize, slotSize);
+
+            // Highlight bevel
+            ctx.strokeStyle = '#5a6672';
+            ctx.beginPath();
+            ctx.moveTo(sx, sy + slotSize);
+            ctx.lineTo(sx, sy);
+            ctx.lineTo(sx + slotSize, sy);
+            ctx.stroke();
+
+            // Inner dark inset
+            ctx.fillStyle = '#101418';
+            ctx.fillRect(sx + 3, sy + 3, slotSize - 6, slotSize - 6);
+
+            // Real Texture inside slot
+            drawTutorialBlock(ctx, it.id, sx + 7, sy + 7, 32);
+
+            // Label
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 18px VT323, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(it.name, sx + slotSize / 2, sy + slotSize + 16);
+
+            // Stat
+            ctx.fillStyle = (i === 4) ? '#fde047' : '#67e8f9';
+            ctx.font = '16px VT323, monospace';
+            ctx.fillText(it.def, sx + slotSize / 2, sy + slotSize + 30);
+        }
+
+        // Left and right Storage Chests for aesthetic balance
+        drawTutorialBlock(ctx, IDS.CHEST, 42, 46, 38);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '16px VT323, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Storage", 61, 102);
+
+        drawTutorialBlock(ctx, IDS.CHEST, w - 80, 46, 38);
+        ctx.fillText("Storage", w - 61, 102);
+    }
+
+    export function drawTutorialMultiplayerScene() {
+        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        const w = c.width, h = c.height;
+        ctx.imageSmoothingEnabled = false;
+
+        // Dark sky with sunset tones
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+        bgGrad.addColorStop(0, '#1c2842');
+        bgGrad.addColorStop(0.6, '#313e61');
+        bgGrad.addColorStop(1, '#53435c');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Ground terrain
+        const bSize = 24;
+        const groundY = h - 36;
+        for (let x = 0; x < w; x += bSize) {
+            drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
+            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
+        }
+
+        // Two Co-op Players
+        const p1X = 140, p1Y = groundY - 44;
+        ctx.fillStyle = '#1c6ca8';
+        ctx.fillRect(p1X, p1Y + 20, 12, 16);
+        ctx.fillStyle = '#299cd2';
+        ctx.fillRect(p1X - 1, p1Y + 8, 14, 13);
+        ctx.fillStyle = '#f8b584';
+        ctx.fillRect(p1X + 1, p1Y - 4, 11, 12);
+        ctx.fillStyle = '#4a2c16';
+        ctx.fillRect(p1X, p1Y - 6, 13, 5);
+        drawTutorialBlock(ctx, IDS.TORCH, p1X + 12, p1Y + 2, 20);
+
+        // Player 2 (Custom Skin)
+        const p2X = 220, p2Y = groundY - 44;
+        ctx.fillStyle = '#7c2d12';
+        ctx.fillRect(p2X, p2Y + 20, 12, 16);
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(p2X - 1, p2Y + 8, 14, 13);
+        ctx.fillStyle = '#fcd34d';
+        ctx.fillRect(p2X + 1, p2Y - 4, 11, 12);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(p2X, p2Y - 6, 13, 5);
+        drawTutorialBlock(ctx, IDS.IRON_SWORD, p2X + 12, p2Y + 2, 20);
+
+        // Storage Chest
+        drawTutorialBlock(ctx, IDS.CHEST, 290, groundY - 26, 32);
+
+        // Speech Bubble
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fillRect(130, 16, 210, 32);
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(130, 16, 210, 32);
+        ctx.fillStyle = '#4ade80';
+        ctx.font = 'bold 18px VT323, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText("<Alex>: Ready to mine diamond ore!", 138, 38);
+
+        // Right side: Multiplayer Room Banner
+        const bannerX = 400;
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(bannerX, 22, 320, 68);
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(bannerX, 22, 320, 68);
+
+        ctx.fillStyle = '#22c55e';
+        ctx.font = 'bold 22px VT323, monospace';
+        ctx.fillText("● MULTIPLAYER WORLD", bannerX + 16, 46);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '18px VT323, monospace';
+        ctx.fillText("Room: Co-Op Survival [2 / 8 Players]", bannerX + 16, 66);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '16px VT323, monospace';
+        ctx.fillText("Ping: 24ms | Seamless P2P Sync", bannerX + 16, 82);
+    }
+
+    export let isTutorialOnboardingMode = false;
+    export let tutorialOnboardingCallback = null;
+
+    export function renderTutorialStep(stepIndex) {
+        currentTutorialStep = Math.max(0, Math.min(TOTAL_TUTORIAL_STEPS - 1, stepIndex));
+        const step = TUTORIAL_STEPS[currentTutorialStep];
+        if (!step) return;
+
+        const titleEl = document.getElementById('tutorial-title');
+        if (titleEl) titleEl.innerText = step.title;
+
+        const indicatorEl = document.getElementById('tutorial-step-indicator');
+        if (indicatorEl) indicatorEl.innerText = `${currentTutorialStep + 1} / ${TOTAL_TUTORIAL_STEPS}`;
+
+        // Sync Top Navigation Tabs
+        const tabs = document.querySelectorAll('#tutorial-step-tabs button');
+        tabs.forEach((tab, idx) => {
+            tab.classList.toggle('active', idx === currentTutorialStep);
+        });
+
+        const contentEl = document.getElementById('tutorial-step-content');
+        if (contentEl) {
+            step.render(contentEl);
+        }
+
+        // Prev / Next button states
+        const prevBtn = document.getElementById('tutorial-prev-btn');
+        if (prevBtn) {
+            prevBtn.style.visibility = (currentTutorialStep === 0) ? 'hidden' : 'visible';
+            prevBtn.innerText = "< Previous";
+            prevBtn.className = "mc-btn tutorial-nav-btn prev-btn";
+        }
+
+        const nextBtn = document.getElementById('tutorial-next-btn');
+        if (nextBtn) {
+            if (currentTutorialStep === TOTAL_TUTORIAL_STEPS - 1) {
+                nextBtn.innerText = isTutorialOnboardingMode ? "Enter World" : "I Understand";
+                nextBtn.className = "mc-btn tutorial-nav-btn finish-btn";
+            } else {
+                nextBtn.innerText = "Next >";
+                nextBtn.className = "mc-btn tutorial-nav-btn next-btn";
+            }
+        }
+    }
+
+    export function openTutorialModal(step = 0, options = {}) {
+        const modal = document.getElementById('tutorial-modal');
+        if (!modal) return;
+        isTutorialOnboardingMode = !!(options && options.onboarding);
+        tutorialOnboardingCallback = (options && typeof options.onComplete === 'function') ? options.onComplete : null;
+        renderTutorialStep(step);
+        modal.classList.remove('hidden');
+    }
+
+    export function closeTutorialModal() {
+        const modal = document.getElementById('tutorial-modal');
+        if (modal) modal.classList.add('hidden');
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('webcraft_tutorial_seen', 'true');
+            }
+        } catch(e) {}
+
+        const cb = tutorialOnboardingCallback;
+        const wasOnboarding = isTutorialOnboardingMode;
+        tutorialOnboardingCallback = null;
+        isTutorialOnboardingMode = false;
+
+        if (wasOnboarding && typeof cb === 'function') {
+            cb();
+        }
+    }
+
+    export function nextTutorialStep() {
+        if (currentTutorialStep < TOTAL_TUTORIAL_STEPS - 1) {
+            renderTutorialStep(currentTutorialStep + 1);
+        } else {
+            closeTutorialModal();
+        }
+    }
+
+    export function prevTutorialStep() {
+        if (currentTutorialStep > 0) {
+            renderTutorialStep(currentTutorialStep - 1);
+        }
+    }
+
+    export function goToTutorialStep(step) {
+        renderTutorialStep(step);
+    }
+
 // Global Window Bridge for cross-module & HTML event compatibility
 try { if (typeof ACCENT_PRESETS !== "undefined") window.ACCENT_PRESETS = ACCENT_PRESETS; } catch(e) {}
 try { if (typeof ACHIEVEMENTS !== "undefined") window.ACHIEVEMENTS = ACHIEVEMENTS; } catch(e) {}
@@ -5718,3 +6651,21 @@ try { if (typeof sfxVolume !== "undefined") window.sfxVolume = sfxVolume; } catc
 try { if (typeof uiVolume !== "undefined") window.uiVolume = uiVolume; } catch(e) {}
 try { if (typeof isAudioMuted !== "undefined") window.isAudioMuted = isAudioMuted; } catch(e) {}
 try { if (typeof footstepsEnabled !== "undefined") window.footstepsEnabled = footstepsEnabled; } catch(e) {}
+try { if (typeof openTutorialModal !== "undefined") window.openTutorialModal = openTutorialModal; } catch(e) {}
+try { if (typeof closeTutorialModal !== "undefined") window.closeTutorialModal = closeTutorialModal; } catch(e) {}
+try { if (typeof nextTutorialStep !== "undefined") window.nextTutorialStep = nextTutorialStep; } catch(e) {}
+try { if (typeof prevTutorialStep !== "undefined") window.prevTutorialStep = prevTutorialStep; } catch(e) {}
+try { if (typeof goToTutorialStep !== "undefined") window.goToTutorialStep = goToTutorialStep; } catch(e) {}
+try { if (typeof renderTutorialStep !== "undefined") window.renderTutorialStep = renderTutorialStep; } catch(e) {}
+try { if (typeof drawTutorialWorldScene !== "undefined") window.drawTutorialWorldScene = drawTutorialWorldScene; } catch(e) {}
+try { if (typeof drawTutorialCraftingScene !== "undefined") window.drawTutorialCraftingScene = drawTutorialCraftingScene; } catch(e) {}
+try { if (typeof drawTutorialMobsScene !== "undefined") window.drawTutorialMobsScene = drawTutorialMobsScene; } catch(e) {}
+try { if (typeof drawTutorialArmorScene !== "undefined") window.drawTutorialArmorScene = drawTutorialArmorScene; } catch(e) {}
+try { if (typeof drawTutorialMultiplayerScene !== "undefined") window.drawTutorialMultiplayerScene = drawTutorialMultiplayerScene; } catch(e) {}
+try { if (typeof getTutorialTextureSrc !== "undefined") window.getTutorialTextureSrc = getTutorialTextureSrc; } catch(e) {}
+try { if (typeof renderItemFrameHtml !== "undefined") window.renderItemFrameHtml = renderItemFrameHtml; } catch(e) {}
+try { if (typeof isTutorialOnboardingMode !== "undefined") window.isTutorialOnboardingMode = isTutorialOnboardingMode; } catch(e) {}
+try { if (typeof tutorialOnboardingCallback !== "undefined") window.tutorialOnboardingCallback = tutorialOnboardingCallback; } catch(e) {}
+
+
+
