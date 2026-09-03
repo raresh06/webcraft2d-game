@@ -163,7 +163,6 @@
             <!-- Player Profile Square Box (Head Avatar + Name) -->
             <div id="main-menu-profile-box" class="main-menu-profile-badge" onclick="openProfileDetailsModal()" title="View Player Profile & Account">
                 <div class="profile-avatar-frame">
-                    <canvas id="profile-head-canvas" width="36" height="36" class="profile-head-art"></canvas>
                     <canvas id="profile-head-canvas" width="24" height="24" class="profile-head-art"></canvas>
                 </div>
                 <div class="profile-badge-content">
@@ -171,7 +170,6 @@
                         <span id="profile-player-name" class="profile-name-text">Player</span>
                     </div>
                     <div class="profile-badge-sublabel">
-                        <span id="profile-account-tag" class="profile-tag-pill">● Online</span>
                         <span class="profile-hint-default">
                             <svg id="profile-beacon-icon" class="inline" viewBox="0 0 8 8" width="9" height="9" style="image-rendering: pixelated; shape-rendering: crispEdges; vertical-align: -1px; margin-right: 2px;">
                                 <rect x="0" y="0" width="8" height="8" fill="#064e3b"/>
@@ -279,7 +277,6 @@
             <canvas id="player-preview-canvas" width="110" height="220"></canvas>
             <button class="menu-skin-preview-button" onclick="openSkins()" title="Change Skin" aria-label="Change Skin">Change</button>
         </div>
-        <button class="menu-news-button" type="button" onclick="openWhatsNew()" title="Read What's New" aria-label="Read What's New">📰</button>
         <button class="menu-news-button flex items-center justify-center !p-0" type="button" onclick="openWhatsNew()" title="Read What's New" aria-label="Read What's New">
             <svg viewBox="0 0 16 16" width="22" height="22" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                 <rect x="2" y="2" width="12" height="12" fill="#94a3b8"/>
@@ -296,28 +293,20 @@
     <!-- Webcraft User Profile & Account Modal (Welcome & Customization Flow) -->
     <div id="auth-profile-modal" class="menu-overlay auth-profile-modal hidden z-[280]" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
         <div class="auth-profile-panel">
-            <!-- Stage 1: Welcoming Credentials / Profile Setup -->
-            <div id="auth-stage-credentials" class="auth-stage-panel">
-                <div class="auth-header text-center mb-4">
             <!-- Red Minecraft Close Button -->
             <div class="flex justify-between items-start mb-2">
                 <div>
                     <div class="auth-title-badge">WEBCRAFT PROFILES</div>
                     <h2 id="auth-modal-title" class="auth-main-title">Welcome to Webcraft</h2>
-                    <p class="auth-subtitle">Create or link your profile to save skins, cloud stats & join the community</p>
                 </div>
                 <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !text-white flex items-center justify-center leading-none" onclick="closeAuthProfileModal()" aria-label="Close modal">X</button>
             </div>
             <p class="auth-subtitle mb-4">Create or link your profile to save skins, cloud stats & join the community</p>
 
-                <!-- Tab Switcher -->
             <!-- Stage 1: Welcoming Credentials / Profile Setup -->
             <div id="auth-stage-credentials" class="auth-stage-panel">
                 <!-- Tab Switcher (Pixel-Art Styled Minecraft Tabs) -->
                 <div class="auth-tabs flex gap-2 justify-center mb-4">
-                    <button id="auth-tab-signup" type="button" class="auth-tab-btn active" onclick="switchAuthTab('signup')">Sign Up</button>
-                    <button id="auth-tab-login" type="button" class="auth-tab-btn" onclick="switchAuthTab('login')">Log In</button>
-                    <button id="auth-tab-guest" type="button" class="auth-tab-btn" onclick="switchAuthTab('guest')">Play as Guest</button>
                     <button id="auth-tab-signup" type="button" class="auth-tab-btn active" onclick="switchAuthTab('signup')">
                         <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                             <rect x="1" y="4" width="10" height="10" fill="#633818"/>
@@ -356,14 +345,11 @@
 
                 <!-- Live Profile Head Preview & Input Form -->
                 <form id="auth-credentials-form" onsubmit="handleAuthSubmit(event)">
-                    <div class="auth-avatar-card mb-4 flex items-center gap-3 p-2 bg-[#12161b] border-2 border-[#333e48]">
                     <div class="auth-avatar-card mb-4 flex items-center gap-3 p-2.5 bg-[#12161b] border-2 border-[#333e48]">
                         <div class="profile-avatar-frame !w-12 !h-12 flex-shrink-0">
                             <canvas id="auth-preview-head-canvas" width="48" height="48" class="profile-head-art"></canvas>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="text-[#a0afba] text-xs uppercase tracking-wide">Avatar Identity</div>
-                            <div id="auth-preview-name-label" class="text-amber-400 font-bold text-lg truncate font-['VT323']">Player</div>
                             <div class="text-[#8c9da8] font-['VT323'] text-lg uppercase tracking-wide leading-none">Avatar Identity</div>
                             <div id="auth-preview-name-label" class="text-amber-400 font-bold text-2xl truncate font-['VT323'] leading-tight">Player</div>
                         </div>
@@ -383,9 +369,6 @@
 
                     <!-- Password Field -->
                     <div id="auth-group-password" class="auth-input-group mb-4">
-                        <div class="flex justify-between items-center">
-                            <label for="auth-input-password" class="auth-label">Password</label>
-                            <button type="button" class="text-xs text-amber-400/80 hover:text-amber-300" onclick="toggleAuthPasswordVisibility()">Show</button>
                         <div class="flex justify-between items-center mb-0.5">
                             <label for="auth-input-password" class="auth-label mb-0">Password</label>
                             <button type="button" class="mc-btn !px-2 !py-0.5 !h-6 flex items-center justify-center" onclick="toggleAuthPasswordVisibility()" title="Toggle Password Visibility" aria-label="Toggle Password Visibility">
@@ -414,8 +397,6 @@
 
                     <!-- Action Buttons -->
                     <div class="flex flex-col gap-2 mt-2">
-                        <button id="auth-submit-btn" type="submit" class="mc-btn !w-full !py-2 !text-2xl flex items-center justify-center">Create Profile & Sign Up</button>
-                        <button type="button" class="auth-skip-btn text-xs text-stone-400 hover:text-stone-200 mt-1 underline" onclick="handleAuthSkipToGuest()">Skip and play as guest for now</button>
                         <button id="auth-submit-btn" type="submit" class="mc-btn !w-full !py-2 !text-3xl flex items-center justify-center tracking-wide">Create Profile & Sign Up</button>
                         <button type="button" class="mc-btn !w-full !py-1 !text-2xl !bg-[#36424e] hover:!bg-[#435261] flex items-center justify-center mt-0.5" onclick="handleAuthSkipToGuest()">Continue as Guest (Skip)</button>
                     </div>
@@ -425,9 +406,6 @@
             <!-- Stage 2: Post-Registration Customization Recommendation -->
             <div id="auth-stage-recommend" class="auth-stage-panel hidden">
                 <div class="auth-header text-center mb-3">
-                    <div class="auth-title-badge !bg-emerald-800/80 !border-emerald-500">PROFILE READY</div>
-                    <h2 class="auth-main-title">Welcome to Webcraft!</h2>
-                    <p class="auth-subtitle">Hello, <strong id="recommend-player-name" class="text-amber-300">Player</strong>! Your profile is connected.</p>
                     <div class="auth-title-badge !bg-emerald-800/90 !border-emerald-500">PROFILE READY</div>
                     <h2 class="auth-main-title">PROFILE CONNECTED!</h2>
                     <p class="auth-subtitle">Hello, <strong id="recommend-player-name" class="text-amber-300 font-bold">Player</strong>! Your profile is active.</p>
@@ -435,22 +413,16 @@
 
                 <!-- Showcase Preview Card -->
                 <div class="auth-recommend-card p-4 bg-[#141920] border-2 border-[#414d59] flex flex-col items-center text-center my-4">
-                    <div class="profile-avatar-frame !w-16 !h-16 mb-2 border-2 border-amber-400/60 shadow-[0_0_12px_rgba(251,191,36,0.3)]">
                     <div class="profile-avatar-frame !w-16 !h-16 mb-2 border-2 border-amber-400/70 shadow-[0_0_12px_rgba(251,191,36,0.3)]">
                         <canvas id="recommend-avatar-canvas" width="64" height="64" class="profile-head-art"></canvas>
                     </div>
-                    <h3 class="text-white text-lg font-bold">Customize Your Appearance</h3>
-                    <p class="text-[#9bb0be] text-sm max-w-xs mt-1">Stand out in singleplayer and multiplayer servers! Create your own pixel skin or pick from the community Skins Shop.</p>
                     <h3 class="text-white font-['VT323'] text-2xl font-bold tracking-wide">CUSTOMIZE YOUR APPEARANCE</h3>
                     <p class="text-[#9bb0be] font-['VT323'] text-xl max-w-xs mt-1 leading-snug">Stand out in singleplayer and multiplayer servers! Paint your own skin or browse the community shop.</p>
                 </div>
 
-                <!-- Recommendation Action Buttons -->
                 <!-- Recommendation Action Buttons (With Pixel Art Icons) -->
                 <div class="flex flex-col gap-2">
                     <div class="grid grid-cols-2 gap-2">
-                        <button type="button" class="mc-btn !w-full !px-2 !py-2 !text-xl !bg-[#1c4b2e] hover:!bg-[#245f3a] !text-white flex items-center justify-center gap-1.5" onclick="handleAuthRecommend('maker')">
-                            <span>🎨</span> Skin Studio
                         <button type="button" class="mc-btn !w-full !px-3 !py-2.5 !text-2xl !bg-[#1d432b] hover:!bg-[#265738] !text-white flex items-center justify-center gap-2" onclick="handleAuthRecommend('maker')">
                             <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                                 <rect x="2" y="2" width="10" height="11" fill="#78350f"/>
@@ -467,8 +439,6 @@
                             </svg>
                             <span>Skin Studio</span>
                         </button>
-                        <button type="button" class="mc-btn !w-full !px-2 !py-2 !text-xl !bg-[#243b5e] hover:!bg-[#2d4974] !text-white flex items-center justify-center gap-1.5" onclick="handleAuthRecommend('shop')">
-                            <span>🛍️</span> Skins Shop
                         <button type="button" class="mc-btn !w-full !px-3 !py-2.5 !text-2xl !bg-[#1e3452] hover:!bg-[#27446b] !text-white flex items-center justify-center gap-2" onclick="handleAuthRecommend('shop')">
                             <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                                 <rect x="2" y="2" width="8" height="12" fill="#78350f"/>
@@ -483,8 +453,6 @@
                             <span>Skins Shop</span>
                         </button>
                     </div>
-                    <button type="button" class="mc-btn !w-full !py-2 !text-2xl !bg-[#8a651a] hover:!bg-[#a3771f] !text-white flex items-center justify-center mt-1" onclick="handleAuthRecommend('play')">
-                        ⚔️ Enter Webcraft
                     <button type="button" class="mc-btn !w-full !py-2.5 !text-3xl !bg-[#7a5414] hover:!bg-[#946618] !text-white flex items-center justify-center gap-2.5 mt-2" onclick="handleAuthRecommend('play')">
                         <svg viewBox="0 0 16 16" width="22" height="22" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                             <rect x="2" y="2" width="2" height="2" fill="#38bdf8"/>
@@ -517,20 +485,16 @@
     <div id="profile-details-modal" class="menu-overlay profile-details-modal hidden z-[270]" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
         <div class="profile-details-panel">
             <div class="flex justify-between items-center pb-2 border-b-2 border-[#3b4752] mb-3">
-                <h2 id="profile-modal-title" class="text-2xl font-bold text-amber-400 font-['VT323'] tracking-wider">PLAYER PROFILE</h2>
                 <h2 id="profile-modal-title" class="screen-title text-3xl font-bold text-amber-400 font-['VT323'] tracking-wider m-0 drop-shadow-[2px_2px_0_#000]">PLAYER PROFILE</h2>
                 <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !text-white flex items-center justify-center leading-none" onclick="closeProfileDetailsModal()" aria-label="Close modal">X</button>
             </div>
 
             <!-- Profile Info Body -->
             <div class="flex items-center gap-3 p-3 bg-[#13171d] border-2 border-[#333e49] mb-3">
-                <div class="profile-avatar-frame !w-16 !h-16 flex-shrink-0 border-2 border-amber-400/50">
                 <div class="profile-avatar-frame !w-16 !h-16 flex-shrink-0 border-2 border-amber-400/70">
                     <canvas id="profile-details-head-canvas" width="64" height="64" class="profile-head-art"></canvas>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <div id="profile-details-name" class="text-2xl font-bold text-white truncate font-['VT323']">Player</div>
-                    <div id="profile-details-type" class="text-xs text-amber-400 uppercase tracking-wider font-mono">Cloud Account</div>
                     <div id="profile-details-name" class="text-3xl font-bold text-white truncate font-['VT323'] leading-none">Player</div>
                     <div id="profile-details-type" class="text-sm text-amber-400 uppercase tracking-wider font-['VT323'] mt-1">Cloud Account</div>
                     <div id="profile-details-email" class="text-xs text-[#8a9ba8] truncate mt-0.5 font-mono">player@example.com</div>
@@ -539,9 +503,6 @@
 
             <!-- Stats Overview -->
             <div class="grid grid-cols-2 gap-2 mb-4">
-                <div class="p-2 bg-[#171d24] border border-[#2b353f] text-center">
-                    <div class="text-[#8e9fae] text-xs uppercase">Emeralds</div>
-                    <div id="profile-details-emeralds" class="text-emerald-400 font-bold text-xl font-['VT323']">0</div>
                 <div class="p-2.5 bg-[#171d24] border-2 border-[#2b353f] text-center">
                     <div class="text-[#8e9fae] text-base uppercase font-['VT323']">Emeralds</div>
                     <div class="flex items-center justify-center gap-1.5 mt-0.5">
@@ -555,9 +516,6 @@
                         <span id="profile-details-emeralds" class="text-emerald-400 font-bold text-3xl font-['VT323'] leading-none">0</span>
                     </div>
                 </div>
-                <div class="p-2 bg-[#171d24] border border-[#2b353f] text-center">
-                    <div class="text-[#8e9fae] text-xs uppercase">Skin Status</div>
-                    <div id="profile-details-skin-status" class="text-cyan-400 font-bold text-xl font-['VT323']">Active</div>
                 <div class="p-2.5 bg-[#171d24] border-2 border-[#2b353f] text-center">
                     <div class="text-[#8e9fae] text-base uppercase font-['VT323']">Skin Status</div>
                     <div class="flex items-center justify-center gap-1.5 mt-0.5">
@@ -574,8 +532,6 @@
 
             <!-- Profile Actions -->
             <div class="flex flex-col gap-2">
-                <button type="button" class="mc-btn !w-full !py-1.5 !text-xl flex items-center justify-center gap-1.5" onclick="closeProfileDetailsModal(); openSkins();">
-                    <span>👕</span> Change Character Skin
                 <button type="button" class="mc-btn !w-full !py-2 !text-2xl flex items-center justify-center gap-2" onclick="closeProfileDetailsModal(); openSkins();">
                     <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                         <rect x="2" y="2" width="12" height="3" fill="#0284c7"/>
@@ -588,8 +544,6 @@
                     </svg>
                     <span>Change Character Skin</span>
                 </button>
-                <button type="button" class="mc-btn !w-full !py-1.5 !text-xl !bg-[#5b2323] hover:!bg-[#782c2c] !text-white flex items-center justify-center gap-1.5" onclick="handleProfileSignOut()">
-                    <span>🚪</span> Sign Out / Switch Profile
                 <button type="button" class="mc-btn !w-full !py-2 !text-2xl !bg-[#5b1f1f] hover:!bg-[#752626] !text-white flex items-center justify-center gap-2" onclick="handleProfileSignOut()">
                     <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                         <rect x="2" y="1" width="9" height="14" fill="#5c3a21"/>
@@ -603,8 +557,6 @@
                     </svg>
                     <span>Sign Out / Switch Profile</span>
                 </button>
-                <button type="button" class="mc-btn !w-full !py-1 !text-lg !bg-[#2a343e] hover:!bg-[#364350] flex items-center justify-center mt-1" onclick="closeProfileDetailsModal()">
-                    Back
                 <button type="button" class="mc-btn !w-full !py-1.5 !text-2xl flex items-center justify-center mt-1" onclick="closeProfileDetailsModal()">
                     <span>Back</span>
                 </button>
