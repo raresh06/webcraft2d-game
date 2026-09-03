@@ -294,19 +294,19 @@
     <div id="auth-profile-modal" class="menu-overlay auth-profile-modal hidden z-[280]" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
         <div class="auth-profile-panel">
             <!-- Red Minecraft Close Button -->
-            <div class="flex justify-between items-start mb-2">
+            <div class="flex justify-between items-start mb-3">
                 <div>
                     <div class="auth-title-badge">WEBCRAFT PROFILES</div>
                     <h2 id="auth-modal-title" class="auth-main-title">Welcome to Webcraft</h2>
                 </div>
-                <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !text-white flex items-center justify-center leading-none" onclick="closeAuthProfileModal()" aria-label="Close modal">X</button>
+                <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 !text-white flex items-center justify-center leading-none" onclick="closeAuthProfileModal()" aria-label="Close modal">X</button>
             </div>
             <p class="auth-subtitle mb-4">Create or link your profile to save skins, cloud stats & join the community</p>
 
             <!-- Stage 1: Welcoming Credentials / Profile Setup -->
             <div id="auth-stage-credentials" class="auth-stage-panel">
                 <!-- Tab Switcher (Pixel-Art Styled Minecraft Tabs) -->
-                <div class="auth-tabs flex gap-2 justify-center mb-4">
+                <div class="auth-tabs">
                     <button id="auth-tab-signup" type="button" class="auth-tab-btn active" onclick="switchAuthTab('signup')">
                         <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                             <rect x="1" y="4" width="10" height="10" fill="#633818"/>
@@ -345,9 +345,9 @@
 
                 <!-- Live Profile Head Preview & Input Form -->
                 <form id="auth-credentials-form" onsubmit="handleAuthSubmit(event)">
-                    <div class="auth-avatar-card mb-4 flex items-center gap-3 p-2.5 bg-[#12161b] border-2 border-[#333e48]">
-                        <div class="profile-avatar-frame !w-12 !h-12 flex-shrink-0">
-                            <canvas id="auth-preview-head-canvas" width="48" height="48" class="profile-head-art"></canvas>
+                    <div class="auth-avatar-card">
+                        <div class="profile-avatar-frame !w-10 !h-10 flex-shrink-0">
+                            <canvas id="auth-preview-head-canvas" width="40" height="40" class="profile-head-art"></canvas>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="text-[#8c9da8] font-['VT323'] text-lg uppercase tracking-wide leading-none">Avatar Identity</div>
@@ -356,22 +356,23 @@
                     </div>
 
                     <!-- Username Field -->
-                    <div id="auth-group-username" class="auth-input-group mb-3">
+                    <div id="auth-group-username" class="auth-input-group">
                         <label for="auth-input-username" class="auth-label">Character Name</label>
                         <input id="auth-input-username" type="text" class="auth-input" maxlength="16" placeholder="e.g. SteveCraft" required autocomplete="nickname" oninput="updateAuthAvatarPreview(this.value)">
                     </div>
 
                     <!-- Email Field -->
-                    <div id="auth-group-email" class="auth-input-group mb-3">
+                    <div id="auth-group-email" class="auth-input-group">
                         <label for="auth-input-email" class="auth-label">Email Address</label>
                         <input id="auth-input-email" type="email" class="auth-input" placeholder="player@example.com" autocomplete="email">
                     </div>
 
                     <!-- Password Field -->
-                    <div id="auth-group-password" class="auth-input-group mb-4">
-                        <div class="flex justify-between items-center mb-0.5">
-                            <label for="auth-input-password" class="auth-label mb-0">Password</label>
-                            <button type="button" class="mc-btn !px-2 !py-0.5 !h-6 flex items-center justify-center" onclick="toggleAuthPasswordVisibility()" title="Toggle Password Visibility" aria-label="Toggle Password Visibility">
+                    <div id="auth-group-password" class="auth-input-group">
+                        <label for="auth-input-password" class="auth-label">Password</label>
+                        <div class="auth-input-wrapper">
+                            <input id="auth-input-password" type="password" class="auth-input !pr-11" placeholder="At least 6 characters" minlength="6" autocomplete="current-password">
+                            <button type="button" class="auth-eye-btn" onclick="toggleAuthPasswordVisibility()" title="Toggle Password Visibility" aria-label="Toggle Password Visibility">
                                 <svg id="auth-eye-icon" viewBox="0 0 16 10" width="16" height="10" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                                     <rect x="3" y="0" width="10" height="1" fill="#000000"/>
                                     <rect x="1" y="1" width="2" height="2" fill="#000000"/>
@@ -389,16 +390,15 @@
                                 </svg>
                             </button>
                         </div>
-                        <input id="auth-input-password" type="password" class="auth-input" placeholder="At least 6 characters" minlength="6" autocomplete="current-password">
                     </div>
 
                     <!-- Feedback Alert -->
-                    <div id="auth-feedback-msg" class="auth-feedback hidden mb-3"></div>
+                    <div id="auth-feedback-msg" class="auth-feedback hidden"></div>
 
-                    <!-- Action Buttons -->
-                    <div class="flex flex-col gap-2 mt-2">
-                        <button id="auth-submit-btn" type="submit" class="mc-btn !w-full !py-2 !text-3xl flex items-center justify-center tracking-wide">Create Profile & Sign Up</button>
-                        <button type="button" class="mc-btn !w-full !py-1 !text-2xl !bg-[#36424e] hover:!bg-[#435261] flex items-center justify-center mt-0.5" onclick="handleAuthSkipToGuest()">Continue as Guest (Skip)</button>
+                    <!-- Action Buttons with Clear Spacing and Professional Styling -->
+                    <div class="auth-actions-group">
+                        <button id="auth-submit-btn" type="submit" class="mc-btn auth-primary-btn">Create Profile & Sign Up</button>
+                        <button type="button" class="mc-btn auth-secondary-btn" onclick="handleAuthSkipToGuest()">Continue as Guest (Skip)</button>
                     </div>
                 </form>
             </div>
@@ -412,7 +412,7 @@
                 </div>
 
                 <!-- Showcase Preview Card -->
-                <div class="auth-recommend-card p-4 bg-[#141920] border-2 border-[#414d59] flex flex-col items-center text-center my-4">
+                <div class="auth-recommend-card">
                     <div class="profile-avatar-frame !w-16 !h-16 mb-2 border-2 border-amber-400/70 shadow-[0_0_12px_rgba(251,191,36,0.3)]">
                         <canvas id="recommend-avatar-canvas" width="64" height="64" class="profile-head-art"></canvas>
                     </div>
@@ -421,9 +421,9 @@
                 </div>
 
                 <!-- Recommendation Action Buttons (With Pixel Art Icons) -->
-                <div class="flex flex-col gap-2">
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" class="mc-btn !w-full !px-3 !py-2.5 !text-2xl !bg-[#1d432b] hover:!bg-[#265738] !text-white flex items-center justify-center gap-2" onclick="handleAuthRecommend('maker')">
+                <div class="auth-actions-group">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" class="mc-btn auth-secondary-btn !h-12 !text-2xl !bg-[#1d432b] hover:!bg-[#265738] !border-t-[#55b761] !border-l-[#55b761] !border-b-[#0c2010] !border-r-[#0c2010] flex items-center justify-center gap-2" onclick="handleAuthRecommend('maker')">
                             <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                                 <rect x="2" y="2" width="10" height="11" fill="#78350f"/>
                                 <rect x="3" y="1" width="8" height="13" fill="#d97706"/>
@@ -439,34 +439,27 @@
                             </svg>
                             <span>Skin Studio</span>
                         </button>
-                        <button type="button" class="mc-btn !w-full !px-3 !py-2.5 !text-2xl !bg-[#1e3452] hover:!bg-[#27446b] !text-white flex items-center justify-center gap-2" onclick="handleAuthRecommend('shop')">
+                        <button type="button" class="mc-btn auth-secondary-btn !h-12 !text-2xl !bg-[#1c3a4b] hover:!bg-[#264b60] !border-t-[#4aa5d4] !border-l-[#4aa5d4] !border-b-[#0b1f2b] !border-r-[#0b1f2b] flex items-center justify-center gap-2" onclick="handleAuthRecommend('shop')">
                             <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                                <rect x="2" y="2" width="8" height="12" fill="#78350f"/>
-                                <rect x="3" y="3" width="6" height="10" fill="#d97706"/>
-                                <rect x="4" y="4" width="4" height="8" fill="#fef3c7"/>
-                                <rect x="5" y="2" width="2" height="1" fill="#fef08a"/>
-                                <rect x="5" y="6" width="2" height="4" fill="#10b981"/>
-                                <rect x="4" y="7" width="4" height="2" fill="#34d399"/>
-                                <rect x="10" y="3" width="4" height="2" fill="#cbd5e1"/>
-                                <rect x="12" y="5" width="2" height="6" fill="#94a3b8"/>
+                                <rect x="3" y="1" width="10" height="14" fill="#92400e"/>
+                                <rect x="4" y="2" width="8" height="12" fill="#b45309"/>
+                                <rect x="5" y="3" width="6" height="10" fill="#d97706"/>
+                                <rect x="7" y="2" width="2" height="2" fill="#1e293b"/>
+                                <rect x="6" y="6" width="4" height="4" fill="#10b981"/>
+                                <rect x="7" y="7" width="2" height="2" fill="#a7f3d0"/>
                             </svg>
                             <span>Skins Shop</span>
                         </button>
                     </div>
-                    <button type="button" class="mc-btn !w-full !py-2.5 !text-3xl !bg-[#7a5414] hover:!bg-[#946618] !text-white flex items-center justify-center gap-2.5 mt-2" onclick="handleAuthRecommend('play')">
-                        <svg viewBox="0 0 16 16" width="22" height="22" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                            <rect x="2" y="2" width="2" height="2" fill="#38bdf8"/>
+                    <button type="button" class="mc-btn auth-primary-btn !h-12 !text-2xl !bg-[#2c3d52] hover:!bg-[#394f69] !border-t-[#6384a8] !border-l-[#6384a8] !border-b-[#111922] !border-r-[#111922] flex items-center justify-center gap-2" onclick="handleAuthRecommend('play')">
+                        <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                             <rect x="3" y="3" width="2" height="2" fill="#e0f2fe"/>
                             <rect x="4" y="4" width="2" height="2" fill="#0284c7"/>
                             <rect x="5" y="5" width="2" height="2" fill="#38bdf8"/>
-                            <rect x="6" y="6" width="2" height="2" fill="#0284c7"/>
-                            <rect x="7" y="7" width="2" height="2" fill="#38bdf8"/>
-                            <rect x="8" y="8" width="2" height="2" fill="#d97706"/>
-                            <rect x="9" y="7" width="2" height="1" fill="#d97706"/>
-                            <rect x="7" y="9" width="1" height="2" fill="#d97706"/>
-                            <rect x="9" y="9" width="2" height="2" fill="#78350f"/>
+                            <rect x="7" y="7" width="2" height="2" fill="#0284c7"/>
+                            <rect x="9" y="9" width="2" height="1" fill="#d97706"/>
+                            <rect x="9" y="10" width="2" height="2" fill="#78350f"/>
                             <rect x="11" y="11" width="2" height="2" fill="#f59e0b"/>
-                            <rect x="12" y="2" width="2" height="2" fill="#38bdf8"/>
                             <rect x="11" y="3" width="2" height="2" fill="#e0f2fe"/>
                             <rect x="10" y="4" width="2" height="2" fill="#0284c7"/>
                             <rect x="9" y="5" width="2" height="2" fill="#38bdf8"/>
@@ -530,9 +523,9 @@
                 </div>
             </div>
 
-            <!-- Profile Actions -->
-            <div class="flex flex-col gap-2">
-                <button type="button" class="mc-btn !w-full !py-2 !text-2xl flex items-center justify-center gap-2" onclick="closeProfileDetailsModal(); openSkins();">
+            <!-- Profile Actions with Clear Spacing & Styled Buttons -->
+            <div class="auth-actions-group">
+                <button type="button" class="mc-btn auth-primary-btn flex items-center justify-center gap-2" onclick="closeProfileDetailsModal(); openSkins();">
                     <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                         <rect x="2" y="2" width="12" height="3" fill="#0284c7"/>
                         <rect x="5" y="2" width="6" height="2" fill="#1e293b"/>
@@ -544,7 +537,7 @@
                     </svg>
                     <span>Change Character Skin</span>
                 </button>
-                <button type="button" class="mc-btn !w-full !py-2 !text-2xl !bg-[#5b1f1f] hover:!bg-[#752626] !text-white flex items-center justify-center gap-2" onclick="handleProfileSignOut()">
+                <button type="button" class="mc-btn auth-secondary-btn !bg-[#4a1e1e] hover:!bg-[#632727] !border-t-[#8f3e3e] !border-l-[#8f3e3e] !border-b-[#1f0b0b] !border-r-[#1f0b0b] flex items-center justify-center gap-2" onclick="handleProfileSignOut()">
                     <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                         <rect x="2" y="1" width="9" height="14" fill="#5c3a21"/>
                         <rect x="3" y="2" width="7" height="12" fill="#8c5832"/>
@@ -557,8 +550,8 @@
                     </svg>
                     <span>Sign Out / Switch Profile</span>
                 </button>
-                <button type="button" class="mc-btn !w-full !py-1.5 !text-2xl flex items-center justify-center mt-1" onclick="closeProfileDetailsModal()">
-                    <span>Back</span>
+                <button type="button" class="mc-btn auth-secondary-btn flex items-center justify-center" onclick="closeProfileDetailsModal()">
+                    <span>Back to Menu</span>
                 </button>
             </div>
         </div>
@@ -1468,9 +1461,9 @@
             </div>
 
             <!-- Symmetrical Action Footer -->
-            <div class="skin-upload-footer mt-2">
-                <button class="mc-btn skin-action-btn !bg-gray-600 hover:!bg-gray-500 !text-white" onclick="closeSkinOwnedModal()">Close</button>
-                <button class="mc-btn skin-action-btn !bg-green-600 hover:!bg-green-500 !border-t-green-400 !border-l-green-400 !border-b-green-800 !border-r-green-800 !text-white" onclick="goToMySkinsFromOwnedModal()">View in My Skins</button>
+            <div class="skin-upload-footer mt-4 pt-3 flex justify-end gap-3 border-t-2 border-[#3c4a58]">
+                <button class="mc-btn skin-action-btn !bg-[#3a4755] hover:!bg-[#495a6c] !border-t-[#6a7f96] !border-l-[#6a7f96] !border-b-[#10151a] !border-r-[#10151a] !text-white !text-2xl" onclick="closeSkinOwnedModal()">Close</button>
+                <button class="mc-btn skin-action-btn !bg-[#2d6b35] hover:!bg-[#378241] !border-t-[#55b761] !border-l-[#55b761] !border-b-[#0c2010] !border-r-[#0c2010] !text-white !text-2xl" onclick="goToMySkinsFromOwnedModal()">View in My Skins</button>
             </div>
         </section>
     </div>
