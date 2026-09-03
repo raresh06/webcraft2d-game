@@ -3192,6 +3192,23 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             } else {
                 tagEl.innerText = '● Guest';
                 tagEl.className = 'profile-tag-pill guest';
+            const isOnline = currentUserProfile && !currentUserProfile.isGuest;
+            tagEl.innerText = isOnline ? 'ONLINE' : 'GUEST';
+            tagEl.className = isOnline ? 'profile-tag-pill' : 'profile-tag-pill guest';
+            const beacon = document.getElementById('profile-beacon-icon');
+            if (beacon && typeof beacon.querySelectorAll === 'function') {
+                const rects = beacon.querySelectorAll('rect');
+                if (rects && rects.length >= 3) {
+                    if (isOnline) {
+                        rects[0].setAttribute('fill', '#064e3b');
+                        rects[1].setAttribute('fill', '#10b981');
+                        rects[2].setAttribute('fill', '#a7f3d0');
+                    } else {
+                        rects[0].setAttribute('fill', '#1e293b');
+                        rects[1].setAttribute('fill', '#94a3b8');
+                        rects[2].setAttribute('fill', '#e2e8f0');
+                    }
+                }
             }
         }
 
@@ -3299,8 +3316,49 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function toggleAuthPasswordVisibility() {
         const input = document.getElementById('auth-input-password');
+        const eyeIcon = document.getElementById('auth-eye-icon');
         if (!input) return;
         input.type = input.type === 'password' ? 'text' : 'password';
+        const willBeText = input.type === 'password';
+        input.type = willBeText ? 'text' : 'password';
+        if (eyeIcon) {
+            if (willBeText) {
+                // Crossed-out eye
+                eyeIcon.innerHTML = `
+                    <rect x="3" y="0" width="10" height="1" fill="#000000"/>
+                    <rect x="1" y="1" width="2" height="2" fill="#000000"/>
+                    <rect x="13" y="1" width="2" height="2" fill="#000000"/>
+                    <rect x="0" y="3" width="1" height="4" fill="#000000"/>
+                    <rect x="15" y="3" width="1" height="4" fill="#000000"/>
+                    <rect x="1" y="7" width="2" height="2" fill="#000000"/>
+                    <rect x="13" y="7" width="2" height="2" fill="#000000"/>
+                    <rect x="3" y="9" width="10" height="1" fill="#000000"/>
+                    <rect x="3" y="1" width="10" height="8" fill="#94a3b8"/>
+                    <rect x="6" y="3" width="4" height="4" fill="#1e293b"/>
+                    <rect x="2" y="1" width="2" height="2" fill="#ef4444"/>
+                    <rect x="5" y="3" width="2" height="2" fill="#ef4444"/>
+                    <rect x="8" y="5" width="2" height="2" fill="#ef4444"/>
+                    <rect x="11" y="7" width="2" height="2" fill="#ef4444"/>
+                `;
+            } else {
+                // Open eye
+                eyeIcon.innerHTML = `
+                    <rect x="3" y="0" width="10" height="1" fill="#000000"/>
+                    <rect x="1" y="1" width="2" height="2" fill="#000000"/>
+                    <rect x="13" y="1" width="2" height="2" fill="#000000"/>
+                    <rect x="0" y="3" width="1" height="4" fill="#000000"/>
+                    <rect x="15" y="3" width="1" height="4" fill="#000000"/>
+                    <rect x="1" y="7" width="2" height="2" fill="#000000"/>
+                    <rect x="13" y="7" width="2" height="2" fill="#000000"/>
+                    <rect x="3" y="9" width="10" height="1" fill="#000000"/>
+                    <rect x="3" y="1" width="10" height="8" fill="#ffffff"/>
+                    <rect x="2" y="3" width="12" height="4" fill="#ffffff"/>
+                    <rect x="6" y="2" width="4" height="6" fill="#0284c7"/>
+                    <rect x="7" y="3" width="2" height="4" fill="#0f172a"/>
+                    <rect x="6" y="3" width="1" height="1" fill="#ffffff"/>
+                `;
+            }
+        }
     }
 
     export async function handleAuthSubmit(e) {
