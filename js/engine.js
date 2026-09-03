@@ -46,6 +46,7 @@ export function setEngineSetting(key, val) {
     else if (key === 'showVignette') showVignette = val;
     else if (key === 'introEnabled') introEnabled = val;
     else if (key === 'graphicsMode') setEngineGraphicsMode(val);
+    else if (key === 'accentColor') setEngineAccentColor(val);
     if (typeof window !== 'undefined') window[key] = val;
 }
 
@@ -81,17 +82,27 @@ export function deleteWorld(id, prompt) { if (typeof window !== 'undefined' && t
 export function spawnDroppedItem(itemId, x, y, count = 1) { if (typeof window !== 'undefined' && typeof window.spawnDroppedItem === 'function' && window.spawnDroppedItem !== spawnDroppedItem) return window.spawnDroppedItem(itemId, x, y, count); }
 export function toggleBackgroundBuildMode(mode) { if (typeof window !== 'undefined' && typeof window.toggleBackgroundBuildMode === 'function' && window.toggleBackgroundBuildMode !== toggleBackgroundBuildMode) return window.toggleBackgroundBuildMode(mode); }
 export function isMultiplayerAuthority() { if (typeof window !== 'undefined' && typeof window.isMultiplayerAuthority === 'function' && window.isMultiplayerAuthority !== isMultiplayerAuthority) return window.isMultiplayerAuthority(); return true; }
-export let currentAccentColor = '#4f46e5';
+export let currentAccentColor = (typeof window !== 'undefined' && window.currentAccentColor) ? window.currentAccentColor : '#e5a823';
+export function setEngineAccentColor(hex) {
+    if (!hex) return;
+    currentAccentColor = hex;
+    if (typeof window !== 'undefined') window.currentAccentColor = hex;
+}
 export function getAccentPalette(baseHex) {
+    const activeHex = baseHex || (typeof window !== 'undefined' && window.currentAccentColor) || currentAccentColor || '#e5a823';
     if (typeof window !== 'undefined' && typeof window.getAccentPalette === 'function' && window.getAccentPalette !== getAccentPalette) {
-        return window.getAccentPalette(baseHex || currentAccentColor);
+        return window.getAccentPalette(activeHex);
     }
+    const n = parseInt(activeHex.replace('#', ''), 16) || 0xe5a823;
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
+    const toHex = (cr, cg, cb) => '#' + [cr, cg, cb].map(x => clamp(x).toString(16).padStart(2, '0')).join('');
     return {
-        base: baseHex || '#4f46e5',
-        light: '#818cf8',
-        dark: '#3730a3',
-        darker: '#1e1b4b',
-        glow: 'rgba(79, 70, 229, 0.4)'
+        base: activeHex,
+        light: toHex(r + (255 - r) * 0.45, g + (255 - g) * 0.45, b + (255 - b) * 0.45),
+        dark: toHex(r * 0.78, g * 0.78, b * 0.78),
+        darker: toHex(r * 0.52, g * 0.52, b * 0.52),
+        glow: `rgba(${r}, ${g}, ${b}, 0.35)`
     };
 }
 
@@ -1659,9 +1670,8 @@ export const SKIN_H = 32;
             let pCtx = pCanvas.getContext('2d');
             pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
             pCtx.imageSmoothingEnabled = false;
-            // Cheerful front-facing bounce hop
-            const bounce = Math.abs(Math.sin((elapsed / 1000) * Math.PI * 3)) * 8;
-            drawFrontCharacter(pCtx, skinCanvasObj, 0, 0, pCanvas.width, pCanvas.height, bounce);
+            let walkAnimPhase = (elapsed / 1000) * (Math.PI * 4); // Constant smooth ~2 steps/sec
+            drawCharacter(pCtx, skinCanvasObj, 0, 0, pCanvas.width, pCanvas.height, true, walkAnimPhase, true, false, null, null, false, null, false, [null, null, null, null]);
 
             previewWalkAnimId = requestAnimationFrame(animLoop);
         }
@@ -7236,7 +7246,8 @@ export const SKIN_H = 32;
         // Center on 76x76 canvas with 2px integer grid
         const cx = 38;
         const cy = 40;
-        const palette = getAccentPalette(currentAccentColor);
+        const activeColor = (typeof window !== 'undefined' && window.currentAccentColor) || currentAccentColor || '#e5a823';
+        const palette = getAccentPalette(activeColor);
 
         // 1. Top Crown Loop (Pocket watch ring stem) in 2px blocks
         ctx.fillStyle = palette.darker;
@@ -8004,6 +8015,7 @@ try { if (typeof scheduleSnowRegrowth !== "undefined") window.scheduleSnowRegrow
 try { if (typeof scheduleTreeLeafDecay !== "undefined") window.scheduleTreeLeafDecay = scheduleTreeLeafDecay; } catch(e) {}
 try { if (typeof seededRandom !== "undefined") window.seededRandom = seededRandom; } catch(e) {}
 try { if (typeof setFluid !== "undefined") window.setFluid = setFluid; } catch(e) {}
+try { if (typeof setEngineAccentColor !== "undefined") window.setEngineAccentColor = setEngineAccentColor; } catch(e) {}
 try { if (typeof skinCanvasObj !== "undefined") window.skinCanvasObj = skinCanvasObj; } catch(e) {}
 try { if (typeof skyBottomColor !== "undefined") window.skyBottomColor = skyBottomColor; } catch(e) {}
 try { if (typeof skyTopColor !== "undefined") window.skyTopColor = skyTopColor; } catch(e) {}

@@ -11,6 +11,7 @@ import {
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
     setEngineIsBackgroundBuildMode, setMinimapShape, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex,
+    setEngineAccentColor, drawTimeClock,
     buildFullOffscreenMap, renderWorldMapLoop,
     setIsWorldMapOpen, setMapPan, setMapZoom,
     generateMenuWorld, menuWorldInitialized, drawMenuBackground,
@@ -440,6 +441,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         currentAccentColor = hex;
         currentAccentName = name || ACCENT_PRESETS[hex] || 'Custom';
 
+        if (typeof window !== 'undefined') {
+            window.currentAccentColor = hex;
+            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('accentColor', hex);
+        }
+        if (typeof setEngineAccentColor === 'function') {
+            setEngineAccentColor(hex);
+        }
+
         const palette = getAccentPalette(hex);
         const root = typeof document !== 'undefined' ? document.documentElement : null;
         if (root && root.style) {
@@ -451,6 +460,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
 
         buildMinimapCircleBezel();
+
+        if (typeof drawTimeClock === 'function') {
+            const curTime = (typeof timeOfDay !== 'undefined') ? timeOfDay : ((typeof window !== 'undefined' && window.timeOfDay !== undefined) ? window.timeOfDay : 0.25);
+            drawTimeClock(curTime);
+        }
 
         // Update settings button preview
         const preview = document.getElementById('settings-accent-preview');
@@ -1311,9 +1325,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 label.innerHTML = `${getPixelEmeraldSvg(16)} <span class="text-[#4eed99] font-bold text-xl">${currentUploadPrice} Emeralds</span>`;
             }
         }
+        const priceNum = currentUploadPrice;
         document.querySelectorAll('.skin-upload-presets-grid .mc-btn').forEach(btn => {
             const btnText = btn.textContent.trim();
-            const isMatch = (num === 0 && btnText.includes('Free')) || (num > 0 && btnText.startsWith(String(num)));
+            const isMatch = (priceNum === 0 && btnText.includes('Free')) || (priceNum > 0 && btnText.startsWith(String(priceNum)));
             btn.classList.toggle('active-preset', isMatch);
         });
     }
@@ -3455,10 +3470,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             openTutorialModal(0, {
                 onboarding: true,
                 onComplete: () => {
-                    if (typeof showSingleplayerLoading === 'function') {
-                        showSingleplayerLoading(name);
-                    }
-                    setTimeout(() => startGameplay(), 250);
+                    const loadingScreen = document.getElementById('loading-screen');
+                    if (loadingScreen) loadingScreen.classList.add('hidden');
+                    if (typeof hideSingleplayerLoading === 'function') hideSingleplayerLoading();
+                    startGameplay();
                 }
             });
         } else {

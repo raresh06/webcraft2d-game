@@ -1664,6 +1664,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         document.getElementById('main-menu').classList.add('hidden');
         document.getElementById('worlds-menu').classList.add('hidden'); 
         document.getElementById('shared-menu-bg').classList.add('hidden');
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) loadingScreen.classList.add('hidden');
+        if (typeof hideSingleplayerLoading === 'function') hideSingleplayerLoading();
         const introEl = document.getElementById('game-intro');
         if (introEl) { introEl.classList.add('hidden'); introEl.setAttribute('aria-hidden', 'true'); }
         document.getElementById('hud').style.display = 'block';

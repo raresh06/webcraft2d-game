@@ -2851,6 +2851,9 @@ input, textarea {
   justify-content: center;
   transition: transform 0.08s ease;
 }
+.skin-action * {
+  pointer-events: none;
+}
 .skin-action:hover {
   transform: scale(1.1);
 }
@@ -3484,9 +3487,9 @@ input, textarea {
   bottom: 18px;
   right: 18px;
   z-index: 45;
-  filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.7));
+  filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.7)) drop-shadow(0 0 6px var(--mc-accent-glow, rgba(229, 168, 35, 0.4)));
   pointer-events: none;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, filter 0.2s ease;
 }
 .hud-clock-canvas {
   width: 76px;
