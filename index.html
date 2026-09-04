@@ -999,7 +999,6 @@
                 <button class="settings-tab-btn" data-tab="graphics" onclick="switchSettingsTab('graphics')">Graphics</button>
                 <button class="settings-tab-btn" data-tab="audio" onclick="switchSettingsTab('audio')">Audio</button>
                 <button class="settings-tab-btn" data-tab="controls" onclick="switchSettingsTab('controls')">Controls</button>
-                <button class="settings-tab-btn" data-tab="controller" onclick="switchSettingsTab('controller')">Controller</button>
             </div>
 
             <!-- Tab 1: Gameplay -->
@@ -1154,8 +1153,29 @@
             <div class="settings-tab-content custom-scrollbar" id="settings-tab-controls">
                 <!-- Controls Sub-navigation Bar -->
                 <div class="controls-subnav flex gap-2 mb-2 pb-2 border-b border-[#333a41]">
-                    <button type="button" class="controls-subtab-btn active" id="subtab-btn-keyboard" onclick="switchControlsSubTab('keyboard')">Keyboard & Mouse</button>
-                    <button type="button" class="controls-subtab-btn" id="subtab-btn-gamepad" onclick="switchControlsSubTab('gamepad')">Controller / Gamepad</button>
+                    <button type="button" class="controls-subtab-btn active" id="subtab-btn-keyboard" onclick="switchControlsSubTab('keyboard')">
+                        <svg class="w-4 h-4 shrink-0" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <path d="M1 3h14v10H1V3z" fill="#080a0c"/>
+                            <path d="M2 4h12v8H2V4z" fill="#20252b"/>
+                            <rect x="3" y="5" width="2" height="2" fill="#586573"/>
+                            <rect x="6" y="5" width="2" height="2" fill="#586573"/>
+                            <rect x="9" y="5" width="2" height="2" fill="#586573"/>
+                            <rect x="12" y="5" width="1" height="2" fill="#586573"/>
+                            <rect x="3" y="8" width="2" height="2" fill="#586573"/>
+                            <rect x="6" y="8" width="4" height="2" fill="#8a99a8"/>
+                            <rect x="11" y="8" width="2" height="2" fill="#586573"/>
+                        </svg>
+                        <span>Keyboard & Mouse</span>
+                    </button>
+                    <button type="button" class="controls-subtab-btn" id="subtab-btn-gamepad" onclick="switchControlsSubTab('gamepad')">
+                        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <path d="M4 6h16v1h2v3h1v7h-3v-1h-2v-3h-2v2h-4v-2H9v3H7v1H4v-7h1V7h2V6z" fill="#080a0c"/>
+                            <path d="M5 7h14v2h2v4h-1v2h-2v-1h-1v-2H7v2H6v1H4v-2H3V9h2V7z" fill="#586573"/>
+                            <rect x="6" y="10" width="3" height="3" fill="#080a0c"/>
+                            <rect x="15" y="10" width="3" height="3" fill="#e5a823"/>
+                        </svg>
+                        <span>Controller / Gamepad</span>
+                    </button>
                 </div>
 
                 <!-- Sub-panel A: Keyboard & Mouse -->
@@ -1166,39 +1186,39 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div class="settings-row">
-                            <span class="settings-label">Move Left</span>
+                            <span class="settings-label" title="Move Left">Move Left</span>
                             <button class="keybind-btn" data-action="left" onclick="startRebinding('left', this)">A</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Move Right</span>
+                            <span class="settings-label" title="Move Right">Move Right</span>
                             <button class="keybind-btn" data-action="right" onclick="startRebinding('right', this)">D</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Jump / Climb Up</span>
+                            <span class="settings-label" title="Jump / Climb Up">Jump / Climb Up</span>
                             <button class="keybind-btn" data-action="jump" onclick="startRebinding('jump', this)">Space / W</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Crouch / Climb Down</span>
+                            <span class="settings-label" title="Crouch / Climb Down">Crouch / Climb Down</span>
                             <button class="keybind-btn" data-action="down" onclick="startRebinding('down', this)">S / Shift</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Open Inventory</span>
+                            <span class="settings-label" title="Open Inventory">Open Inventory</span>
                             <button class="keybind-btn" data-action="inventory" onclick="startRebinding('inventory', this)">E</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">World Map</span>
+                            <span class="settings-label" title="World Map">World Map</span>
                             <button class="keybind-btn" data-action="map" onclick="startRebinding('map', this)">M</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Drop Hotbar Item</span>
+                            <span class="settings-label" title="Drop Hotbar Item">Drop Hotbar Item</span>
                             <button class="keybind-btn" data-action="drop" onclick="startRebinding('drop', this)">Q</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Multiplayer Chat</span>
+                            <span class="settings-label" title="Multiplayer Chat">Multiplayer Chat</span>
                             <button class="keybind-btn" data-action="chat" onclick="startRebinding('chat', this)">T</button>
                         </div>
                         <div class="settings-row" style="grid-column: 1 / -1;">
-                            <span class="settings-label">Debug Screen</span>
+                            <span class="settings-label" title="Debug Screen (F3)">Debug Screen (F3)</span>
                             <button class="keybind-btn" data-action="debug" onclick="startRebinding('debug', this)">F3</button>
                         </div>
                     </div>
@@ -1206,18 +1226,18 @@
                     <div class="settings-section-title !text-xl !mt-2 !mb-1">Mouse & Hotbar Scrolling</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div class="settings-row">
-                            <span class="settings-label">Scroll Sensitivity</span>
+                            <span class="settings-label" title="Scroll Sensitivity">Scroll Sensitivity</span>
                             <div class="settings-slider-wrap">
                                 <input type="range" min="1" max="5" value="1" class="settings-slider" id="slider-scroll-sens" oninput="updateScrollSens(this.value)">
                                 <span class="settings-val-badge" id="badge-scroll-sens">1x</span>
                             </div>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Invert Scroll Wheel</span>
+                            <span class="settings-label" title="Invert Scroll Wheel">Invert Scroll Wheel</span>
                             <button class="mc-btn" id="btn-invert-wheel" onclick="toggleInvertWheel()">Normal</button>
                         </div>
                         <div class="settings-row" style="grid-column: 1 / -1;">
-                            <span class="settings-label">Hotbar Wrap-Around</span>
+                            <span class="settings-label" title="Hotbar Wrap-Around">Hotbar Wrap-Around</span>
                             <button class="mc-btn" id="btn-hotbar-wrap" onclick="toggleHotbarWrap()">Wrap (1-9)</button>
                         </div>
                     </div>
@@ -1228,20 +1248,64 @@
                     <!-- Connected Gamepad Device Status Card -->
                     <div class="controller-status-card">
                         <div class="flex items-center justify-between flex-wrap gap-2">
-                            <div class="flex items-center gap-3">
-                                <div class="controller-icon-box text-3xl">🎮</div>
-                                <div>
-                                    <div class="controller-device-name font-bold text-xl text-white font-['VT323']" id="controller-device-name">No Gamepad Detected</div>
-                                    <div class="controller-device-sub text-sm text-gray-400 font-mono" id="controller-device-sub">Connect via USB / Bluetooth & press any button</div>
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="controller-icon-box">
+                                    <svg class="pixel-gamepad-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                        <!-- Outer black silhouette / border -->
+                                        <path d="M4 6h16v1h2v3h1v7h-3v-1h-2v-3h-2v2h-4v-2H9v3H7v1H4v-7h1V7h2V6z" fill="#080a0c"/>
+                                        <!-- Shoulder bumpers / triggers -->
+                                        <rect x="5" y="4" width="4" height="2" fill="#46515a"/>
+                                        <rect x="6" y="4" width="2" height="1" fill="#8a99a8"/>
+                                        <rect x="15" y="4" width="4" height="2" fill="#46515a"/>
+                                        <rect x="16" y="4" width="2" height="1" fill="#8a99a8"/>
+                                        <!-- Main controller body -->
+                                        <path d="M5 7h14v2h2v4h-1v2h-2v-1h-1v-2H7v2H6v1H4v-2H3V9h2V7z" fill="#242b33"/>
+                                        <!-- Top highlight bevel -->
+                                        <rect x="5" y="7" width="14" height="1" fill="#586573"/>
+                                        <rect x="3" y="9" width="1" height="4" fill="#586573"/>
+                                        <!-- Grip shadows -->
+                                        <path d="M3 13h1v3h2v-1H5v-2H3z" fill="#14181d"/>
+                                        <path d="M20 13h1v3h-2v-1h1v-2z" fill="#14181d"/>
+                                        <!-- Left D-Pad cross -->
+                                        <rect x="6" y="9" width="3" height="5" fill="#0a0d10"/>
+                                        <rect x="5" y="10" width="5" height="3" fill="#0a0d10"/>
+                                        <rect x="7" y="10" width="1" height="3" fill="#3a4552"/>
+                                        <rect x="6" y="11" width="3" height="1" fill="#3a4552"/>
+                                        <rect x="7" y="11" width="1" height="1" fill="#697788"/>
+                                        <!-- Right 4 Action Buttons (X, Y, A, B) -->
+                                        <rect x="16" y="9" width="2" height="2" fill="#eab308"/>
+                                        <rect x="18" y="11" width="2" height="2" fill="#ef4444"/>
+                                        <rect x="16" y="13" width="2" height="2" fill="#22c55e"/>
+                                        <rect x="14" y="11" width="2" height="2" fill="#3b82f6"/>
+                                        <!-- Center Guide/Menu Buttons & LED -->
+                                        <rect x="10" y="10" width="1" height="1" fill="#64748b"/>
+                                        <rect x="13" y="10" width="1" height="1" fill="#64748b"/>
+                                        <rect id="controller-pixel-icon-led" x="11" y="9" width="2" height="1" fill="#475569"/>
+                                        <!-- Left & Right Analog Thumbstick Caps -->
+                                        <rect x="9" y="12" width="2" height="2" fill="#0a0d10"/>
+                                        <rect x="9" y="12" width="1" height="1" fill="#475569"/>
+                                        <rect x="13" y="12" width="2" height="2" fill="#0a0d10"/>
+                                        <rect x="14" y="12" width="1" height="1" fill="#475569"/>
+                                    </svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="controller-device-name font-bold text-2xl text-white font-['VT323'] tracking-wide leading-tight truncate" id="controller-device-name">No Gamepad Detected</div>
+                                    <div class="controller-device-sub text-xs text-gray-400 font-mono tracking-tight truncate" id="controller-device-sub">Connect via USB / Bluetooth & press any button to wake</div>
                                 </div>
                             </div>
-                            <div class="controller-conn-badge disconnected font-['VT323'] text-lg px-3 py-0.5 border" id="controller-conn-badge">DISCONNECTED</div>
+                            <div class="controller-conn-badge disconnected font-['VT323'] text-lg px-3 py-0.5 border flex items-center gap-1.5 shrink-0" id="controller-conn-badge">
+                                <span class="controller-beacon-dot inline-block w-2.5 h-2.5 bg-gray-500 border border-black shrink-0" id="controller-conn-dot"></span>
+                                <span id="controller-conn-text">DISCONNECTED</span>
+                            </div>
                         </div>
                         <!-- Live Input Monitor -->
                         <div class="controller-live-monitor mt-2 pt-2 border-t border-[#333a41]">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs uppercase tracking-wider text-gray-400 font-mono">Live Input Tester:</span>
-                                <span class="text-xs text-gray-400 font-mono" id="controller-live-axis-readout">LX: 0.00 | LY: 0.00 | RX: 0.00 | RY: 0.00</span>
+                            <div class="flex items-center justify-between flex-wrap gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-['VT323'] text-amber-400 tracking-wider uppercase">Live Input Tester</span>
+                                    <span class="text-[11px] text-gray-400 font-mono hidden sm:inline">(Press buttons on your controller to test)</span>
+                                </div>
+                                <span class="bg-[#0b0e12] px-2 py-0.5 border border-[#2b333a] text-xs text-amber-300 font-mono shadow-inner" id="controller-live-axis-readout">LX: 0.00 | LY: 0.00 | RX: 0.00 | RY: 0.00</span>
                             </div>
                             <div class="gamepad-live-pills-wrap flex flex-wrap gap-1 mt-1.5" id="gamepad-live-pills">
                                 <span class="gamepad-live-pill" data-btn-idx="0">A</span>
@@ -1271,51 +1335,51 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div class="settings-row">
-                            <span class="settings-label">Jump</span>
+                            <span class="settings-label" title="Jump">Jump</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="jump" onclick="startGamepadRebindingUI('jump', this)">A / Cross</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Crouch / Sneak</span>
+                            <span class="settings-label" title="Crouch / Sneak">Crouch / Sneak</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="crouch" onclick="startGamepadRebindingUI('crouch', this)">B / Circle</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Attack / Mine (Primary)</span>
+                            <span class="settings-label" title="Attack / Mine (Primary)">Attack / Mine (Primary)</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="attack" onclick="startGamepadRebindingUI('attack', this)">RT / R2</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Attack (Secondary / Face)</span>
+                            <span class="settings-label" title="Attack (Secondary / Face)">Attack (Secondary)</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="attack_alt" onclick="startGamepadRebindingUI('attack_alt', this)">X / Square</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Place / Interact</span>
+                            <span class="settings-label" title="Place / Interact">Place / Interact</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="place" onclick="startGamepadRebindingUI('place', this)">LT / L2</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Previous Hotbar Slot</span>
+                            <span class="settings-label" title="Previous Hotbar Slot">Prev Hotbar Slot</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="prev_item" onclick="startGamepadRebindingUI('prev_item', this)">LB / L1</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Next Hotbar Slot</span>
+                            <span class="settings-label" title="Next Hotbar Slot">Next Hotbar Slot</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="next_item" onclick="startGamepadRebindingUI('next_item', this)">RB / R1</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Open Inventory</span>
+                            <span class="settings-label" title="Open Inventory">Open Inventory</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="inventory" onclick="startGamepadRebindingUI('inventory', this)">Y / Triangle</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">World Map</span>
+                            <span class="settings-label" title="World Map">World Map</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="map" onclick="startGamepadRebindingUI('map', this)">Back / Select</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Pause Menu / Escape</span>
+                            <span class="settings-label" title="Pause Menu / Escape">Pause Menu</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="pause" onclick="startGamepadRebindingUI('pause', this)">Start / Menu</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Background Build Mode</span>
+                            <span class="settings-label" title="Background Build Mode">Background Build</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="bg_build" onclick="startGamepadRebindingUI('bg_build', this)">LS Click (L3)</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Debug Screen (F3)</span>
+                            <span class="settings-label" title="Debug Screen (F3)">Debug Screen (F3)</span>
                             <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="debug" onclick="startGamepadRebindingUI('debug', this)">RS Click (R3)</button>
                         </div>
                     </div>
@@ -1324,34 +1388,34 @@
                     <div class="settings-section-title !text-xl !mt-2 !mb-1">Stick Calibration & Feel</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div class="settings-row">
-                            <span class="settings-label">Stick Deadzone</span>
+                            <span class="settings-label" title="Stick Deadzone">Stick Deadzone</span>
                             <div class="settings-slider-wrap">
                                 <input type="range" min="5" max="40" value="18" class="settings-slider" id="slider-gp-deadzone" oninput="updateGamepadDeadzoneUI(this.value)">
                                 <span class="settings-val-badge" id="badge-gp-deadzone">18%</span>
                             </div>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Aim Sensitivity</span>
+                            <span class="settings-label" title="Aim Sensitivity">Aim Sensitivity</span>
                             <div class="settings-slider-wrap">
                                 <input type="range" min="5" max="30" value="10" class="settings-slider" id="slider-gp-aim-sens" oninput="updateGamepadAimSensUI(this.value)">
                                 <span class="settings-val-badge" id="badge-gp-aim-sens">1.0x</span>
                             </div>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Invert Aim Y Axis</span>
+                            <span class="settings-label" title="Invert Aim Y Axis">Invert Aim Y</span>
                             <button type="button" class="mc-btn" id="btn-gp-invert-y" onclick="toggleGamepadInvertYUI()">Normal</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Auto-Aim Facing Direction</span>
+                            <span class="settings-label" title="Auto-Aim in Facing Direction">Auto-Aim Facing</span>
                             <button type="button" class="mc-btn" id="btn-gp-auto-aim" onclick="toggleGamepadAutoAimUI()">ON</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Controller Haptic Vibration</span>
+                            <span class="settings-label" title="Controller Haptic Vibration">Haptic Vibration</span>
                             <button type="button" class="mc-btn" id="btn-gp-vibration" onclick="toggleGamepadVibrationUI()">ON</button>
                         </div>
                         <div class="settings-row">
-                            <span class="settings-label">Test Haptic Rumble</span>
-                            <button type="button" class="mc-btn !w-full" onclick="testGamepadRumbleUI()">Vibrate Controller</button>
+                            <span class="settings-label" title="Test Haptic Rumble">Test Vibration</span>
+                            <button type="button" class="mc-btn" onclick="testGamepadRumbleUI()">Test Rumble</button>
                         </div>
                     </div>
                 </div>

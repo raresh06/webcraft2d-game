@@ -4682,7 +4682,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function switchSettingsTab(tabName) {
         if (tabName === 'controller') {
             document.querySelectorAll('.settings-tab-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.tab === 'controls' || btn.dataset.tab === 'controller');
+                btn.classList.toggle('active', btn.dataset.tab === 'controls');
             });
             document.querySelectorAll('.settings-tab-content').forEach(content => {
                 content.classList.toggle('active', content.id === 'settings-tab-controls');
@@ -4699,6 +4699,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         });
         if (tabName === 'controls') {
             updateGamepadUI();
+        } else {
+            stopGamepadUiMonitor();
         }
     }
 
@@ -4773,6 +4775,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const devNameEl = document.getElementById('controller-device-name');
         const devSubEl = document.getElementById('controller-device-sub');
         const connBadgeEl = document.getElementById('controller-conn-badge');
+        const connTextEl = document.getElementById('controller-conn-text');
+        const connDotEl = document.getElementById('controller-conn-dot');
+        const ledEl = document.getElementById('controller-pixel-icon-led');
         if (!devNameEl || !devSubEl || !connBadgeEl) return;
 
         if (typeof Gamepad !== 'undefined' && Gamepad.isGamepadConnected()) {
@@ -4782,16 +4787,26 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const numAxes = gp && gp.axes ? gp.axes.length : 4;
             const numBtns = gp && gp.buttons ? gp.buttons.length : 17;
             const hapticsText = (gp && gp.vibrationActuator) ? 'Haptics: Supported' : 'Haptics: Standard';
-            devSubEl.innerText = `Connected (Index: ${gp ? gp.index : 0} | ${numAxes} Axes | ${numBtns} Buttons | ${hapticsText})`;
-            connBadgeEl.innerText = 'CONNECTED';
+            devSubEl.innerText = `Connected (Port ${gp ? gp.index : 0} • ${numBtns} Buttons • ${numAxes} Axes • ${hapticsText})`;
+            if (connTextEl) connTextEl.innerText = 'CONNECTED';
+            else connBadgeEl.innerText = 'CONNECTED';
             connBadgeEl.classList.remove('disconnected');
             connBadgeEl.classList.add('connected');
+            if (connDotEl) {
+                connDotEl.className = 'controller-beacon-dot inline-block w-2.5 h-2.5 bg-emerald-400 border border-black shrink-0';
+            }
+            if (ledEl) ledEl.setAttribute('fill', '#4ade80');
         } else {
             devNameEl.innerText = 'No Gamepad Detected';
-            devSubEl.innerText = 'Connect via USB / Bluetooth & press any button';
-            connBadgeEl.innerText = 'DISCONNECTED';
+            devSubEl.innerText = 'Connect via USB / Bluetooth & press any button to wake';
+            if (connTextEl) connTextEl.innerText = 'DISCONNECTED';
+            else connBadgeEl.innerText = 'DISCONNECTED';
             connBadgeEl.classList.remove('connected');
             connBadgeEl.classList.add('disconnected');
+            if (connDotEl) {
+                connDotEl.className = 'controller-beacon-dot inline-block w-2.5 h-2.5 bg-gray-500 border border-black shrink-0';
+            }
+            if (ledEl) ledEl.setAttribute('fill', '#475569');
         }
     }
 
