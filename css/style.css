@@ -926,6 +926,12 @@
       border-color: color-mix(in oklab, var(--color-amber-400) 80%, transparent);
     }
   }
+  .border-amber-500\/50 {
+    border-color: color-mix(in srgb, oklch(76.9% 0.188 70.08) 50%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-amber-500) 50%, transparent);
+    }
+  }
   .border-amber-500\/60 {
     border-color: color-mix(in srgb, oklch(76.9% 0.188 70.08) 60%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -1264,6 +1270,12 @@
   }
   .bg-amber-950 {
     background-color: var(--color-amber-950);
+  }
+  .bg-amber-950\/60 {
+    background-color: color-mix(in srgb, oklch(27.9% 0.077 45.635) 60%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-amber-950) 60%, transparent);
+    }
   }
   .bg-amber-950\/80 {
     background-color: color-mix(in srgb, oklch(27.9% 0.077 45.635) 80%, transparent);
@@ -3634,20 +3646,114 @@ input, textarea {
 .friend-status-dot.offline {
   background-color: #64748b;
 }
+.friends-requests-box {
+  max-height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+  margin-bottom: 12px;
+}
+.friend-request-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #17202a;
+  border: 2px solid #2e3e50;
+  box-shadow: inset 0 0 0 1px #0e141a;
+  gap: 8px;
+}
 .friend-btn-remove {
   background: #7f1d1d !important;
-  border-color: #ef4444 !important;
+  border: 2px solid #ef4444 !important;
   color: #fee2e2 !important;
   font-family: 'VT323', monospace !important;
-  font-size: 18px !important;
-  padding: 2px 8px !important;
-  height: auto !important;
-  line-height: 1.2 !important;
+  font-size: 16px !important;
+  padding: 3px 10px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: fit-content !important;
+  margin: 0 !important;
+  line-height: 1 !important;
   cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.35);
+  transition: background 0.1s ease, border-color 0.1s ease, transform 0.08s ease;
 }
 .friend-btn-remove:hover {
   background: #991b1b !important;
   border-color: #f87171 !important;
+  transform: scale(1.03);
+}
+.friend-btn-remove:active {
+  transform: scale(0.97);
+}
+.friend-btn-accept {
+  background: #14532d !important;
+  border: 2px solid #22c55e !important;
+  color: #dcfce7 !important;
+  font-family: 'VT323', monospace !important;
+  font-size: 16px !important;
+  padding: 3px 10px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: fit-content !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.35);
+  transition: background 0.1s ease, border-color 0.1s ease, transform 0.08s ease;
+}
+.friend-btn-accept:hover {
+  background: #166534 !important;
+  border-color: #4ade80 !important;
+  transform: scale(1.03);
+}
+.friend-btn-accept:active {
+  transform: scale(0.97);
+}
+.friend-btn-decline {
+  background: #27272a !important;
+  border: 2px solid #52525b !important;
+  color: #d4d4d8 !important;
+  font-family: 'VT323', monospace !important;
+  font-size: 16px !important;
+  padding: 3px 8px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: fit-content !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.35);
+  transition: background 0.1s ease, border-color 0.1s ease, transform 0.08s ease;
+}
+.friend-btn-decline:hover {
+  background: #3f3f46 !important;
+  border-color: #71717a !important;
+  transform: scale(1.03);
+}
+.friend-btn-decline:active {
+  transform: scale(0.97);
 }
 .guest-notice-card {
   background: #24160d;

@@ -875,16 +875,29 @@
 
                     <!-- Add Friend Form -->
                     <form id="add-friend-form" class="mb-3 text-left" onsubmit="handleAddFriendSubmit(event)">
-                        <label for="friend-input-tag" class="auth-label !text-lg !mb-1">Add Friend by Webcraft Tag</label>
+                        <label for="friend-input-tag" class="auth-label !text-lg !mb-1">Send Friend Request by Tag</label>
                         <div class="flex gap-2">
                             <div class="auth-tag-wrapper flex-1">
                                 <span class="auth-tag-prefix">@</span>
                                 <input id="friend-input-tag" type="text" class="auth-input auth-tag-input !h-10 !text-xl" maxlength="20" placeholder="e.g. SteveCraft" required autocomplete="off">
                             </div>
-                            <button id="add-friend-btn" type="submit" class="mc-btn auth-primary-btn !h-10 !w-auto !px-4 !text-xl whitespace-nowrap flex items-center justify-center">Add</button>
+                            <button id="add-friend-btn" type="submit" class="mc-btn auth-primary-btn !h-10 !w-auto !px-4 !text-xl whitespace-nowrap flex items-center justify-center">Send Request</button>
                         </div>
                         <div id="friend-feedback-msg" class="auth-feedback !p-1.5 !text-base mt-2 hidden"></div>
                     </form>
+
+                    <!-- Incoming Friend Requests Section -->
+                    <div id="friend-requests-section" class="mb-3 text-left hidden">
+                        <div class="mb-1.5 flex items-center justify-between">
+                            <span class="text-amber-400 font-['VT323'] text-xl font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                <span>Friend Requests</span>
+                            </span>
+                            <span id="friend-requests-counter" class="text-amber-300 font-['VT323'] text-base bg-amber-950/60 border border-amber-500/50 px-2 py-0.5 rounded">0 Requests</span>
+                        </div>
+                        <div id="friend-requests-container" class="friends-requests-box custom-scrollbar">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
 
                     <!-- Friends List Section -->
                     <div class="text-left mb-1.5 flex items-center justify-between">

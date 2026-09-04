@@ -1,13 +1,13 @@
 {
   "name": "webcraft-game",
-  "version": "1.0.0",
   "version": "0.1.4",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:css": "tailwindcss -i css/input.css -o css/style.css",
-    "watch:css": "tailwindcss -i css/input.css -o css/style.css --watch"
+    "watch:css": "tailwindcss -i css/input.css -o css/style.css --watch",
+    "fix:git": "rm -f .git/index && git reset"
   },
   "keywords": [],
   "author": "",

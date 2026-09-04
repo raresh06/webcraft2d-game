@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+*.bak
+*.backup
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment and temp
+.env
+.env.local
+.env.*.local
+
+# Scratch and test artifacts
+scratch/
+.system_generated/
+.tempmediaStorage/
+.user_uploaded/
+# IDEs
+.vscode/
+.idea/

@@ -275,6 +275,9 @@ export async function registerWebcraftAccount(username, tagOrEmail, emailOrPassw
         skinData: skinData || null,
         emeralds: parseInt(localStorage.getItem('swc_emeralds_count') || '0', 10),
         friends: [],
+        friendRequests: [],
+        isOnline: true,
+        lastActive: Date.now(),
         createdAt: Date.now(),
         lastLogin: Date.now()
     };
@@ -313,6 +316,8 @@ export async function registerWebcraftAccount(username, tagOrEmail, emailOrPassw
     localStorage.setItem('webcraft_user_profile', JSON.stringify(accountRecord));
     localStorage.setItem('swc_player_name', cleanUsername);
     playerName = cleanUsername;
+
+    startPresenceHeartbeat(normalizedTag);
 
     return accountRecord;
 }
@@ -445,7 +450,12 @@ export async function loginWebcraftAccount(emailOrTagOrUsername, password) {
     if (!Array.isArray(accountRecord.friends)) {
         accountRecord.friends = [];
     }
+    if (!Array.isArray(accountRecord.friendRequests)) {
+        accountRecord.friendRequests = [];
+    }
 
+    accountRecord.isOnline = true;
+    accountRecord.lastActive = Date.now();
     accountRecord.lastLogin = Date.now();
 
     // Update in Firestore
@@ -454,9 +464,12 @@ export async function loginWebcraftAccount(emailOrTagOrUsername, password) {
             const { doc, updateDoc } = window.fbModules;
             const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', accountRecord.normalizedTag);
             await updateDoc(tagDocRef, {
+                isOnline: true,
+                lastActive: accountRecord.lastActive,
                 lastLogin: accountRecord.lastLogin,
                 passwordHash: accountRecord.passwordHash,
-                friends: accountRecord.friends
+                friends: accountRecord.friends,
+                friendRequests: accountRecord.friendRequests
             });
         } catch(e) {
             console.warn("Could not update lastLogin in Firestore", e);
@@ -467,6 +480,8 @@ export async function loginWebcraftAccount(emailOrTagOrUsername, password) {
     localStorage.setItem('webcraft_user_profile', JSON.stringify(accountRecord));
     localStorage.setItem('swc_player_name', accountRecord.username);
     playerName = accountRecord.username;
+
+    startPresenceHeartbeat(accountRecord.normalizedTag);
 
     // Cache in local accounts
     try {
@@ -524,7 +539,7 @@ export async function loginAsGuest(guestName = null) {
 // FRIENDS SYSTEM API
 // =============================================================================
 
-export async function addFriendByTag(targetTag) {
+export async function sendFriendRequestByTag(targetTag) {
     const rawProfile = localStorage.getItem('webcraft_user_profile');
     const myProfile = rawProfile ? JSON.parse(rawProfile) : null;
 
@@ -563,39 +578,231 @@ export async function addFriendByTag(targetTag) {
 
     const friendData = friendSnap.data();
 
-    // 1. Add friend to current user's friends list
-    if (!Array.isArray(myProfile.friends)) myProfile.friends = [];
-    myProfile.friends.push(friendNormTag);
-
-    // Save updated profile locally
-    localStorage.setItem('webcraft_user_profile', JSON.stringify(myProfile));
-
-    // Update in Firestore for current user
+    // 1. Reciprocal Auto-Accept: Check if target has ALREADY sent an incoming request to current user
+    let myIncomingRequests = Array.isArray(myProfile.friendRequests) ? [...myProfile.friendRequests] : [];
     try {
         const myDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', myNormTag);
-        await updateDoc(myDocRef, { friends: myProfile.friends });
-    } catch (e) {
-        console.warn("Failed updating user friends in Firestore", e);
+        const mySnap = await getDoc(myDocRef);
+        if (mySnap && mySnap.exists()) {
+            const myData = mySnap.data();
+            if (Array.isArray(myData.friendRequests)) {
+                myIncomingRequests = myData.friendRequests;
+                myProfile.friendRequests = myIncomingRequests;
+                localStorage.setItem('webcraft_user_profile', JSON.stringify(myProfile));
+            }
+        }
+    } catch (e) {}
+
+    const hasIncomingFromTarget = myIncomingRequests.some(req => {
+        const reqTag = typeof req === 'string' ? normalizeWebcraftTag(req) : normalizeWebcraftTag(req?.fromTag || req?.tag);
+        return reqTag === friendNormTag;
+    });
+
+    if (hasIncomingFromTarget) {
+        return await acceptFriendRequestByTag(friendNormTag);
     }
 
-    // 2. Mutual connection: Add current user to friend's friends list in Firestore
+    // 2. Check if a friend request was already sent to target user
+    const targetRequests = Array.isArray(friendData.friendRequests) ? [...friendData.friendRequests] : [];
+    const alreadySent = targetRequests.some(req => {
+        const reqTag = typeof req === 'string' ? normalizeWebcraftTag(req) : normalizeWebcraftTag(req?.fromTag || req?.tag);
+        return reqTag === myNormTag;
+    });
+
+    if (alreadySent) {
+        return {
+            status: 'pending',
+            tag: friendData.tag || `@${friendNormTag}`,
+            username: friendData.username || friendNormTag,
+            message: `Friend request already sent to @${friendNormTag}. Waiting for them to accept!`
+        };
+    }
+
+    // 3. Add to target user's incoming friendRequests list in Firestore
+    targetRequests.push({
+        fromTag: myNormTag,
+        fromUsername: myProfile.username || myNormTag,
+        timestamp: Date.now()
+    });
+
     try {
-        let friendFriends = Array.isArray(friendData.friends) ? [...friendData.friends] : [];
-        if (!friendFriends.includes(myNormTag)) {
-            friendFriends.push(myNormTag);
-            await updateDoc(friendDocRef, { friends: friendFriends });
-        }
+        await updateDoc(friendDocRef, { friendRequests: targetRequests });
     } catch (e) {
-        console.warn("Failed updating friend mutual list in Firestore", e);
+        console.warn("Failed updating friendRequests in Firestore", e);
+        throw new Error("Could not send friend request. Check connection.");
     }
 
     return {
+        status: 'sent',
         tag: friendData.tag || `@${friendNormTag}`,
-        normalizedTag: friendNormTag,
         username: friendData.username || friendNormTag,
-        skinData: friendData.skinData || null,
-        lastLogin: friendData.lastLogin || 0
+        message: `Friend request sent to @${friendNormTag}!`
     };
+}
+
+export async function addFriendByTag(targetTag) {
+    return await sendFriendRequestByTag(targetTag);
+}
+
+export async function fetchIncomingFriendRequests() {
+    const rawProfile = localStorage.getItem('webcraft_user_profile');
+    const myProfile = rawProfile ? JSON.parse(rawProfile) : null;
+    if (!myProfile || myProfile.isGuest) return [];
+
+    const myNormTag = normalizeWebcraftTag(myProfile.tag || myProfile.normalizedTag || myProfile.username);
+    if (!myNormTag) return [];
+
+    await initFirebaseSdk();
+    let rawRequests = [];
+    if (window.fbDb && window.fbModules) {
+        try {
+            const { doc, getDoc } = window.fbModules;
+            const myDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', myNormTag);
+            const mySnap = await getDoc(myDocRef);
+            if (mySnap && mySnap.exists()) {
+                const data = mySnap.data();
+                rawRequests = Array.isArray(data.friendRequests) ? data.friendRequests : [];
+                myProfile.friendRequests = rawRequests;
+                localStorage.setItem('webcraft_user_profile', JSON.stringify(myProfile));
+            }
+        } catch (e) {
+            console.warn("Error fetching incoming friend requests", e);
+            rawRequests = Array.isArray(myProfile.friendRequests) ? myProfile.friendRequests : [];
+        }
+    } else {
+        rawRequests = Array.isArray(myProfile.friendRequests) ? myProfile.friendRequests : [];
+    }
+
+    const enriched = [];
+    for (const req of rawRequests) {
+        const fromTag = typeof req === 'string' ? normalizeWebcraftTag(req) : normalizeWebcraftTag(req?.fromTag || req?.tag);
+        if (!fromTag) continue;
+
+        let requesterData = null;
+        if (window.fbDb && window.fbModules) {
+            try {
+                const { doc, getDoc } = window.fbModules;
+                const reqRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', fromTag);
+                const reqSnap = await getDoc(reqRef);
+                if (reqSnap && reqSnap.exists()) {
+                    requesterData = reqSnap.data();
+                }
+            } catch(e) {}
+        }
+
+        enriched.push({
+            tag: requesterData?.tag || `@${fromTag}`,
+            normalizedTag: fromTag,
+            username: requesterData?.username || (typeof req === 'object' && req.fromUsername ? req.fromUsername : fromTag),
+            skinData: requesterData?.skinData || null,
+            timestamp: typeof req === 'object' && req.timestamp ? req.timestamp : Date.now()
+        });
+    }
+
+    return enriched;
+}
+
+export async function acceptFriendRequestByTag(targetTag) {
+    const rawProfile = localStorage.getItem('webcraft_user_profile');
+    const myProfile = rawProfile ? JSON.parse(rawProfile) : null;
+    if (!myProfile || myProfile.isGuest) {
+        throw new Error("Please log in to accept friend requests.");
+    }
+
+    const reqNormTag = normalizeWebcraftTag(targetTag);
+    const myNormTag = normalizeWebcraftTag(myProfile.tag || myProfile.normalizedTag || myProfile.username);
+
+    // 1. Update local profile: add to friends, remove from friendRequests
+    if (!Array.isArray(myProfile.friends)) myProfile.friends = [];
+    if (!myProfile.friends.includes(reqNormTag)) {
+        myProfile.friends.push(reqNormTag);
+    }
+    if (Array.isArray(myProfile.friendRequests)) {
+        myProfile.friendRequests = myProfile.friendRequests.filter(r => {
+            const t = typeof r === 'string' ? normalizeWebcraftTag(r) : normalizeWebcraftTag(r?.fromTag || r?.tag);
+            return t !== reqNormTag;
+        });
+    }
+    localStorage.setItem('webcraft_user_profile', JSON.stringify(myProfile));
+
+    await initFirebaseSdk();
+    if (window.fbDb && window.fbModules) {
+        const { doc, updateDoc, getDoc } = window.fbModules;
+        // Update current user doc in Firestore
+        try {
+            const myDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', myNormTag);
+            await updateDoc(myDocRef, {
+                friends: myProfile.friends,
+                friendRequests: myProfile.friendRequests || []
+            });
+        } catch (e) {
+            console.warn("Failed updating user friends upon accept", e);
+        }
+
+        // Update requester doc in Firestore: add current user to their friends, remove from their friendRequests
+        try {
+            const reqDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', reqNormTag);
+            const reqSnap = await getDoc(reqDocRef);
+            if (reqSnap && reqSnap.exists()) {
+                const reqData = reqSnap.data();
+                const reqFriends = Array.isArray(reqData.friends) ? [...reqData.friends] : [];
+                if (!reqFriends.includes(myNormTag)) {
+                    reqFriends.push(myNormTag);
+                }
+                const reqIncoming = Array.isArray(reqData.friendRequests)
+                    ? reqData.friendRequests.filter(r => {
+                        const t = typeof r === 'string' ? normalizeWebcraftTag(r) : normalizeWebcraftTag(r?.fromTag || r?.tag);
+                        return t !== myNormTag;
+                    })
+                    : [];
+                await updateDoc(reqDocRef, {
+                    friends: reqFriends,
+                    friendRequests: reqIncoming
+                });
+            }
+        } catch (e) {
+            console.warn("Failed updating mutual friend upon accept", e);
+        }
+    }
+
+    return {
+        status: 'accepted',
+        tag: `@${reqNormTag}`,
+        normalizedTag: reqNormTag,
+        message: `Accepted friend request from @${reqNormTag}!`
+    };
+}
+
+export async function declineFriendRequestByTag(targetTag) {
+    const rawProfile = localStorage.getItem('webcraft_user_profile');
+    const myProfile = rawProfile ? JSON.parse(rawProfile) : null;
+    if (!myProfile || myProfile.isGuest) return false;
+
+    const reqNormTag = normalizeWebcraftTag(targetTag);
+    const myNormTag = normalizeWebcraftTag(myProfile.tag || myProfile.normalizedTag || myProfile.username);
+
+    if (Array.isArray(myProfile.friendRequests)) {
+        myProfile.friendRequests = myProfile.friendRequests.filter(r => {
+            const t = typeof r === 'string' ? normalizeWebcraftTag(r) : normalizeWebcraftTag(r?.fromTag || r?.tag);
+            return t !== reqNormTag;
+        });
+        localStorage.setItem('webcraft_user_profile', JSON.stringify(myProfile));
+    }
+
+    await initFirebaseSdk();
+    if (window.fbDb && window.fbModules) {
+        try {
+            const { doc, updateDoc } = window.fbModules;
+            const myDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', myNormTag);
+            await updateDoc(myDocRef, {
+                friendRequests: myProfile.friendRequests || []
+            });
+        } catch (e) {
+            console.warn("Failed updating friendRequests upon decline", e);
+        }
+    }
+
+    return true;
 }
 
 export async function removeFriendByTag(targetTag) {
@@ -657,13 +864,16 @@ export async function fetchFriendsProfiles(friendTags = []) {
         }
 
         if (profile) {
-            const isOnline = profile.lastLogin ? (now - profile.lastLogin < 5 * 60 * 1000) : false;
+            const lastActiveTime = profile.lastActive || profile.lastLogin || 0;
+            // Online if explicitly marked isOnline === true AND heartbeat was within the last 60 seconds
+            const isOnline = (profile.isOnline === true) && (now - lastActiveTime < 60 * 1000);
             results.push({
                 tag: profile.tag || `@${normTag}`,
                 normalizedTag: normTag,
                 username: profile.username || normTag,
                 skinData: profile.skinData || null,
                 lastLogin: profile.lastLogin || 0,
+                lastActive: lastActiveTime,
                 isOnline: isOnline
             });
         } else {
@@ -673,6 +883,7 @@ export async function fetchFriendsProfiles(friendTags = []) {
                 username: normTag,
                 skinData: null,
                 lastLogin: 0,
+                lastActive: 0,
                 isOnline: false
             });
         }
@@ -680,8 +891,104 @@ export async function fetchFriendsProfiles(friendTags = []) {
     return results;
 }
 
+// =============================================================================
+// PRESENCE HEARTBEAT & TEARDOWN SYSTEM
+// =============================================================================
+let presenceTimer = null;
+let isPresenceTrackingActive = false;
+
+export function startPresenceHeartbeat(rawTag = null) {
+    if (!rawTag) {
+        const rawProfile = localStorage.getItem('webcraft_user_profile');
+        const myProfile = rawProfile ? JSON.parse(rawProfile) : null;
+        if (!myProfile || myProfile.isGuest) return;
+        rawTag = myProfile.normalizedTag || myProfile.tag || myProfile.username;
+    }
+    const normTag = normalizeWebcraftTag(rawTag);
+    if (!normTag) return;
+
+    if (presenceTimer) {
+        clearInterval(presenceTimer);
+        presenceTimer = null;
+    }
+
+    const updateOnline = async (online) => {
+        if (!window.fbDb || !window.fbModules) return;
+        try {
+            const { doc, updateDoc } = window.fbModules;
+            const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', normTag);
+            await updateDoc(tagDocRef, {
+                isOnline: !!online,
+                lastActive: Date.now()
+            });
+        } catch (e) {}
+    };
+
+    // Set online immediately
+    initFirebaseSdk().then(() => updateOnline(true)).catch(() => {});
+
+    // Periodic heartbeat every 30 seconds
+    presenceTimer = setInterval(() => {
+        const rawProfile = localStorage.getItem('webcraft_user_profile');
+        const profile = rawProfile ? JSON.parse(rawProfile) : null;
+        if (!profile || profile.isGuest) {
+            stopPresenceHeartbeat();
+            return;
+        }
+        updateOnline(true);
+    }, 30000);
+
+    if (!isPresenceTrackingActive && typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        isPresenceTrackingActive = true;
+        const setOfflineImmediate = () => {
+            const rawProfile = localStorage.getItem('webcraft_user_profile');
+            const profile = rawProfile ? JSON.parse(rawProfile) : null;
+            if (!profile || profile.isGuest) return;
+            const tag = normalizeWebcraftTag(profile.normalizedTag || profile.tag || profile.username);
+            if (!tag || !window.fbDb || !window.fbModules) return;
+            try {
+                const { doc, updateDoc } = window.fbModules;
+                const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', tag);
+                updateDoc(tagDocRef, {
+                    isOnline: false,
+                    lastActive: Date.now()
+                }).catch(() => {});
+            } catch (e) {}
+        };
+
+        window.addEventListener('beforeunload', setOfflineImmediate);
+        window.addEventListener('pagehide', setOfflineImmediate);
+        if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    updateOnline(true);
+                }
+            });
+        }
+    }
+}
+
+export function stopPresenceHeartbeat() {
+    if (presenceTimer) {
+        clearInterval(presenceTimer);
+        presenceTimer = null;
+    }
+    const rawProfile = localStorage.getItem('webcraft_user_profile');
+    const myProfile = rawProfile ? JSON.parse(rawProfile) : null;
+    if (myProfile && !myProfile.isGuest && window.fbDb && window.fbModules) {
+        const normTag = normalizeWebcraftTag(myProfile.normalizedTag || myProfile.tag || myProfile.username);
+        if (normTag) {
+            try {
+                const { doc, updateDoc } = window.fbModules;
+                const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', normTag);
+                updateDoc(tagDocRef, { isOnline: false, lastActive: Date.now() }).catch(() => {});
+            } catch(e) {}
+        }
+    }
+}
 
 export async function logoutWebcraftAccount() {
+    stopPresenceHeartbeat();
     try {
         if (window.fbAuth && window.fbAuthModule?.signOut) {
             await window.fbAuthModule.signOut(window.fbAuth);
@@ -2202,6 +2509,12 @@ try { if (typeof formatWebcraftTag !== "undefined") window.formatWebcraftTag = f
 try { if (typeof validateWebcraftTag !== "undefined") window.validateWebcraftTag = validateWebcraftTag; } catch(e) {}
 try { if (typeof hashPassword !== "undefined") window.hashPassword = hashPassword; } catch(e) {}
 try { if (typeof addFriendByTag !== "undefined") window.addFriendByTag = addFriendByTag; } catch(e) {}
+try { if (typeof sendFriendRequestByTag !== "undefined") window.sendFriendRequestByTag = sendFriendRequestByTag; } catch(e) {}
+try { if (typeof fetchIncomingFriendRequests !== "undefined") window.fetchIncomingFriendRequests = fetchIncomingFriendRequests; } catch(e) {}
+try { if (typeof acceptFriendRequestByTag !== "undefined") window.acceptFriendRequestByTag = acceptFriendRequestByTag; } catch(e) {}
+try { if (typeof declineFriendRequestByTag !== "undefined") window.declineFriendRequestByTag = declineFriendRequestByTag; } catch(e) {}
 try { if (typeof removeFriendByTag !== "undefined") window.removeFriendByTag = removeFriendByTag; } catch(e) {}
 try { if (typeof fetchFriendsProfiles !== "undefined") window.fetchFriendsProfiles = fetchFriendsProfiles; } catch(e) {}
+try { if (typeof startPresenceHeartbeat !== "undefined") window.startPresenceHeartbeat = startPresenceHeartbeat; } catch(e) {}
+try { if (typeof stopPresenceHeartbeat !== "undefined") window.stopPresenceHeartbeat = stopPresenceHeartbeat; } catch(e) {}
 

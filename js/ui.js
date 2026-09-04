@@ -24,7 +24,10 @@ import {
 import {
     registerWebcraftAccount, loginWebcraftAccount, loginAsGuest, logoutWebcraftAccount,
     saveUserProfileToCloud, getUserProfileFromCloud,
-    addFriendByTag, removeFriendByTag, fetchFriendsProfiles, validateWebcraftTag, normalizeWebcraftTag
+    addFriendByTag, sendFriendRequestByTag, fetchIncomingFriendRequests,
+    acceptFriendRequestByTag, declineFriendRequestByTag,
+    removeFriendByTag, fetchFriendsProfiles, validateWebcraftTag, normalizeWebcraftTag,
+    startPresenceHeartbeat, stopPresenceHeartbeat
 } from './network.js';
 import * as Gamepad from './gamepad.js';
 
@@ -3320,6 +3323,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         } else {
             if (menuButtons) menuButtons.classList.remove('hidden');
             updateMainMenuProfileBadge();
+            if (currentUserProfile && !currentUserProfile.isGuest) {
+                startPresenceHeartbeat(currentUserProfile.normalizedTag || currentUserProfile.tag);
+            }
         }
     }
 
@@ -3828,12 +3834,113 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const friends = Array.isArray(currentUserProfile.friends) ? currentUserProfile.friends : [];
         if (counter) counter.innerText = `${friends.length} Friend${friends.length === 1 ? '' : 's'}`;
         if (tabBadge) tabBadge.innerText = friends.length.toString();
+        // 1. Check and render incoming friend requests
+        const requestsSection = document.getElementById('friend-requests-section');
+        const requestsCounter = document.getElementById('friend-requests-counter');
+        const requestsContainer = document.getElementById('friend-requests-container');
+
+        if (requestsSection && requestsContainer) {
+            try {
+                const incoming = await fetchIncomingFriendRequests();
+                if (incoming && incoming.length > 0) {
+                    requestsSection.classList.remove('hidden');
+                    if (requestsCounter) {
+                        requestsCounter.innerText = `${incoming.length} Request${incoming.length === 1 ? '' : 's'}`;
+                    }
+                    requestsContainer.innerHTML = '';
+                    incoming.forEach(req => {
+                        const row = document.createElement('div');
+                        row.className = 'friend-request-row';
+
+                        const leftDiv = document.createElement('div');
+                        leftDiv.className = 'flex items-center gap-2.5 min-w-0 flex-1';
+
+                        const canvas = document.createElement('canvas');
+                        canvas.className = 'friend-head-preview';
+                        canvas.width = 36;
+                        canvas.height = 36;
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = false;
+
+                        if (req.skinData && typeof drawPlayerHead === 'function') {
+                            const tempCanvas = document.createElement('canvas');
+                            tempCanvas.width = 16;
+                            tempCanvas.height = 32;
+                            const tCtx = tempCanvas.getContext('2d');
+                            const imgData = tCtx.createImageData(16, 32);
+                            for (let i = 0; i < 16 * 32; i++) {
+                                const c = req.skinData[i] || '#00000000';
+                                const rgb = hexToRgb(c);
+                                imgData.data[i * 4] = rgb.r;
+                                imgData.data[i * 4 + 1] = rgb.g;
+                                imgData.data[i * 4 + 2] = rgb.b;
+                                imgData.data[i * 4 + 3] = c === '#00000000' || !c ? 0 : 255;
+                            }
+                            tCtx.putImageData(imgData, 0, 0);
+                            drawPlayerHead(ctx, tempCanvas, 0, 0, 36);
+                        } else {
+                            ctx.fillStyle = '#b4845c';
+                            ctx.fillRect(0, 0, 36, 36);
+                            ctx.fillStyle = '#4a3320';
+                            ctx.fillRect(0, 0, 36, 10);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(6, 14, 8, 5);
+                            ctx.fillRect(22, 14, 8, 5);
+                            ctx.fillStyle = '#2b3b82';
+                            ctx.fillRect(10, 14, 4, 5);
+                            ctx.fillRect(22, 14, 4, 5);
+                            ctx.fillStyle = '#6d4632';
+                            ctx.fillRect(12, 24, 12, 4);
+                        }
+
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'min-w-0 text-left';
+                        infoDiv.innerHTML = `
+                            <div class="text-white font-['VT323'] text-xl font-bold leading-tight truncate">${safeEscapeHtml(req.username)}</div>
+                            <div class="text-amber-400 font-['VT323'] text-base font-bold leading-none mt-0.5">${safeEscapeHtml(req.tag)}</div>
+                        `;
+
+                        leftDiv.appendChild(canvas);
+                        leftDiv.appendChild(infoDiv);
+
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.className = 'flex items-center gap-1.5 flex-shrink-0';
+
+                        const acceptBtn = document.createElement('button');
+                        acceptBtn.type = 'button';
+                        acceptBtn.className = 'friend-btn-accept';
+                        acceptBtn.title = `Accept friend request from ${req.tag}`;
+                        acceptBtn.innerText = 'Accept';
+                        acceptBtn.onclick = () => handleAcceptFriendRequest(req.tag);
+
+                        const declineBtn = document.createElement('button');
+                        declineBtn.type = 'button';
+                        declineBtn.className = 'friend-btn-decline';
+                        declineBtn.title = `Decline friend request from ${req.tag}`;
+                        declineBtn.innerText = 'Decline';
+                        declineBtn.onclick = () => handleDeclineFriendRequest(req.tag);
+
+                        actionsDiv.appendChild(acceptBtn);
+                        actionsDiv.appendChild(declineBtn);
+
+                        row.appendChild(leftDiv);
+                        row.appendChild(actionsDiv);
+                        requestsContainer.appendChild(row);
+                    });
+                } else {
+                    requestsSection.classList.add('hidden');
+                }
+            } catch (e) {
+                console.warn("Could not load friend requests", e);
+                requestsSection.classList.add('hidden');
+            }
+        }
 
         if (friends.length === 0) {
             container.innerHTML = `
                 <div class="text-gray-400 font-['VT323'] text-xl py-6 text-center">
                     No friends added yet.<br>
-                    <span class="text-amber-400 text-base">Enter a player's Webcraft @tag above to add them!</span>
+                    <span class="text-amber-400 text-base">Enter a player's Webcraft @tag above to send a request!</span>
                 </div>
             `;
             return;
@@ -3910,7 +4017,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
                 const removeBtn = document.createElement('button');
                 removeBtn.type = 'button';
-                removeBtn.className = 'mc-btn friend-btn-remove';
+                removeBtn.className = 'friend-btn-remove';
                 removeBtn.title = `Remove ${friend.tag} from friends`;
                 removeBtn.innerText = 'Remove';
                 removeBtn.onclick = () => handleRemoveFriend(friend.tag);
@@ -3949,19 +4056,52 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (feedback) feedback.classList.add('hidden');
 
         try {
-            const added = await addFriendByTag(rawTag);
+            const res = await sendFriendRequestByTag(rawTag);
             input.value = '';
-            showMsg(`Added ${added.tag} to your friends!`, false);
-            showToast(`Added ${added.tag} as a friend!`);
+            if (res.status === 'accepted') {
+                showMsg(res.message || `Accepted mutual friend request with ${res.tag}!`, false);
+                showToast(`Added ${res.tag} as a friend!`);
+            } else if (res.status === 'pending') {
+                showMsg(res.message || `Friend request already sent to ${res.tag}.`, false);
+                showToast(`Friend request already sent to ${res.tag}.`);
+            } else {
+                showMsg(`Friend request sent to ${res.tag}!`, false);
+                showToast(`Friend request sent to ${res.tag}!`);
+            }
             await renderFriendsList();
         } catch (err) {
             console.error("Add friend error:", err);
-            showMsg(err.message || "Failed to add friend.", true);
+            showMsg(err.message || "Failed to send friend request.", true);
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerText = 'Add';
+                submitBtn.innerText = 'Send Request';
             }
+        }
+    }
+
+    export async function handleAcceptFriendRequest(tag) {
+        if (!tag) return;
+        try {
+            const res = await acceptFriendRequestByTag(tag);
+            showToast(res.message || `Accepted friend request from ${tag}!`);
+            if (typeof playSound === 'function') playSound('pop', { vol: 0.8 });
+            await renderFriendsList();
+        } catch (err) {
+            console.error("Accept friend error:", err);
+            showToast(err.message || "Failed to accept friend request.");
+        }
+    }
+
+    export async function handleDeclineFriendRequest(tag) {
+        if (!tag) return;
+        try {
+            await declineFriendRequestByTag(tag);
+            showToast(`Declined friend request from ${tag}.`);
+            await renderFriendsList();
+        } catch (err) {
+            console.error("Decline friend error:", err);
+            showToast("Failed to decline friend request.");
         }
     }
 
@@ -8254,6 +8394,8 @@ try { if (typeof switchProfileTab !== "undefined") window.switchProfileTab = swi
 try { if (typeof renderFriendsList !== "undefined") window.renderFriendsList = renderFriendsList; } catch(e) {}
 try { if (typeof handleAddFriendSubmit !== "undefined") window.handleAddFriendSubmit = handleAddFriendSubmit; } catch(e) {}
 try { if (typeof handleRemoveFriend !== "undefined") window.handleRemoveFriend = handleRemoveFriend; } catch(e) {}
+try { if (typeof handleAcceptFriendRequest !== "undefined") window.handleAcceptFriendRequest = handleAcceptFriendRequest; } catch(e) {}
+try { if (typeof handleDeclineFriendRequest !== "undefined") window.handleDeclineFriendRequest = handleDeclineFriendRequest; } catch(e) {}
 try { if (typeof copyPlayerTag !== "undefined") window.copyPlayerTag = copyPlayerTag; } catch(e) {}
 try { if (typeof setCurrentUserProfile !== "undefined") window.setCurrentUserProfile = setCurrentUserProfile; } catch(e) {}
 try { if (typeof getPixelWarningSvg !== "undefined") window.getPixelWarningSvg = getPixelWarningSvg; } catch(e) {}
