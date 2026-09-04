@@ -461,7 +461,61 @@ export function getMaxAnimals() {
     export let sleepStartTime = 0;
     export let sleepTransitionMs = 3000;
     export let lastPlayerActivityAt = Date.now();
-    export const LATEST_PATCH_NOTES = {
+    export const PATCH_NOTES_0_1_4 = {
+        title: 'Beta 0.1.4',
+        items: [
+            'Native Gamepad API Controller Support: Full support for standard Xbox, PlayStation, and generic USB/Bluetooth gamepads with automatic plug-and-play detection.',
+            'Analog Platformer Movement: Smooth, variable-speed platformer movement using the left analog stick with configurable deadzone filtering and non-linear response curves.',
+            '360° Analog Aim Vector: 360-degree crosshair targeting using the right analog stick with adjustable sensitivity, Y-axis inversion, and automated facing fallback.',
+            'Adaptive Trigger Controls: Mine and attack with RT / R2 (Right Trigger) and place blocks or interact with LT / L2 (Left Trigger). Alternate attack mapped to X / Square.',
+            'Console-Style Controller Jump & Crouch: Jump with A / Cross (or D-Pad Up / Left Stick tilt) and crouch / climb down with B / Circle (or D-Pad Down).',
+            'Bumper Hotbar Cycling: Instantly cycle active hotbar items with LB / L1 (previous) and RB / R1 (next).',
+            'Haptic Vibration Rumble: Dual-rumble and haptic pulse feedback on block breaking, taking damage, tool breakage, and UI interactions with toggleable settings.',
+            'Universal Gamepad UI Navigation: Full D-Pad and left-stick 2D spatial focus navigation across all menus, modals, and inventory screens (Main Menu, Settings, Worlds, Achievements, Profile, Pause, and Death screen).',
+            'Retro Gold UI Focus Glow: Animated Minecraft-gold focus outline (.gamepad-focused) with auto-scrolling into view and seamless mouse-controller coexistence.',
+            'Controller UI Action Buttons: Press A to click/activate buttons and toggle checkboxes, B to cancel/back out of any modal, and X on inventory slots to simulate right-click (split / take one).',
+            'Bumper Tab Cycling: Press LB / RB to quickly switch between tabs in Settings, Controls sub-tabs, and Achievements.',
+            'Controller Slider Stepping: Tilt Left / Right on volume, FOV, and sensitivity sliders to adjust values in real time.',
+            'Recipe Pinning to HUD: Click any recipe in the Crafting Table to pin it to your HUD with live material tracking and crafting station status while mining.',
+            'Live Connection Status & Ping Monitor: Real-time latency and network status badges in multiplayer.',
+            'Controls Settings Sub-Category: Merged controller rebinding and calibration into Controls sub-tabs with pixel-art controller preview and live button monitor.',
+            'Title Screen Background & Boot Fix: Resolved script load timing and duplicate identifier declarations, restoring animated background panorama and skin preview.'
+        ]
+    };
+
+    export const PATCH_NOTES_0_1_3 = {
+        title: 'Beta 0.1.3 (Major Architecture & UI Overhaul)',
+        items: [
+            'Modular Codebase Architecture: Disassembled the monolithic single-file index.html into organized ES modules: main.js (game simulation & loop), engine.js (world generation & physics), ui.js (DOM, menus, inventory & skin studio), and network.js (P2P multiplayer & cloud auth).',
+            'Dedicated CSS Pipeline: Migrated from runtime CDN Tailwind injection to a professional Tailwind CSS pipeline (css/input.css -> css/style.css), eliminating external CDN dependencies and dramatically improving load performance.',
+            'Player Profile & Identity System: Added a dedicated Player Profile badge on the Main Menu showing your custom skin avatar head, player name, account status, and accumulated achievement emeralds.',
+            'User Accounts & Authentication: Integrated Webcraft User Accounts with email/password registration, login, and cloud profile persistence.',
+            'Guest Mode Architecture: Full support for playing as a Guest with local storage saves, clear guest limitations dialogs, and seamless account upgrading without progress loss.',
+            'Emerald Currency System: Earn emeralds by unlocking achievements, with live balance tracking across singleplayer and multiplayer displayed on your profile card.',
+            'Profile Details Modal: View account creation date, playtime statistics, unlocked achievements summary, emerald count, and manage account credentials.',
+            'Aseprite-Style Pixel Skin Studio: Rebuilt the skin customizer into a professional pixel art studio with real-time 3D-mapped character preview, custom color swatches, palette history, undo/redo, canvas zoom, and cloud gallery uploading.',
+            'Chunked Multiplayer World Streaming: Implemented 32x32 chunked world compression and progressive streaming (MP_CHUNK_SIZE = 32), enabling large custom worlds to be uploaded and downloaded without payload caps.',
+            'Publish Singleplayer to Multiplayer: Added "Open to Multiplayer" modal in the pause menu allowing singleplayer worlds to be seamlessly converted into online multiplayer rooms with automated local backups and password protection.',
+            'Multiplayer Lobby & Server Browser: Redesigned multiplayer lobby with real-time server browser, survival and minigame filter tabs, secure SHA-256 password hashing, and room difficulty badges.',
+            'Multiplayer Chat System: In-game chat overlay (press T or /) with player nametags, system broadcasts, achievement unlock announcements, and auto-fading message history.',
+            'AFK Inactivity Protection: Automated 5-minute inactivity watchdog that gently disconnects idle players to preserve server performance and player security.',
+            'Authentic Backpack & Equipment Layout: Redesigned inventory with 4 vertical armor slots (Helmet, Chestplate, Leggings, Boots), live interactive Paperdoll preview stage, offhand slot, defense percentage readout, and separated storage/hotbar grids.',
+            'Crafting Table Search & Categories: Real-time recipe search with keyword filtering, clear button, and category filters (All, Tools, Armour, Materials, Blocks, Utility).',
+            'Full Armor Protection & Durability: Craftable armor sets across Iron, Gold, and Diamond tiers with unique defense ratings, damage mitigation formulas, durability bars, and breakage audio.',
+            'Background Wall Building Mode: Press B to toggle background placement mode, allowing players to build and mine depth background walls behind structures with atmospheric darkening.',
+            'Falling Sand Gravity Physics: Dynamic falling physics for unsupported sand blocks with natural chain-reaction cave collapses, impact damage, and head suffocation.',
+            'Snowball Throwing Combat: Gather snowballs from snow blocks and throw them with ballistic trajectories, particle trails, sound effects, and knockback damage synchronized across multiplayer.',
+            'Desert Scorpions & Poison Effect: Hostile Desert Scorpions spawning in arid biomes with multi-legged animations, stinger strikes, and a damage-over-time poison status effect.',
+            'Synthesized Procedural Web Audio Engine: Procedural audio synthesis for material-based footsteps (grass, stone, sand, wood, ladder, water, snow), block breaking/placing, tool/armor durability breakage, eating, damage, and projectile whooshes.',
+            'Dynamic Celestial Sky & Aurora Borealis: Multi-stage procedural sky with daylight, twilight, sunset, starry night cycles, radiant sun flares, lunar craters, and animated multi-layer Aurora Borealis in snowy biomes.',
+            'Fabulous Atmosphere & Visual Shaders: Added graphics quality presets (Base, Advanced, Fabulous) with biome color grading, desert heat shimmer, volumetric cloud drift, ambient particles (fireflies, cave dust, spores, snow), and cinematic vignette.',
+            'Delta-Time Physics Stabilization: Physics accumulator with delta-time snapping to eliminate micro-stutter and ensure deterministic 60Hz physics across 60Hz, 120Hz, and 144Hz displays.',
+            'Automated Cassette Tape Autosave: 60-second recurring background autosave with animated retro cassette tape slide-up notifications.',
+            'Keybinding Rebinding System: Customizable controls menu in Settings with interactive click-to-rebind buttons, escape cancellation, mouse wheel sensitivity tuning, and wrap-around toggles.'
+        ]
+    };
+
+    export const PATCH_NOTES_0_1_2 = {
         title: 'Beta 0.1.2',
         items: [
             'Full Armor System: Added 12 craftable armor pieces spanning Iron, Gold, and Diamond tiers (Helmets, Chestplates, Leggings, Boots) with unique defense ratings and crafting recipes.',
@@ -481,7 +535,36 @@ export function getMaxAnimals() {
             'Main Menu Skin Preview: Updated title screen preview to display the classic front view by default, transitioning to an animated walking side view upon clicking.'
         ]
     };
-    export const UPDATE_HISTORY_LOGS = [LATEST_PATCH_NOTES];
+
+    export const PATCH_NOTES_0_1_0 = {
+        title: 'Beta 0.1.0',
+        items: [
+            'Added a full Minecraft-style Achievements system with 14 survival, mining, crafting, exploration, and combat milestones.',
+            'Added dual-tab independent achievement progress tracking for Singleplayer and Multiplayer modes with unlock timestamps.',
+            'Added animated in-game "Achievement Get!" sliding notification banner with sound effect synthesis.',
+            'Added achievement restriction checks: starting with Starter Items or Keep Inventory disables achievements with in-menu guidance warnings.',
+            'Added dedicated Achievements buttons in both the Main Menu and in-game Pause Menu.',
+            'Added World Size selection (Small: 512x256, Big: 1024x320) for both Singleplayer and Multiplayer worlds with performance advisory.',
+            'Added natural vegetation generation across biomes: small wild grass tufts, tall wild grass, red poppies, and yellow dandelions.',
+            'Added seed harvesting mechanics from wild grass (20% drop chance) and plant placement on grass/dirt.',
+            'Added intelligent animal AI with temptation attraction when the player holds wheat seeds in hand.',
+            'Expanded mob spawning caps tailored to world sizes: up to 20 (small) / 40 (big) in Singleplayer and 15 (small) / 30 (big) in Multiplayer.',
+            'Enhanced tree generation with multiple natural varieties: Oak, Tall Oak, Fancy Oak, Pine, Tall Pine, and Bushes.',
+            'Fixed leaf decay algorithm with 4-block living wood connectivity validation, preserving neighboring trees when trees are harvested.',
+            'Removed tree generation from mountain peaks and rock cliffs for pure alpine ridge generation.',
+            'Added a fullscreen interactive World Map (press "M" or click the HUD minimap) with panning, zooming, player locator, and controls legend.',
+            'Redesigned the Crafting Table interface with a warm wooden workbench theme, brass bevels, and custom pixel-art emblem.',
+            'Added a real-time Recipe Search box in the Crafting Table with instant output & ingredient filtering and quick clear.',
+            'Optimized DOM recycling and DocumentFragment batching, eliminating UI stutters when opening inventories or crafting items.',
+            'Added Large Chest support with 54-slot storage grids and multiplayer synchronization.',
+            'Added safe spawn point elevation checks preventing fall or collision damage on initial world entry.',
+            'Improved random terrain generation with smoother biome blending, natural surface contours, and diverse elevation profiles.',
+            'Improved underground cave generation with richer interconnected caverns, spacious cave pockets, and deep subterranean chambers.'
+        ]
+    };
+
+    export const LATEST_PATCH_NOTES = PATCH_NOTES_0_1_4;
+    export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3, PATCH_NOTES_0_1_2, PATCH_NOTES_0_1_0];
 
     export let mapSeed = Math.floor(Math.random() * 1000000);
     export function seededRandom() {
@@ -5784,6 +5867,13 @@ export const SKIN_H = 32;
         menuParallaxX += (pointerX * 24 - menuParallaxX) * 0.08;
         menuParallaxY += (pointerY * 14 - menuParallaxY) * 0.08;
         menuCamX = (menuCamX + motion * 0.035) % (WORLD_WIDTH * TILE_SIZE);
+        if (!menuBgCanvas && typeof document !== 'undefined') menuBgCanvas = document.getElementById('menuBgCanvas');
+        if (menuBgCanvas && !menuCtx) menuCtx = menuBgCanvas.getContext('2d', { alpha: false });
+        if (!menuBgCanvas || !menuCtx) return;
+        if (!menuBgCanvas.width || !menuBgCanvas.height) {
+            menuBgCanvas.width = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 800;
+            menuBgCanvas.height = (typeof window !== 'undefined' && window.innerHeight) ? window.innerHeight : 600;
+        }
         const width = menuBgCanvas.width, height = menuBgCanvas.height;
 
         // 1. Dynamic Celestial Sky

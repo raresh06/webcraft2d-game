@@ -227,9 +227,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 }
 
-    export const GAME_VERSION = '0.1.3';
-    export const DISPLAY_VERSION = '0.1.3';
-    export const GAME_BUILD = 'webcraft2d-beta-0.1.3';
+    export const GAME_VERSION = '0.1.4';
+    export const DISPLAY_VERSION = '0.1.4';
+    export const GAME_BUILD = 'webcraft2d-beta-0.1.4';
 
     export function updateVersionLabels() {
         const versionLabel = document.getElementById('game-version-label');
@@ -3114,22 +3114,71 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const entriesRoot = document.getElementById('whats-new-entries');
         if (!entriesRoot) return;
 
-        const latestEntry = (Array.isArray(UPDATE_HISTORY_LOGS) && UPDATE_HISTORY_LOGS.length > 0)
-            ? UPDATE_HISTORY_LOGS[0]
-            : (typeof LATEST_PATCH_NOTES !== 'undefined' ? LATEST_PATCH_NOTES : null);
-        if (!latestEntry) return;
-
         entriesRoot.innerHTML = '';
-        const latestArticle = document.createElement('article');
-        latestArticle.className = 'news-entry is-newest';
-        latestArticle.innerHTML = `
-            <div class="news-entry-header">
-                <h3>${latestEntry.title}</h3>
-                <span class="news-badge">NEW</span>
-            </div>
-            ${renderPatchNoteList(latestEntry.items)}
-        `;
-        entriesRoot.appendChild(latestArticle);
+
+        if (!Array.isArray(UPDATE_HISTORY_LOGS) || UPDATE_HISTORY_LOGS.length === 0) {
+            if (typeof LATEST_PATCH_NOTES !== 'undefined' && LATEST_PATCH_NOTES) {
+                const latestArticle = document.createElement('article');
+                latestArticle.className = 'news-entry is-newest';
+                latestArticle.innerHTML = `
+                    <div class="news-entry-header">
+                        <h3>${LATEST_PATCH_NOTES.title}</h3>
+                        <span class="news-badge">NEW</span>
+                    </div>
+                    ${renderPatchNoteList(LATEST_PATCH_NOTES.items)}
+                `;
+                entriesRoot.appendChild(latestArticle);
+            }
+            return;
+        }
+
+        // 1. Beta 0.1.4 (Latest Release)
+        const v14 = UPDATE_HISTORY_LOGS[0];
+        if (v14) {
+            const art14 = document.createElement('article');
+            art14.className = 'news-entry is-newest';
+            art14.innerHTML = `
+                <div class="news-entry-header">
+                    <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${v14.title}</h3>
+                    <span class="news-badge">NEW</span>
+                </div>
+                ${renderPatchNoteList(v14.items)}
+            `;
+            entriesRoot.appendChild(art14);
+        }
+
+        // 2. Beta 0.1.3 (Full Major Architecture & Feature Overhaul)
+        const v13 = UPDATE_HISTORY_LOGS[1];
+        if (v13) {
+            const art13 = document.createElement('article');
+            art13.className = 'news-entry';
+            art13.style.borderColor = '#10b981';
+            art13.style.boxShadow = 'inset 0 0 0 1px #080a0c, 0 0 0 1px rgba(16, 185, 129, 0.45)';
+            art13.innerHTML = `
+                <div class="news-entry-header">
+                    <h3 class="text-emerald-400 font-bold text-2xl font-['VT323']">${v13.title}</h3>
+                    <span class="news-badge" style="background: #059669; color: #fff;">0.1.3</span>
+                </div>
+                ${renderPatchNoteList(v13.items)}
+            `;
+            entriesRoot.appendChild(art13);
+        }
+
+        // 3. Older Versions (0.1.2, 0.1.0) inside clean collapsible summaries
+        for (let i = 2; i < UPDATE_HISTORY_LOGS.length; i++) {
+            const entry = UPDATE_HISTORY_LOGS[i];
+            if (!entry) continue;
+            const details = document.createElement('details');
+            details.className = 'news-entry patch-history';
+            details.open = false;
+            details.innerHTML = `
+                <summary style="cursor: pointer; font-size: 22px; font-weight: bold; color: #94a3b8; font-family: 'VT323', monospace; padding: 4px 0;">
+                    ${entry.title} (Click to expand)
+                </summary>
+                ${renderPatchNoteList(entry.items)}
+            `;
+            entriesRoot.appendChild(details);
+        }
     }
 
     export function openWhatsNew() {
@@ -3572,7 +3621,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                 createdEl.innerText = `Member since: ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
             } else {
-                createdEl.innerText = isGuest ? 'Session Started: Today' : 'Member since: Beta v0.1.3';
+                createdEl.innerText = isGuest ? 'Session Started: Today' : 'Member since: Beta v0.1.4';
             }
         }
 
@@ -3999,6 +4048,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         worlds.sort((a,b) => b.lastPlayed - a.lastPlayed).forEach(w => {
             let row = document.createElement('div');
             row.className = 'world-row flex justify-between items-center cursor-pointer';
+            row.tabIndex = 0;
+            row.setAttribute('role', 'button');
             
             let difficulty = (w.difficulty || 'normal').toLowerCase();
             let diffName = difficulty.toUpperCase();
@@ -4007,6 +4058,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             let versionClass = isCompatible ? 'world-badge-version' : 'world-badge-version-invalid';
 
             let info = document.createElement('div'); info.className = 'world-info flex-1';
+            info.tabIndex = 0;
+            info.setAttribute('role', 'button');
             info.innerHTML = `
                 <div class="flex items-center gap-2">
                     <p class="world-name text-2xl font-bold font-['VT323'] leading-none truncate">${w.name}</p>

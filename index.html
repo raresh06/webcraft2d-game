@@ -183,7 +183,7 @@
         <!-- Top Left Corner Profile & Emerald Stack -->
         <div id="main-menu-top-left-stack" class="main-menu-corner-stack">
             <!-- Player Profile Square Box (Head Avatar + Name) -->
-            <div id="main-menu-profile-box" class="main-menu-profile-badge" onclick="openProfileDetailsModal()" title="View Player Profile & Account">
+            <div id="main-menu-profile-box" class="main-menu-profile-badge" tabindex="0" role="button" onclick="openProfileDetailsModal()" title="View Player Profile & Account">
                 <div class="profile-avatar-frame">
                     <canvas id="profile-head-canvas" width="24" height="24" class="profile-head-art"></canvas>
                 </div>
@@ -206,7 +206,7 @@
             </div>
 
             <!-- Top Left Emerald Balance Badge (Enhanced Corner UI) -->
-            <div id="main-menu-emerald-box" class="main-menu-emerald-badge" onclick="openAchievements('sp')" title="Emeralds earned from Achievements (Click to view Achievements)">
+            <div id="main-menu-emerald-box" class="main-menu-emerald-badge" tabindex="0" role="button" onclick="openAchievements('sp')" title="Emeralds earned from Achievements (Click to view Achievements)">
                 <div class="emerald-gem-socket">
                     <svg class="emerald-pixel-art" viewBox="0 0 16 16" width="20" height="20">
                         <rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/>
@@ -283,23 +283,23 @@
             </div>
             
             <div id="main-menu-buttons" class="flex flex-col gap-2 w-[260px]">
-                <button class="mc-btn" onclick="openWorldsMenu()">Singleplayer</button>
+                <button id="btn-main-singleplayer" class="mc-btn" onclick="openWorldsMenu()">Singleplayer</button>
                 <button id="btn-main-multiplayer" class="mc-btn disabled-construction-btn" onclick="handleUnderConstruction('Multiplayer')" title="Multiplayer is currently Under Construction">Multiplayer</button>
-                <button class="mc-btn" onclick="openAchievements('sp')">Achievements</button>
-                <button class="mc-btn" onclick="openTutorialModal()">How to Play</button>
-                <button class="mc-btn" onclick="openSettings()">Settings</button>
+                <button id="btn-main-achievements" class="mc-btn" onclick="openAchievements('sp')">Achievements</button>
+                <button id="btn-main-tutorial" class="mc-btn" onclick="openTutorialModal()">How to Play</button>
+                <button id="btn-main-settings" class="mc-btn" onclick="openSettings()">Settings</button>
             </div>
 
-            <p class="menu-version" id="game-version-label">Webcraft2D Beta v0.1.3</p>
+            <p class="menu-version" id="game-version-label">Webcraft2D Beta v0.1.4</p>
             <p class="menu-credit">A game totally not coded with AI by Gheorghes Rares</p>
         </div>
 
         <div class="menu-skin-preview">
             <span class="menu-skin-preview-label">Skin Preview</span>
             <canvas id="player-preview-canvas" width="110" height="220"></canvas>
-            <button class="menu-skin-preview-button" onclick="openSkins()" title="Change Skin" aria-label="Change Skin">Change</button>
+            <button id="btn-main-skin" class="menu-skin-preview-button" onclick="openSkins()" title="Change Skin" aria-label="Change Skin">Change</button>
         </div>
-        <button class="menu-news-button flex items-center justify-center !p-0" type="button" onclick="openWhatsNew()" title="Read What's New" aria-label="Read What's New">
+        <button id="btn-main-news" class="menu-news-button flex items-center justify-center !p-0" type="button" onclick="openWhatsNew()" title="Read What's New" aria-label="Read What's New">
             <svg viewBox="0 0 16 16" width="22" height="22" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                 <rect x="2" y="2" width="12" height="12" fill="#94a3b8"/>
                 <rect x="3" y="3" width="10" height="10" fill="#f8fafc"/>
@@ -471,7 +471,7 @@
                 <div class="auth-header text-center mb-2.5">
                     <div class="credits-banner !py-1 !px-3 mb-1.5 inline-flex justify-center">
                         <span class="credits-game-title">Webcraft2D</span>
-                        <span class="credits-version-badge">Beta v0.1.3</span>
+                        <span class="credits-version-badge">Beta v0.1.4</span>
                     </div>
                     <h2 id="recommend-main-title" class="auth-main-title text-3xl">Account Created!</h2>
                     <p id="recommend-subtitle" class="auth-subtitle text-lg">Welcome to the world of Webcraft, <strong id="recommend-player-name" class="text-amber-300 font-bold">Player</strong>!</p>
@@ -533,7 +533,7 @@
                 <div class="auth-header text-center mb-2.5">
                     <div class="credits-banner !py-1 !px-3 mb-1.5 inline-flex justify-center">
                         <span class="credits-game-title">Webcraft2D</span>
-                        <span class="credits-version-badge">Beta v0.1.3</span>
+                        <span class="credits-version-badge">Beta v0.1.4</span>
                     </div>
                     <h2 class="auth-main-title text-3xl">Welcome Back, <span id="welcome-back-player-name" class="text-amber-300">Player</span>!</h2>
                     <p class="auth-subtitle text-lg">Here is what you have missed since you were gone in Webcraft 2D Beta:</p>
@@ -704,7 +704,7 @@
                 <div class="p-2.5 bg-[#171d24] border-2 border-[#2b353f]">
                     <div class="text-[#8e9fae] text-base uppercase font-['VT323'] leading-none">Engine Version</div>
                     <div class="flex items-center gap-1.5 mt-1">
-                        <span class="text-purple-400 font-bold text-2xl font-['VT323'] leading-none">Beta v0.1.3</span>
+                        <span class="text-purple-400 font-bold text-2xl font-['VT323'] leading-none">Beta v0.1.4</span>
                     </div>
                 </div>
             </div>
@@ -737,7 +737,7 @@
         <section class="whats-new-panel">
             <button id="whats-new-startup-toggle" class="whats-new-startup-toggle" type="button" onclick="toggleWhatsNewStartup()" aria-pressed="true">Startup: ON</button>
             <button class="whats-new-close" type="button" onclick="closeWhatsNew()" aria-label="Close What's New">X</button>
-            <h2 id="whats-new-title" class="screen-title text-4xl font-bold mb-3 font-['VT323'] pr-10">What's New in Webcraft2D Beta 0.1.3</h2>
+            <h2 id="whats-new-title" class="screen-title text-4xl font-bold mb-3 font-['VT323'] pr-10">What's New in Webcraft2D Beta 0.1.4</h2>
             <div class="whats-new-content" tabindex="0">
                 <div id="whats-new-entries"></div>
             </div>
@@ -1436,7 +1436,7 @@
             <div class="credits-content custom-scrollbar" tabindex="0">
                 <div class="credits-banner">
                     <span class="credits-game-title">Webcraft2D</span>
-                    <span class="credits-version-badge">Beta v0.1.3</span>
+                    <span class="credits-version-badge">Beta v0.1.4</span>
                 </div>
 
                 <div class="credits-cards-container">

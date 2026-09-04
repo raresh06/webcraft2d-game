@@ -456,6 +456,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             window.escHandlersStack = escHandlersStack;
             window.pushEscHandler = pushEscHandler;
             window.popEscHandler = popEscHandler;
+            window.closeForegroundScreen = closeForegroundScreen;
         }
     } catch(e) {}
 
@@ -1965,6 +1966,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         if (!curPlayer) return;
 
         if (STATE === 'PLAYING') {
+            if (typeof Gamepad.isGamepadUINavigating === 'function' && Gamepad.isGamepadUINavigating()) return;
+
             const pCX = curPlayer.x + (curPlayer.width || 24) / 2;
             const pCY = curPlayer.y + (curPlayer.height || 48) / 2;
             const aim = typeof Gamepad.getGamepadAimVector === 'function' ? Gamepad.getGamepadAimVector() : { x: 0, y: 0, active: false };
@@ -2099,6 +2102,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             // Poll Gamepad inputs & process controller actions
             if (typeof Gamepad !== 'undefined' && typeof Gamepad.updateGamepad === 'function') {
                 Gamepad.updateGamepad();
+                if (typeof Gamepad.handleGamepadUINavigation === 'function') {
+                    Gamepad.handleGamepadUINavigation();
+                }
                 handleGamepadInGameInputs();
             }
 

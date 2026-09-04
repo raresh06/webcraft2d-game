@@ -2347,6 +2347,50 @@ body, html {
   pointer-events: none;
   cursor: not-allowed;
 }
+.gamepad-focused, :focus-visible.gamepad-focused {
+  outline: 3px solid #facc15 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.9), inset 0 0 6px rgba(250, 204, 21, 0.4) !important;
+  transform: scale(1.03) !important;
+  transition: transform 0.08s ease, box-shadow 0.08s ease !important;
+  z-index: 70 !important;
+  animation: gamepadPulse 1.8s infinite ease-in-out;
+}
+@keyframes gamepadPulse {
+  0%, 100% {
+    outline-color: #facc15;
+    box-shadow: 0 0 14px rgba(250, 204, 21, 0.9), inset 0 0 6px rgba(250, 204, 21, 0.4);
+  }
+  50% {
+    outline-color: #fef08a;
+    box-shadow: 0 0 20px rgba(254, 240, 138, 1), inset 0 0 10px rgba(250, 204, 21, 0.6);
+  }
+}
+.mc-btn.gamepad-focused {
+  background-color: #e0e1e4 !important;
+  border-top-color: #ffffff !important;
+  border-left-color: #ffffff !important;
+  border-bottom-color: #58585a !important;
+  border-right-color: #58585a !important;
+}
+input[type="range"].gamepad-focused {
+  outline: 2px solid #facc15 !important;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.8) !important;
+}
+.slot.gamepad-focused, .recipe-book-item.gamepad-focused {
+  outline: 3px solid #facc15 !important;
+  border-color: #facc15 !important;
+  transform: scale(1.08) !important;
+  z-index: 60 !important;
+}
+.settings-tab-btn.gamepad-focused, .ach-tab-btn.gamepad-focused, .auth-tab-btn.gamepad-focused {
+  border-bottom-color: #facc15 !important;
+  color: #fef08a !important;
+}
+.world-row.gamepad-focused {
+  background-color: rgba(250, 204, 21, 0.15) !important;
+  border-color: #facc15 !important;
+}
 @keyframes pixelRainbowShift {
   0% {
     color: #ff5555;
