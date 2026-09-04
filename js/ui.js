@@ -23,7 +23,8 @@ import {
 
 import {
     registerWebcraftAccount, loginWebcraftAccount, loginAsGuest, logoutWebcraftAccount,
-    saveUserProfileToCloud, getUserProfileFromCloud
+    saveUserProfileToCloud, getUserProfileFromCloud,
+    addFriendByTag, removeFriendByTag, fetchFriendsProfiles, validateWebcraftTag, normalizeWebcraftTag
 } from './network.js';
 import * as Gamepad from './gamepad.js';
 
@@ -31,6 +32,7 @@ export const SKIN_W = 16;
 export const SKIN_H = 32;
 export let playerSkinData = new Array(SKIN_W * SKIN_H).fill(null);
 export let currentUserProfile = null;
+export function setCurrentUserProfile(profile) { currentUserProfile = profile; }
 export let currentAuthTab = 'signup';
 export let authModalHasBeenDismissedThisSession = false;
 // =============================================================================
@@ -983,8 +985,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         document.getElementById('skin-gallery-panel').classList.toggle('hidden', !showingGallery);
         updateEmeraldsUI();
         if (showingGallery) {
-            drawShopkeeperAvatar();
-            loadSkinGallery();
+            const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+            const guestBanner = document.getElementById('skin-shop-guest-banner');
+            const accountContent = document.getElementById('skin-shop-account-content');
+            if (isGuest) {
+                if (guestBanner) guestBanner.classList.remove('hidden');
+                if (accountContent) accountContent.classList.add('hidden');
+            } else {
+                if (guestBanner) guestBanner.classList.add('hidden');
+                if (accountContent) accountContent.classList.remove('hidden');
+                drawShopkeeperAvatar();
+                loadSkinGallery();
+            }
         }
     }
 
@@ -1120,6 +1132,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             priceTag.innerHTML = `${getPixelEmeraldSvg(14)} ${price} Emeralds`;
         }
 
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
         const inMySkins = isSkinInMySkins(skin);
         const isOwned = isSkinOwned(skin);
 
@@ -1127,7 +1140,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const actions = document.createElement('div');
         actions.className = 'skin-card-actions';
 
-        if (inMySkins) {
+        if (isGuest) {
+            const guestBtn = document.createElement('button');
+            guestBtn.className = 'skin-action buy';
+            guestBtn.type = 'button';
+            guestBtn.title = 'Guests cannot get skins from Skins Shop. Create an account or log in!';
+            guestBtn.setAttribute('aria-label', 'Create account or log in to get skin');
+            guestBtn.innerHTML = `🔒 Login`;
+            guestBtn.onclick = (e) => {
+                e.stopPropagation();
+                buyAndEquipGallerySkin(skin);
+            };
+            actions.appendChild(guestBtn);
+        } else if (inMySkins) {
             const equipBtn = document.createElement('button');
             equipBtn.className = 'skin-action equip';
             equipBtn.type = 'button';
@@ -1205,6 +1230,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function buyAndEquipGallerySkin(skin) {
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        if (isGuest) {
+            showToast("Guests cannot get skins from the Skins Shop! Please create an account or log in.");
+            const banner = document.getElementById('skin-shop-guest-banner');
+            if (banner) {
+                banner.classList.remove('hidden');
+                banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            if (typeof playSound === 'function') playSound('hurt', { vol: 0.6 });
+            return;
+        }
+
         if (isSkinInMySkins(skin)) {
             openSkinOwnedModal(skin);
             showToast('You already own this skin!');
@@ -1295,6 +1332,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export let currentUploadPrice = 0;
 
     export function openSkinUploadModal(skinId, name, skinData) {
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        if (isGuest) {
+            showToast("Guests cannot publish skins to the Skins Shop! Please create an account or log in.");
+            if (typeof playSound === 'function') playSound('hurt', { vol: 0.6 });
+            return;
+        }
+
         const candidateData = (skinData && Array.isArray(skinData)) ? skinData.slice() : getSkinSaveData();
         const paintedPixels = candidateData.filter(c => c && c !== 'transparent').length;
         if (paintedPixels < 16) {
@@ -2406,6 +2450,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export let deepBlocksMinedCount = 0;
     export let craftedItemsCount = 0;
 
+    export function getPixelWarningSvg(size = 18, extraClass = '') {
+        return `<svg viewBox="0 0 16 16" width="${size}" height="${size}" class="pixel-art-warning-icon inline-block flex-shrink-0 align-middle ${extraClass}" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="7" y="1" width="2" height="2" fill="#fbbf24"/><rect x="6" y="3" width="4" height="2" fill="#fbbf24"/><rect x="5" y="5" width="6" height="2" fill="#fbbf24"/><rect x="4" y="7" width="8" height="2" fill="#fbbf24"/><rect x="3" y="9" width="10" height="2" fill="#fbbf24"/><rect x="2" y="11" width="12" height="2" fill="#fbbf24"/><rect x="1" y="13" width="14" height="2" fill="#f59e0b"/><rect x="7" y="5" width="2" height="4" fill="#000000"/><rect x="7" y="10" width="2" height="2" fill="#000000"/></svg>`;
+    }
+
     export function updateNewWorldAchievementWarning() {
         const starter = document.getElementById('new-world-starter-items')?.checked;
         const keep = document.getElementById('new-world-keep-inventory')?.checked;
@@ -2414,7 +2462,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (starter || keep) {
                 warning.classList.remove('hidden');
                 let reason = starter && keep ? 'Starter Items and Keep Inventory' : (starter ? 'Starter Items' : 'Keep Inventory');
-                warning.innerHTML = `⚠️ <span class="font-bold text-yellow-400">Achievements Disabled:</span> Starting with ${reason} disables achievements in this world. Disable both options to earn achievements.`;
+                warning.innerHTML = `${getPixelWarningSvg(18, 'mt-0.5')} <div><span class="font-bold text-yellow-400">Achievements Disabled:</span> Starting with ${reason} disables achievements in this world. Disable both options to earn achievements.</div>`;
             } else {
                 warning.classList.add('hidden');
             }
@@ -2429,7 +2477,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (starter || keep) {
                 warning.classList.remove('hidden');
                 let reason = starter && keep ? 'Starter Items and Keep Inventory' : (starter ? 'Starter Items' : 'Keep Inventory');
-                warning.innerHTML = `⚠️ <span class="font-bold text-yellow-400">Achievements Disabled:</span> Starting with ${reason} disables achievements in this multiplayer room. Disable both options to earn achievements.`;
+                warning.innerHTML = `${getPixelWarningSvg(18, 'mt-0.5')} <div><span class="font-bold text-yellow-400">Achievements Disabled:</span> Starting with ${reason} disables achievements in this multiplayer room. Disable both options to earn achievements.</div>`;
             } else {
                 warning.classList.add('hidden');
             }
@@ -3286,7 +3334,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (nameEl) nameEl.innerText = activeName;
         if (tagEl) {
             if (isOnlineAccount) {
-                tagEl.innerText = 'Online';
+                tagEl.innerText = currentUserProfile?.tag || 'Online';
                 tagEl.className = 'profile-tag-pill';
             } else {
                 tagEl.innerText = 'Guest';
@@ -3442,10 +3490,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         });
 
         const grpUser = document.getElementById('auth-group-username');
+        const grpTag = document.getElementById('auth-group-tag');
         const grpEmail = document.getElementById('auth-group-email');
         const grpPass = document.getElementById('auth-group-password');
         const submitBtn = document.getElementById('auth-submit-btn');
         const userInput = document.getElementById('auth-input-username');
+        const tagInput = document.getElementById('auth-input-tag');
         const emailInput = document.getElementById('auth-input-email');
         const passInput = document.getElementById('auth-input-password');
         const feedback = document.getElementById('auth-feedback-msg');
@@ -3454,25 +3504,31 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         if (tab === 'signup') {
             if (grpUser) grpUser.classList.remove('hidden');
+            if (grpTag) grpTag.classList.remove('hidden');
             if (grpEmail) grpEmail.classList.remove('hidden');
             if (grpPass) grpPass.classList.remove('hidden');
             if (userInput) { userInput.required = true; userInput.placeholder = "e.g. SteveCraft"; }
-            if (emailInput) { emailInput.required = true; emailInput.placeholder = "e.g. player@webcraft.io"; }
+            if (tagInput) { tagInput.required = true; tagInput.placeholder = "e.g. raresh06"; }
+            if (emailInput) { emailInput.required = false; emailInput.placeholder = "player@example.com (optional)"; }
             if (passInput) passInput.required = true;
             if (submitBtn) submitBtn.innerText = "Create Profile & Sign Up";
         } else if (tab === 'login') {
             if (grpUser) grpUser.classList.add('hidden');
+            if (grpTag) grpTag.classList.add('hidden');
             if (grpEmail) grpEmail.classList.remove('hidden');
             if (grpPass) grpPass.classList.remove('hidden');
             if (userInput) userInput.required = false;
-            if (emailInput) { emailInput.required = true; emailInput.placeholder = "Account email or username"; }
+            if (tagInput) tagInput.required = false;
+            if (emailInput) { emailInput.required = true; emailInput.placeholder = "Email, @tag, or Character Name"; }
             if (passInput) passInput.required = true;
             if (submitBtn) submitBtn.innerText = "Log In to Webcraft";
         } else if (tab === 'guest') {
             if (grpUser) grpUser.classList.remove('hidden');
+            if (grpTag) grpTag.classList.add('hidden');
             if (grpEmail) grpEmail.classList.add('hidden');
             if (grpPass) grpPass.classList.add('hidden');
             if (userInput) { userInput.required = false; userInput.placeholder = "Guest Name (optional)"; }
+            if (tagInput) tagInput.required = false;
             if (emailInput) emailInput.required = false;
             if (passInput) passInput.required = false;
             if (submitBtn) submitBtn.innerText = "Continue as Guest";
@@ -3503,35 +3559,39 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         };
 
         const userInput = document.getElementById('auth-input-username');
+        const tagInput = document.getElementById('auth-input-tag');
         const emailInput = document.getElementById('auth-input-email');
         const passInput = document.getElementById('auth-input-password');
 
         const username = userInput ? userInput.value.trim() : '';
+        const rawTag = tagInput ? tagInput.value.trim() : '';
         const email = emailInput ? emailInput.value.trim() : '';
         const pass = passInput ? passInput.value : '';
 
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.innerText = 'Connecting to Firebase...';
+            submitBtn.innerText = 'Connecting to Webcraft...';
         }
 
         try {
             if (currentAuthTab === 'signup') {
                 if (!username || username.length < 2) throw new Error("Character name must be at least 2 characters.");
-                if (!email || !email.includes('@')) throw new Error("Please enter a valid email address.");
+                if (!rawTag) throw new Error("Webcraft @tag is obligatory for creating an account.");
+                const tagVal = validateWebcraftTag(rawTag);
+                if (!tagVal.valid) throw new Error(tagVal.error);
                 if (!pass || pass.length < 6) throw new Error("Password must be at least 6 characters.");
 
-                const profile = await registerWebcraftAccount(username, email, pass, playerSkinData);
+                const profile = await registerWebcraftAccount(username, rawTag, email, pass, playerSkinData);
                 currentUserProfile = profile;
-                showToast(`Profile created! Welcome, ${username}!`);
+                showToast(`Profile created! Welcome, ${username} (${profile.tag})!`);
                 openAuthProfileModal('recommend');
             } else if (currentAuthTab === 'login') {
-                if (!email) throw new Error("Please enter your account email or username.");
+                if (!email) throw new Error("Please enter your account email, @tag, or character name.");
                 if (!pass) throw new Error("Please enter your password.");
 
                 const profile = await loginWebcraftAccount(email, pass);
                 currentUserProfile = profile;
-                showToast(`Signed in as ${profile.username}!`);
+                showToast(`Signed in as ${profile.username} (${profile.tag || 'Account'})!`);
                 openAuthProfileModal('welcome-back');
             } else if (currentAuthTab === 'guest') {
                 const profile = await loginAsGuest(username);
@@ -3543,12 +3603,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             console.error("Auth submit error:", err);
             let userMsg = err.message || "Authentication failed. Please check your details.";
             if (userMsg.includes('auth/email-already-in-use')) userMsg = "This email is already registered. Please Log In instead.";
-            if (userMsg.includes('auth/invalid-credential') || userMsg.includes('auth/wrong-password') || userMsg.includes('auth/user-not-found')) userMsg = "Incorrect email or password. Please try again.";
+            if (userMsg.includes('auth/invalid-credential') || userMsg.includes('auth/wrong-password') || userMsg.includes('auth/user-not-found')) userMsg = "Incorrect credentials or password. Please try again.";
             if (userMsg.includes('auth/weak-password')) userMsg = "Password should be at least 6 characters.";
             if (userMsg.includes('auth/invalid-email')) userMsg = "The email address is formatted incorrectly.";
-            if (userMsg.includes('auth/operation-not-allowed') || userMsg.includes('operation-not-allowed')) {
-                userMsg = "Email/Password provider is not enabled in Firebase Console. (Enable it under Authentication > Sign-in method in Firebase Console).";
-            }
             showMsg(userMsg, true);
         } finally {
             if (submitBtn) {
@@ -3585,6 +3642,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         // If action === 'play', closeAuthProfileModal() unhides #main-menu-buttons and loads menu normally!
     }
 
+    // =========================================================================
+    // PROFILE DETAILS & FRIENDS SYSTEM CONTROLLER
+    // =========================================================================
+
     export function openProfileDetailsModal() {
         loadUserProfile();
         const modal = document.getElementById('profile-details-modal');
@@ -3593,6 +3654,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const isGuest = !currentUserProfile || currentUserProfile.isGuest;
         const nameEl = document.getElementById('profile-details-name');
         const badgeEl = document.getElementById('profile-details-type-badge');
+        const tagEl = document.getElementById('profile-details-tag');
+        const tagRow = document.getElementById('profile-details-tag-row');
         const emailEl = document.getElementById('profile-details-email');
         const createdEl = document.getElementById('profile-details-created');
         const emeraldsEl = document.getElementById('profile-details-emeralds');
@@ -3602,6 +3665,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const wifiPingEl = document.getElementById('profile-wifi-ping');
         const wifiIcon = document.getElementById('profile-wifi-icon');
         const authActionLabel = document.getElementById('profile-auth-action-label');
+        const myTagDisplay = document.getElementById('friends-my-tag-display');
+        const friendsTabCount = document.getElementById('profile-tab-friends-count');
+        const friendsTabWarning = document.getElementById('profile-tab-friends-warning');
 
         const activeName = currentUserProfile?.username || localStorage.getItem('swc_player_name') || 'Player';
         if (nameEl) nameEl.innerText = activeName;
@@ -3611,8 +3677,28 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             badgeEl.className = isGuest ? 'profile-tag-pill guest text-xs' : 'profile-tag-pill text-xs';
         }
 
-        if (emailEl) {
-            emailEl.innerText = isGuest ? 'Guest Session (No Cloud Sync)' : (currentUserProfile?.email || 'Cloud Webcraft Account');
+        // Webcraft Tag display
+        if (isGuest) {
+            if (tagRow) tagRow.classList.add('hidden');
+            if (emailEl) emailEl.innerText = 'Guest Session (No Cloud Sync)';
+        } else {
+            if (tagRow) tagRow.classList.remove('hidden');
+            const displayTag = currentUserProfile?.tag || (currentUserProfile?.normalizedTag ? `@${currentUserProfile.normalizedTag}` : '@player');
+            if (tagEl) tagEl.innerText = displayTag;
+            if (myTagDisplay) myTagDisplay.innerText = displayTag;
+            if (emailEl) emailEl.innerText = currentUserProfile?.email || 'Cloud Webcraft Account';
+        }
+
+        const friendCount = (currentUserProfile && Array.isArray(currentUserProfile.friends)) ? currentUserProfile.friends.length : 0;
+        if (isGuest) {
+            if (friendsTabCount) friendsTabCount.classList.add('hidden');
+            if (friendsTabWarning) friendsTabWarning.classList.remove('hidden');
+        } else {
+            if (friendsTabCount) {
+                friendsTabCount.classList.remove('hidden');
+                friendsTabCount.innerText = friendCount.toString();
+            }
+            if (friendsTabWarning) friendsTabWarning.classList.add('hidden');
         }
 
         if (createdEl) {
@@ -3656,6 +3742,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             authActionLabel.innerText = isGuest ? 'Log In / Sign Up' : 'Sign Out';
         }
 
+        // Default to Overview tab
+        switchProfileTab('overview');
+
         updateMainMenuProfileBadge();
         updateConnectionTelemetryUI();
 
@@ -3672,6 +3761,237 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }, 2000);
 
         modal.classList.remove('hidden');
+    }
+
+    export function switchProfileTab(tab = 'overview') {
+        const tabOverviewBtn = document.getElementById('profile-tab-overview');
+        const tabFriendsBtn = document.getElementById('profile-tab-friends');
+        const viewOverview = document.getElementById('profile-view-overview');
+        const viewFriends = document.getElementById('profile-view-friends');
+
+        if (tab === 'overview') {
+            if (tabOverviewBtn) tabOverviewBtn.classList.add('active');
+            if (tabFriendsBtn) tabFriendsBtn.classList.remove('active');
+            if (viewOverview) viewOverview.classList.remove('hidden');
+            if (viewFriends) viewFriends.classList.add('hidden');
+        } else if (tab === 'friends') {
+            if (tabOverviewBtn) tabOverviewBtn.classList.remove('active');
+            if (tabFriendsBtn) tabFriendsBtn.classList.add('active');
+            if (viewOverview) viewOverview.classList.add('hidden');
+            if (viewFriends) viewFriends.classList.remove('hidden');
+
+            const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+            const guestBanner = document.getElementById('friends-guest-banner');
+            const accountContent = document.getElementById('friends-account-content');
+            const friendsTabCount = document.getElementById('profile-tab-friends-count');
+            const friendsTabWarning = document.getElementById('profile-tab-friends-warning');
+
+            if (isGuest) {
+                if (friendsTabCount) friendsTabCount.classList.add('hidden');
+                if (friendsTabWarning) friendsTabWarning.classList.remove('hidden');
+                if (guestBanner) guestBanner.classList.remove('hidden');
+                if (accountContent) accountContent.classList.add('hidden');
+            } else {
+                if (friendsTabCount) friendsTabCount.classList.remove('hidden');
+                if (friendsTabWarning) friendsTabWarning.classList.add('hidden');
+                if (guestBanner) guestBanner.classList.add('hidden');
+                if (accountContent) accountContent.classList.remove('hidden');
+                const myTagEl = document.getElementById('friends-my-tag-display');
+                if (myTagEl) myTagEl.innerText = currentUserProfile.tag || `@${currentUserProfile.username}`;
+                renderFriendsList();
+            }
+        }
+    }
+
+    function safeEscapeHtml(str) {
+        if (!str) return '';
+        return str.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    export async function renderFriendsList() {
+        const container = document.getElementById('friends-list-container');
+        const counter = document.getElementById('friends-list-counter');
+        const tabBadge = document.getElementById('profile-tab-friends-count');
+        if (!container) return;
+
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        if (isGuest) {
+            container.innerHTML = `<div class="text-amber-300 font-['VT323'] text-lg py-3 text-center">Guest mode active. Log in to access friends.</div>`;
+            return;
+        }
+
+        const friends = Array.isArray(currentUserProfile.friends) ? currentUserProfile.friends : [];
+        if (counter) counter.innerText = `${friends.length} Friend${friends.length === 1 ? '' : 's'}`;
+        if (tabBadge) tabBadge.innerText = friends.length.toString();
+
+        if (friends.length === 0) {
+            container.innerHTML = `
+                <div class="text-gray-400 font-['VT323'] text-xl py-6 text-center">
+                    No friends added yet.<br>
+                    <span class="text-amber-400 text-base">Enter a player's Webcraft @tag above to add them!</span>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `<div class="text-gray-400 font-['VT323'] text-lg py-4 text-center">Checking friends presence...</div>`;
+
+        try {
+            const friendProfiles = await fetchFriendsProfiles(friends);
+            container.innerHTML = '';
+
+            friendProfiles.forEach(friend => {
+                const row = document.createElement('div');
+                row.className = 'friend-card-row';
+
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'flex items-center gap-2.5 min-w-0 flex-1';
+
+                const canvas = document.createElement('canvas');
+                canvas.className = 'friend-head-preview';
+                canvas.width = 36;
+                canvas.height = 36;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+
+                if (friend.skinData && typeof drawPlayerHead === 'function') {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = 16;
+                    tempCanvas.height = 32;
+                    const tCtx = tempCanvas.getContext('2d');
+                    const imgData = tCtx.createImageData(16, 32);
+                    for (let i = 0; i < 16 * 32; i++) {
+                        const c = friend.skinData[i] || '#00000000';
+                        const rgb = hexToRgb(c);
+                        imgData.data[i * 4] = rgb.r;
+                        imgData.data[i * 4 + 1] = rgb.g;
+                        imgData.data[i * 4 + 2] = rgb.b;
+                        imgData.data[i * 4 + 3] = c === '#00000000' || !c ? 0 : 255;
+                    }
+                    tCtx.putImageData(imgData, 0, 0);
+                    drawPlayerHead(ctx, tempCanvas, 0, 0, 36);
+                } else {
+                    // Default Steve head
+                    ctx.fillStyle = '#b4845c';
+                    ctx.fillRect(0, 0, 36, 36);
+                    ctx.fillStyle = '#4a3320';
+                    ctx.fillRect(0, 0, 36, 10);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(6, 14, 8, 5);
+                    ctx.fillRect(22, 14, 8, 5);
+                    ctx.fillStyle = '#2b3b82';
+                    ctx.fillRect(10, 14, 4, 5);
+                    ctx.fillRect(22, 14, 4, 5);
+                    ctx.fillStyle = '#6d4632';
+                    ctx.fillRect(12, 24, 12, 4);
+                }
+
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'min-w-0 text-left';
+                infoDiv.innerHTML = `
+                    <div class="text-white font-['VT323'] text-xl font-bold leading-tight truncate">${safeEscapeHtml(friend.username)}</div>
+                    <div class="flex items-center gap-1.5 leading-none mt-0.5">
+                        <span class="text-amber-400 font-['VT323'] text-base font-bold">${safeEscapeHtml(friend.tag)}</span>
+                        <span class="text-gray-500 font-['VT323'] text-sm">•</span>
+                        <span class="flex items-center text-xs font-['VT323'] ${friend.isOnline ? 'text-emerald-400' : 'text-gray-400'}">
+                            <span class="friend-status-dot ${friend.isOnline ? 'online' : 'offline'}"></span>
+                            ${friend.isOnline ? 'Online' : 'Offline'}
+                        </span>
+                    </div>
+                `;
+
+                leftDiv.appendChild(canvas);
+                leftDiv.appendChild(infoDiv);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'mc-btn friend-btn-remove';
+                removeBtn.title = `Remove ${friend.tag} from friends`;
+                removeBtn.innerText = 'Remove';
+                removeBtn.onclick = () => handleRemoveFriend(friend.tag);
+
+                row.appendChild(leftDiv);
+                row.appendChild(removeBtn);
+                container.appendChild(row);
+            });
+        } catch(err) {
+            console.warn("Friends list render error", err);
+            container.innerHTML = `<div class="text-red-400 font-['VT323'] text-lg py-4 text-center">Could not load friends list. Check connection.</div>`;
+        }
+    }
+
+    export async function handleAddFriendSubmit(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        const input = document.getElementById('friend-input-tag');
+        const feedback = document.getElementById('friend-feedback-msg');
+        const submitBtn = document.getElementById('add-friend-btn');
+        if (!input) return;
+
+        const rawTag = input.value.trim();
+        if (!rawTag) return;
+
+        const showMsg = (msg, isErr = true) => {
+            if (!feedback) return;
+            feedback.innerText = msg;
+            feedback.className = `auth-feedback !p-1.5 !text-base mt-2 ${isErr ? 'error' : 'success'}`;
+            feedback.classList.remove('hidden');
+        };
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = '...';
+        }
+        if (feedback) feedback.classList.add('hidden');
+
+        try {
+            const added = await addFriendByTag(rawTag);
+            input.value = '';
+            showMsg(`Added ${added.tag} to your friends!`, false);
+            showToast(`Added ${added.tag} as a friend!`);
+            await renderFriendsList();
+        } catch (err) {
+            console.error("Add friend error:", err);
+            showMsg(err.message || "Failed to add friend.", true);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Add';
+            }
+        }
+    }
+
+    export async function handleRemoveFriend(tag) {
+        if (!tag) return;
+        const confirmed = confirm(`Are you sure you want to remove ${tag} from your friends?`);
+        if (!confirmed) return;
+
+        try {
+            await removeFriendByTag(tag);
+            showToast(`Removed ${tag} from friends.`);
+            await renderFriendsList();
+        } catch (err) {
+            console.error("Remove friend error:", err);
+            showToast(`Could not remove friend.`);
+        }
+    }
+
+    export function copyPlayerTag() {
+        const tag = currentUserProfile?.tag || (currentUserProfile?.normalizedTag ? `@${currentUserProfile.normalizedTag}` : '');
+        if (!tag) return;
+        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(tag).then(() => {
+                showToast(`Copied ${tag} to clipboard!`);
+            }).catch(() => {
+                prompt("Your Webcraft Tag:", tag);
+            });
+        } else {
+            prompt("Your Webcraft Tag:", tag);
+        }
     }
 
     let profilePingTimer = null;
@@ -7930,3 +8250,11 @@ try { if (typeof toggleGamepadVibrationUI !== "undefined") window.toggleGamepadV
 try { if (typeof testGamepadRumbleUI !== "undefined") window.testGamepadRumbleUI = testGamepadRumbleUI; } catch(e) {}
 try { if (typeof startGamepadUiMonitor !== "undefined") window.startGamepadUiMonitor = startGamepadUiMonitor; } catch(e) {}
 try { if (typeof stopGamepadUiMonitor !== "undefined") window.stopGamepadUiMonitor = stopGamepadUiMonitor; } catch(e) {}
+try { if (typeof switchProfileTab !== "undefined") window.switchProfileTab = switchProfileTab; } catch(e) {}
+try { if (typeof renderFriendsList !== "undefined") window.renderFriendsList = renderFriendsList; } catch(e) {}
+try { if (typeof handleAddFriendSubmit !== "undefined") window.handleAddFriendSubmit = handleAddFriendSubmit; } catch(e) {}
+try { if (typeof handleRemoveFriend !== "undefined") window.handleRemoveFriend = handleRemoveFriend; } catch(e) {}
+try { if (typeof copyPlayerTag !== "undefined") window.copyPlayerTag = copyPlayerTag; } catch(e) {}
+try { if (typeof setCurrentUserProfile !== "undefined") window.setCurrentUserProfile = setCurrentUserProfile; } catch(e) {}
+try { if (typeof getPixelWarningSvg !== "undefined") window.getPixelWarningSvg = getPixelWarningSvg; } catch(e) {}
+

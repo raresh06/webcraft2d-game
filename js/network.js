@@ -127,199 +127,358 @@ export async function getUserProfileFromCloud(uid) {
     }
 }
 
-export async function registerWebcraftAccount(username, email, password, initialSkinData = null) {
-    await initFirebaseSdk();
-    let user = null;
-    let uid = null;
-    let isCloudAccount = false;
-    const cleanEmail = (email || '').trim().toLowerCase();
-    const cleanUsername = (username || '').trim();
+// =============================================================================
+// WEBCRAFT TAG & SECURITY HELPERS
+// =============================================================================
 
-    if (window.fbAuth && window.fbAuthModule?.createUserWithEmailAndPassword) {
+export function normalizeWebcraftTag(tag) {
+    if (!tag) return '';
+    return tag.toString().trim().replace(/^@+/, '').toLowerCase();
+}
+
+export function formatWebcraftTag(tag) {
+    const norm = normalizeWebcraftTag(tag);
+    return norm ? `@${norm}` : '';
+}
+
+export function validateWebcraftTag(tag) {
+    const norm = normalizeWebcraftTag(tag);
+    if (!norm || norm.length < 3 || norm.length > 20) {
+        return { valid: false, error: "Webcraft tag must be between 3 and 20 characters." };
+    }
+    if (!/^[a-z0-9_]+$/.test(norm)) {
+        return { valid: false, error: "Webcraft tag can only contain letters, numbers, and underscores." };
+    }
+    return { valid: true, normalizedTag: norm, formattedTag: `@${norm}` };
+}
+
+export async function hashPassword(password) {
+    const clean = (password || '').toString();
+    if (typeof crypto !== 'undefined' && crypto.subtle && typeof TextEncoder !== 'undefined') {
         try {
-            const { createUserWithEmailAndPassword, updateProfile } = window.fbAuthModule;
-            const userCredential = await createUserWithEmailAndPassword(window.fbAuth, cleanEmail, password);
-            user = userCredential.user;
-            window.user = user;
-            uid = user.uid;
-            isCloudAccount = true;
-
-            try {
-                if (updateProfile) {
-                    await updateProfile(user, { displayName: cleanUsername });
-                }
-            } catch (e) {
-                console.warn("Could not update auth displayName", e);
-            }
-        } catch (authErr) {
-            console.warn("Firebase createUserWithEmailAndPassword error:", authErr);
-            // Fallback to local account on operation-not-allowed, network failure, or any Firebase issue
-            console.info("Registering as verified local Webcraft account.", authErr);
-            uid = `local_user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            const encoder = new TextEncoder();
+            const data = encoder.encode(clean + "_webcraft_salt_v1");
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) {
+            console.warn("crypto.subtle hash failed, using fallback", e);
         }
-    } else {
-        uid = `local_user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+    // Cross-environment deterministic hash fallback
+    let hash = 0;
+    const salted = clean + "_webcraft_salt_v1";
+    for (let i = 0; i < salted.length; i++) {
+        const char = salted.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0;
+    }
+    return "h_" + Math.abs(hash).toString(16);
+}
+
+// =============================================================================
+// UNIVERSAL CLOUD ACCOUNT PERSISTENCE & AUTHENTICATION
+// =============================================================================
+
+export async function registerWebcraftAccount(username, tagOrEmail, emailOrPassword, passwordOrSkinData = null, initialSkinData = null) {
+    await initFirebaseSdk();
+    if (window.initFirebase) {
+        try { await window.initFirebase(); } catch(e) {}
     }
 
-    const profileData = {
+    // Flexible argument normalization (supports (username, tag, email, password, skin) or legacy (username, email, password, skin))
+    let cleanUsername = (username || '').trim();
+    let rawTag = '';
+    let cleanEmail = '';
+    let password = '';
+    let skinData = initialSkinData;
+
+    if (passwordOrSkinData && typeof passwordOrSkinData === 'string') {
+        // Called with: (username, tag, email, password, skinData)
+        rawTag = tagOrEmail;
+        cleanEmail = (emailOrPassword || '').trim().toLowerCase();
+        password = passwordOrSkinData;
+        skinData = initialSkinData;
+    } else {
+        // Called with: (username, tag, password, skinData) or (username, email, password, skinData)
+        if (typeof tagOrEmail === 'string' && tagOrEmail.includes('@') && tagOrEmail.includes('.')) {
+            // Legacy signature: tagOrEmail is email
+            cleanEmail = tagOrEmail.trim().toLowerCase();
+            rawTag = cleanUsername; // derive tag from username
+            password = emailOrPassword;
+            skinData = passwordOrSkinData;
+        } else {
+            rawTag = tagOrEmail;
+            cleanEmail = '';
+            password = emailOrPassword;
+            skinData = passwordOrSkinData;
+        }
+    }
+
+    if (!cleanUsername || cleanUsername.length < 2) {
+        throw new Error("Character name must be at least 2 characters.");
+    }
+
+    // Obligatory Webcraft Tag Validation
+    const tagValidation = validateWebcraftTag(rawTag);
+    if (!tagValidation.valid) {
+        throw new Error(tagValidation.error);
+    }
+    const normalizedTag = tagValidation.normalizedTag;
+    const formattedTag = tagValidation.formattedTag;
+
+    if (!password || password.length < 6) {
+        throw new Error("Password must be at least 6 characters.");
+    }
+
+    // Check Tag uniqueness in Cloud Firestore
+    if (window.fbDb && window.fbModules) {
+        try {
+            const { doc, getDoc } = window.fbModules;
+            const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', normalizedTag);
+            const tagSnap = await getDoc(tagDocRef);
+            if (tagSnap && tagSnap.exists()) {
+                throw new Error(`The Webcraft tag ${formattedTag} is already taken. Please choose another.`);
+            }
+        } catch (err) {
+            if (err.message && err.message.includes('already taken')) throw err;
+            console.warn("Firestore uniqueness check warning:", err);
+        }
+
+        // Check Email uniqueness if email provided
+        if (cleanEmail) {
+            try {
+                const { doc, getDoc } = window.fbModules;
+                const emailDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_account_emails', encodeURIComponent(cleanEmail));
+                const emailSnap = await getDoc(emailDocRef);
+                if (emailSnap && emailSnap.exists()) {
+                    throw new Error(`An account with email ${cleanEmail} already exists. Please log in instead.`);
+                }
+            } catch (err) {
+                if (err.message && err.message.includes('already exists')) throw err;
+            }
+        }
+    }
+
+    const uid = `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const passwordHash = await hashPassword(password);
+
+    const accountRecord = {
         uid: uid,
         username: cleanUsername,
+        tag: formattedTag,
+        normalizedTag: normalizedTag,
         email: cleanEmail,
+        passwordHash: passwordHash,
         isGuest: false,
-        isLocalFallback: !isCloudAccount,
         activeSkinId: 'custom',
-        skinData: initialSkinData || null,
+        skinData: skinData || null,
         emeralds: parseInt(localStorage.getItem('swc_emeralds_count') || '0', 10),
+        friends: [],
         createdAt: Date.now(),
         lastLogin: Date.now()
     };
 
-    // Store in local accounts repository indexed by BOTH email and username for reliable login
-    try {
-        const accountsRaw = localStorage.getItem('swc_registered_accounts_v1') || '{}';
-        const accounts = JSON.parse(accountsRaw);
-        const accRecord = {
-            uid: uid,
-            username: cleanUsername,
-            email: cleanEmail,
-            password: password,
-            createdAt: Date.now()
-        };
-        accounts[cleanEmail] = accRecord;
-        accounts[cleanUsername.toLowerCase()] = accRecord;
-        localStorage.setItem('swc_registered_accounts_v1', JSON.stringify(accounts));
-    } catch (e) {
-        console.warn("Could not cache local credentials", e);
-    }
-
-    // Persist to Cloud Firestore if cloud authenticated
-    if (isCloudAccount && user) {
+    // Save to Cloud Firestore (Universal cross-instance accounts database)
+    if (window.fbDb && window.fbModules) {
         try {
-            await saveUserProfileToCloud(profileData);
+            const { doc, setDoc } = window.fbModules;
+            const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', normalizedTag);
+            await setDoc(tagDocRef, accountRecord);
+
+            if (cleanEmail) {
+                const emailDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_account_emails', encodeURIComponent(cleanEmail));
+                await setDoc(emailDocRef, { tag: normalizedTag, uid: uid });
+            }
+
+            await saveUserProfileToCloud(accountRecord);
         } catch (e) {
-            console.warn("Could not sync to cloud Firestore", e);
+            console.warn("Cloud Firestore account persistence warning:", e);
         }
     }
 
-    // Save locally
-    localStorage.setItem('webcraft_user_profile', JSON.stringify(profileData));
+    // Cache locally in localStorage for fast offline/instant login
+    try {
+        const accountsRaw = localStorage.getItem('swc_registered_accounts_v1') || '{}';
+        const accounts = JSON.parse(accountsRaw);
+        accounts[normalizedTag] = accountRecord;
+        accounts[formattedTag] = accountRecord;
+        if (cleanEmail) accounts[cleanEmail] = accountRecord;
+        accounts[cleanUsername.toLowerCase()] = accountRecord;
+        localStorage.setItem('swc_registered_accounts_v1', JSON.stringify(accounts));
+    } catch (e) {
+        console.warn("Local storage cache warning", e);
+    }
+
+    localStorage.setItem('webcraft_user_profile', JSON.stringify(accountRecord));
     localStorage.setItem('swc_player_name', cleanUsername);
     playerName = cleanUsername;
 
-    return profileData;
+    return accountRecord;
 }
 
-export async function loginWebcraftAccount(emailOrUsername, password) {
+export async function loginWebcraftAccount(emailOrTagOrUsername, password) {
     await initFirebaseSdk();
-    let user = null;
-    let cloudProfile = null;
-    let isLocalLogin = false;
-    const cleanInput = (emailOrUsername || '').trim().toLowerCase();
-    const cleanPass = (password || '').trim();
+    if (window.initFirebase) {
+        try { await window.initFirebase(); } catch(e) {}
+    }
 
-    // Check if account is cached in local registered accounts first or if we have offline credentials
-    let localAccount = null;
+    const rawInput = (emailOrTagOrUsername || '').trim();
+    const cleanInput = rawInput.toLowerCase();
+    const candidateTag = normalizeWebcraftTag(rawInput);
+    let accountRecord = null;
+
+    // 1. Check Cloud Firestore by Webcraft Tag
+    if (candidateTag && window.fbDb && window.fbModules) {
+        try {
+            const { doc, getDoc } = window.fbModules;
+            const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', candidateTag);
+            const snap = await getDoc(tagDocRef);
+            if (snap && snap.exists()) {
+                accountRecord = snap.data();
+            }
+        } catch (e) {
+            console.warn("Firestore tag lookup error:", e);
+        }
+    }
+
+    // 2. Check Cloud Firestore by Email index
+    if (!accountRecord && cleanInput.includes('@') && cleanInput.includes('.') && window.fbDb && window.fbModules) {
+        try {
+            const { doc, getDoc } = window.fbModules;
+            const emailDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_account_emails', encodeURIComponent(cleanInput));
+            const emailSnap = await getDoc(emailDocRef);
+            if (emailSnap && emailSnap.exists()) {
+                const emailData = emailSnap.data();
+                if (emailData && emailData.tag) {
+                    const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', emailData.tag);
+                    const snap = await getDoc(tagDocRef);
+                    if (snap && snap.exists()) {
+                        accountRecord = snap.data();
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("Firestore email index lookup error:", e);
+        }
+    }
+
+    // 3. Check Cloud Firestore by scanning/querying webcraft_accounts
+    if (!accountRecord && window.fbDb && window.fbModules) {
+        try {
+            const { collection, getDocs } = window.fbModules;
+            const accountsCol = collection(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts');
+            const snap = await getDocs(accountsCol);
+            snap.forEach(d => {
+                const data = d.data();
+                if (!accountRecord && data) {
+                    if ((data.normalizedTag && data.normalizedTag === candidateTag) ||
+                        (data.email && data.email.toLowerCase() === cleanInput) ||
+                        (data.username && data.username.toLowerCase() === cleanInput)) {
+                        accountRecord = data;
+                    }
+                }
+            });
+        } catch (e) {
+            console.warn("Firestore accounts collection scan error:", e);
+        }
+    }
+
+    // 4. Fallback to local cache in localStorage (for offline play)
+    if (!accountRecord) {
+        try {
+            const accountsRaw = localStorage.getItem('swc_registered_accounts_v1') || '{}';
+            const accounts = JSON.parse(accountsRaw);
+            accountRecord = accounts[candidateTag] || accounts[cleanInput] || Object.values(accounts).find(a =>
+                (a.normalizedTag && a.normalizedTag === candidateTag) ||
+                (a.email && a.email.toLowerCase() === cleanInput) ||
+                (a.username && a.username.toLowerCase() === cleanInput)
+            );
+        } catch (e) {}
+    }
+
+    // 5. Check existing local profile if still not found
+    if (!accountRecord) {
+        const storedRaw = localStorage.getItem('webcraft_user_profile');
+        if (storedRaw) {
+            try {
+                const p = JSON.parse(storedRaw);
+                if (p && !p.isGuest && (
+                    (p.normalizedTag && p.normalizedTag === candidateTag) ||
+                    (p.email && p.email.toLowerCase() === cleanInput) ||
+                    (p.username && p.username.toLowerCase() === cleanInput)
+                )) {
+                    accountRecord = p;
+                }
+            } catch(e) {}
+        }
+    }
+
+    if (!accountRecord) {
+        throw new Error(`No account found for '${rawInput}'. Please check your spelling or sign up.`);
+    }
+
+    // Verify Password Hash
+    const passHash = await hashPassword(password);
+    const isPasswordValid = (accountRecord.passwordHash && accountRecord.passwordHash === passHash) ||
+                            (accountRecord.password && accountRecord.password === password) ||
+                            (accountRecord.password && accountRecord.password === password.trim());
+
+    if (!isPasswordValid) {
+        throw new Error("auth/wrong-password");
+    }
+
+    // Upgrade legacy plaintext password to secure hash
+    if (!accountRecord.passwordHash) {
+        accountRecord.passwordHash = passHash;
+        delete accountRecord.password;
+    }
+
+    // Ensure @tag is properly formatted
+    if (!accountRecord.tag && accountRecord.normalizedTag) {
+        accountRecord.tag = `@${accountRecord.normalizedTag}`;
+    } else if (!accountRecord.tag && accountRecord.username) {
+        accountRecord.normalizedTag = normalizeWebcraftTag(accountRecord.username);
+        accountRecord.tag = `@${accountRecord.normalizedTag}`;
+    }
+
+    if (!Array.isArray(accountRecord.friends)) {
+        accountRecord.friends = [];
+    }
+
+    accountRecord.lastLogin = Date.now();
+
+    // Update in Firestore
+    if (window.fbDb && window.fbModules && accountRecord.normalizedTag) {
+        try {
+            const { doc, updateDoc } = window.fbModules;
+            const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', accountRecord.normalizedTag);
+            await updateDoc(tagDocRef, {
+                lastLogin: accountRecord.lastLogin,
+                passwordHash: accountRecord.passwordHash,
+                friends: accountRecord.friends
+            });
+        } catch(e) {
+            console.warn("Could not update lastLogin in Firestore", e);
+        }
+    }
+
+    // Save session
+    localStorage.setItem('webcraft_user_profile', JSON.stringify(accountRecord));
+    localStorage.setItem('swc_player_name', accountRecord.username);
+    playerName = accountRecord.username;
+
+    // Cache in local accounts
     try {
         const accountsRaw = localStorage.getItem('swc_registered_accounts_v1') || '{}';
         const accounts = JSON.parse(accountsRaw);
-        localAccount = accounts[cleanInput] || Object.values(accounts).find(a => 
-            (a.email && a.email.toLowerCase() === cleanInput) || 
-            (a.username && a.username.toLowerCase() === cleanInput)
-        );
-    } catch(e) {}
+        accounts[accountRecord.normalizedTag] = accountRecord;
+        accounts[accountRecord.tag] = accountRecord;
+        if (accountRecord.email) accounts[accountRecord.email] = accountRecord;
+        localStorage.setItem('swc_registered_accounts_v1', JSON.stringify(accounts));
+    } catch (e) {}
 
-    // If Firebase Auth is available and input looks like an email, attempt cloud sign-in
-    if (window.fbAuth && window.fbAuthModule?.signInWithEmailAndPassword && cleanInput.includes('@')) {
-        try {
-            const { signInWithEmailAndPassword } = window.fbAuthModule;
-            const userCredential = await signInWithEmailAndPassword(window.fbAuth, cleanInput, password);
-            user = userCredential.user;
-            window.user = user;
-
-            // Fetch cloud profile from Firestore
-            cloudProfile = await getUserProfileFromCloud(user.uid);
-            if (!cloudProfile) {
-                cloudProfile = {
-                    uid: user.uid,
-                    username: user.displayName || cleanInput.split('@')[0] || 'Player',
-                    email: cleanInput,
-                    isGuest: false,
-                    activeSkinId: 'steve',
-                    skinData: null,
-                    emeralds: parseInt(localStorage.getItem('swc_emeralds_count') || '0', 10),
-                    createdAt: Date.now(),
-                    lastLogin: Date.now()
-                };
-                await saveUserProfileToCloud(cloudProfile);
-            } else {
-                cloudProfile.lastLogin = Date.now();
-                await saveUserProfileToCloud(cloudProfile);
-            }
-        } catch (authErr) {
-            console.warn("Firebase signInWithEmailAndPassword error, checking local registered accounts:", authErr);
-            // On ANY Firebase error (user-not-found, invalid-credential, operation-not-allowed), fall back to local account check!
-            isLocalLogin = true;
-        }
-    } else {
-        isLocalLogin = true;
-    }
-
-    if (isLocalLogin || !user) {
-        if (localAccount) {
-            if (localAccount.password && localAccount.password !== password && localAccount.password !== cleanPass) {
-                throw new Error("auth/wrong-password");
-            }
-            const storedProfileRaw = localStorage.getItem('webcraft_user_profile');
-            if (storedProfileRaw) {
-                try {
-                    const parsed = JSON.parse(storedProfileRaw);
-                    if (parsed && (
-                        (parsed.email && parsed.email.toLowerCase() === localAccount.email.toLowerCase()) || 
-                        (parsed.username && parsed.username.toLowerCase() === localAccount.username.toLowerCase())
-                    )) {
-                        cloudProfile = parsed;
-                    }
-                } catch(e) {}
-            }
-            if (!cloudProfile) {
-                cloudProfile = {
-                    uid: localAccount.uid,
-                    username: localAccount.username,
-                    email: localAccount.email,
-                    isGuest: false,
-                    activeSkinId: 'custom',
-                    skinData: null,
-                    emeralds: parseInt(localStorage.getItem('swc_emeralds_count') || '0', 10),
-                    createdAt: localAccount.createdAt || Date.now(),
-                    lastLogin: Date.now()
-                };
-            }
-        } else {
-            // Check existing webcraft_user_profile in localStorage
-            const storedRaw = localStorage.getItem('webcraft_user_profile');
-            if (storedRaw) {
-                try {
-                    const p = JSON.parse(storedRaw);
-                    if (p && (
-                        (p.email && p.email.toLowerCase() === cleanInput) || 
-                        (p.username && p.username.toLowerCase() === cleanInput)
-                    )) {
-                        cloudProfile = p;
-                    }
-                } catch(e) {}
-            }
-            if (!cloudProfile) {
-                throw new Error("No account found for this email or username. Please check your spelling or sign up.");
-            }
-        }
-    }
-
-    cloudProfile.lastLogin = Date.now();
-    localStorage.setItem('webcraft_user_profile', JSON.stringify(cloudProfile));
-    localStorage.setItem('swc_player_name', cloudProfile.username);
-    playerName = cloudProfile.username;
-
-    return cloudProfile;
+    return accountRecord;
 }
 
 export async function loginAsGuest(guestName = null) {
@@ -339,14 +498,17 @@ export async function loginAsGuest(guestName = null) {
         console.warn("Guest anonymous auth fallback to local session", e);
     }
 
+    // Guests do NOT have a Webcraft tag (tag: null)
     const guestProfile = {
         uid: uid,
         username: finalName,
+        tag: null,
         email: null,
         isGuest: true,
         activeSkinId: 'steve',
         skinData: null,
         emeralds: parseInt(localStorage.getItem('swc_emeralds_count') || '0', 10),
+        friends: [],
         createdAt: Date.now(),
         lastLogin: Date.now()
     };
@@ -357,6 +519,167 @@ export async function loginAsGuest(guestName = null) {
 
     return guestProfile;
 }
+
+// =============================================================================
+// FRIENDS SYSTEM API
+// =============================================================================
+
+export async function addFriendByTag(targetTag) {
+    const rawProfile = localStorage.getItem('webcraft_user_profile');
+    const myProfile = rawProfile ? JSON.parse(rawProfile) : null;
+
+    // GUEST RESTRICTION: Guests cannot add accounts as friends!
+    if (!myProfile || myProfile.isGuest) {
+        throw new Error("Guests cannot add accounts as friends. Please log in or create a Webcraft account to add friends.");
+    }
+
+    const validation = validateWebcraftTag(targetTag);
+    if (!validation.valid) {
+        throw new Error(validation.error);
+    }
+    const friendNormTag = validation.normalizedTag;
+    const myNormTag = normalizeWebcraftTag(myProfile.tag || myProfile.normalizedTag || myProfile.username);
+
+    if (friendNormTag === myNormTag) {
+        throw new Error("You cannot add yourself as a friend!");
+    }
+
+    if (Array.isArray(myProfile.friends) && myProfile.friends.includes(friendNormTag)) {
+        throw new Error(`@${friendNormTag} is already in your friends list!`);
+    }
+
+    await initFirebaseSdk();
+    if (!window.fbDb || !window.fbModules) {
+        throw new Error("Firebase connection unavailable. Please check your internet connection.");
+    }
+
+    const { doc, getDoc, updateDoc } = window.fbModules;
+    const friendDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', friendNormTag);
+    const friendSnap = await getDoc(friendDocRef);
+
+    if (!friendSnap || !friendSnap.exists()) {
+        throw new Error(`No Webcraft account found with tag @${friendNormTag}. Make sure they have registered an account.`);
+    }
+
+    const friendData = friendSnap.data();
+
+    // 1. Add friend to current user's friends list
+    if (!Array.isArray(myProfile.friends)) myProfile.friends = [];
+    myProfile.friends.push(friendNormTag);
+
+    // Save updated profile locally
+    localStorage.setItem('webcraft_user_profile', JSON.stringify(myProfile));
+
+    // Update in Firestore for current user
+    try {
+        const myDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', myNormTag);
+        await updateDoc(myDocRef, { friends: myProfile.friends });
+    } catch (e) {
+        console.warn("Failed updating user friends in Firestore", e);
+    }
+
+    // 2. Mutual connection: Add current user to friend's friends list in Firestore
+    try {
+        let friendFriends = Array.isArray(friendData.friends) ? [...friendData.friends] : [];
+        if (!friendFriends.includes(myNormTag)) {
+            friendFriends.push(myNormTag);
+            await updateDoc(friendDocRef, { friends: friendFriends });
+        }
+    } catch (e) {
+        console.warn("Failed updating friend mutual list in Firestore", e);
+    }
+
+    return {
+        tag: friendData.tag || `@${friendNormTag}`,
+        normalizedTag: friendNormTag,
+        username: friendData.username || friendNormTag,
+        skinData: friendData.skinData || null,
+        lastLogin: friendData.lastLogin || 0
+    };
+}
+
+export async function removeFriendByTag(targetTag) {
+    const rawProfile = localStorage.getItem('webcraft_user_profile');
+    const myProfile = rawProfile ? JSON.parse(rawProfile) : null;
+    if (!myProfile || myProfile.isGuest) return false;
+
+    const friendNormTag = normalizeWebcraftTag(targetTag);
+    const myNormTag = normalizeWebcraftTag(myProfile.tag || myProfile.normalizedTag || myProfile.username);
+
+    if (Array.isArray(myProfile.friends)) {
+        myProfile.friends = myProfile.friends.filter(t => t !== friendNormTag);
+        localStorage.setItem('webcraft_user_profile', JSON.stringify(myProfile));
+    }
+
+    await initFirebaseSdk();
+    if (window.fbDb && window.fbModules) {
+        const { doc, updateDoc, getDoc } = window.fbModules;
+        try {
+            const myDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', myNormTag);
+            await updateDoc(myDocRef, { friends: myProfile.friends });
+        } catch(e) {}
+
+        // Remove from target friend's list as well
+        try {
+            const friendDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', friendNormTag);
+            const friendSnap = await getDoc(friendDocRef);
+            if (friendSnap && friendSnap.exists()) {
+                const fData = friendSnap.data();
+                if (Array.isArray(fData.friends)) {
+                    const updated = fData.friends.filter(t => t !== myNormTag);
+                    await updateDoc(friendDocRef, { friends: updated });
+                }
+            }
+        } catch(e) {}
+    }
+
+    return true;
+}
+
+export async function fetchFriendsProfiles(friendTags = []) {
+    if (!Array.isArray(friendTags) || friendTags.length === 0) return [];
+    await initFirebaseSdk();
+    const results = [];
+    const now = Date.now();
+
+    for (const tag of friendTags) {
+        const normTag = normalizeWebcraftTag(tag);
+        let profile = null;
+        if (window.fbDb && window.fbModules) {
+            try {
+                const { doc, getDoc } = window.fbModules;
+                const ref = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', normTag);
+                const snap = await getDoc(ref);
+                if (snap && snap.exists()) {
+                    profile = snap.data();
+                }
+            } catch(e) {}
+        }
+
+        if (profile) {
+            const isOnline = profile.lastLogin ? (now - profile.lastLogin < 5 * 60 * 1000) : false;
+            results.push({
+                tag: profile.tag || `@${normTag}`,
+                normalizedTag: normTag,
+                username: profile.username || normTag,
+                skinData: profile.skinData || null,
+                lastLogin: profile.lastLogin || 0,
+                isOnline: isOnline
+            });
+        } else {
+            results.push({
+                tag: `@${normTag}`,
+                normalizedTag: normTag,
+                username: normTag,
+                skinData: null,
+                lastLogin: 0,
+                isOnline: false
+            });
+        }
+    }
+    return results;
+}
+
 
 export async function logoutWebcraftAccount() {
     try {
@@ -370,31 +693,33 @@ export async function logoutWebcraftAccount() {
     window.user = null;
 }
 
-window.initFirebase = async () => {
-    if (!window.fbAuth) {
-        await initFirebaseSdk();
-    }
-    if (!window.fbAuth) return false;
-    try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token && fbSignInWithCustomToken) {
-            await fbSignInWithCustomToken(window.fbAuth, __initial_auth_token);
-        } else if (window.fbAuth.currentUser) {
-            window.user = window.fbAuth.currentUser;
-        } else if (fbSignInAnonymously) {
-            await fbSignInAnonymously(window.fbAuth);
+if (typeof window !== 'undefined') {
+    window.initFirebase = async () => {
+        if (!window.fbAuth) {
+            await initFirebaseSdk();
         }
-        window.user = window.fbAuth.currentUser;
-        return true;
-    } catch (e) {
-        console.error("Auth failed", e);
-        return false;
-    }
-};
+        if (!window.fbAuth) return false;
+        try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token && fbSignInWithCustomToken) {
+                await fbSignInWithCustomToken(window.fbAuth, __initial_auth_token);
+            } else if (window.fbAuth.currentUser) {
+                window.user = window.fbAuth.currentUser;
+            } else if (fbSignInAnonymously) {
+                await fbSignInAnonymously(window.fbAuth);
+            }
+            window.user = window.fbAuth.currentUser;
+            return true;
+        } catch (e) {
+            console.error("Auth failed", e);
+            return false;
+        }
+    };
 
-// Auto-authenticate immediately
-initFirebaseSdk().then(() => {
-    window.initFirebase();
-});
+    // Auto-authenticate immediately
+    initFirebaseSdk().then(() => {
+        if (window.initFirebase) window.initFirebase();
+    });
+}
 
     export let mpUnsubscribers = [];
     export let lastMultiplayerConnection = null;
@@ -1872,3 +2197,11 @@ try { if (typeof loginAsGuest !== "undefined") window.loginAsGuest = loginAsGues
 try { if (typeof logoutWebcraftAccount !== "undefined") window.logoutWebcraftAccount = logoutWebcraftAccount; } catch(e) {}
 try { if (typeof saveUserProfileToCloud !== "undefined") window.saveUserProfileToCloud = saveUserProfileToCloud; } catch(e) {}
 try { if (typeof getUserProfileFromCloud !== "undefined") window.getUserProfileFromCloud = getUserProfileFromCloud; } catch(e) {}
+try { if (typeof normalizeWebcraftTag !== "undefined") window.normalizeWebcraftTag = normalizeWebcraftTag; } catch(e) {}
+try { if (typeof formatWebcraftTag !== "undefined") window.formatWebcraftTag = formatWebcraftTag; } catch(e) {}
+try { if (typeof validateWebcraftTag !== "undefined") window.validateWebcraftTag = validateWebcraftTag; } catch(e) {}
+try { if (typeof hashPassword !== "undefined") window.hashPassword = hashPassword; } catch(e) {}
+try { if (typeof addFriendByTag !== "undefined") window.addFriendByTag = addFriendByTag; } catch(e) {}
+try { if (typeof removeFriendByTag !== "undefined") window.removeFriendByTag = removeFriendByTag; } catch(e) {}
+try { if (typeof fetchFriendsProfiles !== "undefined") window.fetchFriendsProfiles = fetchFriendsProfiles; } catch(e) {}
+
