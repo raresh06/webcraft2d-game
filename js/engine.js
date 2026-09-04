@@ -2722,6 +2722,9 @@ export const SKIN_H = 32;
         if (typeof window !== 'undefined' && typeof window.isActionActive === 'function' && window.isActionActive !== isActionActive) {
             return window.isActionActive(action);
         }
+        if (typeof window !== 'undefined' && window.GamepadManager && typeof window.GamepadManager.isGamepadActionActive === 'function') {
+            if (window.GamepadManager.isGamepadActionActive(action)) return true;
+        }
         const activeKeys = (typeof window !== 'undefined' && window.keys) ? window.keys : keys;
         if (!activeKeys) return false;
         if (action === 'left') return !!(activeKeys['KeyA'] || activeKeys['ArrowLeft'] || activeKeys['a'] || activeKeys['A'] || activeKeys['arrowleft']);
@@ -2777,8 +2780,16 @@ export const SKIN_H = 32;
 
             const hungerRate = getDayHungerDrainMultiplier();
             let moveDir = 0;
-            if (isActionActive('left')) { moveDir = -1; this.facingRight = false; }
-            else if (isActionActive('right')) { moveDir = 1; this.facingRight = true; }
+            const gpMoveAxis = (typeof window !== 'undefined' && window.GamepadManager && typeof window.GamepadManager.getGamepadMoveAxis === 'function') ? window.GamepadManager.getGamepadMoveAxis() : 0;
+            if (Math.abs(gpMoveAxis) > 0.01) {
+                moveDir = Math.max(-1.0, Math.min(1.0, gpMoveAxis));
+                if (moveDir < -0.05) this.facingRight = false;
+                else if (moveDir > 0.05) this.facingRight = true;
+            } else if (isActionActive('left')) { 
+                moveDir = -1; this.facingRight = false; 
+            } else if (isActionActive('right')) { 
+                moveDir = 1; this.facingRight = true; 
+            }
 
             if (moveDir !== 0) {
                 let targetVx = moveDir * MOVE_SPEED;
@@ -2787,7 +2798,7 @@ export const SKIN_H = 32;
                 } else {
                     this.vx += (targetVx - this.vx) * 0.28;
                 }
-                this.exhaustion += 0.005 * hungerRate;
+                this.exhaustion += 0.005 * hungerRate * Math.abs(moveDir);
             } else {
                 if (this.isGrounded) {
                     this.vx *= 0.55;
@@ -3077,6 +3088,9 @@ export const SKIN_H = 32;
             this.lastDamageEvent = { id: `${Date.now()}-${Math.random()}`, amount: finalAmt };
             updateHealthUI();
             playSound('hurt');
+            if (typeof window !== 'undefined' && window.GamepadManager && typeof window.GamepadManager.triggerGamepadVibration === 'function') {
+                window.GamepadManager.triggerGamepadVibration(160, 0.6, 0.85);
+            }
             
             floatingTexts.push(new FloatingText(this.x + this.width/2, this.y - 10, "-" + finalAmt, "#ff3333"));
 
@@ -7087,6 +7101,19 @@ export const SKIN_H = 32;
                         crackPixels.forEach(([pixelX, pixelY], index) => {
                             if (ratio >= (index + 1) / crackPixels.length) ctx.fillRect(drawX + pixelX * pixelSize, drawY + pixelY * pixelSize, pixelSize, pixelSize);
                         });
+                    }
+
+                    // Controller Aim Reticle Overlay
+                    if (typeof window !== 'undefined' && window.GamepadManager && window.GamepadManager.isUsingGamepad) {
+                        let reticleX = Math.round(mouse.worldX - camX);
+                        let reticleY = Math.round(mouse.worldY - camY);
+                        ctx.save();
+                        ctx.fillStyle = curBgMode ? '#f59e0b' : '#38bdf8';
+                        ctx.fillRect(reticleX - 4, reticleY - 1, 9, 2);
+                        ctx.fillRect(reticleX - 1, reticleY - 4, 2, 9);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(reticleX, reticleY, 1, 1);
+                        ctx.restore();
                     }
                 }
             }

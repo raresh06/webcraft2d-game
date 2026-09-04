@@ -1801,6 +1801,75 @@
         }
         #inventory-menu.crafting-table-mode .crafting-search-input:focus { border-color: var(--mc-accent-color); box-shadow: inset 0 0 0 1px var(--mc-accent-color); }
         #crafting-list > div { border-radius: 0 !important; border-color: #46515a !important; background-color: rgba(32,37,43,0.9) !important; }
+        .crafting-row-pinned {
+            border-color: #f59e0b !important;
+            box-shadow: inset 0 0 0 1px #d97706, 0 0 8px rgba(245, 158, 11, 0.25) !important;
+            background-color: rgba(45, 34, 18, 0.9) !important;
+        }
+        .pin-recipe-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            background: #2b3542;
+            border: 2px solid;
+            border-top-color: #5d6e80;
+            border-left-color: #5d6e80;
+            border-right-color: #0b0e12;
+            border-bottom-color: #0b0e12;
+            color: #94a3b8;
+            cursor: pointer;
+            box-shadow: inset 1px 1px 0 #3a4756;
+            transition: all 0.15s ease;
+        }
+        .pin-recipe-btn:hover {
+            background: #374556;
+            color: #fef08a;
+            border-top-color: #7d93a8;
+            border-left-color: #7d93a8;
+        }
+        .pin-recipe-btn.pinned {
+            background: #855b14 !important;
+            border-top-color: #fbbf24 !important;
+            border-left-color: #fbbf24 !important;
+            border-right-color: #451a03 !important;
+            border-bottom-color: #451a03 !important;
+            color: #fef08a !important;
+            box-shadow: inset 1px 1px 0 #d97706, 0 0 8px rgba(245, 158, 11, 0.4) !important;
+        }
+        .hud-pinned-panel {
+            width: min(210px, calc(100vw - 32px));
+            background-color: #20252b;
+            background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 5px);
+            border: 3px solid;
+            border-top-color: #798692;
+            border-left-color: #798692;
+            border-right-color: #0c1014;
+            border-bottom-color: #0c1014;
+            box-shadow: inset 0 0 0 1px #2a3036, 4px 4px 0 rgba(0,0,0,0.5);
+            padding: 6px 8px;
+            color: #f2f6f8;
+            font-family: 'VT323', monospace;
+            transition: transform 0.15s ease, border-color 0.2s ease;
+        }
+        .hud-pinned-panel:hover {
+            border-top-color: #9ab0c2;
+            border-left-color: #9ab0c2;
+            box-shadow: inset 0 0 0 1px #3a4756, 5px 5px 0 rgba(0,0,0,0.6);
+        }
+        .hud-pinned-title {
+            text-shadow: 1px 1px 0 #000;
+        }
+        .hud-pinned-unpin-btn {
+            background: transparent;
+            border: none;
+            transition: color 0.15s ease, transform 0.1s ease;
+        }
+        .hud-pinned-unpin-btn:hover {
+            transform: scale(1.15);
+        }
         #multiplayer-modal > div, #create-room-modal > div, #join-room-modal > div, #new-world-modal > div, #publish-multiplayer-modal > section { background-color: #20252b !important; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 5px); border-color: #69737b !important; border-top-color: #aebac2 !important; border-left-color: #aebac2 !important; border-right-color: #080a0c !important; border-bottom-color: #080a0c !important; border-radius: 0 !important; box-shadow: inset 0 0 0 2px #2a3036, 7px 7px 0 rgba(0,0,0,0.45) !important; }
         #multiplayer-modal h2, #create-room-modal h2, #join-room-modal h2, #new-world-modal h2, #publish-multiplayer-modal h2 { color: var(--mc-accent-color) !important; text-shadow: 3px 3px 0 #080a0c; }
         #multiplayer-modal label, #create-room-modal label, #join-room-modal label, #new-world-modal label, #publish-multiplayer-modal label { color: #d9e1e7 !important; }
@@ -2699,6 +2768,102 @@
         .settings-row .mc-btn {
             min-width: 120px; width: auto; height: 38px; padding: 0 16px !important; font-size: 22px !important; margin: 0 !important;
             display: inline-flex; align-items: center; justify-content: center; line-height: 1; white-space: nowrap;
+        }
+
+        /* Controls Subnav Tabs & Gamepad Controller Styling */
+        .controls-subtab-btn {
+            background: #20252b;
+            border: 2px solid #46515a;
+            border-top-color: #69737b;
+            border-left-color: #69737b;
+            border-right-color: #080a0c;
+            border-bottom-color: #080a0c;
+            color: #9aa8b2;
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            padding: 4px 16px;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 #080a0c;
+            transition: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .controls-subtab-btn:hover {
+            background: #2b333a;
+            color: #f2f6f8;
+            border-top-color: #fff;
+            border-left-color: #fff;
+        }
+        .controls-subtab-btn.active {
+            background: #333a41;
+            color: var(--mc-accent-color);
+            border-color: var(--mc-accent-color);
+            border-top-color: var(--mc-accent-light);
+            border-left-color: var(--mc-accent-light);
+            border-right-color: #080a0c;
+            border-bottom-color: #080a0c;
+            box-shadow: inset 0 0 0 1px #080a0c;
+        }
+
+        .controller-status-card {
+            background: #171b20;
+            border: 2px solid #333a41;
+            border-top-color: #46515a;
+            border-left-color: #46515a;
+            border-right-color: #080a0c;
+            border-bottom-color: #080a0c;
+            padding: 10px 14px;
+            box-shadow: inset 0 0 0 1px #080a0c;
+        }
+        .controller-icon-box {
+            width: 44px;
+            height: 44px;
+            background: #080a0c;
+            border: 2px solid #333a41;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .controller-conn-badge {
+            font-family: 'VT323', monospace;
+            letter-spacing: 1px;
+            border-width: 2px;
+            text-shadow: 1px 1px 0 #000;
+        }
+        .controller-conn-badge.connected {
+            background: #14532d;
+            border-color: #4ade80;
+            color: #86efac;
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+        }
+        .controller-conn-badge.disconnected {
+            background: #1f2937;
+            border-color: #4b5563;
+            color: #9ca3af;
+        }
+        .gamepad-live-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            height: 24px;
+            padding: 0 6px;
+            font-family: 'VT323', monospace;
+            font-size: 16px;
+            background: #080a0c;
+            border: 1px solid #333a41;
+            color: #9ca3af;
+            user-select: none;
+            transition: none;
+        }
+        .gamepad-live-pill.active {
+            background: #16a34a;
+            border-color: #4ade80;
+            color: #ffffff;
+            box-shadow: 0 0 6px #22c55e;
+            font-weight: bold;
+            transform: scale(1.08);
         }
 
         /* UI Accent Color Popover Widget */

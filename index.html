@@ -999,6 +999,7 @@
                 <button class="settings-tab-btn" data-tab="graphics" onclick="switchSettingsTab('graphics')">Graphics</button>
                 <button class="settings-tab-btn" data-tab="audio" onclick="switchSettingsTab('audio')">Audio</button>
                 <button class="settings-tab-btn" data-tab="controls" onclick="switchSettingsTab('controls')">Controls</button>
+                <button class="settings-tab-btn" data-tab="controller" onclick="switchSettingsTab('controller')">Controller</button>
             </div>
 
             <!-- Tab 1: Gameplay -->
@@ -1151,65 +1152,207 @@
 
             <!-- Tab 4: Controls -->
             <div class="settings-tab-content custom-scrollbar" id="settings-tab-controls">
-                <div class="flex justify-between items-center mb-1">
-                    <div class="settings-section-title !m-0">Keybindings</div>
-                    <button class="mc-btn !w-auto !px-3 !py-0.5 !text-lg !m-0 bg-red-800 hover:bg-red-700 text-white" onclick="resetKeybindsToDefault()">Reset Defaults</button>
+                <!-- Controls Sub-navigation Bar -->
+                <div class="controls-subnav flex gap-2 mb-2 pb-2 border-b border-[#333a41]">
+                    <button type="button" class="controls-subtab-btn active" id="subtab-btn-keyboard" onclick="switchControlsSubTab('keyboard')">Keyboard & Mouse</button>
+                    <button type="button" class="controls-subtab-btn" id="subtab-btn-gamepad" onclick="switchControlsSubTab('gamepad')">Controller / Gamepad</button>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div class="settings-row">
-                        <span class="settings-label">Move Left</span>
-                        <button class="keybind-btn" data-action="left" onclick="startRebinding('left', this)">A</button>
+
+                <!-- Sub-panel A: Keyboard & Mouse -->
+                <div id="controls-panel-keyboard" class="flex flex-col gap-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <div class="settings-section-title !m-0">Keybindings</div>
+                        <button class="mc-btn !w-auto !px-3 !py-0.5 !text-lg !m-0 bg-red-800 hover:bg-red-700 text-white" onclick="resetKeybindsToDefault()">Reset Defaults</button>
                     </div>
-                    <div class="settings-row">
-                        <span class="settings-label">Move Right</span>
-                        <button class="keybind-btn" data-action="right" onclick="startRebinding('right', this)">D</button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="settings-row">
+                            <span class="settings-label">Move Left</span>
+                            <button class="keybind-btn" data-action="left" onclick="startRebinding('left', this)">A</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Move Right</span>
+                            <button class="keybind-btn" data-action="right" onclick="startRebinding('right', this)">D</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Jump / Climb Up</span>
+                            <button class="keybind-btn" data-action="jump" onclick="startRebinding('jump', this)">Space / W</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Crouch / Climb Down</span>
+                            <button class="keybind-btn" data-action="down" onclick="startRebinding('down', this)">S / Shift</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Open Inventory</span>
+                            <button class="keybind-btn" data-action="inventory" onclick="startRebinding('inventory', this)">E</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">World Map</span>
+                            <button class="keybind-btn" data-action="map" onclick="startRebinding('map', this)">M</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Drop Hotbar Item</span>
+                            <button class="keybind-btn" data-action="drop" onclick="startRebinding('drop', this)">Q</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Multiplayer Chat</span>
+                            <button class="keybind-btn" data-action="chat" onclick="startRebinding('chat', this)">T</button>
+                        </div>
+                        <div class="settings-row" style="grid-column: 1 / -1;">
+                            <span class="settings-label">Debug Screen</span>
+                            <button class="keybind-btn" data-action="debug" onclick="startRebinding('debug', this)">F3</button>
+                        </div>
                     </div>
-                    <div class="settings-row">
-                        <span class="settings-label">Jump / Climb Up</span>
-                        <button class="keybind-btn" data-action="jump" onclick="startRebinding('jump', this)">Space / W</button>
-                    </div>
-                    <div class="settings-row">
-                        <span class="settings-label">Crouch / Climb Down</span>
-                        <button class="keybind-btn" data-action="down" onclick="startRebinding('down', this)">S / Shift</button>
-                    </div>
-                    <div class="settings-row">
-                        <span class="settings-label">Open Inventory</span>
-                        <button class="keybind-btn" data-action="inventory" onclick="startRebinding('inventory', this)">E</button>
-                    </div>
-                    <div class="settings-row">
-                        <span class="settings-label">World Map</span>
-                        <button class="keybind-btn" data-action="map" onclick="startRebinding('map', this)">M</button>
-                    </div>
-                    <div class="settings-row">
-                        <span class="settings-label">Drop Hotbar Item</span>
-                        <button class="keybind-btn" data-action="drop" onclick="startRebinding('drop', this)">Q</button>
-                    </div>
-                    <div class="settings-row">
-                        <span class="settings-label">Multiplayer Chat</span>
-                        <button class="keybind-btn" data-action="chat" onclick="startRebinding('chat', this)">T</button>
-                    </div>
-                    <div class="settings-row" style="grid-column: 1 / -1;">
-                        <span class="settings-label">Debug Screen</span>
-                        <button class="keybind-btn" data-action="debug" onclick="startRebinding('debug', this)">F3</button>
+
+                    <div class="settings-section-title !text-xl !mt-2 !mb-1">Mouse & Hotbar Scrolling</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="settings-row">
+                            <span class="settings-label">Scroll Sensitivity</span>
+                            <div class="settings-slider-wrap">
+                                <input type="range" min="1" max="5" value="1" class="settings-slider" id="slider-scroll-sens" oninput="updateScrollSens(this.value)">
+                                <span class="settings-val-badge" id="badge-scroll-sens">1x</span>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Invert Scroll Wheel</span>
+                            <button class="mc-btn" id="btn-invert-wheel" onclick="toggleInvertWheel()">Normal</button>
+                        </div>
+                        <div class="settings-row" style="grid-column: 1 / -1;">
+                            <span class="settings-label">Hotbar Wrap-Around</span>
+                            <button class="mc-btn" id="btn-hotbar-wrap" onclick="toggleHotbarWrap()">Wrap (1-9)</button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="settings-section-title !text-xl !mt-2 !mb-1">Mouse & Hotbar Scrolling</div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div class="settings-row">
-                        <span class="settings-label">Scroll Sensitivity</span>
-                        <div class="settings-slider-wrap">
-                            <input type="range" min="1" max="5" value="1" class="settings-slider" id="slider-scroll-sens" oninput="updateScrollSens(this.value)">
-                            <span class="settings-val-badge" id="badge-scroll-sens">1x</span>
+                <!-- Sub-panel B: Controller / Gamepad -->
+                <div id="controls-panel-gamepad" class="hidden flex flex-col gap-2">
+                    <!-- Connected Gamepad Device Status Card -->
+                    <div class="controller-status-card">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-3">
+                                <div class="controller-icon-box text-3xl">🎮</div>
+                                <div>
+                                    <div class="controller-device-name font-bold text-xl text-white font-['VT323']" id="controller-device-name">No Gamepad Detected</div>
+                                    <div class="controller-device-sub text-sm text-gray-400 font-mono" id="controller-device-sub">Connect via USB / Bluetooth & press any button</div>
+                                </div>
+                            </div>
+                            <div class="controller-conn-badge disconnected font-['VT323'] text-lg px-3 py-0.5 border" id="controller-conn-badge">DISCONNECTED</div>
+                        </div>
+                        <!-- Live Input Monitor -->
+                        <div class="controller-live-monitor mt-2 pt-2 border-t border-[#333a41]">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs uppercase tracking-wider text-gray-400 font-mono">Live Input Tester:</span>
+                                <span class="text-xs text-gray-400 font-mono" id="controller-live-axis-readout">LX: 0.00 | LY: 0.00 | RX: 0.00 | RY: 0.00</span>
+                            </div>
+                            <div class="gamepad-live-pills-wrap flex flex-wrap gap-1 mt-1.5" id="gamepad-live-pills">
+                                <span class="gamepad-live-pill" data-btn-idx="0">A</span>
+                                <span class="gamepad-live-pill" data-btn-idx="1">B</span>
+                                <span class="gamepad-live-pill" data-btn-idx="2">X</span>
+                                <span class="gamepad-live-pill" data-btn-idx="3">Y</span>
+                                <span class="gamepad-live-pill" data-btn-idx="4">LB</span>
+                                <span class="gamepad-live-pill" data-btn-idx="5">RB</span>
+                                <span class="gamepad-live-pill" data-btn-idx="6">LT</span>
+                                <span class="gamepad-live-pill" data-btn-idx="7">RT</span>
+                                <span class="gamepad-live-pill" data-btn-idx="8">Back</span>
+                                <span class="gamepad-live-pill" data-btn-idx="9">Start</span>
+                                <span class="gamepad-live-pill" data-btn-idx="10">L3</span>
+                                <span class="gamepad-live-pill" data-btn-idx="11">R3</span>
+                                <span class="gamepad-live-pill" data-btn-idx="12">D-Up</span>
+                                <span class="gamepad-live-pill" data-btn-idx="13">D-Down</span>
+                                <span class="gamepad-live-pill" data-btn-idx="14">D-Left</span>
+                                <span class="gamepad-live-pill" data-btn-idx="15">D-Right</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="settings-row">
-                        <span class="settings-label">Invert Scroll Wheel</span>
-                        <button class="mc-btn" id="btn-invert-wheel" onclick="toggleInvertWheel()">Normal</button>
+
+                    <!-- Button Rebinding Section -->
+                    <div class="flex justify-between items-center mt-1 mb-1">
+                        <div class="settings-section-title !m-0">Controller Rebinding</div>
+                        <button type="button" class="mc-btn !w-auto !px-3 !py-0.5 !text-lg !m-0 bg-red-800 hover:bg-red-700 text-white" onclick="resetGamepadBindingsToDefault()">Reset Defaults</button>
                     </div>
-                    <div class="settings-row" style="grid-column: 1 / -1;">
-                        <span class="settings-label">Hotbar Wrap-Around</span>
-                        <button class="mc-btn" id="btn-hotbar-wrap" onclick="toggleHotbarWrap()">Wrap (1-9)</button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="settings-row">
+                            <span class="settings-label">Jump</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="jump" onclick="startGamepadRebindingUI('jump', this)">A / Cross</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Crouch / Sneak</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="crouch" onclick="startGamepadRebindingUI('crouch', this)">B / Circle</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Attack / Mine (Primary)</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="attack" onclick="startGamepadRebindingUI('attack', this)">RT / R2</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Attack (Secondary / Face)</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="attack_alt" onclick="startGamepadRebindingUI('attack_alt', this)">X / Square</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Place / Interact</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="place" onclick="startGamepadRebindingUI('place', this)">LT / L2</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Previous Hotbar Slot</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="prev_item" onclick="startGamepadRebindingUI('prev_item', this)">LB / L1</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Next Hotbar Slot</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="next_item" onclick="startGamepadRebindingUI('next_item', this)">RB / R1</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Open Inventory</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="inventory" onclick="startGamepadRebindingUI('inventory', this)">Y / Triangle</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">World Map</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="map" onclick="startGamepadRebindingUI('map', this)">Back / Select</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Pause Menu / Escape</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="pause" onclick="startGamepadRebindingUI('pause', this)">Start / Menu</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Background Build Mode</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="bg_build" onclick="startGamepadRebindingUI('bg_build', this)">LS Click (L3)</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Debug Screen (F3)</span>
+                            <button type="button" class="keybind-btn gamepad-rebind-btn" data-gp-action="debug" onclick="startGamepadRebindingUI('debug', this)">RS Click (R3)</button>
+                        </div>
+                    </div>
+
+                    <!-- Controller Tuning & Customization -->
+                    <div class="settings-section-title !text-xl !mt-2 !mb-1">Stick Calibration & Feel</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="settings-row">
+                            <span class="settings-label">Stick Deadzone</span>
+                            <div class="settings-slider-wrap">
+                                <input type="range" min="5" max="40" value="18" class="settings-slider" id="slider-gp-deadzone" oninput="updateGamepadDeadzoneUI(this.value)">
+                                <span class="settings-val-badge" id="badge-gp-deadzone">18%</span>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Aim Sensitivity</span>
+                            <div class="settings-slider-wrap">
+                                <input type="range" min="5" max="30" value="10" class="settings-slider" id="slider-gp-aim-sens" oninput="updateGamepadAimSensUI(this.value)">
+                                <span class="settings-val-badge" id="badge-gp-aim-sens">1.0x</span>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Invert Aim Y Axis</span>
+                            <button type="button" class="mc-btn" id="btn-gp-invert-y" onclick="toggleGamepadInvertYUI()">Normal</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Auto-Aim Facing Direction</span>
+                            <button type="button" class="mc-btn" id="btn-gp-auto-aim" onclick="toggleGamepadAutoAimUI()">ON</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Controller Haptic Vibration</span>
+                            <button type="button" class="mc-btn" id="btn-gp-vibration" onclick="toggleGamepadVibrationUI()">ON</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">Test Haptic Rumble</span>
+                            <button type="button" class="mc-btn !w-full" onclick="testGamepadRumbleUI()">Vibrate Controller</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1803,6 +1946,26 @@
                 </div>
                 <div class="hud-day-readout">
                     Day <span id="day-counter">1</span><br><span id="time-display">Morning</span>
+                </div>
+                <!-- HUD Pinned Recipe Tracker -->
+                <div id="hud-pinned-recipe" class="hidden hud-pinned-panel pointer-events-auto cursor-pointer mt-1" onclick="handlePinnedRecipeClick(event)" title="Click to open Crafting Menu">
+                    <div class="hud-pinned-header flex items-center justify-between pb-1 border-b border-[#3b4752] mb-1.5">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <!-- Pixel-art Thumbtack / Pin Icon -->
+                            <svg viewBox="0 0 16 16" width="13" height="13" style="image-rendering: pixelated; shape-rendering: crispEdges;" class="shrink-0">
+                                <rect x="7" y="1" width="2" height="3" fill="#fbbf24"/>
+                                <rect x="5" y="4" width="6" height="3" fill="#f59e0b"/>
+                                <rect x="4" y="7" width="8" height="2" fill="#d97706"/>
+                                <rect x="7" y="9" width="2" height="5" fill="#e2e8f0"/>
+                                <rect x="7" y="14" width="2" height="1" fill="#94a3b8"/>
+                            </svg>
+                            <span class="hud-pinned-title text-amber-400 font-['VT323'] text-base font-bold tracking-wider leading-none uppercase">TRACKING</span>
+                        </div>
+                        <button type="button" class="hud-pinned-unpin-btn text-gray-400 hover:text-red-400 font-bold text-sm leading-none px-1 py-0.5 rounded cursor-pointer" onclick="unpinRecipe(event)" title="Unpin recipe from HUD" aria-label="Unpin recipe">✕</button>
+                    </div>
+                    <div id="hud-pinned-content" class="hud-pinned-body">
+                        <!-- Content rendered dynamically -->
+                    </div>
                 </div>
                 <p id="sleep-status" class="hidden text-lg text-yellow-200 bg-black/60 px-2 py-1 border border-yellow-600 rounded"></p>
                 <div id="debug-info" class="text-base bg-black/85 p-3 border-2 border-green-500/80 text-green-400 hidden shadow-2xl rounded mt-1 font-mono leading-tight max-w-sm pointer-events-none">Debug Screen</div>

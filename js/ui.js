@@ -25,6 +25,7 @@ import {
     registerWebcraftAccount, loginWebcraftAccount, loginAsGuest, logoutWebcraftAccount,
     saveUserProfileToCloud, getUserProfileFromCloud
 } from './network.js';
+import * as Gamepad from './gamepad.js';
 
 export const SKIN_W = 16;
 export const SKIN_H = 32;
@@ -642,6 +643,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function isActionActive(actionName) {
+        if (typeof window !== 'undefined' && window.GamepadManager && typeof window.GamepadManager.isGamepadActionActive === 'function') {
+            if (window.GamepadManager.isGamepadActionActive(actionName)) return true;
+        }
         const boundKey = (KEYBINDS[actionName] || '').toLowerCase();
         const activeKeys = (typeof window !== 'undefined' && window.keys) ? window.keys : keys;
         if (boundKey && activeKeys[boundKey]) return true;
@@ -3006,10 +3010,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         return false;
     }
 
-    export function hasItem(id, amount) {
+    export function getItemCount(id) {
         let count = 0;
-        for (let i = 0; i < 27; i++) { if (inventory[i] && inventory[i].id === id) count += inventory[i].count; }
-        return count >= amount;
+        for (let i = 0; i < 27; i++) {
+            if (inventory[i] && inventory[i].id === id) count += inventory[i].count;
+        }
+        return count;
+    }
+
+    export function hasItem(id, amount) {
+        return getItemCount(id) >= amount;
     }
 
     export function consumeItem(id, amount) {
@@ -4664,17 +4674,247 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         updateGraphicsButton();
         updateKeybindButtonsUI();
+        updateGamepadUI();
         updateSettingsDifficultyUI();
         if (document.getElementById('btn-toggle-fps-cap')) document.getElementById('btn-toggle-fps-cap').innerText = getFpsCapText();
     }
 
     export function switchSettingsTab(tabName) {
+        if (tabName === 'controller') {
+            document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === 'controls' || btn.dataset.tab === 'controller');
+            });
+            document.querySelectorAll('.settings-tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === 'settings-tab-controls');
+            });
+            switchControlsSubTab('gamepad');
+            return;
+        }
+
         document.querySelectorAll('.settings-tab-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tabName);
         });
         document.querySelectorAll('.settings-tab-content').forEach(content => {
             content.classList.toggle('active', content.id === `settings-tab-${tabName}`);
         });
+        if (tabName === 'controls') {
+            updateGamepadUI();
+        }
+    }
+
+    export function switchControlsSubTab(subTab) {
+        const kbBtn = document.getElementById('subtab-btn-keyboard');
+        const gpBtn = document.getElementById('subtab-btn-gamepad');
+        const kbPanel = document.getElementById('controls-panel-keyboard');
+        const gpPanel = document.getElementById('controls-panel-gamepad');
+
+        if (kbBtn) kbBtn.classList.toggle('active', subTab === 'keyboard');
+        if (gpBtn) gpBtn.classList.toggle('active', subTab === 'gamepad');
+
+        if (kbPanel) {
+            if (subTab === 'keyboard') kbPanel.classList.remove('hidden');
+            else kbPanel.classList.add('hidden');
+        }
+        if (gpPanel) {
+            if (subTab === 'gamepad') {
+                gpPanel.classList.remove('hidden');
+                updateGamepadUI();
+                startGamepadUiMonitor();
+            } else {
+                gpPanel.classList.add('hidden');
+                stopGamepadUiMonitor();
+            }
+        }
+    }
+
+    let gamepadUiMonitorId = null;
+    export function startGamepadUiMonitor() {
+        stopGamepadUiMonitor();
+        function tick() {
+            const gpPanel = document.getElementById('controls-panel-gamepad');
+            if (!gpPanel || gpPanel.classList.contains('hidden')) {
+                stopGamepadUiMonitor();
+                return;
+            }
+            if (typeof Gamepad !== 'undefined') {
+                const pressed = (typeof Gamepad.getPressedButtonIndices === 'function') ? Gamepad.getPressedButtonIndices() : [];
+                document.querySelectorAll('.gamepad-live-pill').forEach(pill => {
+                    const idx = parseInt(pill.dataset.btnIdx, 10);
+                    pill.classList.toggle('active', pressed.includes(idx));
+                });
+                const gp = (typeof Gamepad.getActiveGamepad === 'function') ? Gamepad.getActiveGamepad() : null;
+                const readout = document.getElementById('controller-live-axis-readout');
+                if (readout && gp && gp.axes) {
+                    const lx = (gp.axes[0] !== undefined ? gp.axes[0] : 0).toFixed(2);
+                    const ly = (gp.axes[1] !== undefined ? gp.axes[1] : 0).toFixed(2);
+                    const rx = (gp.axes[2] !== undefined ? gp.axes[2] : 0).toFixed(2);
+                    const ry = (gp.axes[3] !== undefined ? gp.axes[3] : 0).toFixed(2);
+                    readout.innerText = `LX: ${lx} | LY: ${ly} | RX: ${rx} | RY: ${ry}`;
+                }
+                updateGamepadDeviceCard();
+            }
+            if (typeof requestAnimationFrame === 'function') {
+                gamepadUiMonitorId = requestAnimationFrame(tick);
+            }
+        }
+        if (typeof requestAnimationFrame === 'function') {
+            gamepadUiMonitorId = requestAnimationFrame(tick);
+        }
+    }
+
+    export function stopGamepadUiMonitor() {
+        if (gamepadUiMonitorId && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(gamepadUiMonitorId);
+            gamepadUiMonitorId = null;
+        }
+    }
+
+    export function updateGamepadDeviceCard() {
+        const devNameEl = document.getElementById('controller-device-name');
+        const devSubEl = document.getElementById('controller-device-sub');
+        const connBadgeEl = document.getElementById('controller-conn-badge');
+        if (!devNameEl || !devSubEl || !connBadgeEl) return;
+
+        if (typeof Gamepad !== 'undefined' && Gamepad.isGamepadConnected()) {
+            const gp = Gamepad.getActiveGamepad();
+            const rawName = gp ? gp.id.split('(')[0].trim() : 'Gamepad';
+            devNameEl.innerText = rawName || 'Standard Controller';
+            const numAxes = gp && gp.axes ? gp.axes.length : 4;
+            const numBtns = gp && gp.buttons ? gp.buttons.length : 17;
+            const hapticsText = (gp && gp.vibrationActuator) ? 'Haptics: Supported' : 'Haptics: Standard';
+            devSubEl.innerText = `Connected (Index: ${gp ? gp.index : 0} | ${numAxes} Axes | ${numBtns} Buttons | ${hapticsText})`;
+            connBadgeEl.innerText = 'CONNECTED';
+            connBadgeEl.classList.remove('disconnected');
+            connBadgeEl.classList.add('connected');
+        } else {
+            devNameEl.innerText = 'No Gamepad Detected';
+            devSubEl.innerText = 'Connect via USB / Bluetooth & press any button';
+            connBadgeEl.innerText = 'DISCONNECTED';
+            connBadgeEl.classList.remove('connected');
+            connBadgeEl.classList.add('disconnected');
+        }
+    }
+
+    export function updateGamepadUI() {
+        updateGamepadDeviceCard();
+
+        if (typeof Gamepad !== 'undefined') {
+            document.querySelectorAll('.gamepad-rebind-btn').forEach(btn => {
+                const action = btn.dataset.gpAction;
+                if (action && Gamepad.gamepadBindings[action] !== undefined) {
+                    btn.innerText = Gamepad.formatGamepadButtonName(Gamepad.gamepadBindings[action]);
+                    btn.classList.remove('waiting');
+                }
+            });
+
+            // Deadzone
+            const dzSlider = document.getElementById('slider-gp-deadzone');
+            const dzBadge = document.getElementById('badge-gp-deadzone');
+            if (dzSlider && dzBadge) {
+                const pct = Math.round((Gamepad.gamepadSettings.deadzone || 0.18) * 100);
+                dzSlider.value = pct;
+                dzBadge.innerText = `${pct}%`;
+            }
+
+            // Aim Sensitivity
+            const sensSlider = document.getElementById('slider-gp-aim-sens');
+            const sensBadge = document.getElementById('badge-gp-aim-sens');
+            if (sensSlider && sensBadge) {
+                sensSlider.value = Math.round((Gamepad.gamepadSettings.aimSensitivity || 1.0) * 10);
+                sensBadge.innerText = `${(Gamepad.gamepadSettings.aimSensitivity || 1.0).toFixed(1)}x`;
+            }
+
+            // Invert Y
+            const invBtn = document.getElementById('btn-gp-invert-y');
+            if (invBtn) {
+                invBtn.innerText = Gamepad.gamepadSettings.invertAimY ? 'Inverted' : 'Normal';
+            }
+
+            // Auto-Aim Facing
+            const autoAimBtn = document.getElementById('btn-gp-auto-aim');
+            if (autoAimBtn) {
+                autoAimBtn.innerText = Gamepad.gamepadSettings.autoAimFacing ? 'ON' : 'OFF';
+            }
+
+            // Vibration
+            const vibBtn = document.getElementById('btn-gp-vibration');
+            if (vibBtn) {
+                vibBtn.innerText = Gamepad.gamepadSettings.vibrationEnabled ? 'ON' : 'OFF';
+            }
+        }
+    }
+
+    export function startGamepadRebindingUI(action, btnEl) {
+        if (typeof Gamepad !== 'undefined' && typeof Gamepad.startGamepadRebinding === 'function') {
+            Gamepad.startGamepadRebinding(action, btnEl);
+        }
+    }
+
+    export function resetGamepadBindingsToDefault() {
+        if (typeof Gamepad !== 'undefined') {
+            Gamepad.resetGamepadBindings();
+            updateGamepadUI();
+            showToast('Controller bindings reset to default.');
+        }
+    }
+
+    export function updateGamepadDeadzoneUI(val) {
+        const numVal = parseInt(val, 10) / 100;
+        if (typeof Gamepad !== 'undefined') {
+            Gamepad.setGamepadSetting('deadzone', numVal);
+        }
+        const badge = document.getElementById('badge-gp-deadzone');
+        if (badge) badge.innerText = `${val}%`;
+    }
+
+    export function updateGamepadAimSensUI(val) {
+        const numVal = parseInt(val, 10) / 10;
+        if (typeof Gamepad !== 'undefined') {
+            Gamepad.setGamepadSetting('aimSensitivity', numVal);
+        }
+        const badge = document.getElementById('badge-gp-aim-sens');
+        if (badge) badge.innerText = `${numVal.toFixed(1)}x`;
+    }
+
+    export function toggleGamepadInvertYUI() {
+        if (typeof Gamepad !== 'undefined') {
+            const newVal = !Gamepad.gamepadSettings.invertAimY;
+            Gamepad.setGamepadSetting('invertAimY', newVal);
+            const btn = document.getElementById('btn-gp-invert-y');
+            if (btn) btn.innerText = newVal ? 'Inverted' : 'Normal';
+            showToast(`Aim Y-Axis: ${newVal ? 'Inverted' : 'Normal'}`);
+        }
+    }
+
+    export function toggleGamepadAutoAimUI() {
+        if (typeof Gamepad !== 'undefined') {
+            const newVal = !Gamepad.gamepadSettings.autoAimFacing;
+            Gamepad.setGamepadSetting('autoAimFacing', newVal);
+            const btn = document.getElementById('btn-gp-auto-aim');
+            if (btn) btn.innerText = newVal ? 'ON' : 'OFF';
+            showToast(`Auto-Aim Facing: ${newVal ? 'Enabled' : 'Disabled'}`);
+        }
+    }
+
+    export function toggleGamepadVibrationUI() {
+        if (typeof Gamepad !== 'undefined') {
+            const newVal = !Gamepad.gamepadSettings.vibrationEnabled;
+            Gamepad.setGamepadSetting('vibrationEnabled', newVal);
+            const btn = document.getElementById('btn-gp-vibration');
+            if (btn) btn.innerText = newVal ? 'ON' : 'OFF';
+            showToast(`Controller Vibration: ${newVal ? 'ON' : 'OFF'}`);
+        }
+    }
+
+    export function testGamepadRumbleUI() {
+        if (typeof Gamepad !== 'undefined') {
+            if (!Gamepad.isGamepadConnected()) {
+                showToast('No controller detected to vibrate.');
+                return;
+            }
+            Gamepad.triggerGamepadVibration(300, 0.7, 0.9);
+            showToast('Vibrating controller...');
+        }
     }
 
     export function startRebinding(action, btnEl) {
@@ -4859,6 +5099,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         document.getElementById('settings-menu').classList.remove('hidden');
     }
     export function closeSettings() { 
+        stopGamepadUiMonitor();
         document.getElementById('settings-menu').classList.add('hidden'); 
         if (STATE === 'PAUSED' || settingsPreviousState === 'PAUSED' || (STATE === 'PLAYING' && settingsPreviousState !== 'MENU')) {
             document.getElementById('pause-menu').classList.remove('hidden');
@@ -5505,6 +5746,176 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         renderCraftingRecipes();
     }
 
+    // ============================================================
+    // RECIPE PINNING (HUD TRACKER & CRAFTING TABLE)
+    // ============================================================
+    export let pinnedRecipeIndex = null;
+
+    export function loadPinnedRecipe() {
+        try {
+            if (typeof localStorage !== 'undefined') {
+                const saved = localStorage.getItem('swc_pinned_recipe_v1');
+                if (saved !== null && saved !== '') {
+                    const parsed = parseInt(saved, 10);
+                    if (!isNaN(parsed) && parsed >= 0 && parsed < RECIPES.length) {
+                        pinnedRecipeIndex = parsed;
+                        return;
+                    }
+                }
+            }
+        } catch (e) {}
+        pinnedRecipeIndex = null;
+    }
+
+    export function getPinnedRecipeIndex() {
+        return pinnedRecipeIndex;
+    }
+
+    export function pinRecipe(recipeIndex) {
+        if (pinnedRecipeIndex === recipeIndex) {
+            unpinRecipe();
+            return;
+        }
+        if (recipeIndex >= 0 && recipeIndex < RECIPES.length) {
+            pinnedRecipeIndex = recipeIndex;
+            try {
+                if (typeof localStorage !== 'undefined') {
+                    localStorage.setItem('swc_pinned_recipe_v1', recipeIndex.toString());
+                }
+            } catch (e) {}
+            renderPinnedRecipeHUD();
+            renderCraftingRecipes();
+        }
+    }
+
+    export function unpinRecipe(e) {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        pinnedRecipeIndex = null;
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.removeItem('swc_pinned_recipe_v1');
+            }
+        } catch (e) {}
+        renderPinnedRecipeHUD();
+        renderCraftingRecipes();
+    }
+
+    export function handlePinnedRecipeClick(e) {
+        if (e && e.target && typeof e.target.closest === 'function' && e.target.closest('.hud-pinned-unpin-btn')) return;
+        if (typeof isInventoryOpen !== 'undefined' && !isInventoryOpen) {
+            if (typeof window !== 'undefined' && typeof window.toggleInventory === 'function') {
+                window.toggleInventory();
+            } else if (typeof toggleInventory === 'function') {
+                toggleInventory();
+            }
+        }
+    }
+
+    export function renderPinnedRecipeHUD() {
+        const hudEl = document.getElementById('hud-pinned-recipe');
+        const contentEl = document.getElementById('hud-pinned-content');
+        if (!hudEl || !contentEl) return;
+
+        if (pinnedRecipeIndex === null || !RECIPES[pinnedRecipeIndex]) {
+            hudEl.classList.add('hidden');
+            contentEl.innerHTML = '';
+            return;
+        }
+
+        const recipe = RECIPES[pinnedRecipeIndex];
+        const output = recipe.output;
+        const outName = ID_NAMES[output.id] || 'Item';
+        const outTex = (typeof textures !== 'undefined' && textures[output.id]) ? textures[output.id].src : '';
+        const nearTable = checkNearCraftingTable();
+
+        let allIngredientsReady = true;
+        let materialsSummary = [];
+
+        recipe.inputs.forEach(r => {
+            const has = getItemCount(r.id);
+            const needed = r.count;
+            const ready = (has >= needed);
+            if (!ready) allIngredientsReady = false;
+            materialsSummary.push({
+                id: r.id,
+                name: ID_NAMES[r.id] || 'Material',
+                tex: (typeof textures !== 'undefined' && textures[r.id]) ? textures[r.id].src : '',
+                has,
+                needed,
+                ready
+            });
+        });
+
+        const canCraftNow = allIngredientsReady && (!recipe.reqTable || nearTable);
+
+        let html = `
+            <!-- Target Item Header -->
+            <div class="flex items-center justify-between gap-1.5 pb-1 mb-1 border-b border-[#3b4752]">
+                <div class="flex items-center gap-1.5 min-w-0">
+                    <img src="${outTex}" class="w-6 h-6 pixelated shrink-0" alt="${outName}" />
+                    <span class="text-white text-lg font-bold truncate leading-none">${outName} x${output.count}</span>
+                </div>
+                <span class="text-[11px] ${recipe.reqTable ? (nearTable ? 'bg-emerald-950 text-emerald-300 border-emerald-600' : 'bg-amber-950 text-amber-300 border-amber-600') : 'bg-slate-800 text-slate-300 border-slate-600'} border px-1 py-0.2 rounded font-['VT323'] leading-none shrink-0">
+                    ${recipe.reqTable ? (nearTable ? '3x3 Table' : 'Need Table') : '2x2 Hand'}
+                </span>
+            </div>
+
+            <!-- Ingredients Checklist -->
+            <div class="flex flex-col gap-1 my-1">
+        `;
+
+        materialsSummary.forEach(mat => {
+            const percent = Math.min(100, Math.round((mat.has / mat.needed) * 100));
+            html += `
+                <div class="flex flex-col">
+                    <div class="flex items-center justify-between text-base leading-none">
+                        <div class="flex items-center gap-1 min-w-0">
+                            <img src="${mat.tex}" class="w-4 h-4 pixelated shrink-0" alt="${mat.name}" />
+                            <span class="${mat.ready ? 'text-gray-200' : 'text-gray-300'} truncate">${mat.name}</span>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0 ml-1">
+                            <span class="${mat.ready ? 'text-emerald-400 font-bold' : 'text-amber-300 font-bold'}">
+                                ${mat.has}/${mat.needed}
+                            </span>
+                            ${mat.ready ? '<span class="text-emerald-400 text-xs font-bold leading-none">✓</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="w-full bg-[#12161b] h-1 border border-[#2b353f] mt-0.5 overflow-hidden">
+                        <div class="h-full ${mat.ready ? 'bg-emerald-500' : 'bg-amber-500'}" style="width: ${percent}%;"></div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        if (canCraftNow) {
+            html += `
+                <div class="text-xs text-emerald-300 font-bold bg-emerald-950/80 border border-emerald-500/80 px-1.5 py-0.5 text-center mt-1.5 leading-tight animate-pulse">
+                    READY TO CRAFT! [E]
+                </div>
+            `;
+        } else if (allIngredientsReady && recipe.reqTable && !nearTable) {
+            html += `
+                <div class="text-xs text-amber-300 font-bold bg-amber-950/80 border border-amber-500/80 px-1.5 py-0.5 text-center mt-1.5 leading-tight">
+                    MATERIALS READY! FIND TABLE
+                </div>
+            `;
+        } else {
+            const remaining = materialsSummary.filter(m => !m.ready).length;
+            html += `
+                <div class="text-[11px] text-gray-400 bg-black/40 px-1.5 py-0.5 text-center mt-1 leading-tight">
+                    ${remaining} material${remaining === 1 ? '' : 's'} needed
+                </div>
+            `;
+        }
+
+        contentEl.innerHTML = html;
+        hudEl.classList.remove('hidden');
+    }
+
+    try { loadPinnedRecipe(); } catch(e) {}
+
     export function renderCraftingRecipes() {
         const craftList = document.getElementById('crafting-list');
         if (!craftList) return;
@@ -5536,13 +5947,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const frag = document.createDocumentFragment();
         filteredRecipes.forEach(({ recipe, idx }) => {
             let canCraft = recipe.inputs.every(req => hasItem(req.id, req.count));
+            let isPinned = (pinnedRecipeIndex === idx);
             let row = document.createElement('div');
-            row.className = `flex flex-col bg-black/40 p-1.5 rounded border ${canCraft ? 'border-[#8c5a2b]/80 bg-black/50' : 'border-gray-700/80 opacity-80'} mb-1 hover:bg-black/70 transition-colors`;
+            row.className = `flex flex-col bg-black/40 p-1.5 rounded border ${isPinned ? 'crafting-row-pinned' : (canCraft ? 'border-[#8c5a2b]/80 bg-black/50' : 'border-gray-700/80 opacity-80')} mb-1 hover:bg-black/70 transition-colors cursor-pointer`;
             
+            row.onclick = (e) => {
+                if (e.target && (e.target.closest('.craft-btn') || e.target.closest('.pin-recipe-btn'))) return;
+                pinRecipe(idx);
+            };
+
             let topRow = document.createElement('div');
             topRow.className = 'flex items-center justify-between gap-2';
             let nameDiv = document.createElement('div');
-            nameDiv.className = 'flex items-center gap-2 min-w-0';
+            nameDiv.className = 'flex items-center gap-1.5 min-w-0';
             
             let img = document.createElement('img');
             img.src = textures[recipe.output.id] ? textures[recipe.output.id].src : '';
@@ -5553,26 +5970,60 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             t.className = 'text-white text-xl font-bold font-["VT323"] text-shadow truncate';
             t.innerText = `${ID_NAMES[recipe.output.id]} x${recipe.output.count}`;
             nameDiv.appendChild(t);
+
+            if (isPinned) {
+                let pinnedBadge = document.createElement('span');
+                pinnedBadge.className = 'text-xs bg-amber-500/30 text-amber-300 border border-amber-500/60 px-1 py-0.2 rounded font-["VT323"] leading-none uppercase shrink-0';
+                pinnedBadge.innerText = 'PINNED';
+                nameDiv.appendChild(pinnedBadge);
+            }
             
+            let actionDiv = document.createElement('div');
+            actionDiv.className = 'flex items-center gap-1.5 shrink-0';
+
+            // Pin button
+            let pinBtn = document.createElement('button');
+            pinBtn.type = 'button';
+            pinBtn.className = `pin-recipe-btn ${isPinned ? 'pinned' : ''}`;
+            pinBtn.title = isPinned ? 'Unpin from HUD' : 'Pin recipe to HUD';
+            pinBtn.setAttribute('aria-label', isPinned ? 'Unpin recipe' : 'Pin recipe');
+            pinBtn.innerHTML = `
+                <svg viewBox="0 0 16 16" width="14" height="14" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                    <rect x="7" y="1" width="2" height="3" fill="${isPinned ? '#fef08a' : '#fbbf24'}"/>
+                    <rect x="5" y="4" width="6" height="3" fill="${isPinned ? '#fbbf24' : '#f59e0b'}"/>
+                    <rect x="4" y="7" width="8" height="2" fill="${isPinned ? '#f59e0b' : '#d97706'}"/>
+                    <rect x="7" y="9" width="2" height="5" fill="${isPinned ? '#ffffff' : '#cbd5e1'}"/>
+                    <rect x="7" y="14" width="2" height="1" fill="${isPinned ? '#cbd5e1' : '#94a3b8'}"/>
+                </svg>
+            `;
+            pinBtn.onclick = (e) => {
+                e.stopPropagation();
+                pinRecipe(idx);
+            };
+            actionDiv.appendChild(pinBtn);
+
             let btn = document.createElement('button');
             btn.className = 'craft-btn shrink-0';
             btn.innerText = 'Craft';
             btn.disabled = !canCraft;
-            btn.onclick = () => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
                 craftRecipe(idx);
                 updateUI();
             };
+            actionDiv.appendChild(btn);
             
             topRow.appendChild(nameDiv);
-            topRow.appendChild(btn);
+            topRow.appendChild(actionDiv);
             
             let reqs = document.createElement('div');
             reqs.className = 'text-base text-gray-300 mt-0.5 pl-8 flex flex-wrap gap-2';
             recipe.inputs.forEach(r => {
                 let has = hasItem(r.id, r.count);
+                let currentCount = getItemCount(r.id);
                 let reqSpan = document.createElement('span');
                 reqSpan.className = has ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
-                reqSpan.innerText = `${r.count} ${ID_NAMES[r.id]}`;
+                reqSpan.innerText = `${currentCount}/${r.count} ${ID_NAMES[r.id]}`;
                 reqs.appendChild(reqSpan);
             });
             
@@ -5619,6 +6070,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         populateSlotItemDOM(hudOffhand, inventory[27], 'w-9 h-9');
 
         updateHudArmorBar();
+        renderPinnedRecipeHUD();
 
         if (!isInventoryOpen) return;
 
@@ -7391,3 +7843,22 @@ try { if (typeof cancelGuestPrompt !== "undefined") window.cancelGuestPrompt = c
 try { if (typeof handleUnderConstruction !== "undefined") window.handleUnderConstruction = handleUnderConstruction; } catch(e) {}
 try { if (typeof measureRealConnectionPing !== "undefined") window.measureRealConnectionPing = measureRealConnectionPing; } catch(e) {}
 try { if (typeof updateConnectionTelemetryUI !== "undefined") window.updateConnectionTelemetryUI = updateConnectionTelemetryUI; } catch(e) {}
+try { if (typeof pinRecipe !== "undefined") window.pinRecipe = pinRecipe; } catch(e) {}
+try { if (typeof unpinRecipe !== "undefined") window.unpinRecipe = unpinRecipe; } catch(e) {}
+try { if (typeof renderPinnedRecipeHUD !== "undefined") window.renderPinnedRecipeHUD = renderPinnedRecipeHUD; } catch(e) {}
+try { if (typeof loadPinnedRecipe !== "undefined") window.loadPinnedRecipe = loadPinnedRecipe; } catch(e) {}
+try { if (typeof getPinnedRecipeIndex !== "undefined") window.getPinnedRecipeIndex = getPinnedRecipeIndex; } catch(e) {}
+try { if (typeof handlePinnedRecipeClick !== "undefined") window.handlePinnedRecipeClick = handlePinnedRecipeClick; } catch(e) {}
+try { if (typeof switchControlsSubTab !== "undefined") window.switchControlsSubTab = switchControlsSubTab; } catch(e) {}
+try { if (typeof updateGamepadUI !== "undefined") window.updateGamepadUI = updateGamepadUI; } catch(e) {}
+try { if (typeof updateGamepadDeviceCard !== "undefined") window.updateGamepadDeviceCard = updateGamepadDeviceCard; } catch(e) {}
+try { if (typeof startGamepadRebindingUI !== "undefined") window.startGamepadRebindingUI = startGamepadRebindingUI; } catch(e) {}
+try { if (typeof resetGamepadBindingsToDefault !== "undefined") window.resetGamepadBindingsToDefault = resetGamepadBindingsToDefault; } catch(e) {}
+try { if (typeof updateGamepadDeadzoneUI !== "undefined") window.updateGamepadDeadzoneUI = updateGamepadDeadzoneUI; } catch(e) {}
+try { if (typeof updateGamepadAimSensUI !== "undefined") window.updateGamepadAimSensUI = updateGamepadAimSensUI; } catch(e) {}
+try { if (typeof toggleGamepadInvertYUI !== "undefined") window.toggleGamepadInvertYUI = toggleGamepadInvertYUI; } catch(e) {}
+try { if (typeof toggleGamepadAutoAimUI !== "undefined") window.toggleGamepadAutoAimUI = toggleGamepadAutoAimUI; } catch(e) {}
+try { if (typeof toggleGamepadVibrationUI !== "undefined") window.toggleGamepadVibrationUI = toggleGamepadVibrationUI; } catch(e) {}
+try { if (typeof testGamepadRumbleUI !== "undefined") window.testGamepadRumbleUI = testGamepadRumbleUI; } catch(e) {}
+try { if (typeof startGamepadUiMonitor !== "undefined") window.startGamepadUiMonitor = startGamepadUiMonitor; } catch(e) {}
+try { if (typeof stopGamepadUiMonitor !== "undefined") window.stopGamepadUiMonitor = stopGamepadUiMonitor; } catch(e) {}

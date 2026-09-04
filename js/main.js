@@ -6,6 +6,7 @@
 import * as Network from './network.js';
 import * as Engine from './engine.js';
 import * as UI from './ui.js';
+import * as Gamepad from './gamepad.js';
 
 // Expose exports to window for HTML inline event handlers (e.g. onclick)
 import {
@@ -1134,6 +1135,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             let reqHardness = HARDNESS[bgBlockId] || 100;
             if (miningTarget.progress >= reqHardness) {
                 playSound('break');
+                if (typeof Gamepad !== 'undefined' && typeof Gamepad.triggerGamepadVibration === 'function') {
+                    Gamepad.triggerGamepadVibration(90, 0.4, 0.6);
+                }
                 for (let p = 0; p < 8; p++) particles.push(new Particle(bCX, bCY, getBlockColor(bgBlockId)));
 
                 bgWorld[gridX][gridY] = IDS.AIR;
@@ -1167,6 +1171,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         
         if (miningTarget.progress >= reqHardness) {
             playSound('break');
+            if (typeof Gamepad !== 'undefined' && typeof Gamepad.triggerGamepadVibration === 'function') {
+                Gamepad.triggerGamepadVibration(90, 0.4, 0.6);
+            }
             for(let p=0; p<8; p++) particles.push(new Particle(bCX, bCY, getBlockColor(blockId))); 
             
             if (blockId === IDS.FURNACE) {
@@ -1951,6 +1958,122 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         syncMultiplayerWorldState();
     }
 
+    export function handleGamepadInGameInputs() {
+        if (typeof Gamepad === 'undefined' || !Gamepad.isUsingGamepad) return;
+
+        const curPlayer = player || (typeof window !== 'undefined' ? window.player : null);
+        if (!curPlayer) return;
+
+        if (STATE === 'PLAYING') {
+            const pCX = curPlayer.x + (curPlayer.width || 24) / 2;
+            const pCY = curPlayer.y + (curPlayer.height || 48) / 2;
+            const aim = typeof Gamepad.getGamepadAimVector === 'function' ? Gamepad.getGamepadAimVector() : { x: 0, y: 0, active: false };
+            const reachDist = REACH * TILE_SIZE * 0.95;
+
+            if (aim.active) {
+                mouse.worldX = pCX + aim.x * reachDist;
+                mouse.worldY = pCY + aim.y * reachDist;
+                mouse.x = mouse.worldX - camera.x;
+                mouse.y = mouse.worldY - camera.y;
+            } else if (Gamepad.gamepadSettings && Gamepad.gamepadSettings.autoAimFacing) {
+                const dir = curPlayer.facingRight ? 1 : -1;
+                mouse.worldX = pCX + dir * (TILE_SIZE * 1.8);
+                mouse.worldY = pCY + 4;
+                mouse.x = mouse.worldX - camera.x;
+                mouse.y = mouse.worldY - camera.y;
+            }
+
+            // Attack / Mine trigger
+            const isAttackDown = Gamepad.isGamepadActionActive('attack');
+            if (isAttackDown && !mouse.isDownLeft && !isInventoryOpen) {
+                mouse.isDownLeft = true;
+                attackAnimationTimer = 12;
+                handleMeleeAttack();
+            } else if (!isAttackDown && mouse.isDownLeft) {
+                mouse.isDownLeft = false;
+                if (miningTarget) miningTarget.progress = 0;
+            }
+
+            // Place / Interact trigger
+            const isPlaceDown = Gamepad.isGamepadActionActive('place');
+            if (isPlaceDown && !mouse.isDownRight && !isInventoryOpen) {
+                mouse.isDownRight = true;
+                attackAnimationTimer = 12;
+                continuousPlaceCooldown = 0;
+                lastPlacedCell.x = -1;
+                lastPlacedCell.y = -1;
+                if (!handleBlockInteraction()) {
+                    const placed = handleRightClickPlace();
+                    if (placed) {
+                        playSound('place');
+                        lastPlacedCell.x = Math.floor(mouse.worldX / TILE_SIZE);
+                        lastPlacedCell.y = Math.floor(mouse.worldY / TILE_SIZE);
+                        continuousPlaceCooldown = 4;
+                    }
+                } else {
+                    lastPlacedCell.x = Math.floor(mouse.worldX / TILE_SIZE);
+                    lastPlacedCell.y = Math.floor(mouse.worldY / TILE_SIZE);
+                    continuousPlaceCooldown = 12;
+                }
+            } else if (!isPlaceDown && mouse.isDownRight) {
+                mouse.isDownRight = false;
+                if (curPlayer && typeof curPlayer.resetEat === 'function') curPlayer.resetEat();
+                continuousPlaceCooldown = 0;
+                lastPlacedCell.x = -1;
+                lastPlacedCell.y = -1;
+            }
+
+            // Hotbar cycling (LB / RB)
+            if (Gamepad.isGamepadActionJustPressed('prev_item') && !isInventoryOpen) {
+                const newIdx = (selectedHotbarIndex - 1 + 9) % 9;
+                setSelectedHotbarIndex(newIdx);
+                updateUI();
+                triggerHotbarItemPopup();
+                playSound('click', { isUI: true, vol: 0.5 });
+            }
+            if (Gamepad.isGamepadActionJustPressed('next_item') && !isInventoryOpen) {
+                const newIdx = (selectedHotbarIndex + 1) % 9;
+                setSelectedHotbarIndex(newIdx);
+                updateUI();
+                triggerHotbarItemPopup();
+                playSound('click', { isUI: true, vol: 0.5 });
+            }
+
+            // Inventory toggle (Y)
+            if (Gamepad.isGamepadActionJustPressed('inventory')) {
+                if (typeof UI !== 'undefined' && typeof UI.toggleInventory === 'function') UI.toggleInventory();
+                else if (typeof window !== 'undefined' && typeof window.toggleInventory === 'function') window.toggleInventory();
+            }
+
+            // World Map toggle (Back)
+            if (Gamepad.isGamepadActionJustPressed('map')) {
+                if (typeof UI !== 'undefined' && typeof UI.toggleWorldMap === 'function') UI.toggleWorldMap();
+                else if (typeof window !== 'undefined' && typeof window.toggleWorldMap === 'function') window.toggleWorldMap();
+            }
+
+            // Background build toggle (L3)
+            if (Gamepad.isGamepadActionJustPressed('bg_build') && !isInventoryOpen) {
+                toggleBackgroundBuildMode();
+            }
+
+            // Debug toggle (R3)
+            if (Gamepad.isGamepadActionJustPressed('debug')) {
+                if (typeof UI !== 'undefined' && typeof UI.toggleDebug === 'function') UI.toggleDebug();
+                else if (typeof window !== 'undefined' && typeof window.toggleDebug === 'function') window.toggleDebug();
+            }
+
+            // Pause Menu (Start)
+            if (Gamepad.isGamepadActionJustPressed('pause')) {
+                closeForegroundScreen();
+            }
+        } else if (STATE === 'PAUSED' || isInventoryOpen) {
+            // In pause menu / modal: Start or B closes foreground screen / resumes
+            if (Gamepad.isGamepadActionJustPressed('pause') || Gamepad.isGamepadActionJustPressed('crouch')) {
+                closeForegroundScreen();
+            }
+        }
+    }
+
     export let isGameLoopRunning = false;
 
     export function gameLoop(now = performance.now()) {
@@ -1972,6 +2095,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             rawDelta = Math.min(120, Math.max(0, rawDelta));
             frameDeltaMs = rawDelta;
             if (frameDeltaMs > 0) currentFps = Math.round(1000 / frameDeltaMs);
+
+            // Poll Gamepad inputs & process controller actions
+            if (typeof Gamepad !== 'undefined' && typeof Gamepad.updateGamepad === 'function') {
+                Gamepad.updateGamepad();
+                handleGamepadInGameInputs();
+            }
 
             if (STATE === 'MENU') {
                 if (typeof drawMenuBackground === 'function') drawMenuBackground();
@@ -2060,7 +2189,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 gameLoop._lastErrorLogged = Date.now();
             }
         } finally {
-            requestAnimationFrame(gameLoop);
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(gameLoop);
+            } else if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+                window.requestAnimationFrame(gameLoop);
+            }
         }
     }
 // Boot sequence deferred to end of module
@@ -2209,6 +2342,7 @@ try { if (typeof uiVolume !== "undefined") window.uiVolume = uiVolume; } catch(e
 try { if (typeof updateCachedVignette !== "undefined") window.updateCachedVignette = updateCachedVignette; } catch(e) {}
 try { if (typeof updateGameSimulation !== "undefined") window.updateGameSimulation = updateGameSimulation; } catch(e) {}
 try { if (typeof updateSleepStatus !== "undefined") window.updateSleepStatus = updateSleepStatus; } catch(e) {}
+try { if (typeof handleGamepadInGameInputs !== "undefined") window.handleGamepadInGameInputs = handleGamepadInGameInputs; } catch(e) {}
 
 
 // Safe Boot Sequence
