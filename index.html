@@ -8,9 +8,73 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <script>
+        try {
+            if (localStorage.getItem('webcraft_closed_beta_unlocked') !== 'true') {
+                document.documentElement.classList.add('closed-beta-pending');
+            }
+        } catch (e) {}
+    </script>
 </head>
 <body>
 
+    <!-- Closed Beta Access Gate Modal -->
+    <div id="closed-beta-modal" class="hidden fixed inset-0 z-[999999] flex items-center justify-center bg-[#0a0d14]/98 select-none p-4" role="dialog" aria-modal="true" aria-labelledby="closed-beta-title">
+        <div id="closed-beta-card" class="relative max-w-md w-full bg-[#181c24] border-4 border-[#3a4454] shadow-[0_0_60px_rgba(0,0,0,0.95)] p-6 sm:p-7 text-center">
+            <!-- Confidential Pre-Release Badge -->
+            <div class="mb-3">
+                <span class="inline-block px-3 py-0.5 text-xs sm:text-sm tracking-widest uppercase bg-amber-500/20 text-amber-300 border border-amber-500/50 font-mono font-bold">
+                    CONFIDENTIAL PRE-RELEASE
+                </span>
+            </div>
+            <!-- Title -->
+            <h2 id="closed-beta-title" class="text-3xl sm:text-4xl text-[#ffcc00] font-bold tracking-wider drop-shadow-[2px_2px_0_#000] mb-3 font-['VT323']">
+                CLOSED BETA ACCESS
+            </h2>
+            <!-- Informational Text -->
+            <div class="space-y-2 mb-5 text-[#c8d1dc] text-lg sm:text-xl font-['VT323'] leading-snug">
+                <p>
+                    Welcome to the private testing phase of <strong>Webcraft 2D</strong>.
+                    This build is confidential, under active development, and not yet open to the public.
+                </p>
+                <p class="text-[#8e9aa8] text-base sm:text-lg">
+                    Please enter your authorized tester passkey below to unlock and commence playtesting.
+                </p>
+            </div>
+            <!-- Passkey Input & Eye Toggle -->
+            <div class="relative flex items-center w-full mb-3">
+                <input id="closed-beta-input" type="password" placeholder="Enter Tester Passkey..." autocomplete="off" spellcheck="false"
+                    class="w-full bg-[#0d1017] border-2 border-[#4a5568] focus:border-[#ffcc00] text-white px-4 py-2.5 pr-12 text-lg font-mono outline-none tracking-widest transition-colors rounded-none placeholder:text-gray-500 placeholder:tracking-normal placeholder:font-['VT323'] placeholder:text-lg"
+                    onkeydown="if(event.key === 'Enter') submitClosedBetaPassword();">
+                <button id="closed-beta-toggle-eye" type="button" class="auth-eye-btn" onclick="toggleClosedBetaPasswordVisibility()"
+                    title="Toggle passkey visibility" aria-label="Toggle passkey visibility">
+                    <svg viewBox="0 0 16 10" width="16" height="10" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                        <rect x="3" y="0" width="10" height="1" fill="#000000"/>
+                        <rect x="1" y="1" width="2" height="2" fill="#000000"/>
+                        <rect x="13" y="1" width="2" height="2" fill="#000000"/>
+                        <rect x="0" y="3" width="1" height="4" fill="#000000"/>
+                        <rect x="15" y="3" width="1" height="4" fill="#000000"/>
+                        <rect x="1" y="7" width="2" height="2" fill="#000000"/>
+                        <rect x="13" y="7" width="2" height="2" fill="#000000"/>
+                        <rect x="3" y="9" width="10" height="1" fill="#000000"/>
+                        <rect x="3" y="1" width="10" height="8" fill="#ffffff"/>
+                        <rect x="2" y="3" width="12" height="4" fill="#ffffff"/>
+                        <rect x="6" y="2" width="4" height="6" fill="#0284c7"/>
+                        <rect x="7" y="3" width="2" height="4" fill="#0f172a"/>
+                        <rect x="6" y="3" width="1" height="1" fill="#ffffff"/>
+                    </svg>
+                </button>
+            </div>
+            <!-- Error message container -->
+            <div id="closed-beta-error" class="hidden text-red-400 bg-red-950/70 border border-red-800/80 text-lg px-3 py-1.5 mb-4 font-['VT323'] text-left">
+            </div>
+            <!-- Submit Button -->
+            <button id="closed-beta-submit-btn" type="button" onclick="submitClosedBetaPassword()"
+                class="mc-btn !w-full !m-0 !text-2xl !py-2.5 !bg-[#2e7d32] hover:!bg-[#388e3c] !text-white active:scale-98 transition-transform flex items-center justify-center gap-2 cursor-pointer shadow-[inset_0_-3px_0_rgba(0,0,0,0.3)]">
+                <span>Unlock Beta</span> ➔
+            </button>
+        </div>
+    </div>
 
     <div id="shared-menu-bg" class="pointer-events-none z-0" style="position: fixed; inset: 0; width: 100vw; height: 100vh;">
         <canvas id="menuBgCanvas" style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
@@ -1233,10 +1297,6 @@
                         <button class="mc-btn" id="btn-toggle-autojump" onclick="toggleAutoJump()">ON</button>
                     </div>
                     <div class="settings-row">
-                        <span class="settings-label">Tutorial HUD Overlay</span>
-                        <button class="mc-btn" id="btn-toggle-tutorial" onclick="toggleTutorial()">ON</button>
-                    </div>
-                    <div class="settings-row">
                         <span class="settings-label">Debug Screen (F3)</span>
                         <button class="mc-btn" id="btn-toggle-debug" onclick="toggleDebug()">OFF</button>
                     </div>
@@ -1256,9 +1316,9 @@
                         <span class="settings-label">Minimap Shape</span>
                         <button class="mc-btn" id="btn-toggle-minimap-shape" onclick="toggleMinimapShape()">SQUARE</button>
                     </div>
-                    <div class="settings-row relative" id="settings-row-accent">
+                    <div class="settings-row relative md:col-span-2 !overflow-visible" id="settings-row-accent">
                         <span class="settings-label">UI Accent Color</span>
-                        <div class="relative">
+                        <div class="relative overflow-visible">
                             <button class="mc-btn flex items-center justify-center gap-2 !m-0" id="btn-open-accent-picker" onclick="toggleAccentColorPicker(event)">
                                 <span id="settings-accent-preview" class="inline-block w-4 h-4 border border-black shadow" style="background-color: var(--mc-accent-color);"></span>
                                 <span id="settings-accent-label">Gold</span>
@@ -2157,12 +2217,12 @@
             <div class="flex justify-between items-center pb-2 mb-2.5 border-b-2 border-[#46515a]">
                 <div class="flex items-center gap-3">
                     <h2 id="tutorial-title" class="screen-title text-4xl font-bold text-[var(--mc-accent-color)] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323']">Survival Guide</h2>
-                    <span id="tutorial-step-indicator" class="bg-[#171b20] border-2 border-[var(--mc-accent-color)] text-[var(--mc-accent-color)] font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">1 / 6</span>
+                    <span id="tutorial-step-indicator" class="bg-[#171b20] border-2 border-[var(--mc-accent-color)] text-[var(--mc-accent-color)] font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">1 / 7</span>
                 </div>
                 <button class="mc-btn !w-9 !h-9 !text-2xl !p-0 !m-0 !bg-red-600 !text-white hover:!bg-red-500 flex items-center justify-center leading-none" onclick="closeTutorialModal()" aria-label="Close Guide">X</button>
             </div>
 
-            <!-- Step Navigation Tabs (6 clear categories) -->
+            <!-- Step Navigation Tabs (7 clear categories) -->
             <div class="tutorial-tabs-container" id="tutorial-step-tabs">
                 <button class="tutorial-tab-btn active" onclick="goToTutorialStep(0)">
                     <span>1. The World</span>
@@ -2174,13 +2234,16 @@
                     <span>3. Crafting</span>
                 </button>
                 <button class="tutorial-tab-btn" onclick="goToTutorialStep(3)">
-                    <span>4. Mobs & Night</span>
+                    <span>4. Farming</span>
                 </button>
                 <button class="tutorial-tab-btn" onclick="goToTutorialStep(4)">
-                    <span>5. Armor & Gear</span>
+                    <span>5. Mobs & Night</span>
                 </button>
                 <button class="tutorial-tab-btn" onclick="goToTutorialStep(5)">
-                    <span>6. Multiplayer</span>
+                    <span>6. Armor & Gear</span>
+                </button>
+                <button class="tutorial-tab-btn" onclick="goToTutorialStep(6)">
+                    <span>7. Multiplayer</span>
                 </button>
             </div>
 
@@ -2238,12 +2301,6 @@
                 <div id="bg-build-indicator" class="hidden flex items-center gap-2 bg-[#1b1e23]/90 border-2 border-[#f59e0b] px-2.5 py-0.5 shadow-lg backdrop-blur-sm mt-0.5 rounded pointer-events-none w-fit">
                     <span class="text-xl text-[#fef3c7] font-bold tracking-wide font-['VT323'] leading-none">Background building</span>
                     <span class="text-xs bg-[#f59e0b] text-black px-1.5 py-0.5 rounded font-bold uppercase font-['VT323'] leading-none">[B]</span>
-                </div>
-                
-                <div id="tutorial-text" class="hud-tutorial mt-1 text-lg inline-block transition-opacity duration-300">
-                    <p class="text-white drop-shadow">WASD/Arrows: Move | Space: Jump</p>
-                    <p class="text-white drop-shadow">Hold L-Click: Mine/Attack | R-Click: Place/Interact</p>
-                    <p class="text-yellow-400 font-bold drop-shadow mt-0.5">Press 'E' for Inventory | 'B' for Background | 'M' for Map</p>
                 </div>
             </div>
             

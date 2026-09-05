@@ -14,6 +14,7 @@ export let droppedItems = [];
 export let furnaces = [];
 export let fluids = new Map();
 export let saplingGrowthQueue = new Map();
+export let cropGrowthQueue = new Map();
 export let nonCollidableTreeWood = new Set();
 export let timeOfDay = 0;
 export let dayCount = 1;
@@ -174,6 +175,193 @@ export async function hashPassword(password) {
         hash |= 0;
     }
     return "h_" + Math.abs(hash).toString(16);
+}
+
+// Pure JS SHA-256 implementation fallback (RFC 6234 compliant)
+export function pureJsSha256(ascii) {
+    function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }
+    const mathPow = Math.pow;
+    const maxWord = mathPow(2, 32);
+    const lengthProperty = "length";
+    let i, j;
+    let result = "";
+    const words = [];
+    const asciiBitLength = ascii[lengthProperty] * 8;
+    let hash = [];
+    const k = [];
+    let primeCounter = 0;
+    const isComposite = {};
+    for (let candidate = 2; primeCounter < 64; candidate++) {
+        if (!isComposite[candidate]) {
+            for (i = 0; i < 313; i += candidate) { isComposite[i] = candidate; }
+            hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+            k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+        }
+    }
+    hash = hash.slice(0, 8);
+    ascii += "\x80";
+    while (ascii[lengthProperty] % 64 - 56) ascii += "\x00";
+    for (i = 0; i < ascii[lengthProperty]; i++) {
+        j = ascii.charCodeAt(i);
+        words[i >> 2] |= j << ((3 - i) % 4) * 8;
+    }
+    words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
+    words[words[lengthProperty]] = (asciiBitLength);
+    for (j = 0; j < words[lengthProperty];) {
+        const w = words.slice(j, j += 16);
+        const oldHash = hash;
+        hash = hash.slice(0, 8);
+        for (i = 0; i < 64; i++) {
+            const w15 = w[i - 15], w2 = w[i - 2];
+            const a = hash[0], e = hash[4];
+            const temp1 = hash[7]
+                + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+                + ((e & hash[5]) ^ ((~e) & hash[6]))
+                + k[i]
+                + (w[i] = (i < 16) ? w[i] : (
+                    w[i - 16]
+                    + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+                    + w[i - 7]
+                    + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+                ) | 0);
+            const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+                + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+            hash = [(temp1 + temp2) | 0].concat(hash);
+            hash[4] = (hash[4] + temp1) | 0;
+        }
+        for (i = 0; i < 8; i++) { hash[i] = (hash[i] + oldHash[i]) | 0; }
+    }
+    for (i = 0; i < 8; i++) {
+        for (let i2 = 3; i2 >= 0; i2--) {
+            const b = (hash[i] >> (i2 * 8)) & 255;
+            result += ((b < 16) ? "0" : "") + b.toString(16);
+        }
+    }
+    return result;
+}
+
+export async function hashStringSHA256(str) {
+    const text = (str || '').toString();
+    if (typeof crypto !== 'undefined' && crypto.subtle && typeof TextEncoder !== 'undefined') {
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) {
+            console.warn("crypto.subtle hash failed, falling back to pure JS SHA-256", e);
+        }
+    }
+    return pureJsSha256(text);
+}
+
+// Closed Beta configuration constants (passkey SHA-256 hashed; plaintext is never stored in code)
+export const DEFAULT_BETA_PASSWORD_HASH = "b1c1e8d1fbb9e5c6cb40e3e4fb783627fdf0fb165286e63571dbc7784f6bb585";
+export const CLOSED_BETA_LOCALSTORAGE_KEY = 'webcraft_closed_beta_unlocked';
+
+export async function fetchClosedBetaConfig() {
+    const defaultConfig = {
+        locked: true,
+        passwordHash: DEFAULT_BETA_PASSWORD_HASH,
+        description: "Closed beta lock toggle: set locked to false to open game without password"
+    };
+
+    try {
+        if (typeof window === 'undefined') return defaultConfig;
+        if (!window.fbDb || !window.fbModules) {
+            await initFirebaseSdk();
+        }
+        if (!window.fbDb || !window.fbModules) {
+            return defaultConfig;
+        }
+        const { doc, getDoc, setDoc } = window.fbModules;
+        const artifactConfigRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'system_config', 'closed_beta');
+        
+        let rootConfigRef = null;
+        try {
+            rootConfigRef = doc(window.fbDb, 'system_config', 'closed_beta');
+        } catch (e) {}
+
+        let snap = null;
+        try {
+            snap = await getDoc(artifactConfigRef);
+        } catch (e) {
+            console.warn("Could not read artifact system_config path:", e);
+        }
+
+        if (!snap || !snap.exists()) {
+            if (rootConfigRef) {
+                try {
+                    const rootSnap = await getDoc(rootConfigRef);
+                    if (rootSnap && rootSnap.exists()) {
+                        snap = rootSnap;
+                    }
+                } catch (e) {
+                    console.warn("Could not read root system_config path:", e);
+                }
+            }
+        }
+
+        if (snap && snap.exists()) {
+            const data = snap.data();
+            return {
+                locked: typeof data.locked === 'boolean' ? data.locked : true,
+                passwordHash: data.passwordHash || DEFAULT_BETA_PASSWORD_HASH,
+                description: data.description || defaultConfig.description
+            };
+        }
+
+        // Auto-seed document in Firestore so it's immediately accessible in Firebase Console
+        try {
+            const seedPayload = {
+                ...defaultConfig,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+            await setDoc(artifactConfigRef, seedPayload, { merge: true });
+            if (rootConfigRef) {
+                try { await setDoc(rootConfigRef, seedPayload, { merge: true }); } catch (e) {}
+            }
+        } catch (seedErr) {
+            console.warn("Auto-seeding closed_beta config in Firebase failed:", seedErr);
+        }
+
+        return defaultConfig;
+    } catch (err) {
+        console.warn("fetchClosedBetaConfig encountered error, falling back to default:", err);
+        return defaultConfig;
+    }
+}
+
+export async function setClosedBetaLockState(isLocked) {
+    try {
+        if (typeof window === 'undefined') return false;
+        if (!window.fbDb || !window.fbModules) {
+            await initFirebaseSdk();
+        }
+        if (!window.fbDb || !window.fbModules) {
+            throw new Error("Firebase SDK is not available.");
+        }
+        const { doc, setDoc } = window.fbModules;
+        const artifactConfigRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'system_config', 'closed_beta');
+        const updateData = {
+            locked: !!isLocked,
+            passwordHash: DEFAULT_BETA_PASSWORD_HASH,
+            description: "Closed beta lock toggle: set locked to false to open game without password",
+            updatedAt: Date.now()
+        };
+        await setDoc(artifactConfigRef, updateData, { merge: true });
+        try {
+            const rootRef = doc(window.fbDb, 'system_config', 'closed_beta');
+            await setDoc(rootRef, updateData, { merge: true });
+        } catch (e) {}
+        console.log(`[Closed Beta] Lock state updated in Firebase to: ${!!isLocked}`);
+        return true;
+    } catch (err) {
+        console.error("[Closed Beta] Failed to set lock state in Firebase:", err);
+        throw err;
+    }
 }
 
 // =============================================================================
@@ -1085,7 +1273,10 @@ if (typeof window !== 'undefined') {
 
     export function spawnDroppedItem(itemId, x, y, count = 1) {
         let dropId = `drop_${window.user?.uid || 'local'}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        droppedItems.push(new ItemDrop(itemId, x, y, count, dropId));
+        const DropClass = (typeof ItemDrop !== 'undefined') ? ItemDrop : (typeof window !== 'undefined' ? window.ItemDrop : null);
+        if (DropClass) {
+            droppedItems.push(new DropClass(itemId, x, y, count, dropId));
+        }
     }
 
     export function dropItemForWorld(itemId, x, y, count = 1) {
@@ -1109,7 +1300,9 @@ if (typeof window !== 'undefined') {
 
     export function deserializeDroppedItem(data) {
         if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.y) || !Number.isFinite(data.itemId)) return null;
-        let drop = new ItemDrop(data.itemId, data.x, data.y, data.count || 1, data.dropId);
+        const DropClass = (typeof ItemDrop !== 'undefined') ? ItemDrop : (typeof window !== 'undefined' ? window.ItemDrop : null);
+        if (!DropClass) return null;
+        let drop = new DropClass(data.itemId, data.x, data.y, data.count || 1, data.dropId);
         drop.vx = data.vx || 0; drop.vy = data.vy || 0; drop.isGrounded = data.isGrounded === true;
         return drop;
     }
@@ -1151,6 +1344,9 @@ if (typeof window !== 'undefined') {
         else {
             saplingGrowthQueue.delete(`${x}_${y}`);
             saplingBlockedWarnings.delete(`${x}_${y}`);
+        }
+        if (newId !== IDS.WHEAT_STAGE_1 && newId !== IDS.WHEAT_STAGE_2 && newId !== IDS.WHEAT_STAGE_3 && newId !== IDS.WHEAT_STAGE_4) {
+            cropGrowthQueue.delete(`${x}_${y}`);
         }
         if (wasTreeTrunk && newId === IDS.AIR && isMultiplayerAuthority() && ![...nonCollidableTreeWood].some(cell => cell.startsWith(`${x}_`))) {
             scheduleTreeLeafDecay(x);
@@ -1530,7 +1726,7 @@ if (typeof window !== 'undefined') {
                 document.getElementById('hud').style.display = 'block';
                 document.getElementById('gameCanvas').classList.remove('hidden');
                 STATE = 'PLAYING';
-                updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateTutorialUI(); updateArmorUI(); updateHudArmorBar();
+                updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateArmorUI(); updateHudArmorBar();
                 broadcastPlayerState(true);
                 if (isMultiplayerAuthority()) {
                     syncMultiplayerWorldState(true);
@@ -2009,7 +2205,6 @@ if (typeof window !== 'undefined') {
         const chatMessages = document.getElementById('mp-chat-messages');
         if (chatMessages) chatMessages.innerHTML = '';
         chatSeenMessageIds = new Set();
-        updateTutorialUI();
         hideMultiplayerLoading();
         document.getElementById('shared-menu-bg').classList.remove('hidden');
         showMainMenu();
@@ -2088,6 +2283,9 @@ if (typeof window !== 'undefined') {
                         if (cwData.saplingGrowthQueue) {
                             saplingGrowthQueue = new Map(Object.entries(cwData.saplingGrowthQueue).map(([k, v]) => [k, Number(v)]).filter(([, v]) => Number.isFinite(v)));
                         }
+                        if (cwData.cropGrowthQueue) {
+                            cropGrowthQueue = new Map(Object.entries(cwData.cropGrowthQueue));
+                        }
                         if (Array.isArray(cwData.furnaces)) {
                             furnaces = cwData.furnaces;
                         }
@@ -2103,6 +2301,9 @@ if (typeof window !== 'undefined') {
                         }
                         if (cwData.saplingGrowthQueue) {
                             saplingGrowthQueue = new Map(Object.entries(cwData.saplingGrowthQueue).map(([k, v]) => [k, Number(v)]).filter(([, v]) => Number.isFinite(v)));
+                        }
+                        if (cwData.cropGrowthQueue) {
+                            cropGrowthQueue = new Map(Object.entries(cwData.cropGrowthQueue));
                         }
                         if (Array.isArray(cwData.furnaces)) {
                             furnaces = cwData.furnaces;
@@ -2200,7 +2401,7 @@ if (typeof window !== 'undefined') {
                     hideMultiplayerLoading();
                     document.getElementById('hud').style.display = 'block';
                     document.getElementById('gameCanvas').classList.remove('hidden');
-                    STATE = 'PLAYING'; updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateTutorialUI(); updateArmorUI(); updateHudArmorBar();
+                    STATE = 'PLAYING'; updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateArmorUI(); updateHudArmorBar();
                     broadcastPlayerState(true);
                     lastAutosaveTimestamp = Date.now();
                     showToast("Hosting " + currentMpWorldName + ". Waiting for players...");
@@ -2417,6 +2618,7 @@ if (typeof window !== 'undefined') {
                 worldHeight: WORLD_HEIGHT,
                 nonCollidableTreeWood: [...nonCollidableTreeWood],
                 saplingGrowthQueue: Object.fromEntries(saplingGrowthQueue),
+                cropGrowthQueue: Object.fromEntries(cropGrowthQueue),
                 furnaces: furnaces,
                 timestamp: Date.now()
             });
@@ -2517,4 +2719,12 @@ try { if (typeof removeFriendByTag !== "undefined") window.removeFriendByTag = r
 try { if (typeof fetchFriendsProfiles !== "undefined") window.fetchFriendsProfiles = fetchFriendsProfiles; } catch(e) {}
 try { if (typeof startPresenceHeartbeat !== "undefined") window.startPresenceHeartbeat = startPresenceHeartbeat; } catch(e) {}
 try { if (typeof stopPresenceHeartbeat !== "undefined") window.stopPresenceHeartbeat = stopPresenceHeartbeat; } catch(e) {}
+try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropGrowthQueue; } catch(e) {}
+try { if (typeof pureJsSha256 !== "undefined") window.pureJsSha256 = pureJsSha256; } catch(e) {}
+try { if (typeof hashStringSHA256 !== "undefined") window.hashStringSHA256 = hashStringSHA256; } catch(e) {}
+try { if (typeof DEFAULT_BETA_PASSWORD_HASH !== "undefined") window.DEFAULT_BETA_PASSWORD_HASH = DEFAULT_BETA_PASSWORD_HASH; } catch(e) {}
+try { if (typeof CLOSED_BETA_LOCALSTORAGE_KEY !== "undefined") window.CLOSED_BETA_LOCALSTORAGE_KEY = CLOSED_BETA_LOCALSTORAGE_KEY; } catch(e) {}
+try { if (typeof fetchClosedBetaConfig !== "undefined") window.fetchClosedBetaConfig = fetchClosedBetaConfig; } catch(e) {}
+try { if (typeof setClosedBetaLockState !== "undefined") window.setClosedBetaLockState = setClosedBetaLockState; } catch(e) {}
+
 

@@ -1614,9 +1614,6 @@
         .hud-item-frame .hotbar-slot:hover { background-color: #46515a !important; border-color: #a9bac5 !important; }
         .hud-item-frame .hotbar-slot.active { background-color: #52616b !important; border-color: #f2f6f8 !important; box-shadow: inset 0 0 0 2px #263039, 0 0 0 2px var(--mc-accent-color); }
         .hud-offhand-frame img { width: 38px; height: 38px; image-rendering: pixelated; filter: drop-shadow(2px 2px 0 #080a0c); }
-        .hud-tutorial { max-width: 350px; padding: 9px 11px; background-color: #20252b; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 5px); border: 3px solid; border-top-color: #5e6870; border-left-color: #5e6870; border-right-color: #080a0c; border-bottom-color: #080a0c; box-shadow: inset 0 0 0 2px #2a3036, 4px 4px 0 rgba(0,0,0,0.45); }
-        #tutorial-text.hidden, #tutorial-text.tutorial-hidden { display: none !important; opacity: 0 !important; visibility: hidden !important; filter: none !important; box-shadow: none !important; border: 0 !important; background: none !important; }
-        .hud-tutorial p { text-shadow: 2px 2px 0 #080a0c; }
         .hud-minimap-wrap {
             position: relative;
             width: 196px;
@@ -3199,11 +3196,18 @@
         }
 
         /* UI Accent Color Popover Widget */
+        #settings-row-accent {
+            overflow: visible !important;
+            z-index: 100;
+        }
+        #settings-row-accent > div {
+            overflow: visible !important;
+        }
         .accent-popover {
             position: absolute;
             right: 0;
             bottom: calc(100% + 6px);
-            z-index: 220;
+            z-index: 9999 !important;
             width: 220px;
             padding: 8px;
             background-color: #101418;
@@ -3846,3 +3850,36 @@
 #loading-screen, #singleplayer-loading, #multiplayer-loading-modal, #kick-modal {
     z-index: 500 !important;
 }
+
+/* Closed Beta Gate Stacking & Presentation */
+#closed-beta-modal {
+    z-index: 999999 !important;
+}
+
+html.closed-beta-pending #closed-beta-modal {
+    display: flex !important;
+}
+html.closed-beta-pending #main-menu,
+html.closed-beta-pending #game-intro {
+    display: none !important;
+}
+
+@keyframes closedBetaShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+}
+.closed-beta-shake {
+    animation: closedBetaShake 0.4s ease-in-out;
+}
+
+#closed-beta-submit-btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box !important;
+}
+

@@ -19,7 +19,7 @@ import {
     getDoorBaseY, getMaxAnimals, getRequiredMiningTier, isBackgroundBuildingBlock, isDoorBlock,
     isFoodItem, isOpenDoorBlock, isSolidWorldBlock, isWorldMapOpen, notifyBlockedSaplings,
     scheduleDirtToGrass, scheduleSnowRegrowth, scheduleTreeLeafDecay, setWorldDimensions,
-    showClouds, showDebug, showTutorial, autoJumpEnabled, graphicsMode, advancedGraphics,
+    showClouds, showDebug, autoJumpEnabled, graphicsMode, advancedGraphics,
     fabulousGraphics, introEnabled, introPhase, introTimer, selectedDiffChoice, settingsPreviousState,
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
@@ -42,13 +42,13 @@ import {
     PHYSICS_TICK_RATE, PHYSICS_TICK_MS, fpsCap,
     updateFluids, getFluid, setFluid, removeFluid, wakeFluidsAround, syncChest,
     spawnAnimals, spawnMobs, GRAVITY, TERMINAL_VELOCITY, DAY_LENGTH_FRAMES, DAY_LENGTH,
-    updateTreeLeafDecay, updateSaplingGrowth, updateNaturalRegrowth, processDroppedItems,
+    updateTreeLeafDecay, updateSaplingGrowth, updateCropGrowth, updateNaturalRegrowth, checkWaterNearCrop, registerPlantedCrop, processDroppedItems,
     miningTarget,
     world, bgWorld, player, inventory, equippedArmor, entities, mobs, activeProjectiles, fallingBlocks,
     particles, floatingTexts, clouds, fluids, fluidTick, furnaces, chests,
     mouse, keys, camera, isMultiplayer, currentMpRoom, currentMpWorldName, remotePlayers, isSleeping,
     sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue,
-    saplingGrowthQueue, saplingBlockedWarnings, dirtToGrassQueue, snowRegrowthQueue,
+    saplingGrowthQueue, saplingBlockedWarnings, cropGrowthQueue, dirtToGrassQueue, snowRegrowthQueue,
     hotbarWheelLockUntil,
     surfaceHeights, droppedItems, timeOfDay, dayCount, frameCount, STATE,
     currentDifficulty, currentWorldId,
@@ -65,7 +65,7 @@ export {
     getDoorBaseY, getMaxAnimals, getRequiredMiningTier, isBackgroundBuildingBlock, isDoorBlock,
     isFoodItem, isOpenDoorBlock, isSolidWorldBlock, isWorldMapOpen, notifyBlockedSaplings,
     scheduleDirtToGrass, scheduleSnowRegrowth, scheduleTreeLeafDecay, setWorldDimensions,
-    showClouds, showDebug, showTutorial, autoJumpEnabled, graphicsMode, advancedGraphics,
+    showClouds, showDebug, autoJumpEnabled, graphicsMode, advancedGraphics,
     fabulousGraphics, introEnabled, introPhase, introTimer, selectedDiffChoice, settingsPreviousState,
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
@@ -88,13 +88,13 @@ export {
     PHYSICS_TICK_RATE, PHYSICS_TICK_MS, fpsCap,
     updateFluids, getFluid, setFluid, removeFluid, wakeFluidsAround, syncChest,
     spawnAnimals, spawnMobs, GRAVITY, TERMINAL_VELOCITY, DAY_LENGTH_FRAMES, DAY_LENGTH,
-    updateTreeLeafDecay, updateSaplingGrowth, updateNaturalRegrowth, processDroppedItems,
+    updateTreeLeafDecay, updateSaplingGrowth, updateCropGrowth, updateNaturalRegrowth, checkWaterNearCrop, registerPlantedCrop, processDroppedItems,
     miningTarget,
     world, bgWorld, player, inventory, equippedArmor, entities, mobs, activeProjectiles, fallingBlocks,
     particles, floatingTexts, clouds, fluids, fluidTick, furnaces, chests,
     mouse, keys, camera, isMultiplayer, currentMpRoom, currentMpWorldName, remotePlayers, isSleeping,
     sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue,
-    saplingGrowthQueue, saplingBlockedWarnings, dirtToGrassQueue, snowRegrowthQueue,
+    saplingGrowthQueue, saplingBlockedWarnings, cropGrowthQueue, dirtToGrassQueue, snowRegrowthQueue,
     hotbarWheelLockUntil,
     surfaceHeights, droppedItems, timeOfDay, dayCount, frameCount, STATE,
     currentDifficulty, currentWorldId,
@@ -156,7 +156,7 @@ export function triggerHotbarItemPopup() { if (typeof UI !== 'undefined' && type
 export function updateHealthUI() { if (typeof window !== 'undefined' && typeof window.updateHealthUI === 'function' && window.updateHealthUI !== updateHealthUI) return window.updateHealthUI(); }
 export function updateHungerUI() { if (typeof window !== 'undefined' && typeof window.updateHungerUI === 'function' && window.updateHungerUI !== updateHungerUI) return window.updateHungerUI(); }
 export function updateTimeUI() { if (typeof window !== 'undefined' && typeof window.updateTimeUI === 'function' && window.updateTimeUI !== updateTimeUI) return window.updateTimeUI(); }
-export function updateTutorialUI() { if (typeof window !== 'undefined' && typeof window.updateTutorialUI === 'function' && window.updateTutorialUI !== updateTutorialUI) return window.updateTutorialUI(); }
+export function updateTutorialUI() {}
 export function updateArmorUI() { if (typeof window !== 'undefined' && typeof window.updateArmorUI === 'function' && window.updateArmorUI !== updateArmorUI) return window.updateArmorUI(); }
 export function updateHudArmorBar() { if (typeof window !== 'undefined' && typeof window.updateHudArmorBar === 'function' && window.updateHudArmorBar !== updateHudArmorBar) return window.updateHudArmorBar(); }
 export function saveCurrentWorld() { if (typeof window !== 'undefined' && typeof window.saveCurrentWorld === 'function' && window.saveCurrentWorld !== saveCurrentWorld) return window.saveCurrentWorld(); }
@@ -715,9 +715,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             if (k === debugKey) {
                 e.preventDefault(); toggleDebug();
             }
-            else if (k === 'f2') {
-                e.preventDefault(); toggleTutorial();
-            }
             else if (k === invKey || k === 'i') toggleInventory();
             else {
                 keys[k] = true;
@@ -871,6 +868,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         curCanvas.addEventListener('mousedown', (e) => {
             lastPlayerActivityAt = Date.now();
             if (STATE !== 'PLAYING' || isInventoryOpen) return;
+            const r = curCanvas.getBoundingClientRect(); 
+            mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; 
+            mouse.worldX = mouse.x + camera.x; mouse.worldY = mouse.y + camera.y;
             if (e.button === 0) { mouse.isDownLeft = true; attackAnimationTimer = 12; handleMeleeAttack(); }
             if (e.button === 2) { 
                 mouse.isDownRight = true;
@@ -1121,7 +1121,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         let pCX = player.x + player.width / 2; let pCY = player.y + player.height / 2;
         let bCX = gridX * TILE_SIZE + TILE_SIZE / 2; let bCY = gridY * TILE_SIZE + TILE_SIZE / 2;
         
-        if (Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE > REACH) { miningTarget.progress = 0; return; }
+        const dist = Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE;
+        if (dist > REACH) {
+            miningTarget.progress = 0;
+            return;
+        }
 
         const curBgMode = (typeof window !== 'undefined' && window.isBackgroundBuildMode !== undefined) ? window.isBackgroundBuildMode : isBackgroundBuildMode;
         if (curBgMode) {
@@ -1161,6 +1165,34 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
 
         let blockId = world[gridX][gridY];
         if (blockId === IDS.AIR) { miningTarget.progress = 0; return; }
+
+        const heldTool = inventory[selectedHotbarIndex];
+        const isHoldingHoe = heldTool && [IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE].includes(heldTool.id);
+        if (isHoldingHoe && (blockId === IDS.DIRT || blockId === IDS.GRASS)) {
+            let aboveId = gridY > 0 ? world[gridX][gridY - 1] : IDS.AIR;
+            if (gridY > 0 && (aboveId === IDS.AIR || [IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW].includes(aboveId))) {
+                if (aboveId !== IDS.AIR) {
+                    world[gridX][gridY - 1] = IDS.AIR;
+                    syncBlock(gridX, gridY - 1, IDS.AIR);
+                    if (aboveId === IDS.SHORT_GRASS || aboveId === IDS.TALL_GRASS) {
+                        if (Math.random() < 0.20) giveItem(IDS.SEEDS, 1);
+                    } else {
+                        giveItem(aboveId, 1);
+                    }
+                }
+                world[gridX][gridY] = IDS.PLOWED_DIRT;
+                syncBlock(gridX, gridY, IDS.PLOWED_DIRT);
+                playSound('step', { material: 'dirt' });
+                for (let p = 0; p < 6; p++) particles.push(new Particle(bCX, bCY, getBlockColor(IDS.DIRT)));
+                damageSelectedTool(1);
+                player.exhaustion += 0.05 * getDayHungerDrainMultiplier();
+                miningTarget.progress = 0;
+                mouse.isDownLeft = false;
+                unlockAchievement('time_to_cultivate');
+                if (!isMultiplayer) saveCurrentWorld();
+                return;
+            }
+        }
 
         if (miningTarget.x !== gridX || miningTarget.y !== gridY) { miningTarget.x = gridX; miningTarget.y = gridY; miningTarget.progress = 0; }
 
@@ -1241,6 +1273,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 wakeFluidsAround(brokenX, brokenY);
                 leafDecayQueue.delete(`${brokenX}_${brokenY}`);
                 saplingGrowthQueue.delete(`${brokenX}_${brokenY}`);
+                cropGrowthQueue.delete(`${brokenX}_${brokenY}`);
                 saplingBlockedWarnings.delete(`${brokenX}_${brokenY}`);
                 dirtToGrassQueue.delete(`${brokenX}_${brokenY}`);
                 syncBlock(brokenX, brokenY, IDS.AIR);
@@ -1260,7 +1293,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 if (deepBlocksMinedCount >= 50) unlockAchievement('subterranean_miner');
             }
             let dropId = blockId;
-            if (blockId === IDS.GRASS) dropId = IDS.DIRT;
+            if (blockId === IDS.GRASS || blockId === IDS.PLOWED_DIRT) dropId = IDS.DIRT;
+            if (blockId === IDS.WHEAT_STAGE_1 || blockId === IDS.WHEAT_STAGE_2) dropId = IDS.SEEDS;
+            if (blockId === IDS.WHEAT_STAGE_3) {
+                dropId = IDS.WHEAT;
+                unlockAchievement('bumper_crop');
+            }
+            if (blockId === IDS.WHEAT_STAGE_4) {
+                dropId = IDS.WHEAT;
+                giveItem(IDS.SEEDS, 2);
+                unlockAchievement('bumper_crop');
+            }
             if (!canHarvestBlock(blockId) && getRequiredMiningTier(blockId) > 0) dropId = null;
             if (isDoorBlock(blockId)) dropId = IDS.DOOR;
             if (blockId === IDS.STONE) dropId = IDS.COBBLESTONE;
@@ -1286,8 +1329,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             }
             if (dropId) giveItem(dropId, 1);
             detachedTorchCells.forEach(() => giveItem(IDS.TORCH, 1));
-            // Check if flower/grass/sapling above was detached
-            if (gridY > 0 && [IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.SAPLING].includes(world[gridX]?.[gridY - 1])) {
+            // Check if flower/grass/sapling/crop above was detached
+            const isDetachablePlant = id => [IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.SAPLING, IDS.WHEAT_STAGE_1, IDS.WHEAT_STAGE_2, IDS.WHEAT_STAGE_3, IDS.WHEAT_STAGE_4].includes(id);
+            if (gridY > 0 && isDetachablePlant(world[gridX]?.[gridY - 1])) {
                 let aboveId = world[gridX][gridY - 1];
                 world[gridX][gridY - 1] = IDS.AIR;
                 syncBlock(gridX, gridY - 1, IDS.AIR);
@@ -1295,10 +1339,20 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                     if (Math.random() < 0.20) giveItem(IDS.SEEDS, 1);
                 } else if (aboveId === IDS.FLOWER_RED || aboveId === IDS.FLOWER_YELLOW || aboveId === IDS.SAPLING) {
                     giveItem(aboveId, 1);
+                } else if (aboveId === IDS.WHEAT_STAGE_1 || aboveId === IDS.WHEAT_STAGE_2) {
+                    giveItem(IDS.SEEDS, 1);
+                } else if (aboveId === IDS.WHEAT_STAGE_3) {
+                    giveItem(IDS.WHEAT, 1);
+                } else if (aboveId === IDS.WHEAT_STAGE_4) {
+                    giveItem(IDS.WHEAT, 1);
+                    giveItem(IDS.SEEDS, 2);
                 }
                 if (aboveId === IDS.SAPLING) {
                     saplingGrowthQueue.delete(`${gridX}_${gridY - 1}`);
                     saplingBlockedWarnings.delete(`${gridX}_${gridY - 1}`);
+                }
+                if (aboveId === IDS.WHEAT_STAGE_1 || aboveId === IDS.WHEAT_STAGE_2 || aboveId === IDS.WHEAT_STAGE_3 || aboveId === IDS.WHEAT_STAGE_4) {
+                    cropGrowthQueue.delete(`${gridX}_${gridY - 1}`);
                 }
                 checkSandFallAbove(gridX, gridY - 1);
             }
@@ -1369,7 +1423,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
 
         // --- Snowball throw: runs BEFORE any grid/reach checks so aim can point anywhere ---
         const offhandTorch = (!isBackgroundBuildMode && inventory[27] && inventory[27].id === IDS.TORCH) ? inventory[27] : null;
-        const isUnplaceableItem = id => isTool(id) || isFoodItem(id) || id === IDS.COAL || id === IDS.STICK || id === IDS.GOLD_INGOT || id === IDS.IRON_ORE || id === IDS.DIAMOND_ORE || id === IDS.IRON_INGOT || id === IDS.DIAMOND || id === IDS.FEATHER || id === IDS.SNOWBALL;
+        const isUnplaceableItem = id => isTool(id) || isFoodItem(id) || id === IDS.COAL || id === IDS.STICK || id === IDS.GOLD_INGOT || id === IDS.IRON_ORE || id === IDS.DIAMOND_ORE || id === IDS.IRON_INGOT || id === IDS.DIAMOND || id === IDS.FEATHER || id === IDS.SNOWBALL || id === IDS.WHEAT;
         if (!sel && offhandTorch) { selectedIndex = 27; sel = offhandTorch; }
 
         if (sel && sel.id === IDS.SNOWBALL && sel.count > 0) {
@@ -1415,6 +1469,45 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         selectedIndex = selectedHotbarIndex;
         sel = inventory[selectedIndex];
         if (sel && isFoodItem(sel.id)) return false;
+        // Hoe Tilling on Right-Click (Standard Minecraft Mechanic)
+        const isHoldingHoe = sel && [IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE].includes(sel.id);
+        if (isHoldingHoe) {
+            let gx = Math.floor(mouse.worldX / TILE_SIZE); let gy = Math.floor(mouse.worldY / TILE_SIZE);
+            if (gx >= 0 && gx < WORLD_WIDTH && gy >= 0 && gy < WORLD_HEIGHT) {
+                let pCX = player.x + player.width / 2; let pCY = player.y + player.height / 2;
+                let bCX = gx * TILE_SIZE + TILE_SIZE / 2; let bCY = gy * TILE_SIZE + TILE_SIZE / 2;
+                if (Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE <= REACH) {
+                    const liveWorld = (typeof window !== 'undefined' && window.world) ? window.world : world;
+                    const blockId = liveWorld[gx][gy];
+                    if (blockId === IDS.DIRT || blockId === IDS.GRASS) {
+                        let aboveId = gy > 0 ? liveWorld[gx][gy - 1] : IDS.AIR;
+                        if (gy > 0 && (aboveId === IDS.AIR || [IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW].includes(aboveId))) {
+                            if (aboveId !== IDS.AIR) {
+                                liveWorld[gx][gy - 1] = IDS.AIR;
+                                syncBlock(gx, gy - 1, IDS.AIR);
+                                if (aboveId === IDS.SHORT_GRASS || aboveId === IDS.TALL_GRASS) {
+                                    if (Math.random() < 0.20) dropItemForWorld(IDS.SEEDS, gx * TILE_SIZE + TILE_SIZE / 2, (gy - 1) * TILE_SIZE + TILE_SIZE / 2, 1);
+                                } else {
+                                    dropItemForWorld(aboveId, gx * TILE_SIZE + TILE_SIZE / 2, (gy - 1) * TILE_SIZE + TILE_SIZE / 2, 1);
+                                }
+                            }
+                            liveWorld[gx][gy] = IDS.PLOWED_DIRT;
+                            syncBlock(gx, gy, IDS.PLOWED_DIRT);
+                            playSound('step', { material: 'dirt' });
+                            for (let p = 0; p < 6; p++) particles.push(new Particle(bCX, bCY, getBlockColor(IDS.DIRT)));
+                            damageSelectedTool(1);
+                            player.exhaustion += 0.05 * getDayHungerDrainMultiplier();
+                            unlockAchievement('time_to_cultivate');
+                            if (!isMultiplayer) saveCurrentWorld();
+                            updateUI();
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         const hotbarItemCanPlace = sel && !isUnplaceableItem(sel.id);
         if (!hotbarItemCanPlace && offhandTorch) { selectedIndex = 27; sel = offhandTorch; }
         if (!sel || sel.count <= 0 || isUnplaceableItem(sel.id)) return false;
@@ -1555,12 +1648,48 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         }
 
         if (sel.id === IDS.SEEDS) {
-            if (gy >= WORLD_HEIGHT - 1 || world[gx][gy] !== IDS.AIR || ![IDS.DIRT, IDS.GRASS].includes(world[gx][gy + 1]) || intersectsEntity(gx, gy)) return false;
-            world[gx][gy] = IDS.SHORT_GRASS;
-            syncBlock(gx, gy, IDS.SHORT_GRASS);
+            const liveWorld = (typeof window !== 'undefined' && window.world) ? window.world : world;
+            let plantX = gx;
+            let plantY = gy;
+
+            // 1. If clicking directly on Farmland block:
+            if (liveWorld[gx]?.[gy] === IDS.PLOWED_DIRT) {
+                plantY = gy - 1;
+            }
+            // 2. Or clicking on the air space directly above Farmland:
+            else if (liveWorld[gx]?.[gy + 1] === IDS.PLOWED_DIRT) {
+                plantY = gy;
+            }
+            // 3. Or clicking within 1 block tolerance:
+            else if (gy > 0 && liveWorld[gx]?.[gy - 1] === IDS.PLOWED_DIRT) {
+                plantY = gy - 2;
+            }
+
+            if (plantY < 0 || plantY >= WORLD_HEIGHT - 1) return false;
+            if (liveWorld[plantX]?.[plantY + 1] !== IDS.PLOWED_DIRT) return false;
+
+            const targetSpace = liveWorld[plantX]?.[plantY];
+            if (targetSpace !== IDS.AIR && targetSpace !== IDS.SHORT_GRASS && targetSpace !== IDS.TALL_GRASS && targetSpace !== IDS.FLOWER_RED && targetSpace !== IDS.FLOWER_YELLOW) {
+                return false;
+            }
+
+            if (targetSpace !== IDS.AIR) {
+                liveWorld[plantX][plantY] = IDS.AIR;
+                syncBlock(plantX, plantY, IDS.AIR);
+            }
+
+            liveWorld[plantX][plantY] = IDS.WHEAT_STAGE_1;
+            syncBlock(plantX, plantY, IDS.WHEAT_STAGE_1);
+            const hasWater = registerPlantedCrop(plantX, plantY);
+            if (hasWater) {
+                showToast("Crops will grow faster near water! (3 days instead of 4)");
+            }
+            playSound('place');
+            unlockAchievement('green_thumb');
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
             updateUI();
+            if (!isMultiplayer) saveCurrentWorld();
             return true;
         }
 
@@ -1704,7 +1833,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         physicsAccumulator = 0;
         Object.keys(keys).forEach(k => delete keys[k]);
 
-        setGameState('PLAYING'); updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateTutorialUI(); updateArmorUI(); updateHudArmorBar();
+        setGameState('PLAYING'); updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateArmorUI(); updateHudArmorBar();
         if(!isMultiplayer) saveCurrentWorld();
     }
 
@@ -1930,6 +2059,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             processRemoteDropRequests();
         }
         updateSaplingGrowth();
+        updateCropGrowth();
         updateNaturalRegrowth();
         processDroppedItems();
         handleMiningLogic();
@@ -2334,7 +2464,6 @@ try { if (typeof shGrad !== "undefined") window.shGrad = shGrad; } catch(e) {}
 try { if (typeof shadowCtx !== "undefined") window.shadowCtx = shadowCtx; } catch(e) {}
 try { if (typeof showClouds !== "undefined") window.showClouds = showClouds; } catch(e) {}
 try { if (typeof showDebug !== "undefined") window.showDebug = showDebug; } catch(e) {}
-try { if (typeof showTutorial !== "undefined") window.showTutorial = showTutorial; } catch(e) {}
 try { if (typeof sleepWakeVersion !== "undefined") window.sleepWakeVersion = sleepWakeVersion; } catch(e) {}
 try { if (typeof snowFogCtx !== "undefined") window.snowFogCtx = snowFogCtx; } catch(e) {}
 try { if (typeof startGameplay !== "undefined") window.startGameplay = startGameplay; } catch(e) {}
@@ -2351,16 +2480,164 @@ try { if (typeof updateSleepStatus !== "undefined") window.updateSleepStatus = u
 try { if (typeof handleGamepadInGameInputs !== "undefined") window.handleGamepadInGameInputs = handleGamepadInGameInputs; } catch(e) {}
 
 
-// Safe Boot Sequence
-export function bootGame() {
-    if (typeof document !== 'undefined') {
-        tooltipEl = document.getElementById('item-tooltip') || document.getElementById('tooltip');
-        initCanvasMouseListeners();
+// =============================================================================
+// CLOSED BETA ACCESS CONTROLLER
+// =============================================================================
+let activeClosedBetaPasswordHash = Network.DEFAULT_BETA_PASSWORD_HASH;
+let isClosedBetaAuthorized = false;
+
+export async function checkClosedBetaAccess() {
+    // 1. Check local authorization state (remembered passkey)
+    let isUnlockedLocally = false;
+    try {
+        isUnlockedLocally = localStorage.getItem(Network.CLOSED_BETA_LOCALSTORAGE_KEY) === 'true';
+    } catch (e) {}
+
+    // 2. Fetch remote lock configuration from Firebase Firestore
+    let config = null;
+    try {
+        config = await Network.fetchClosedBetaConfig();
+    } catch (err) {
+        console.warn("[Closed Beta] Remote config fetch failed, using fallback:", err);
     }
-    if (typeof initCanvases === 'function') initCanvases();
-    if (typeof loadSavedSettings === 'function') loadSavedSettings();
-    if (typeof updateSettingsUI === 'function') updateSettingsUI();
-    if (typeof initEmeraldSystem === 'function') initEmeraldSystem();
+
+    const isLockedRemotely = config ? (config.locked !== false) : true;
+    activeClosedBetaPasswordHash = (config && config.passwordHash) || Network.DEFAULT_BETA_PASSWORD_HASH;
+
+    // If remotely unlocked, all users can enter without being prompted
+    if (!isLockedRemotely) {
+        isClosedBetaAuthorized = true;
+        return { allowed: true, locked: false };
+    }
+
+    // If remotely locked, but this user has already entered the passkey previously
+    if (isUnlockedLocally) {
+        isClosedBetaAuthorized = true;
+        return { allowed: true, locked: true };
+    }
+
+    // Otherwise access is locked and requires entering the passkey
+    isClosedBetaAuthorized = false;
+    return {
+        allowed: false,
+        locked: true,
+        passwordHash: activeClosedBetaPasswordHash
+    };
+}
+
+export function showClosedBetaModal(expectedHash) {
+    if (expectedHash) activeClosedBetaPasswordHash = expectedHash;
+    const modal = document.getElementById('closed-beta-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
+    const input = document.getElementById('closed-beta-input');
+    if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 100);
+    }
+    const errorEl = document.getElementById('closed-beta-error');
+    if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.classList.add('hidden');
+    }
+}
+
+export function hideClosedBetaModal() {
+    if (typeof document !== 'undefined') {
+        document.documentElement.classList.remove('closed-beta-pending');
+        const modal = document.getElementById('closed-beta-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }
+    }
+}
+
+export async function submitClosedBetaPassword() {
+    const input = document.getElementById('closed-beta-input');
+    const errorEl = document.getElementById('closed-beta-error');
+    const cardEl = document.getElementById('closed-beta-card');
+    const submitBtn = document.getElementById('closed-beta-submit-btn');
+
+    if (!input) return;
+    const entered = input.value.trim();
+
+    if (!entered) {
+        if (errorEl) {
+            errorEl.textContent = 'Please enter your tester passkey to continue.';
+            errorEl.classList.remove('hidden');
+        }
+        if (cardEl) {
+            cardEl.classList.remove('closed-beta-shake');
+            void cardEl.offsetWidth;
+            cardEl.classList.add('closed-beta-shake');
+        }
+        input.focus();
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.7';
+    }
+
+    try {
+        const computedHash = await Network.hashStringSHA256(entered);
+        const targetHash = activeClosedBetaPasswordHash || Network.DEFAULT_BETA_PASSWORD_HASH;
+
+        if (computedHash === targetHash) {
+            // Password verified successfully! Remember authorization in browser storage
+            try {
+                localStorage.setItem(Network.CLOSED_BETA_LOCALSTORAGE_KEY, 'true');
+            } catch (e) {}
+
+            isClosedBetaAuthorized = true;
+            hideClosedBetaModal();
+            proceedWithBoot();
+        } else {
+            if (errorEl) {
+                errorEl.textContent = 'Access Denied: Invalid beta tester passkey.';
+                errorEl.classList.remove('hidden');
+            }
+            if (cardEl) {
+                cardEl.classList.remove('closed-beta-shake');
+                void cardEl.offsetWidth;
+                cardEl.classList.add('closed-beta-shake');
+            }
+            input.value = '';
+            input.focus();
+        }
+    } catch (e) {
+        console.error("[Closed Beta] Verification error:", e);
+        if (errorEl) {
+            errorEl.textContent = 'Verification error. Please try again.';
+            errorEl.classList.remove('hidden');
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '';
+        }
+    }
+}
+
+export function toggleClosedBetaPasswordVisibility() {
+    const input = document.getElementById('closed-beta-input');
+    if (!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+export function lockClosedBeta() {
+    try {
+        localStorage.removeItem(Network.CLOSED_BETA_LOCALSTORAGE_KEY);
+    } catch (e) {}
+    isClosedBetaAuthorized = false;
+    showClosedBetaModal();
+}
+
+export function proceedWithBoot() {
     if (typeof startIntro === 'function') startIntro();
     if (!isGameLoopRunning) {
         isGameLoopRunning = true;
@@ -2372,6 +2649,32 @@ export function bootGame() {
     }
 }
 
+// Safe Boot Sequence
+export async function bootGame() {
+    if (typeof document !== 'undefined') {
+        tooltipEl = document.getElementById('item-tooltip') || document.getElementById('tooltip');
+        initCanvasMouseListeners();
+    }
+    if (typeof initCanvases === 'function') initCanvases();
+    if (typeof loadSavedSettings === 'function') loadSavedSettings();
+    if (typeof updateSettingsUI === 'function') updateSettingsUI();
+    if (typeof initEmeraldSystem === 'function') initEmeraldSystem();
+
+    // Closed Beta Authorization Gate: verify access before displaying intro or starting loop
+    try {
+        const access = await checkClosedBetaAccess();
+        if (access.allowed) {
+            hideClosedBetaModal();
+            proceedWithBoot();
+        } else {
+            showClosedBetaModal(access.passwordHash);
+        }
+    } catch (err) {
+        console.warn("[Closed Beta] Access evaluation error, presenting modal:", err);
+        showClosedBetaModal(Network.DEFAULT_BETA_PASSWORD_HASH);
+    }
+}
+
 if (typeof window !== 'undefined') {
     if (document.readyState === 'loading') {
         window.addEventListener('DOMContentLoaded', bootGame);
@@ -2379,3 +2682,12 @@ if (typeof window !== 'undefined') {
         bootGame();
     }
 }
+
+try { if (typeof checkClosedBetaAccess !== "undefined") window.checkClosedBetaAccess = checkClosedBetaAccess; } catch(e) {}
+try { if (typeof showClosedBetaModal !== "undefined") window.showClosedBetaModal = showClosedBetaModal; } catch(e) {}
+try { if (typeof hideClosedBetaModal !== "undefined") window.hideClosedBetaModal = hideClosedBetaModal; } catch(e) {}
+try { if (typeof submitClosedBetaPassword !== "undefined") window.submitClosedBetaPassword = submitClosedBetaPassword; } catch(e) {}
+try { if (typeof toggleClosedBetaPasswordVisibility !== "undefined") window.toggleClosedBetaPasswordVisibility = toggleClosedBetaPasswordVisibility; } catch(e) {}
+try { if (typeof lockClosedBeta !== "undefined") window.lockClosedBeta = lockClosedBeta; } catch(e) {}
+try { if (typeof proceedWithBoot !== "undefined") window.proceedWithBoot = proceedWithBoot; } catch(e) {}
+

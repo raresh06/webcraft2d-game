@@ -9,6 +9,7 @@ import {
     setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
+    setEngineCropGrowthQueue,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
     setEngineIsBackgroundBuildMode, setMinimapShape, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex,
     setEngineAccentColor, drawTimeClock, drawPlayerHead,
@@ -18,7 +19,7 @@ import {
     setWorldDimensions, getMaxAnimals,
     getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
     TOOL_DURABILITY, ARMOR_DURABILITY, FPS_CAP_OPTIONS, diffDescriptions, DIFFICULTIES,
-    LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS
+    LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS, getFpsCapText
 } from './engine.js';
 
 import {
@@ -31,6 +32,7 @@ import {
 } from './network.js';
 import * as Gamepad from './gamepad.js';
 
+export const INVENTORY_SIZE = 28;
 export const SKIN_W = 16;
 export const SKIN_H = 32;
 export let playerSkinData = new Array(SKIN_W * SKIN_H).fill(null);
@@ -49,7 +51,6 @@ export let dayCount = 1;
 export let frameCount = 0;
 export let showClouds = true;
 export let showDebug = false;
-export let showTutorial = true;
 export let autoJumpEnabled = true;
 export let introEnabled = typeof localStorage !== 'undefined' ? localStorage.getItem('swc_intro_enabled') !== 'false' : true;
 export let graphicsMode = 'advanced';
@@ -151,6 +152,7 @@ export function setUIState(newState) {
 try { if (typeof window !== 'undefined') window.setUIState = setUIState; } catch(e) {}
 export let nonCollidableTreeWood = new Set();
 export let saplingGrowthQueue = new Map();
+export let cropGrowthQueue = new Map();
 export let dirtToGrassQueue = new Map();
 export let snowRegrowthQueue = new Map();
 export let isBackgroundBuildMode = false;
@@ -2149,20 +2151,32 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         { output: { id: IDS.WOOD_PICKAXE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
         { output: { id: IDS.WOOD_SWORD, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
         { output: { id: IDS.WOOD_AXE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
+        { output: { id: IDS.WOOD_SHOVEL, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.WOOD_HOE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
         { output: { id: IDS.STONE_PICKAXE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
         { output: { id: IDS.STONE_SWORD, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
         { output: { id: IDS.STONE_AXE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
+        { output: { id: IDS.STONE_SHOVEL, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.STONE_HOE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
         { output: { id: IDS.IRON_INGOT, count: 1 }, inputs: [{ id: IDS.IRON_ORE, count: 1 }, { id: IDS.COAL, count: 1 }], reqTable: true, category: 'materials' },
         { output: { id: IDS.GOLD_INGOT, count: 1 }, inputs: [{ id: IDS.GOLD_ORE, count: 1 }, { id: IDS.COAL, count: 1 }], reqTable: true, category: 'materials' },
         { output: { id: IDS.DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND_ORE, count: 1 }], reqTable: true, category: 'materials' },
         { output: { id: IDS.GOLD_PICKAXE, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
         { output: { id: IDS.GOLD_SWORD, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
         { output: { id: IDS.GOLD_AXE, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
+        { output: { id: IDS.GOLD_SHOVEL, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.GOLD_HOE, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
         { output: { id: IDS.IRON_PICKAXE, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
         { output: { id: IDS.IRON_SWORD, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
         { output: { id: IDS.IRON_AXE, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
+        { output: { id: IDS.IRON_SHOVEL, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.IRON_HOE, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
         { output: { id: IDS.DIAMOND_PICKAXE, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
         { output: { id: IDS.DIAMOND_SWORD, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
+        { output: { id: IDS.DIAMOND_AXE, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
+        { output: { id: IDS.DIAMOND_SHOVEL, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.DIAMOND_HOE, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.BREAD, count: 1 }, inputs: [{ id: IDS.WHEAT, count: 3 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.SNOW, count: 1 }, inputs: [{ id: IDS.SNOWBALL, count: 4 }], reqTable: false, category: 'blocks' },
         { output: { id: IDS.DIAMOND_AXE, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
         // --- ARMOR RECIPES ---
@@ -2227,6 +2241,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             title: 'Time to Farm!',
             description: 'Harvest seeds by breaking tall wild grass.',
             iconItem: IDS.SEEDS,
+            badge: 'Easy',
+            difficulty: 'Easy'
+        },
+        {
+            id: 'time_to_cultivate',
+            title: 'Time to Cultivate!',
+            description: 'Craft a hoe or plow dirt with a hoe to prepare farmland.',
+            iconItem: IDS.WOOD_HOE,
+            badge: 'Easy',
+            difficulty: 'Easy'
+        },
+        {
+            id: 'green_thumb',
+            title: 'Green Thumb',
+            description: 'Plant seeds on plowed farmland to cultivate crops.',
+            iconItem: IDS.WHEAT_STAGE_1,
             badge: 'Easy',
             difficulty: 'Easy'
         },
@@ -2325,6 +2355,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             title: 'Snowball Fight!',
             description: 'Gather snowballs and throw one across the icy mountains.',
             iconItem: IDS.SNOW,
+            badge: 'Medium',
+            difficulty: 'Medium'
+        },
+        {
+            id: 'bumper_crop',
+            title: 'Bumper Crop',
+            description: 'Harvest mature wheat from your flourishing farm.',
+            iconItem: IDS.WHEAT,
+            badge: 'Medium',
+            difficulty: 'Medium'
+        },
+        {
+            id: 'bake_bread',
+            title: 'Bake Bread',
+            description: 'Craft 3 harvested wheat sheaves into a loaf of bread.',
+            iconItem: IDS.BREAD,
             badge: 'Medium',
             difficulty: 'Medium'
         },
@@ -2953,16 +2999,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         } catch(e) {}
     }
 
-    export function updateTutorialUI() {
-        const tutorial = document.getElementById('tutorial-text');
-        if (!tutorial) return;
-        const mpExtra = isMultiplayer ? " | 'T' for Chat" : "";
-        tutorial.innerHTML = `
-            <p class="text-white drop-shadow">WASD/Arrows: Move | Space: Jump</p>
-            <p class="text-white drop-shadow">Hold L-Click: Mine/Attack | R-Click: Place/Interact</p>
-            <p class="text-yellow-400 font-bold drop-shadow mt-0.5">Press 'E' for Inventory${mpExtra} | 'M' for Map | 'F3' for Debug</p>
-        `;
-    }
+    export function updateTutorialUI() {}
 
     export let craftingCategory = 'all';
 
@@ -2983,7 +3020,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function isTool(id) {
-        return [IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE, IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD, IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE].includes(id);
+        return [
+            IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE,
+            IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD,
+            IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE,
+            IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL,
+            IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE
+        ].includes(id);
     }
 
     export function ensureToolDurability(item) {
@@ -3007,31 +3050,40 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         slot.appendChild(bar);
     }
 
+    export function setUIInventory(newInv) {
+        inventory = newInv;
+        if (typeof window !== 'undefined') window.inventory = newInv;
+    }
+    try { if (typeof window !== 'undefined') window.setUIInventory = setUIInventory; } catch(e) {}
+
     export function damageSelectedTool(amount = 1) {
-        const item = inventory[selectedHotbarIndex];
+        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+        const curIdx = (typeof window !== 'undefined' && window.selectedHotbarIndex !== undefined) ? window.selectedHotbarIndex : selectedHotbarIndex;
+        const item = liveInv[curIdx];
         if (!item || !TOOL_DURABILITY[item.id]) return;
         ensureToolDurability(item);
         item.durability -= amount;
         if (item.durability <= 0) {
-            inventory[selectedHotbarIndex] = null;
+            liveInv[curIdx] = null;
             showToast('Your tool broke!');
         }
         updateUI();
     }
 
     export function giveItem(id, amount = 1) {
+        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
         let initialAmount = amount;
         for (let i = 0; i < 27; i++) { 
-            if (inventory[i] && inventory[i].id === id && inventory[i].count < 64 && !isTool(id)) {
-                let space = 64 - inventory[i].count;
+            if (liveInv[i] && liveInv[i].id === id && liveInv[i].count < 64 && !isTool(id)) {
+                let space = 64 - liveInv[i].count;
                 let add = Math.min(space, amount);
-                inventory[i].count += add; amount -= add;
+                liveInv[i].count += add; amount -= add;
                 if (amount <= 0) break;
             }
         }
         if (amount > 0) {
             for (let i = 0; i < 27; i++) { 
-                if (!inventory[i]) { inventory[i] = { id: id, count: amount }; ensureToolDurability(inventory[i]); amount = 0; break; }
+                if (!liveInv[i]) { liveInv[i] = { id: id, count: amount }; ensureToolDurability(liveInv[i]); amount = 0; break; }
             }
         }
         if (amount > 0 && STATE === 'PLAYING') {
@@ -3046,25 +3098,29 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             else if (id === IDS.FLOWER_RED || id === IDS.FLOWER_YELLOW) unlockAchievement('wild_florist');
             else if (id === IDS.COOKED_PORKCHOP || id === IDS.COOKED_CHICKEN || id === IDS.COOKED_MUTTON) unlockAchievement('delicious_fish');
             else if (id === IDS.GOLD_INGOT) unlockAchievement('shiny_bling');
+            else if (id === IDS.WHEAT) unlockAchievement('bumper_crop');
+            else if (id === IDS.BREAD) unlockAchievement('bake_bread');
         }
         if(STATE==='PLAYING' && !isInventoryOpen) updateUI();
         return amount === 0; 
     }
 
     export function canFitItem(id, amount) {
+        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
         let capacity = 0;
         for (let i = 0; i < 27; i++) {
-            if (inventory[i] && inventory[i].id === id && !isTool(id)) capacity += Math.max(0, 64 - inventory[i].count);
-            else if (!inventory[i]) capacity += isTool(id) ? 1 : 64;
+            if (liveInv[i] && liveInv[i].id === id && !isTool(id)) capacity += Math.max(0, 64 - liveInv[i].count);
+            else if (!liveInv[i]) capacity += isTool(id) ? 1 : 64;
             if (capacity >= amount) return true;
         }
         return false;
     }
 
     export function getItemCount(id) {
+        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
         let count = 0;
         for (let i = 0; i < 27; i++) {
-            if (inventory[i] && inventory[i].id === id) count += inventory[i].count;
+            if (liveInv[i] && liveInv[i].id === id) count += liveInv[i].count;
         }
         return count;
     }
@@ -3074,13 +3130,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function consumeItem(id, amount) {
+        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
         for (let i = 0; i < 27; i++) {
-            if (inventory[i] && inventory[i].id === id) {
-                if (inventory[i].count >= amount) {
-                    inventory[i].count -= amount;
-                    if (inventory[i].count === 0) inventory[i] = null;
+            if (liveInv[i] && liveInv[i].id === id) {
+                if (liveInv[i].count >= amount) {
+                    liveInv[i].count -= amount;
+                    if (liveInv[i].count === 0) liveInv[i] = null;
                     return true;
-                } else { amount -= inventory[i].count; inventory[i] = null; }
+                } else { amount -= liveInv[i].count; liveInv[i] = null; }
             }
         }
         return false;
@@ -3112,6 +3169,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             else if (recipe.output.id === IDS.BUCKET) unlockAchievement('bucket_brigade');
             else if (recipe.output.id === IDS.DIAMOND_PICKAXE || recipe.output.id === IDS.DIAMOND_SWORD || recipe.output.id === IDS.DIAMOND_AXE) unlockAchievement('diamond_tools');
             else if (recipe.output.id === IDS.GOLD_PICKAXE || recipe.output.id === IDS.GOLD_SWORD || recipe.output.id === IDS.GOLD_AXE) unlockAchievement('shiny_bling');
+            else if ([IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE].includes(recipe.output.id)) unlockAchievement('time_to_cultivate');
+            else if (recipe.output.id === IDS.BREAD) unlockAchievement('bake_bread');
             if (isArmor(recipe.output.id)) {
                 unlockAchievement('suit_up');
                 if (recipe.output.id === IDS.HELMET_GOLD || recipe.output.id === IDS.CHESTPLATE_GOLD || recipe.output.id === IDS.LEGGINGS_GOLD || recipe.output.id === IDS.BOOTS_GOLD) {
@@ -4586,6 +4645,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
         
         entities = []; furnaces = []; timeOfDay = 0.15; dayCount = 1; frameCount = 0;
+        if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(0.15);
+        if (typeof setEngineDayCount === 'function') setEngineDayCount(1);
+        if (typeof setEngineFrameCount === 'function') setEngineFrameCount(0);
+        if (typeof window !== 'undefined') {
+            window.timeOfDay = 0.15;
+            window.dayCount = 1;
+            window.frameCount = 0;
+        }
         let initialAnimals = Math.min(getMaxAnimals(), Math.floor(getMaxAnimals() * 0.7));
         const centerSpawnX = Math.floor(spawn.x / TILE_SIZE);
         const curSurfaces = (typeof window !== 'undefined' && window.surfaceHeights && window.surfaceHeights.length === WORLD_WIDTH) ? window.surfaceHeights : ((surfaceHeights && surfaceHeights.length === WORLD_WIDTH) ? surfaceHeights : []);
@@ -4642,9 +4709,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function saveCurrentWorld(forceSaveMp = false) {
         if((isMultiplayer && !forceSaveMp) || !currentWorldId) return false;
+        const liveTimeOfDay = (typeof window !== 'undefined' && typeof window.timeOfDay === 'number') ? window.timeOfDay : timeOfDay;
+        const liveDayCount = (typeof window !== 'undefined' && typeof window.dayCount === 'number') ? window.dayCount : dayCount;
+        const liveFrameCount = (typeof window !== 'undefined' && typeof window.frameCount === 'number') ? window.frameCount : frameCount;
+        timeOfDay = liveTimeOfDay;
+        dayCount = liveDayCount;
+        frameCount = liveFrameCount;
+
         let worlds = getSavedWorlds();
         let wInfo = worlds.find(w => w.id === currentWorldId);
-        if(wInfo) { wInfo.lastPlayed = Date.now(); wInfo.dayCount = dayCount; wInfo.difficulty = currentDifficulty; wInfo.gameVersion = GAME_VERSION; wInfo.gameBuild = GAME_BUILD; wInfo.achievementsEnabled = currentWorldAchievementsEnabled; }
+        if(wInfo) {
+            wInfo.lastPlayed = Date.now();
+            wInfo.dayCount = liveDayCount;
+            wInfo.timeOfDay = liveTimeOfDay;
+            wInfo.difficulty = currentDifficulty;
+            wInfo.gameVersion = GAME_VERSION;
+            wInfo.gameBuild = GAME_BUILD;
+            wInfo.achievementsEnabled = currentWorldAchievementsEnabled;
+        }
         
         const liveWorld = (typeof window !== 'undefined' && window.world) ? window.world : world;
         const liveBgWorld = (typeof window !== 'undefined' && window.bgWorld) ? window.bgWorld : bgWorld;
@@ -4655,11 +4737,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         let saveData = {
             worldSize: currentWorldSize, worldWidth: WORLD_WIDTH, worldHeight: WORLD_HEIGHT,
-            worldRle: compressWorld(liveWorld), bgWorldRle: compressWorld(liveBgWorld), fluids: Object.fromEntries(fluids), timeOfDay: timeOfDay, dayCount: dayCount, frameCount: frameCount, difficulty: currentDifficulty, keepInventory, achievementsEnabled: currentWorldAchievementsEnabled, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
+            worldRle: compressWorld(liveWorld), bgWorldRle: compressWorld(liveBgWorld), fluids: Object.fromEntries(fluids), timeOfDay: liveTimeOfDay, dayCount: liveDayCount, frameCount: liveFrameCount, difficulty: currentDifficulty, keepInventory, achievementsEnabled: currentWorldAchievementsEnabled, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
             player: { x: livePlayer.x, y: livePlayer.y, health: livePlayer.health, hunger: livePlayer.hunger, exhaustion: livePlayer.exhaustion, oxygen: livePlayer.oxygen, poisonTimer: livePlayer.poisonTimer || 0, facingRight: livePlayer.facingRight },
             inventory: liveInventory, equippedArmor: liveEquippedArmor, furnaces: furnaces,
             chests: Object.fromEntries(chests),
             saplingGrowthQueue: Object.fromEntries(saplingGrowthQueue),
+            cropGrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.cropGrowthQueue) ? window.cropGrowthQueue : cropGrowthQueue),
             dirtToGrassQueue: Object.fromEntries(dirtToGrassQueue),
             snowRegrowthQueue: Object.fromEntries(snowRegrowthQueue),
             treeWoodCells: [...nonCollidableTreeWood],
@@ -4932,7 +5015,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             timeOfDay = data.timeOfDay !== undefined ? data.timeOfDay : 0.2;
             dayCount = data.dayCount || 1;
             frameCount = data.frameCount || 0;
+            if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(timeOfDay);
+            if (typeof setEngineDayCount === 'function') setEngineDayCount(dayCount);
+            if (typeof setEngineFrameCount === 'function') setEngineFrameCount(frameCount);
+            if (typeof window !== 'undefined') {
+                window.timeOfDay = timeOfDay;
+                window.dayCount = dayCount;
+                window.frameCount = frameCount;
+            }
             saplingGrowthQueue = new Map(Object.entries(data.saplingGrowthQueue || {}).map(([key, growthAt]) => [key, Number(growthAt)]).filter(([, growthAt]) => Number.isFinite(growthAt)));
+            cropGrowthQueue = new Map(Object.entries(data.cropGrowthQueue || {}));
+            if (typeof window !== 'undefined') window.cropGrowthQueue = cropGrowthQueue;
+            if (typeof setEngineCropGrowthQueue === 'function') setEngineCropGrowthQueue(cropGrowthQueue);
             dirtToGrassQueue = new Map(Object.entries(data.dirtToGrassQueue || {}).map(([key, growAt]) => [key, Number(growAt)]).filter(([, growAt]) => Number.isFinite(growAt)));
             snowRegrowthQueue = new Map(Object.entries(data.snowRegrowthQueue || {}).map(([key, regrowAt]) => [key, Number(regrowAt)]).filter(([, regrowAt]) => Number.isFinite(regrowAt)));
             currentDifficulty = data.difficulty || 'normal';
@@ -5143,7 +5237,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function updateSettingsUI() {
         if (document.getElementById('btn-toggle-clouds')) document.getElementById('btn-toggle-clouds').innerText = showClouds ? "ON" : "OFF";
         if (document.getElementById('btn-toggle-debug')) document.getElementById('btn-toggle-debug').innerText = showDebug ? "ON" : "OFF";
-        if (document.getElementById('btn-toggle-tutorial')) document.getElementById('btn-toggle-tutorial').innerText = showTutorial ? "ON" : "OFF";
         if (document.getElementById('btn-toggle-autojump')) document.getElementById('btn-toggle-autojump').innerText = autoJumpEnabled ? "ON" : "OFF";
         if (document.getElementById('btn-toggle-intro')) document.getElementById('btn-toggle-intro').innerText = introEnabled ? "ON" : "OFF";
         if (document.getElementById('btn-toggle-item-popups')) document.getElementById('btn-toggle-item-popups').innerText = showItemPopups ? "ON" : "OFF";
@@ -5695,7 +5788,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const chatMessages = document.getElementById('mp-chat-messages');
             if (chatMessages) chatMessages.innerHTML = '';
             chatSeenMessageIds = new Set();
-            updateTutorialUI();
         }
         setUIState('MENU');
         if (typeof setEngineState === 'function') setEngineState('MENU');
@@ -5830,21 +5922,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof window !== 'undefined') {
             window.showDebug = showDebug;
             if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showDebug', showDebug);
-        }
-        saveCurrentSettings();
-    }
-    export function toggleTutorial() { 
-        showTutorial = !showTutorial; 
-        const tutorial = document.getElementById('tutorial-text'); 
-        if (tutorial) {
-            tutorial.classList.toggle('hidden', !showTutorial); 
-            tutorial.classList.toggle('tutorial-hidden', !showTutorial); 
-        }
-        const btn = document.getElementById('btn-toggle-tutorial');
-        if (btn) btn.innerText = showTutorial ? "ON" : "OFF"; 
-        if (typeof window !== 'undefined') {
-            window.showTutorial = showTutorial;
-            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showTutorial', showTutorial);
         }
         saveCurrentSettings();
     }
@@ -7125,7 +7202,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     // ONBOARDING & TUTORIAL GUIDE SYSTEM (AUTHENTIC PIXEL-ART GAME DESIGN)
     // =========================================================================
     export let currentTutorialStep = 0;
-    export const TOTAL_TUTORIAL_STEPS = 6;
+    export const TOTAL_TUTORIAL_STEPS = 7;
 
     export function getTutorialTextureSrc(id) {
         if (typeof textures !== 'undefined' && textures && textures[id]) {
@@ -7269,8 +7346,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                             </div>
                         </div>
                         <div class="tutorial-tip-box">
-                            ${renderItemFrameHtml(IDS.TORCH, "Light Tip")}
-                            <span><b>PRO TIP:</b> Toggle Background Build Mode with <b>'B'</b> to seal houses with background walls. Monsters cannot spawn inside closed houses!</span>
+                            ${renderItemFrameHtml(IDS.WOOD_HOE, "Farming Tip")}
+                            <span><b>PRO TIP:</b> Left-Click with a <b>Hoe</b> on dirt to till farmland, then Right-Click with <b>Seeds</b> to plant crops! Toggle Background Build Mode with <b>'B'</b> to seal safe houses.</span>
                         </div>
                     </div>
                 `;
@@ -7328,6 +7405,63 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     </div>
                 `;
                 drawTutorialCraftingScene();
+            }
+        },
+        {
+            title: "Farming & Agriculture",
+            badge: "Cultivation & Food",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-preview-box w-full mb-2">
+                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
+                        </div>
+                        <div class="tutorial-grid-2">
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.WOOD_HOE, "Hoe")}
+                                    ${renderItemFrameHtml(IDS.FARMLAND, "Farmland")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">1. Till Farmland with a Hoe</span>
+                                    <p class="tutorial-card-desc">Craft a Hoe (2 Planks + 2 Sticks) at a Crafting Table. Left-Click grass or dirt with a Hoe to till the soil into rich Farmland.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.SEEDS, "Seeds")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title green">2. Plant Seeds</span>
+                                    <p class="tutorial-card-desc">Chop wild grass to collect Wheat Seeds. Right-Click on tilled Farmland while holding Seeds to plant your crop.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.WATER_BUCKET, "Water")}
+                                    ${renderItemFrameHtml(IDS.WHEAT_STAGE_2, "Crops")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">3. Irrigation & Growth Stages</span>
+                                    <p class="tutorial-card-desc">Crops grow through 4 visible growth stages. Hydrating soil within 4 blocks of water speeds up growth from 4 days to 3 days!</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.WHEAT, "Wheat")}
+                                    ${renderItemFrameHtml(IDS.BREAD, "Bread")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title orange">4. Harvesting & Baking Bread</span>
+                                    <p class="tutorial-card-desc">Mine fully grown golden wheat (Stage 4) to harvest Wheat and extra Seeds. Combine 3 Wheat at a Crafting Table to bake nourishing Bread!</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tutorial-tip-box">
+                            ${renderItemFrameHtml(IDS.BREAD, "Nutrition Tip")}
+                            <span><b>FARMING TIP:</b> Bread restores substantial hunger and lets you sprint for longer adventures without needing to constantly hunt wildlife!</span>
+                        </div>
+                    </div>
+                `;
+                drawTutorialFarmingScene();
             }
         },
         {
@@ -7479,8 +7613,271 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 return;
             } catch(e) {}
         }
-        ctx.fillStyle = '#5c4033';
-        ctx.fillRect(Math.floor(x), Math.floor(y), size, size);
+        const ix = Math.floor(x);
+        const iy = Math.floor(y);
+        if (id === IDS.PLOWED_DIRT) {
+            ctx.fillStyle = '#795548';
+            ctx.fillRect(ix, iy, size, size);
+            ctx.fillStyle = '#452b16';
+            ctx.fillRect(ix, iy, size, Math.max(3, Math.floor(size * 0.25)));
+            ctx.fillStyle = '#2e190b';
+            for (let fx = 0; fx < size; fx += 6) {
+                ctx.fillRect(ix + fx, iy, 2, 2);
+            }
+            return;
+        }
+        if (id === IDS.GRASS) {
+            ctx.fillStyle = '#795548';
+            ctx.fillRect(ix, iy, size, size);
+            ctx.fillStyle = '#4caf50';
+            ctx.fillRect(ix, iy, size, Math.max(3, Math.floor(size * 0.25)));
+            return;
+        }
+        const fallbackColors = {
+            [IDS.DIRT]: '#795548',
+            [IDS.STONE]: '#78909c',
+            [IDS.COBBLESTONE]: '#607d8b',
+            [IDS.SAND]: '#e0c068',
+            [IDS.SNOW]: '#f0f8ff',
+            [IDS.WOOD]: '#6d4c41',
+            [IDS.PLANKS]: '#a1887f',
+            [IDS.LEAVES]: '#2e7d32',
+            [IDS.COAL_ORE]: '#424242',
+            [IDS.IRON_ORE]: '#d7ccc8',
+            [IDS.DIAMOND_ORE]: '#80deea',
+            [IDS.CACTUS]: '#2e7d32',
+            [IDS.FLOWER_RED]: '#e53935',
+            [IDS.FLOWER_YELLOW]: '#fdd835',
+            [IDS.SHORT_GRASS]: '#43a047',
+            [IDS.WHEAT_STAGE_1]: '#8bc34a',
+            [IDS.WHEAT_STAGE_2]: '#aed581',
+            [IDS.WHEAT_STAGE_3]: '#dce775',
+            [IDS.WHEAT_STAGE_4]: '#fbc02d',
+            [IDS.WHEAT]: '#fbc02d',
+            [IDS.BREAD]: '#d79948',
+            [IDS.BED]: '#e53935',
+            [IDS.TORCH]: '#ffb300',
+            [IDS.CHEST]: '#8d6e63',
+            [IDS.WOOD_HOE]: '#8d6e63',
+            [IDS.IRON_SWORD]: '#cfd8dc',
+            [IDS.DIAMOND_PICKAXE]: '#00e5ff'
+        };
+        ctx.fillStyle = fallbackColors[id] || '#5c4033';
+        ctx.fillRect(ix, iy, size, size);
+    }
+
+    function drawMountainRidge(ctx, startX, endX, groundY, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(startX, groundY);
+        for (let x = startX; x <= endX; x += 16) {
+            const my = groundY - 34 - Math.sin(x * 0.015) * 16 - Math.cos(x * 0.03) * 6;
+            ctx.lineTo(x, Math.max(8, my));
+        }
+        ctx.lineTo(endX, groundY);
+        ctx.fill();
+    }
+
+    function drawWoodlandHills(ctx, startX, endX, groundY, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(startX, groundY);
+        for (let x = startX; x <= endX; x += 12) {
+            const wy = groundY - 18 - Math.sin(x * 0.025) * 8;
+            ctx.lineTo(x, wy);
+        }
+        ctx.lineTo(endX, groundY);
+        ctx.fill();
+    }
+
+    function drawMinecraftSun(ctx, sunX, sunY, h, isSunset = false) {
+        if (isSunset) {
+            ctx.fillStyle = 'rgba(255, 140, 70, 0.14)';
+            ctx.fillRect(sunX - 10, 0, 52, h);
+            ctx.fillStyle = 'rgba(251, 146, 60, 0.25)';
+            ctx.fillRect(sunX - 6, sunY - 6, 44, 44);
+            ctx.fillStyle = '#ea580c';
+            ctx.fillRect(sunX, sunY, 32, 32);
+            ctx.fillStyle = '#fb923c';
+            ctx.fillRect(sunX + 4, sunY + 4, 24, 24);
+            ctx.fillStyle = '#fed7aa';
+            ctx.fillRect(sunX + 9, sunY + 9, 14, 14);
+        } else {
+            ctx.fillStyle = 'rgba(255, 240, 150, 0.12)';
+            ctx.fillRect(sunX - 10, 0, 52, h);
+            ctx.fillStyle = 'rgba(255, 230, 110, 0.25)';
+            ctx.fillRect(sunX - 6, sunY - 6, 44, 44);
+            ctx.fillStyle = '#ffd43f';
+            ctx.fillRect(sunX, sunY, 32, 32);
+            ctx.fillStyle = '#fff07a';
+            ctx.fillRect(sunX + 4, sunY + 4, 24, 24);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(sunX + 9, sunY + 9, 14, 14);
+        }
+    }
+
+    function drawMinecraftMoon(ctx, moonX, moonY, h) {
+        ctx.fillStyle = 'rgba(180, 210, 255, 0.08)';
+        ctx.fillRect(moonX - 8, 0, 48, h);
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.2)';
+        ctx.fillRect(moonX - 5, moonY - 5, 42, 42);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(moonX, moonY, 32, 32);
+        ctx.fillStyle = '#f1f5f9';
+        ctx.fillRect(moonX + 3, moonY + 3, 26, 26);
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(moonX + 7, moonY + 7, 5, 5);
+        ctx.fillRect(moonX + 16, moonY + 14, 7, 6);
+    }
+
+    function drawPixelCloud(ctx, cx, cy, cw, ch, color = 'rgba(255, 255, 255, 0.85)') {
+        ctx.fillStyle = color;
+        ctx.fillRect(cx, cy + Math.floor(ch * 0.3), cw, Math.floor(ch * 0.7));
+        ctx.fillRect(cx + Math.floor(cw * 0.2), cy, Math.floor(cw * 0.6), ch);
+    }
+
+    function drawTutorialBackdrop(ctx, w, h, groundY, theme = 'day') {
+        if (theme === 'day') {
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+            skyGrad.addColorStop(0, '#4a8ee8');
+            skyGrad.addColorStop(0.65, '#99caff');
+            skyGrad.addColorStop(1, '#d8edff');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, groundY);
+
+            drawMinecraftSun(ctx, w - 88, 12, h, false);
+            drawPixelCloud(ctx, 80, 14, 70, 16, 'rgba(255, 255, 255, 0.85)');
+            drawPixelCloud(ctx, 470, 18, 60, 14, 'rgba(255, 255, 255, 0.85)');
+
+            drawMountainRidge(ctx, 0, w, groundY, '#5c8299');
+            drawWoodlandHills(ctx, 0, w, groundY, '#426848');
+        } else if (theme === 'day_night_split') {
+            const halfW = Math.floor(w / 2);
+
+            const dayGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+            dayGrad.addColorStop(0, '#4a8ee8');
+            dayGrad.addColorStop(0.65, '#99caff');
+            dayGrad.addColorStop(1, '#d8edff');
+            ctx.fillStyle = dayGrad;
+            ctx.fillRect(0, 0, halfW, groundY);
+
+            drawMinecraftSun(ctx, 50, 12, h, false);
+            drawPixelCloud(ctx, 150, 14, 60, 14, 'rgba(255, 255, 255, 0.85)');
+            drawMountainRidge(ctx, 0, halfW, groundY, '#5c8299');
+            drawWoodlandHills(ctx, 0, halfW, groundY, '#426848');
+
+            const nightGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+            nightGrad.addColorStop(0, '#0c1222');
+            nightGrad.addColorStop(0.6, '#151d32');
+            nightGrad.addColorStop(1, '#1e293b');
+            ctx.fillStyle = nightGrad;
+            ctx.fillRect(halfW, 0, halfW, groundY);
+
+            ctx.fillStyle = '#ffffff';
+            const stars = [
+                [halfW + 35, 18], [halfW + 80, 38], [halfW + 130, 14],
+                [halfW + 180, 42], [halfW + 235, 20], [halfW + 280, 34],
+                [halfW + 320, 16], [halfW + 355, 40]
+            ];
+            stars.forEach(([sx, sy]) => ctx.fillRect(sx, sy, 2, 2));
+
+            drawMinecraftMoon(ctx, w - 75, 12, h);
+            drawPixelCloud(ctx, halfW + 60, 18, 55, 12, 'rgba(255, 255, 255, 0.15)');
+            drawMountainRidge(ctx, halfW, w, groundY, '#182030');
+            drawWoodlandHills(ctx, halfW, w, groundY, '#121b16');
+
+            ctx.strokeStyle = '#ffd34d';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(halfW, 0);
+            ctx.lineTo(halfW, groundY);
+            ctx.stroke();
+        } else if (theme === 'sunset') {
+            const sunsetGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+            sunsetGrad.addColorStop(0, '#1c2438');
+            sunsetGrad.addColorStop(0.35, '#3d2e56');
+            sunsetGrad.addColorStop(0.7, '#823e59');
+            sunsetGrad.addColorStop(1, '#d97746');
+            ctx.fillStyle = sunsetGrad;
+            ctx.fillRect(0, 0, w, groundY);
+
+            drawMinecraftSun(ctx, w - 100, 38, h, true);
+            drawPixelCloud(ctx, 80, 14, 70, 16, 'rgba(253, 186, 116, 0.4)');
+            drawPixelCloud(ctx, 420, 18, 60, 14, 'rgba(253, 186, 116, 0.35)');
+
+            drawMountainRidge(ctx, 0, w, groundY, '#474063');
+            drawWoodlandHills(ctx, 0, w, groundY, '#273833');
+        }
+    }
+
+    function drawTutorialPlayer(ctx, px, py, options = {}) {
+        const isAlex = options.skin === 'alex';
+        const hairColor = isAlex ? '#c2410c' : '#45220c';
+        const skinColor = isAlex ? '#fbd7b5' : '#f8b584';
+        const shirtColor = isAlex ? '#16a34a' : '#299cd2';
+        const pantsColor = isAlex ? '#653818' : '#1c4a85';
+        const shoesColor = isAlex ? '#331f13' : '#262626';
+        const eyeColor = isAlex ? '#15803d' : '#1d4ed8';
+
+        // Head (12 x 12)
+        ctx.fillStyle = skinColor;
+        ctx.fillRect(px + 1, py + 2, 12, 12);
+        // Hair
+        ctx.fillStyle = hairColor;
+        ctx.fillRect(px, py, 14, 4);
+        ctx.fillRect(px, py + 4, 3, 4);
+        if (isAlex) {
+            ctx.fillRect(px + 11, py + 4, 3, 7);
+        }
+        // Eyes
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(px + 7, py + 5, 2, 2);
+        ctx.fillRect(px + 10, py + 5, 2, 2);
+        ctx.fillStyle = eyeColor;
+        ctx.fillRect(px + 8, py + 5, 1, 2);
+        ctx.fillRect(px + 11, py + 5, 1, 2);
+        // Nose / mouth
+        ctx.fillStyle = isAlex ? '#e29d72' : '#c97848';
+        ctx.fillRect(px + 8, py + 8, 3, 2);
+
+        // Torso / Shirt (14 x 14)
+        ctx.fillStyle = shirtColor;
+        ctx.fillRect(px, py + 14, 14, 14);
+        // Collar cutout
+        ctx.fillStyle = skinColor;
+        ctx.fillRect(px + 5, py + 14, 4, 3);
+
+        // Front Arm with sleeve
+        ctx.fillStyle = shirtColor;
+        ctx.fillRect(px + 10, py + 15, 4, 5);
+        ctx.fillStyle = skinColor;
+        ctx.fillRect(px + 10, py + 20, 4, 7);
+
+        // Legs / Pants (12 x 12)
+        ctx.fillStyle = pantsColor;
+        ctx.fillRect(px + 1, py + 28, 12, 12);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(px + 6, py + 30, 1, 10);
+
+        // Boots / Shoes (14 x 4)
+        ctx.fillStyle = shoesColor;
+        ctx.fillRect(px, py + 40, 14, 4);
+
+        // Held item
+        if (options.heldItem) {
+            drawTutorialBlock(ctx, options.heldItem, px + 12, py + 14, 20);
+        }
+
+        // Name tag
+        if (options.name) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.font = 'bold 13px "VT323", monospace';
+            const tw = ctx.measureText(options.name).width;
+            ctx.fillRect(px + 7 - tw / 2 - 3, py - 14, tw + 6, 14);
+            ctx.fillStyle = options.nameColor || '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(options.name, px + 7, py - 3);
+        }
     }
 
     export function drawTutorialWorldScene() {
@@ -7491,47 +7888,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const w = c.width, h = c.height;
         ctx.imageSmoothingEnabled = false;
 
-        // Sky gradient
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
-        skyGrad.addColorStop(0, '#4a8ee8');
-        skyGrad.addColorStop(0.65, '#99caff');
-        skyGrad.addColorStop(1, '#d8edff');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, w, h);
-
-        // Sun with ray glow
-        ctx.fillStyle = 'rgba(255, 240, 150, 0.12)';
-        ctx.fillRect(w - 90, 0, 55, h);
-        ctx.fillRect(w - 75, 10, 32, 32);
-        ctx.fillStyle = '#fff480';
-        ctx.fillRect(w - 71, 14, 24, 24);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(w - 67, 18, 10, 10);
-
-        // Rolling Mountains in background
-        ctx.fillStyle = '#5c8299';
-        ctx.beginPath();
-        ctx.moveTo(0, h);
-        for (let x = 0; x <= w; x += 16) {
-            ctx.lineTo(x, h - 55 - Math.sin(x * 0.015) * 16 - Math.cos(x * 0.03) * 6);
-        }
-        ctx.lineTo(w, h);
-        ctx.fill();
-
-        // Woodland horizon layer
-        ctx.fillStyle = '#426848';
-        ctx.beginPath();
-        ctx.moveTo(0, h);
-        for (let x = 0; x <= w; x += 12) {
-            ctx.lineTo(x, h - 42 - Math.sin(x * 0.025) * 8);
-        }
-        ctx.lineTo(w, h);
-        ctx.fill();
-
-        // Biome Terrain Surface:
         const bSize = 24;
-        const groundY = h - 46;
+        const groundY = 88;
 
+        // Unified Day Backdrop
+        drawTutorialBackdrop(ctx, w, h, groundY, 'day');
+
+        // Biome Terrain Surface & Subsoil (2 complete layers)
         for (let x = 0; x < w; x += bSize) {
             let topBlock = IDS.GRASS;
             if (x < 180) topBlock = IDS.SAND;
@@ -7541,7 +7904,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             drawTutorialBlock(ctx, topBlock === IDS.SAND ? IDS.SAND : IDS.DIRT, x, groundY + bSize, bSize);
         }
 
-        // Subterranean Ores in the underground slice:
+        // Subterranean Ore Veins in Underground Slice:
         drawTutorialBlock(ctx, IDS.STONE, 240, groundY + bSize, bSize);
         drawTutorialBlock(ctx, IDS.COAL_ORE, 264, groundY + bSize, bSize);
         drawTutorialBlock(ctx, IDS.IRON_ORE, 288, groundY + bSize, bSize);
@@ -7552,33 +7915,30 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         drawTutorialBlock(ctx, IDS.CACTUS, 80, groundY - bSize, bSize);
         drawTutorialBlock(ctx, IDS.CACTUS, 80, groundY - bSize * 2, bSize);
 
-        // Plains Oak Tree (authentic wood and leaves textures!)
-        const treeX = 450;
+        // Plains Oak Tree
+        const treeX = 440;
         drawTutorialBlock(ctx, IDS.WOOD, treeX, groundY - bSize, bSize);
         drawTutorialBlock(ctx, IDS.WOOD, treeX, groundY - bSize * 2, bSize);
         drawTutorialBlock(ctx, IDS.WOOD, treeX, groundY - bSize * 3, bSize);
         for (let lx = -bSize * 1.5; lx <= bSize * 1.5; lx += bSize) {
             for (let ly = -bSize * 2; ly <= 0; ly += bSize) {
+                if (Math.abs(lx) === bSize * 1.5 && ly === -bSize * 2) continue;
                 drawTutorialBlock(ctx, IDS.LEAVES, treeX + lx, groundY - bSize * 3 + ly, bSize);
             }
         }
 
         // Flowers & Vegetation
-        drawTutorialBlock(ctx, IDS.FLOWER_RED, 230, groundY - bSize + 6, bSize);
-        drawTutorialBlock(ctx, IDS.FLOWER_YELLOW, 290, groundY - bSize + 6, bSize);
-        drawTutorialBlock(ctx, IDS.SHORT_GRASS, 350, groundY - bSize + 8, bSize);
+        drawTutorialBlock(ctx, IDS.FLOWER_RED, 210, groundY - 18, 20);
+        drawTutorialBlock(ctx, IDS.FLOWER_YELLOW, 280, groundY - 18, 20);
+        drawTutorialBlock(ctx, IDS.SHORT_GRASS, 350, groundY - 16, 18);
 
-        // Player Character standing on grass
-        const px = 250, py = groundY - 44;
-        ctx.fillStyle = '#1c6ca8';
-        ctx.fillRect(px, py + 20, 12, 16);
-        ctx.fillStyle = '#299cd2';
-        ctx.fillRect(px - 1, py + 8, 14, 13);
-        ctx.fillStyle = '#f8b584';
-        ctx.fillRect(px + 1, py - 4, 11, 12);
-        ctx.fillStyle = '#4a2c16';
-        ctx.fillRect(px, py - 6, 13, 5);
-        drawTutorialBlock(ctx, IDS.DIAMOND_PICKAXE, px + 12, py + 2, 20);
+        // Steve Player Character
+        drawTutorialPlayer(ctx, 240, groundY - 44, {
+            skin: 'steve',
+            heldItem: IDS.DIAMOND_PICKAXE,
+            name: '<Steve>',
+            nameColor: '#38bdf8'
+        });
     }
 
     export function drawTutorialCraftingScene() {
@@ -7644,6 +8004,107 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
     }
 
+    export function drawTutorialFarmingScene() {
+        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        const w = c.width, h = c.height;
+        ctx.imageSmoothingEnabled = false;
+
+        const groundY = 88;
+        const bSize = 24;
+
+        // Unified Day Backdrop (matching World scene art style!)
+        drawTutorialBackdrop(ctx, w, h, groundY, 'day');
+
+        // Left meadow: Grass & subsoil dirt (x: 0..216)
+        for (let x = 0; x < 216; x += bSize) {
+            drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
+            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
+        }
+
+        // Irrigation Water canal (x: 216..264)
+        for (let x = 216; x < 264; x += bSize) {
+            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
+            ctx.fillStyle = '#2563eb';
+            ctx.fillRect(x, groundY + 4, bSize, bSize - 4);
+            ctx.fillStyle = 'rgba(147, 197, 253, 0.7)';
+            ctx.fillRect(x, groundY + 4, bSize, 3);
+        }
+
+        // Farmland with the 4 crop growth stages (contiguous blocks, zero gaps, authentic plowed dirt texture!)
+        const stages = [
+            IDS.WHEAT_STAGE_1,
+            IDS.WHEAT_STAGE_1,
+            IDS.WHEAT_STAGE_2,
+            IDS.WHEAT_STAGE_2,
+            IDS.WHEAT_STAGE_3,
+            IDS.WHEAT_STAGE_3,
+            IDS.WHEAT_STAGE_4,
+            IDS.WHEAT_STAGE_4
+        ];
+
+        const farmStartX = 264;
+        for (let i = 0; i < stages.length; i++) {
+            const cx = farmStartX + i * bSize;
+            drawTutorialBlock(ctx, IDS.PLOWED_DIRT, cx, groundY, bSize);
+            drawTutorialBlock(ctx, IDS.DIRT, cx, groundY + bSize, bSize);
+            drawTutorialBlock(ctx, stages[i], cx, groundY - bSize, bSize);
+        }
+
+        const rightMeadowStartX = farmStartX + stages.length * bSize; // 456
+        // Right meadow: Grass & subsoil dirt (x: 456..w)
+        for (let x = rightMeadowStartX; x < w; x += bSize) {
+            drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
+            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
+        }
+
+        // Flowers & wild foliage
+        drawTutorialBlock(ctx, IDS.FLOWER_RED, 60, groundY - 18, 20);
+        drawTutorialBlock(ctx, IDS.FLOWER_YELLOW, 130, groundY - 18, 20);
+        drawTutorialBlock(ctx, IDS.SHORT_GRASS, 540, groundY - 16, 18);
+        drawTutorialBlock(ctx, IDS.FLOWER_RED, 610, groundY - 18, 20);
+
+        // Player Character with Hoe (unified pixel-art player)
+        drawTutorialPlayer(ctx, 160, groundY - 44, {
+            skin: 'steve',
+            heldItem: IDS.WOOD_HOE,
+            name: '<Farmer Steve>',
+            nameColor: '#fde047'
+        });
+
+        // Friendly Pig grazing in right meadow
+        try {
+            if (typeof Pig === 'function') {
+                const pig = new Pig(660, groundY - 21);
+                pig.facingRight = false;
+                pig.draw(ctx, 0, 0);
+            }
+        } catch(e) {}
+
+        // Wheat -> Bread craft showcase badge
+        const badgeX = 356, badgeY = 12;
+        ctx.fillStyle = 'rgba(23, 27, 32, 0.88)';
+        ctx.strokeStyle = '#eab308';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(badgeX - 45, badgeY - 4, 145, 30, 4);
+        } else {
+            ctx.rect(badgeX - 45, badgeY - 4, 145, 30);
+        }
+        ctx.fill();
+        ctx.stroke();
+
+        drawTutorialBlock(ctx, IDS.WHEAT, badgeX - 38, badgeY, 22);
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 15px "VT323", monospace';
+        ctx.fillText('->', badgeX - 10, badgeY + 16);
+        drawTutorialBlock(ctx, IDS.BREAD, badgeX + 10, badgeY, 22);
+        ctx.fillText('BREAD', badgeX + 40, badgeY + 16);
+    }
+
     export function drawTutorialMobsScene() {
         const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
         if (!c) return;
@@ -7652,99 +8113,78 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const w = c.width, h = c.height;
         ctx.imageSmoothingEnabled = false;
 
+        const groundY = 88;
+        const bSize = 24;
         const halfW = Math.floor(w / 2);
 
-        // Day half on left
-        const dayGrad = ctx.createLinearGradient(0, 0, halfW, 0);
-        dayGrad.addColorStop(0, '#4a8ee8');
-        dayGrad.addColorStop(1, '#9cd1ff');
-        ctx.fillStyle = dayGrad;
-        ctx.fillRect(0, 0, halfW, h);
+        // Unified Day / Night Split Backdrop
+        drawTutorialBackdrop(ctx, w, h, groundY, 'day_night_split');
 
-        // Night half on right
-        const nightGrad = ctx.createLinearGradient(halfW, 0, w, 0);
-        nightGrad.addColorStop(0, '#101728');
-        nightGrad.addColorStop(1, '#080c16');
-        ctx.fillStyle = nightGrad;
-        ctx.fillRect(halfW, 0, halfW, h);
-
-        // Night twinkling pixel stars
-        ctx.fillStyle = '#ffffff';
-        const stars = [[halfW + 40, 20], [halfW + 110, 45], [halfW + 190, 15], [halfW + 260, 35], [halfW + 320, 25]];
-        stars.forEach(([sx, sy]) => ctx.fillRect(sx, sy, 2, 2));
-
-        // Golden divider
-        ctx.strokeStyle = '#ffd34d';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(halfW, 0);
-        ctx.lineTo(halfW, h);
-        ctx.stroke();
-
-        // Day Ground
-        const bSize = 24;
-        const groundY = h - 36;
-        for (let x = 0; x < halfW; x += bSize) {
+        // Ground Terrain: 2 complete rows across entire canvas
+        for (let x = 0; x < w; x += bSize) {
             drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
             drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
         }
 
-        // Night Ground
-        for (let x = halfW; x < w; x += bSize) {
-            drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
-            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
-        }
+        // Night Darkness overlay on ground terrain for right half
         ctx.fillStyle = 'rgba(5, 10, 20, 0.45)';
-        ctx.fillRect(halfW, groundY, halfW, 40);
+        ctx.fillRect(halfW, groundY, halfW, h - groundY);
 
-        // Banners
+        // Top Centered Banners
         ctx.fillStyle = '#22c55e';
-        ctx.font = 'bold 20px VT323, monospace';
+        ctx.font = 'bold 18px "VT323", monospace';
         ctx.textAlign = 'center';
         ctx.fillText('DAY: PEACEFUL FAUNA', halfW / 2, 22);
 
         ctx.fillStyle = '#f87171';
         ctx.fillText('NIGHT: DANGEROUS MONSTERS', halfW + halfW / 2, 22);
 
-        // Animals
+        // Day Animals (grounded properly with feet on groundY)
         try {
             if (typeof Pig === 'function') {
-                const p = new Pig(80, groundY - 24);
+                const p = new Pig(75, groundY - 21);
                 p.dir = 1;
                 p.draw(ctx, 0, 0);
             }
             if (typeof Sheep === 'function') {
-                const s = new Sheep(210, groundY - 28);
+                const s = new Sheep(205, groundY - 22);
                 s.dir = 1;
                 s.draw(ctx, 0, 0);
             }
         } catch(e) {}
 
-        // Red Flower
-        drawTutorialBlock(ctx, IDS.FLOWER_RED, 150, groundY - 20, 20);
+        // Flowers & Vegetation on Day side
+        drawTutorialBlock(ctx, IDS.FLOWER_RED, 145, groundY - 18, 20);
+        drawTutorialBlock(ctx, IDS.FLOWER_YELLOW, 290, groundY - 18, 20);
 
-        // Shelter on right with Bed & Torch
-        drawTutorialBlock(ctx, IDS.BED, w - 80, groundY - 18, 36);
-        drawTutorialBlock(ctx, IDS.TORCH, w - 110, groundY - 24, 20);
-        const tGlow = ctx.createRadialGradient(w - 100, groundY - 14, 2, w - 100, groundY - 14, 35);
-        tGlow.addColorStop(0, 'rgba(255, 180, 50, 0.35)');
-        tGlow.addColorStop(1, 'rgba(255, 180, 50, 0)');
-        ctx.fillStyle = tGlow;
-        ctx.fillRect(w - 135, groundY - 49, 70, 70);
-
-        // Monsters
+        // Night Hostile Mobs (grounded properly with feet on groundY)
         try {
             if (typeof Zombie === 'function') {
-                const z = new Zombie(halfW + 65, groundY - 50);
+                const z = new Zombie(halfW + 60, groundY - 58);
                 z.facingRight = false;
                 z.draw(ctx, 0, 0);
             }
             if (typeof Creeper === 'function') {
-                const cr = new Creeper(halfW + 165, groundY - 46);
+                const cr = new Creeper(halfW + 155, groundY - 58);
                 cr.facingRight = false;
                 cr.draw(ctx, 0, 0);
             }
         } catch(e) {}
+
+        // Shelter on right with Bed & Torch
+        drawTutorialBlock(ctx, IDS.PLANKS, w - 110, groundY - bSize, bSize);
+        drawTutorialBlock(ctx, IDS.PLANKS, w - 110, groundY - bSize * 2, bSize);
+        drawTutorialBlock(ctx, IDS.PLANKS, w - 86, groundY - bSize * 2, bSize);
+        drawTutorialBlock(ctx, IDS.PLANKS, w - 62, groundY - bSize * 2, bSize);
+
+        drawTutorialBlock(ctx, IDS.BED, w - 85, groundY - 18, 36);
+        drawTutorialBlock(ctx, IDS.TORCH, w - 108, groundY - bSize * 1.5, 20);
+
+        const tGlow = ctx.createRadialGradient(w - 98, groundY - 24, 2, w - 98, groundY - 24, 38);
+        tGlow.addColorStop(0, 'rgba(255, 180, 50, 0.35)');
+        tGlow.addColorStop(1, 'rgba(255, 180, 50, 0)');
+        ctx.fillStyle = tGlow;
+        ctx.fillRect(w - 138, groundY - 60, 80, 75);
     }
 
     export function drawTutorialArmorScene() {
@@ -7850,77 +8290,75 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const w = c.width, h = c.height;
         ctx.imageSmoothingEnabled = false;
 
-        // Dark sky with sunset tones
-        const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-        bgGrad.addColorStop(0, '#1c2842');
-        bgGrad.addColorStop(0.6, '#313e61');
-        bgGrad.addColorStop(1, '#53435c');
-        ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, w, h);
-
-        // Ground terrain
+        const groundY = 88;
         const bSize = 24;
-        const groundY = h - 36;
+
+        // Unified Sunset Backdrop
+        drawTutorialBackdrop(ctx, w, h, groundY, 'sunset');
+
+        // Ground terrain: 2 complete rows across entire canvas
         for (let x = 0; x < w; x += bSize) {
             drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
             drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
         }
 
-        // Two Co-op Players
-        const p1X = 140, p1Y = groundY - 44;
-        ctx.fillStyle = '#1c6ca8';
-        ctx.fillRect(p1X, p1Y + 20, 12, 16);
-        ctx.fillStyle = '#299cd2';
-        ctx.fillRect(p1X - 1, p1Y + 8, 14, 13);
-        ctx.fillStyle = '#f8b584';
-        ctx.fillRect(p1X + 1, p1Y - 4, 11, 12);
-        ctx.fillStyle = '#4a2c16';
-        ctx.fillRect(p1X, p1Y - 6, 13, 5);
-        drawTutorialBlock(ctx, IDS.TORCH, p1X + 12, p1Y + 2, 20);
+        // Subterranean Ore Vein cutaway under players
+        drawTutorialBlock(ctx, IDS.STONE, 216, groundY + bSize, bSize);
+        drawTutorialBlock(ctx, IDS.IRON_ORE, 240, groundY + bSize, bSize);
+        drawTutorialBlock(ctx, IDS.DIAMOND_ORE, 264, groundY + bSize, bSize);
+        drawTutorialBlock(ctx, IDS.STONE, 288, groundY + bSize, bSize);
 
-        // Player 2 (Custom Skin)
-        const p2X = 220, p2Y = groundY - 44;
-        ctx.fillStyle = '#7c2d12';
-        ctx.fillRect(p2X, p2Y + 20, 12, 16);
-        ctx.fillStyle = '#dc2626';
-        ctx.fillRect(p2X - 1, p2Y + 8, 14, 13);
-        ctx.fillStyle = '#fcd34d';
-        ctx.fillRect(p2X + 1, p2Y - 4, 11, 12);
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(p2X, p2Y - 6, 13, 5);
-        drawTutorialBlock(ctx, IDS.IRON_SWORD, p2X + 12, p2Y + 2, 20);
+        // Flowers & Vegetation
+        drawTutorialBlock(ctx, IDS.FLOWER_RED, 55, groundY - 18, 20);
+        drawTutorialBlock(ctx, IDS.SHORT_GRASS, 320, groundY - 16, 18);
+
+        // Two Co-op Players (unified pixel-art player models)
+        drawTutorialPlayer(ctx, 115, groundY - 44, {
+            skin: 'steve',
+            heldItem: IDS.TORCH,
+            name: '<Steve>',
+            nameColor: '#4ade80'
+        });
+
+        drawTutorialPlayer(ctx, 185, groundY - 44, {
+            skin: 'alex',
+            heldItem: IDS.IRON_SWORD,
+            name: '<Alex>',
+            nameColor: '#38bdf8'
+        });
 
         // Storage Chest
-        drawTutorialBlock(ctx, IDS.CHEST, 290, groundY - 26, 32);
+        drawTutorialBlock(ctx, IDS.CHEST, 255, groundY - 26, 28);
 
         // Speech Bubble
         ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.fillRect(130, 16, 210, 32);
+        ctx.fillRect(115, 12, 220, 26);
         ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(130, 16, 210, 32);
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(115, 12, 220, 26);
         ctx.fillStyle = '#4ade80';
-        ctx.font = 'bold 18px VT323, monospace';
+        ctx.font = 'bold 16px "VT323", monospace';
         ctx.textAlign = 'left';
-        ctx.fillText("<Alex>: Ready to mine diamond ore!", 138, 38);
+        ctx.fillText("<Alex>: Ready to mine diamond ore!", 122, 30);
 
-        // Right side: Multiplayer Room Banner
-        const bannerX = 400;
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(bannerX, 22, 320, 68);
+        // Right side: Multiplayer Room Status Banner
+        const bannerX = 420;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.fillRect(bannerX, 12, 315, 66);
         ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(bannerX, 22, 320, 68);
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bannerX, 12, 315, 66);
 
         ctx.fillStyle = '#22c55e';
-        ctx.font = 'bold 22px VT323, monospace';
-        ctx.fillText("● MULTIPLAYER WORLD", bannerX + 16, 46);
+        ctx.font = 'bold 20px "VT323", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText("● MULTIPLAYER WORLD", bannerX + 14, 32);
         ctx.fillStyle = '#ffffff';
-        ctx.font = '18px VT323, monospace';
-        ctx.fillText("Room: Co-Op Survival [2 / 8 Players]", bannerX + 16, 66);
+        ctx.font = '16px "VT323", monospace';
+        ctx.fillText("Room: Co-Op Survival [2 / 8 Players]", bannerX + 14, 50);
         ctx.fillStyle = '#38bdf8';
-        ctx.font = '16px VT323, monospace';
-        ctx.fillText("Ping: 24ms | Seamless P2P Sync", bannerX + 16, 82);
+        ctx.font = '15px "VT323", monospace';
+        ctx.fillText("Ping: 24ms | Seamless P2P Sync", bannerX + 14, 66);
     }
 
     export let isTutorialOnboardingMode = false;
@@ -8275,7 +8713,6 @@ try { if (typeof toggleScreenShake !== "undefined") window.toggleScreenShake = t
 try { if (typeof toggleShimmer !== "undefined") window.toggleShimmer = toggleShimmer; } catch(e) {}
 try { if (typeof toggleSkinEditorGrid !== "undefined") window.toggleSkinEditorGrid = toggleSkinEditorGrid; } catch(e) {}
 try { if (typeof toggleSkinEditorGuides !== "undefined") window.toggleSkinEditorGuides = toggleSkinEditorGuides; } catch(e) {}
-try { if (typeof toggleTutorial !== "undefined") window.toggleTutorial = toggleTutorial; } catch(e) {}
 try { if (typeof toggleVignette !== "undefined") window.toggleVignette = toggleVignette; } catch(e) {}
 try { if (typeof toggleWhatsNewStartup !== "undefined") window.toggleWhatsNewStartup = toggleWhatsNewStartup; } catch(e) {}
 try { if (typeof toggleWorldMap !== "undefined") window.toggleWorldMap = toggleWorldMap; } catch(e) {}
@@ -8329,6 +8766,7 @@ try { if (typeof goToTutorialStep !== "undefined") window.goToTutorialStep = goT
 try { if (typeof renderTutorialStep !== "undefined") window.renderTutorialStep = renderTutorialStep; } catch(e) {}
 try { if (typeof drawTutorialWorldScene !== "undefined") window.drawTutorialWorldScene = drawTutorialWorldScene; } catch(e) {}
 try { if (typeof drawTutorialCraftingScene !== "undefined") window.drawTutorialCraftingScene = drawTutorialCraftingScene; } catch(e) {}
+try { if (typeof drawTutorialFarmingScene !== "undefined") window.drawTutorialFarmingScene = drawTutorialFarmingScene; } catch(e) {}
 try { if (typeof drawTutorialMobsScene !== "undefined") window.drawTutorialMobsScene = drawTutorialMobsScene; } catch(e) {}
 try { if (typeof drawTutorialArmorScene !== "undefined") window.drawTutorialArmorScene = drawTutorialArmorScene; } catch(e) {}
 try { if (typeof drawTutorialMultiplayerScene !== "undefined") window.drawTutorialMultiplayerScene = drawTutorialMultiplayerScene; } catch(e) {}
@@ -8387,4 +8825,5 @@ try { if (typeof handleDeclineFriendRequest !== "undefined") window.handleDeclin
 try { if (typeof copyPlayerTag !== "undefined") window.copyPlayerTag = copyPlayerTag; } catch(e) {}
 try { if (typeof setCurrentUserProfile !== "undefined") window.setCurrentUserProfile = setCurrentUserProfile; } catch(e) {}
 try { if (typeof getPixelWarningSvg !== "undefined") window.getPixelWarningSvg = getPixelWarningSvg; } catch(e) {}
+try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropGrowthQueue; } catch(e) {}
 

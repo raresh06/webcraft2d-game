@@ -9,7 +9,6 @@ export let dayCount = 1;
 export let frameCount = 0;
 export let showClouds = true;
 export let showDebug = false;
-export let showTutorial = true;
 export let autoJumpEnabled = true;
 export let showHeatShimmer = true;
 export let showBiomeGrading = true;
@@ -39,7 +38,6 @@ export function setEngineGraphicsMode(mode) {
 export function setEngineSetting(key, val) {
     if (key === 'showClouds') showClouds = val;
     else if (key === 'showDebug') showDebug = val;
-    else if (key === 'showTutorial') showTutorial = val;
     else if (key === 'autoJumpEnabled') autoJumpEnabled = val;
     else if (key === 'showHeatShimmer') showHeatShimmer = val;
     else if (key === 'showBiomeGrading') showBiomeGrading = val;
@@ -64,13 +62,22 @@ export function playSound(type, options = {}) { if (typeof window !== 'undefined
 export function giveItem(id, amount = 1) { if (typeof window !== 'undefined' && typeof window.giveItem === 'function' && window.giveItem !== giveItem) return window.giveItem(id, amount); return false; }
 export function damageSelectedTool(amount = 1) { if (typeof window !== 'undefined' && typeof window.damageSelectedTool === 'function' && window.damageSelectedTool !== damageSelectedTool) return window.damageSelectedTool(amount); }
 export function ensureToolDurability(item) { if (typeof window !== 'undefined' && typeof window.ensureToolDurability === 'function' && window.ensureToolDurability !== ensureToolDurability) return window.ensureToolDurability(item); return item; }
-export function isTool(id) { if (typeof window !== 'undefined' && typeof window.isTool === 'function' && window.isTool !== isTool) return window.isTool(id); return false; }
+export function isTool(id) {
+    if (typeof window !== 'undefined' && typeof window.isTool === 'function' && window.isTool !== isTool) return window.isTool(id);
+    return [
+        IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE,
+        IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD,
+        IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE,
+        IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL,
+        IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE
+    ].includes(id);
+}
 export function updateArmorUI() { if (typeof window !== 'undefined' && typeof window.updateArmorUI === 'function' && window.updateArmorUI !== updateArmorUI) return window.updateArmorUI(); }
 export function updateHealthUI() { if (typeof window !== 'undefined' && typeof window.updateHealthUI === 'function' && window.updateHealthUI !== updateHealthUI) return window.updateHealthUI(); }
 export function updateHungerUI() { if (typeof window !== 'undefined' && typeof window.updateHungerUI === 'function' && window.updateHungerUI !== updateHungerUI) return window.updateHungerUI(); }
 export function updateOxygenUI(isSubmerged) { if (typeof window !== 'undefined' && typeof window.updateOxygenUI === 'function' && window.updateOxygenUI !== updateOxygenUI) return window.updateOxygenUI(isSubmerged); }
 export function updateUI(refreshCrafting) { if (typeof window !== 'undefined' && typeof window.updateUI === 'function' && window.updateUI !== updateUI) return window.updateUI(refreshCrafting); }
-export function updateTutorialUI() { if (typeof window !== 'undefined' && typeof window.updateTutorialUI === 'function' && window.updateTutorialUI !== updateTutorialUI) return window.updateTutorialUI(); }
+export function updateTutorialUI() {}
 export function updateHudArmorBar() { if (typeof window !== 'undefined' && typeof window.updateHudArmorBar === 'function' && window.updateHudArmorBar !== updateHudArmorBar) return window.updateHudArmorBar(); }
 export function unlockAchievement(id) { if (typeof window !== 'undefined' && typeof window.unlockAchievement === 'function' && window.unlockAchievement !== unlockAchievement) return window.unlockAchievement(id); }
 export function damageRemotePlayer(id, amt, isPoison) { if (typeof window !== 'undefined' && typeof window.damageRemotePlayer === 'function' && window.damageRemotePlayer !== damageRemotePlayer) return window.damageRemotePlayer(id, amt, isPoison); }
@@ -430,8 +437,8 @@ export function getMaxAnimals() {
     }
 
     // Persistent offscreen canvas and ImageData for pixel-art aurora rendering
-    export const auroraCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-    export const auroraCtx = auroraCanvas ? auroraCanvas.getContext('2d') : null;
+    export let auroraCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export let auroraCtx = auroraCanvas ? auroraCanvas.getContext('2d') : null;
     export let auroraImageData = null;
     export let auroraSnowOpacity = 0;
 
@@ -611,6 +618,8 @@ export function getMaxAnimals() {
         CHEST: 26, SHORT_GRASS: 27, TALL_GRASS: 28, FLOWER_RED: 29, FLOWER_YELLOW: 30,
         LADDER: 31, WOODEN_STAIRS: 32, WOODEN_STAIRS_LEFT: 32, COBBLESTONE_STAIRS: 33, COBBLESTONE_STAIRS_LEFT: 33,
         WOODEN_STAIRS_RIGHT: 34, COBBLESTONE_STAIRS_RIGHT: 35,
+        PLOWED_DIRT: 36, FARMLAND: 36,
+        WHEAT_STAGE_1: 37, WHEAT_STAGE_2: 38, WHEAT_STAGE_3: 39, WHEAT_STAGE_4: 40,
         STICK: 100, WOOD_PICKAXE: 101, STONE_PICKAXE: 102, 
         WOOD_SWORD: 103, STONE_SWORD: 104, WOOD_AXE: 105, 
         COAL: 106, GOLD_INGOT: 107,
@@ -623,7 +632,10 @@ export function getMaxAnimals() {
         HELMET_GOLD: 139, CHESTPLATE_GOLD: 140, LEGGINGS_GOLD: 141, BOOTS_GOLD: 142,
         HELMET_DIAMOND: 143, CHESTPLATE_DIAMOND: 144, LEGGINGS_DIAMOND: 145, BOOTS_DIAMOND: 146,
         IRON_PICKAXE: 122, IRON_SWORD: 123, IRON_AXE: 124,
-        DIAMOND_PICKAXE: 125, DIAMOND_SWORD: 126, DIAMOND_AXE: 127
+        DIAMOND_PICKAXE: 125, DIAMOND_SWORD: 126, DIAMOND_AXE: 127,
+        WOOD_SHOVEL: 147, STONE_SHOVEL: 148, IRON_SHOVEL: 149, GOLD_SHOVEL: 150, DIAMOND_SHOVEL: 151,
+        WOOD_HOE: 152, STONE_HOE: 153, IRON_HOE: 154, GOLD_HOE: 155, DIAMOND_HOE: 156,
+        WHEAT: 157, BREAD: 158
     };
 
 
@@ -637,6 +649,11 @@ export function getMaxAnimals() {
     MINIMAP_COLOR_32[IDS.FLOWER_RED] = 0xFF3539E5;
     MINIMAP_COLOR_32[IDS.FLOWER_YELLOW] = 0xFF35D8FD;
     MINIMAP_COLOR_32[IDS.DIRT] = 0xFF3A5579;
+    MINIMAP_COLOR_32[IDS.PLOWED_DIRT] = 0xFF283C58;
+    MINIMAP_COLOR_32[IDS.WHEAT_STAGE_1] = 0xFF35B042;
+    MINIMAP_COLOR_32[IDS.WHEAT_STAGE_2] = 0xFF35B042;
+    MINIMAP_COLOR_32[IDS.WHEAT_STAGE_3] = 0xFF35D8FD;
+    MINIMAP_COLOR_32[IDS.WHEAT_STAGE_4] = 0xFF33CFFF;
     MINIMAP_COLOR_32[IDS.WOOD] = 0xFF3A5579;
     MINIMAP_COLOR_32[IDS.PLANKS] = 0xFF3A5579;
     MINIMAP_COLOR_32[IDS.LADDER] = 0xFF3A5579;
@@ -660,11 +677,12 @@ export function getMaxAnimals() {
     MINIMAP_COLOR_32[IDS.WOOL] = 0xFFF5F5F5;
 
     export const HARDNESS = {
-        [IDS.DIRT]: 20, [IDS.GRASS]: 25, [IDS.STONE]: 150, [IDS.COBBLESTONE]: 150,
+        [IDS.DIRT]: 20, [IDS.PLOWED_DIRT]: 20, [IDS.GRASS]: 25, [IDS.STONE]: 150, [IDS.COBBLESTONE]: 150,
         [IDS.WOOD]: 60, [IDS.LEAVES]: 5, [IDS.PLANKS]: 60, [IDS.COAL_ORE]: 160, 
         [IDS.GOLD_ORE]: 180, [IDS.IRON_ORE]: 180, [IDS.DIAMOND_ORE]: 240,
         [IDS.CRAFTING_TABLE]: 60, [IDS.FURNACE]: 150, [IDS.TORCH]: 5, [IDS.SAPLING]: 5,
         [IDS.SHORT_GRASS]: 1, [IDS.TALL_GRASS]: 1, [IDS.FLOWER_RED]: 1, [IDS.FLOWER_YELLOW]: 1,
+        [IDS.WHEAT_STAGE_1]: 1, [IDS.WHEAT_STAGE_2]: 1, [IDS.WHEAT_STAGE_3]: 1, [IDS.WHEAT_STAGE_4]: 1,
         [IDS.SAND]: 15, [IDS.SNOW]: 10, [IDS.CACTUS]: 20, [IDS.BED]: 30,
         [IDS.DOOR]: 45, [IDS.DOOR_TOP]: 45, [IDS.DOOR_OPEN]: 45, [IDS.DOOR_OPEN_TOP]: 45, [IDS.CHEST]: 45,
         [IDS.LADDER]: 10, [IDS.WOODEN_STAIRS]: 60, [IDS.WOODEN_STAIRS_RIGHT]: 60,
@@ -678,6 +696,23 @@ export function getMaxAnimals() {
     ID_NAMES[IDS.FLOWER_RED] = 'Poppy';
     ID_NAMES[IDS.FLOWER_YELLOW] = 'Dandelion';
     ID_NAMES[IDS.SEEDS] = 'Seeds';
+    ID_NAMES[IDS.PLOWED_DIRT] = 'Farmland';
+    ID_NAMES[IDS.WHEAT_STAGE_1] = 'Wheat Crop';
+    ID_NAMES[IDS.WHEAT_STAGE_2] = 'Wheat Crop';
+    ID_NAMES[IDS.WHEAT_STAGE_3] = 'Wheat Crop';
+    ID_NAMES[IDS.WHEAT_STAGE_4] = 'Wheat Crop';
+    ID_NAMES[IDS.WOOD_SHOVEL] = 'Wooden Shovel';
+    ID_NAMES[IDS.STONE_SHOVEL] = 'Stone Shovel';
+    ID_NAMES[IDS.IRON_SHOVEL] = 'Iron Shovel';
+    ID_NAMES[IDS.GOLD_SHOVEL] = 'Golden Shovel';
+    ID_NAMES[IDS.DIAMOND_SHOVEL] = 'Diamond Shovel';
+    ID_NAMES[IDS.WOOD_HOE] = 'Wooden Hoe';
+    ID_NAMES[IDS.STONE_HOE] = 'Stone Hoe';
+    ID_NAMES[IDS.IRON_HOE] = 'Iron Hoe';
+    ID_NAMES[IDS.GOLD_HOE] = 'Golden Hoe';
+    ID_NAMES[IDS.DIAMOND_HOE] = 'Diamond Hoe';
+    ID_NAMES[IDS.WHEAT] = 'Wheat';
+    ID_NAMES[IDS.BREAD] = 'Bread';
     ID_NAMES[IDS.RAW_MUTTON] = 'Raw Mutton';
     ID_NAMES[IDS.COOKED_MUTTON] = 'Cooked Mutton';
     ID_NAMES[IDS.BONE] = 'Bone';
@@ -702,10 +737,15 @@ export function getMaxAnimals() {
 
     export const TOOL_DURABILITY = {
         [IDS.WOOD_PICKAXE]: 60, [IDS.WOOD_AXE]: 60, [IDS.WOOD_SWORD]: 60,
+        [IDS.WOOD_SHOVEL]: 60, [IDS.WOOD_HOE]: 60,
         [IDS.STONE_PICKAXE]: 120, [IDS.STONE_AXE]: 120, [IDS.STONE_SWORD]: 120,
+        [IDS.STONE_SHOVEL]: 120, [IDS.STONE_HOE]: 120,
         [IDS.IRON_PICKAXE]: 240, [IDS.IRON_AXE]: 240, [IDS.IRON_SWORD]: 240,
+        [IDS.IRON_SHOVEL]: 240, [IDS.IRON_HOE]: 240,
         [IDS.GOLD_PICKAXE]: 180, [IDS.GOLD_AXE]: 180, [IDS.GOLD_SWORD]: 180,
-        [IDS.DIAMOND_PICKAXE]: 480, [IDS.DIAMOND_AXE]: 480, [IDS.DIAMOND_SWORD]: 480
+        [IDS.GOLD_SHOVEL]: 180, [IDS.GOLD_HOE]: 180,
+        [IDS.DIAMOND_PICKAXE]: 480, [IDS.DIAMOND_AXE]: 480, [IDS.DIAMOND_SWORD]: 480,
+        [IDS.DIAMOND_SHOVEL]: 480, [IDS.DIAMOND_HOE]: 480
     };
 
     export const ARMOR_DURABILITY = {
@@ -797,7 +837,7 @@ export function getMaxAnimals() {
     export function isFoodItem(id) {
         return id === IDS.RAW_PORKCHOP || id === IDS.COOKED_PORKCHOP || id === IDS.APPLE ||
                id === IDS.RAW_CHICKEN || id === IDS.COOKED_CHICKEN || id === IDS.RAW_MUTTON ||
-               id === IDS.COOKED_MUTTON;
+               id === IDS.COOKED_MUTTON || id === IDS.BREAD;
     }
     export let surfaceHeights = [];
     export let nonCollidableTreeWood = new Set();
@@ -827,6 +867,7 @@ export function getMaxAnimals() {
     }
     export let leafDecayQueue = new Map();
     export let saplingGrowthQueue = new Map();
+    export let cropGrowthQueue = new Map();
     export let saplingBlockedWarnings = new Set();
     export let dirtToGrassQueue = new Map();
     export let snowRegrowthQueue = new Map();
@@ -1086,9 +1127,271 @@ export function getMaxAnimals() {
             return null;
         }
 
+        function getPlowedDirtPixel(px, py) {
+            // Farmland block: standard authentic dirt below with a darker brown tilled space above
+            if (py >= 4) {
+                return getDirtPixel(px, py);
+            }
+            // Top tilled soil surface (py: 0..3) - darker brown space above with furrow texture
+            if (py === 0) {
+                const furrow = px % 4;
+                if (furrow === 0) return '#2e190b'; // Dark furrow trough
+                if (furrow === 1) return '#452914'; // Furrow slope
+                if (furrow === 2) return '#59381c'; // Crest highlight
+                return '#4d3018'; // Shoulder
+            } else if (py === 1) {
+                const furrow = (px + 1) % 4;
+                if (furrow === 0) return '#281509';
+                if (furrow === 2) return '#4f311a';
+                return '#3f2512';
+            } else if (py === 2) {
+                const n = ((px * 7 + 3) % 5);
+                if (n === 0) return '#331e0f';
+                if (n === 2) return '#4d311b';
+                return '#412714';
+            } else {
+                // py === 3: subtle transition seam into dirt below
+                const sub = (px * 3) % 4;
+                if (sub === 0) return '#382010';
+                if (sub === 1) return '#482d19';
+                return getDirtPixel(px, py);
+            }
+        }
+
+        function getWheatStage1Pixel(px, py) {
+            // Stage 1: Delicate tender green shoots sprouting from dark soil (height 3-5px)
+            // Sprout 1 (px 2-3, py 12-15)
+            if (px === 2 && py === 12) return '#a3e635'; // Chartreuse sunlit shoot tip
+            if (px === 3 && py === 12) return '#84cc16';
+            if (px === 2 && py === 13) return '#4ade80';
+            if (px === 3 && py === 13) return '#22c55e';
+            if (px === 3 && py === 14) return '#16a34a';
+            if (px === 3 && py === 15) return '#15803d';
+            if (px === 2 && py === 15) return '#9e8548'; // Seed hull at soil line
+
+            // Sprout 2 (px 6-7, py 11-15, slightly taller shoot with twin blades)
+            if (px === 7 && py === 11) return '#a3e635'; // Sunlit tip
+            if (px === 6 && py === 12) return '#84cc16';
+            if (px === 7 && py === 12) return '#4ade80';
+            if (px === 6 && py === 13) return '#22c55e';
+            if (px === 7 && py === 13) return '#22c55e';
+            if (px === 8 && py === 13) return '#4ade80'; // Branching blade
+            if (px === 7 && (py === 14 || py === 15)) return py === 15 ? '#15803d' : '#16a34a';
+            if (px === 6 && py === 15) return '#9e8548';
+
+            // Sprout 3 (px 10-11, py 12-15)
+            if (px === 10 && py === 12) return '#a3e635';
+            if (px === 11 && py === 12) return '#84cc16';
+            if (px === 10 && py === 13) return '#22c55e';
+            if (px === 11 && py === 13) return '#4ade80';
+            if (px === 10 && py === 14) return '#16a34a';
+            if (px === 10 && py === 15) return '#15803d';
+
+            // Sprout 4 (px 13-14, py 12-15)
+            if (px === 14 && py === 12) return '#a3e635';
+            if (px === 13 && py === 13) return '#84cc16';
+            if (px === 14 && py === 13) return '#22c55e';
+            if (px === 13 && py === 14) return '#16a34a';
+            if (px === 14 && py === 15) return '#15803d';
+            if (px === 13 && py === 15) return '#9e8548';
+
+            return null;
+        }
+
+        function getWheatStage2Pixel(px, py) {
+            // Stage 2: Bushy tillering wheat foliage with arching blades (height 8-10px)
+            // Left bunch (px 2..5, py 8..15)
+            if (px === 3 && py === 8) return '#7cf54e'; // Left sunlit blade tip
+            if (px === 2 && py === 9) return '#6ce842';
+            if (px === 3 && py === 9) return '#5cd934';
+            if (px === 2 && py === 10) return '#46b82b';
+            if (px === 3 && (py >= 10 && py <= 12)) return '#3aa523';
+            if (px === 4 && py === 11) return '#5cd934'; // Inner blade
+            if (px === 4 && py === 12) return '#46b82b';
+            if ((px === 3 || px === 4) && (py >= 13 && py <= 15)) return py >= 15 ? '#15803d' : '#246b14';
+
+            // Center primary plume (px 6..9, py 6..15)
+            if (px === 7 && py === 6) return '#86efac'; // Highest central sunlit tip
+            if ((px === 7 || px === 8) && py === 7) return '#6ce842';
+            if (px === 6 && py === 8) return '#5cd934';
+            if (px === 7 && (py >= 8 && py <= 10)) return '#46b82b';
+            if (px === 8 && (py >= 8 && py <= 11)) return '#5cd934';
+            if (px === 9 && py === 9) return '#6ce842'; // Right arching frond
+            if (px === 9 && py === 10) return '#46b82b';
+            if (px === 6 && py === 11) return '#3aa523';
+            if ((px === 7 || px === 8) && (py >= 11 && py <= 15)) return py >= 14 ? '#14532d' : '#1e6a14';
+
+            // Right bunch (px 11..14, py 7..15)
+            if (px === 12 && py === 7) return '#7cf54e';
+            if (px === 13 && py === 8) return '#6ce842';
+            if (px === 12 && (py === 8 || py === 9)) return '#5cd934';
+            if (px === 11 && py === 9) return '#6ce842'; // Inward arching blade
+            if (px === 11 && py === 10) return '#46b82b';
+            if (px === 13 && py === 10) return '#46b82b';
+            if (px === 12 && (py >= 10 && py <= 12)) return '#3aa523';
+            if ((px === 12 || px === 13) && (py >= 13 && py <= 15)) return py >= 15 ? '#15803d' : '#246b14';
+
+            // Additional ground filler blades
+            if (px === 5 && py === 13) return '#3aa523';
+            if (px === 10 && py === 13) return '#3aa523';
+
+            return null;
+        }
+
+        function getWheatStage3Pixel(px, py) {
+            // Stage 3: Tall jointed stalks with developing golden-amber grain heads and awns (height 14px)
+            // Left stalk & developing ear (px 2..5, py 2..15)
+            if (px === 3 && py === 2) return '#fde047'; // Awn whisker tip
+            if (px === 4 && py === 3) return '#facc15';
+            if (px === 3 && (py === 3 || py === 4)) return '#eab308'; // Young golden ear
+            if (px === 4 && py === 4) return '#ca8a04';
+            if (px === 3 && py === 5) return '#ca8a04';
+            if (px === 4 && py === 5) return '#a16207'; // Ear base crease
+            if (px === 2 && py === 5) return '#84cc16'; // Flag leaf curling left
+            if (px === 2 && py === 6) return '#65a30d';
+            // Stem below ear
+            if (px === 3 && (py >= 6 && py <= 8)) return '#84cc16';
+            if (px === 4 && (py >= 6 && py <= 9)) return '#65a30d';
+            if (px === 3 && (py >= 9 && py <= 12)) return '#22c55e';
+            if (px === 4 && (py >= 10 && py <= 13)) return '#16a34a';
+            if ((px === 3 || px === 4) && (py >= 14 && py <= 15)) return '#15803d';
+
+            // Center primary stalk & prominent ear (px 6..10, py 1..15)
+            if (px === 8 && py === 1) return '#fef08a'; // Sunlit center awn tip
+            if (px === 7 && py === 2) return '#fde047';
+            if (px === 8 && py === 2) return '#facc15';
+            if (px === 7 && (py === 3 || py === 4)) return '#facc15';
+            if (px === 8 && (py === 3 || py === 4)) return '#eab308';
+            if (px === 9 && py === 3) return '#fde047'; // Right awn
+            if (px === 9 && py === 4) return '#ca8a04';
+            if (px === 7 && py === 5) return '#ca8a04';
+            if (px === 8 && py === 5) return '#a16207';
+            // Flag leaves spreading outward
+            if (px === 6 && py === 6) return '#84cc16';
+            if (px === 9 && py === 6) return '#84cc16';
+            if (px === 5 && py === 7) return '#65a30d';
+            if (px === 10 && py === 7) return '#65a30d';
+            // Stem descending
+            if (px === 7 && (py >= 6 && py <= 9)) return '#84cc16';
+            if (px === 8 && (py >= 6 && py <= 9)) return '#65a30d';
+            if (px === 7 && (py >= 10 && py <= 12)) return '#22c55e';
+            if (px === 8 && (py >= 10 && py <= 13)) return '#16a34a';
+            if ((px === 7 || px === 8) && (py >= 14 && py <= 15)) return '#15803d';
+
+            // Right stalk & developing ear (px 11..14, py 2..15)
+            if (px === 13 && py === 2) return '#fde047';
+            if (px === 12 && py === 3) return '#facc15';
+            if (px === 13 && py === 3) return '#eab308';
+            if (px === 12 && (py === 4 || py === 5)) return '#eab308';
+            if (px === 13 && (py === 4 || py === 5)) return '#ca8a04';
+            if (px === 14 && py === 6) return '#84cc16'; // Leaf
+            if (px === 12 && (py >= 6 && py <= 8)) return '#84cc16';
+            if (px === 13 && (py >= 6 && py <= 9)) return '#65a30d';
+            if (px === 12 && (py >= 9 && py <= 12)) return '#22c55e';
+            if (px === 13 && (py >= 10 && py <= 13)) return '#16a34a';
+            if ((px === 12 || px === 13) && (py >= 14 && py <= 15)) return '#15803d';
+
+            // Lower connecting foliage blades
+            if (px === 5 && (py === 11 || py === 12)) return '#16a34a';
+            if (px === 10 && (py === 11 || py === 12)) return '#16a34a';
+
+            return null;
+        }
+
+        function getWheatStage4Pixel(px, py) {
+            // Stage 4: Majestic fully ripe golden wheat with heavy nodding grain ears, fine awn whiskers & individual kernels
+            // Left nodding ear & awns (px 1..5, py 1..15)
+            if (px === 2 && py === 1) return '#fef08a';
+            if (px === 4 && py === 1) return '#fde047';
+            if (px === 1 && py === 2) return '#fde047';
+            if (px === 3 && py === 2) return '#fef9c3'; // Top kernel highlight
+            if (px === 2 && py === 3) return '#fde047';
+            if (px === 3 && py === 3) return '#eab308';
+            if (px === 4 && py === 3) return '#ca8a04';
+            if (px === 2 && py === 4) return '#eab308';
+            if (px === 3 && py === 4) return '#fde047'; // Mid kernel highlight
+            if (px === 4 && py === 4) return '#854d0e'; // Kernel separation shadow
+            if (px === 2 && py === 5) return '#ca8a04';
+            if (px === 3 && py === 5) return '#eab308';
+            if (px === 4 && py === 5) return '#f59e0b';
+            if (px === 3 && py === 6) return '#ca8a04';
+            if (px === 4 && py === 6) return '#854d0e';
+            // Left straw & arching dry blade
+            if (px === 1 && py === 7) return '#fde047';
+            if (px === 2 && py === 7) return '#ca8a04';
+            if (px === 3 && (py >= 7 && py <= 10)) return '#eab308';
+            if (px === 4 && (py >= 7 && py <= 11)) return '#ca8a04';
+            if (px === 3 && (py >= 11 && py <= 15)) return py >= 14 ? '#78350f' : '#a16207';
+            if (px === 4 && (py >= 12 && py <= 15)) return py >= 14 ? '#78350f' : '#92400e';
+
+            // Central heavy ripe ear (px 6..10, py 0..15)
+            // Long fanning sunlit awn whiskers (py 0..1)
+            if ((px === 7 || px === 9) && py === 0) return '#fef9c3';
+            if ((px === 6 || px === 8 || px === 10) && py === 1) return '#fde047';
+            if (px === 7 && py === 1) return '#fef9c3';
+            // Dense golden kernel head (py 2..7)
+            if (px === 8 && py === 2) return '#fef9c3'; // Crown highlight
+            if (px === 7 && py === 2) return '#fde047';
+            if (px === 9 && py === 2) return '#ca8a04';
+            if (px === 7 && py === 3) return '#facc15';
+            if (px === 8 && py === 3) return '#eab308';
+            if (px === 9 && py === 3) return '#854d0e'; // Shadow notch
+            if (px === 6 && py === 4) return '#fde047';
+            if (px === 7 && py === 4) return '#fef08a'; // Kernel highlight
+            if (px === 8 && py === 4) return '#eab308';
+            if (px === 9 && py === 4) return '#ca8a04';
+            if (px === 7 && py === 5) return '#eab308';
+            if (px === 8 && py === 5) return '#facc15';
+            if (px === 9 && py === 5) return '#854d0e';
+            if (px === 7 && py === 6) return '#ca8a04';
+            if (px === 8 && py === 6) return '#eab308';
+            if (px === 9 && py === 6) return '#713f12'; // Ear base knot
+            // Center straw & dried chaff blades
+            if (px === 6 && py === 7) return '#ca8a04';
+            if (px === 10 && py === 7) return '#ca8a04';
+            if (px === 7 && (py >= 7 && py <= 10)) return '#f59e0b';
+            if (px === 8 && (py >= 7 && py <= 11)) return '#ca8a04';
+            if (px === 7 && (py >= 11 && py <= 15)) return py >= 14 ? '#78350f' : '#a16207';
+            if (px === 8 && (py >= 12 && py <= 15)) return py >= 14 ? '#78350f' : '#92400e';
+
+            // Right nodding ear & awns (px 11..15, py 1..15)
+            // Awns
+            if (px === 12 && py === 1) return '#fde047';
+            if (px === 14 && py === 1) return '#fef08a';
+            if (px === 15 && py === 2) return '#fde047';
+            // Right plump ear (py 2..7)
+            if (px === 13 && py === 2) return '#fef9c3';
+            if (px === 12 && py === 3) return '#ca8a04';
+            if (px === 13 && py === 3) return '#eab308';
+            if (px === 14 && py === 3) return '#fde047';
+            if (px === 12 && py === 4) return '#854d0e';
+            if (px === 13 && py === 4) return '#fef08a';
+            if (px === 14 && py === 4) return '#eab308';
+            if (px === 12 && py === 5) return '#f59e0b';
+            if (px === 13 && py === 5) return '#eab308';
+            if (px === 14 && py === 5) return '#ca8a04';
+            if (px === 12 && py === 6) return '#854d0e';
+            if (px === 13 && py === 6) return '#ca8a04';
+            // Right straw
+            if (px === 14 && py === 7) return '#fde047';
+            if (px === 12 && (py >= 7 && py <= 11)) return '#ca8a04';
+            if (px === 13 && (py >= 7 && py <= 10)) return '#eab308';
+            if (px === 12 && (py >= 12 && py <= 15)) return py >= 14 ? '#78350f' : '#92400e';
+            if (px === 13 && (py >= 11 && py <= 15)) return py >= 14 ? '#78350f' : '#a16207';
+
+            // Inter-stalk dry straw blades
+            if (px === 5 && (py === 12 || py === 13)) return '#a16207';
+            if (px === 10 && (py === 12 || py === 13)) return '#a16207';
+
+            return null;
+        }
+
         for (let x = 0; x < 16; x++) {
             for (let y = 0; y < 16; y++) {
                 if (id === IDS.DIRT) p(x, y, getDirtPixel(x, y));
+                else if (id === IDS.PLOWED_DIRT) {
+                    p(x, y, getPlowedDirtPixel(x, y));
+                }
                 else if (id === IDS.GRASS) p(x, y, getGrassBlockPixel(x, y));
                 else if (id === IDS.STONE || id === IDS.COAL_ORE || id === IDS.IRON_ORE || id === IDS.GOLD_ORE || id === IDS.DIAMOND_ORE) {
                     p(x, y, getStonePixel(x, y));
@@ -1151,17 +1454,118 @@ export function getMaxAnimals() {
                     ];
                     seedDots.forEach(([sx, sy, scol]) => p(sx, sy, scol));
                 }
+                else if (id === IDS.WHEAT_STAGE_1) {
+                    const c = getWheatStage1Pixel(x, y);
+                    if (c) p(x, y, c);
+                }
+                else if (id === IDS.WHEAT_STAGE_2) {
+                    const c = getWheatStage2Pixel(x, y);
+                    if (c) p(x, y, c);
+                }
+                else if (id === IDS.WHEAT_STAGE_3) {
+                    const c = getWheatStage3Pixel(x, y);
+                    if (c) p(x, y, c);
+                }
+                else if (id === IDS.WHEAT_STAGE_4) {
+                    const c = getWheatStage4Pixel(x, y);
+                    if (c) p(x, y, c);
+                }
+                else if (id === IDS.WHEAT) {
+                    // Harvested wheat sheaf
+                    if (x >= 7 && x <= 8 && y >= 11 && y <= 15) p(x, y, '#ca8a04');
+                    if (x >= 6 && x <= 9 && y === 12) p(x, y, '#78350f');
+                    if ((x === 5 || x === 10) && y >= 7 && y <= 11) p(x, y, '#eab308');
+                    if ((x === 6 || x === 9) && y >= 6 && y <= 11) p(x, y, '#f59e0b');
+                    if ((x === 7 || x === 8) && y >= 5 && y <= 11) p(x, y, '#facc15');
+                    if (x >= 4 && x <= 6 && y >= 3 && y <= 6) p(x, y, (x === 4 || y === 3) ? '#fde047' : '#eab308');
+                    if (x >= 6 && x <= 9 && y >= 2 && y <= 5) p(x, y, (y === 2) ? '#fef08a' : '#f59e0b');
+                    if (x >= 9 && x <= 11 && y >= 3 && y <= 6) p(x, y, (x === 11 || y === 3) ? '#fde047' : '#eab308');
+                    if (y === 1 && (x === 7 || x === 8)) p(x, y, '#fde047');
+                }
+                else if (id === IDS.BREAD) {
+                    // Oven baked bread loaf with golden crust and diagonal scoring
+                    if (x >= 3 && x <= 12 && y === 11) p(x, y, '#78350f');
+                    if (x >= 4 && x <= 11 && y === 12) p(x, y, '#542609');
+                    if (x >= 2 && x <= 13 && y >= 7 && y <= 10) p(x, y, '#b45309');
+                    if (x >= 3 && x <= 12 && y === 6) p(x, y, '#d97706');
+                    if (x >= 4 && x <= 11 && y === 5) p(x, y, '#f59e0b');
+                    if (x >= 5 && x <= 10 && y === 5) p(x, y, '#fcd34d');
+                    if ((x === 5 && y >= 6 && y <= 8) || (x === 8 && y >= 6 && y <= 8) || (x === 11 && y >= 6 && y <= 8)) {
+                        p(x, y, '#fef3c7');
+                    }
+                    if ((x === 4 && y === 6) || (x === 7 && y === 6) || (x === 10 && y === 6)) {
+                        p(x, y, '#78350f');
+                    }
+                }
                 else if (id === IDS.CRAFTING_TABLE) {
-                    if (y < 4) p(x, y, x%2===y%2 ? '#d1a775' : '#8a6233'); 
-                    else if (y === 4) p(x, y, '#4a3321');
-                    else p(x, y, x%4===0 ? '#3b2613' : randColor(['#9e7b4f', '#a68254']));
+                    // Top (y: 0..3): 3x3 checkered pine/oak crafting grid with darker frame
+                    if (y === 0) {
+                        p(x, y, (x === 0 || x === 15) ? '#452b14' : '#6b4624');
+                    } else if (y >= 1 && y <= 3) {
+                        if (x === 0 || x === 15) {
+                            p(x, y, '#452b14');
+                        } else if (x === 1 || x === 14) {
+                            p(x, y, '#784e26');
+                        } else {
+                            const isGridLine = ((x - 2) % 4 === 3);
+                            if (isGridLine) {
+                                p(x, y, '#3b2210');
+                            } else {
+                                const cellX = Math.floor((x - 2) / 4);
+                                const cellY = y - 1;
+                                const isAlt = (cellX + cellY) % 2 === 0;
+                                p(x, y, isAlt ? '#ba8b58' : '#94673b');
+                            }
+                        }
+                    }
+                    // Table top overhang shadow line
+                    else if (y === 4) {
+                        p(x, y, (x === 0 || x === 15) ? '#241407' : '#331c0b');
+                    }
+                    // Front & Side Face (y: 5..15)
+                    else {
+                        if (x <= 1 || x >= 14) {
+                            const isEdge = (x === 0 || x === 15);
+                            p(x, y, isEdge ? '#482e16' : '#5a3b1d');
+                            if ((y === 5 || y === 14) && (x === 0 || x === 15)) p(x, y, '#2b2b2b');
+                            if ((y === 5 || y === 14) && (x === 1 || x === 14)) p(x, y, '#71717a');
+                        } else {
+                            let woodColor = (x % 3 === 0) ? '#845c32' : ((x + y) % 2 === 0 ? '#996d3d' : '#8f6437');
+                            
+                            // Left Tool: Hand Saw
+                            const isSawHandle = (x === 3 && (y === 7 || y === 8)) || (x === 4 && y === 7);
+                            const isSawBlade = (x === 4 && y >= 8 && y <= 10) || 
+                                               (x === 5 && y >= 9 && y <= 11) || 
+                                               (x === 6 && y >= 10 && y <= 12) || 
+                                               (x === 7 && y >= 11 && y <= 13);
+                            const isSawTooth = (x === 5 && y === 12) || (x === 6 && y === 13) || (x === 7 && y === 14);
+
+                            // Right Tool: Crafting Pliers/Hammer
+                            const isToolHead = (x >= 10 && x <= 12 && y === 7) || (x >= 11 && x <= 12 && y === 8);
+                            const isToolHandleLeft = (x === 10 && (y >= 9 && y <= 12));
+                            const isToolHandleRight = (x === 12 && (y >= 9 && y <= 12));
+                            const isToolPivot = (x === 11 && y === 9);
+
+                            if (isSawHandle) p(x, y, '#452814');
+                            else if (isSawBlade) p(x, y, (x === 4 || y === 8 || y === 9) ? '#e4e4e7' : '#a1a1aa');
+                            else if (isSawTooth) p(x, y, '#d4d4d8');
+                            else if (isToolHead) p(x, y, '#71717a');
+                            else if (isToolPivot) p(x, y, '#f4f4f5');
+                            else if (isToolHandleLeft || isToolHandleRight) p(x, y, '#3f3f46');
+                            else if (y === 15) p(x, y, '#3b2210');
+                            else p(x, y, woodColor);
+                        }
+                    }
                 }
                 else if (id === IDS.TORCH) {
-                    if(x===7 || x===8) {
-                        if (y>7 && y<16) p(x, y, x===7?'#523720':'#3b2613'); 
-                        if (y===7) p(x, y, '#ffaa00'); 
-                        if (y===6) p(x, y, '#ffff00'); 
-                        if (y===5 && x===7) p(x, y, '#ffffff'); 
+                    if ((x === 7 || x === 8) && y >= 8 && y <= 15) p(x, y, x === 7 ? '#784e26' : '#53371a');
+                    if ((x === 7 || x === 8) && (y === 6 || y === 7)) p(x, y, '#262626');
+                    if (y >= 1 && y <= 5) {
+                        if (x === 7 && (y === 3 || y === 4)) p(x, y, '#ffffff');
+                        else if ((x === 7 || x === 8) && y >= 2 && y <= 5) p(x, y, '#fde047');
+                        else if ((x === 6 || x === 9) && (y === 3 || y === 4)) p(x, y, '#f59e0b');
+                        else if (x === 7 && y === 1) p(x, y, '#facc15');
+                        else if ((x >= 6 && x <= 9 && y >= 2 && y <= 5) || (y === 1 && (x === 6 || x === 8))) p(x, y, '#ea580c');
                     }
                 }
                 else if ([IDS.DOOR, IDS.DOOR_TOP, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP].includes(id)) {
@@ -1184,44 +1588,161 @@ export function getMaxAnimals() {
                         if (!isTop && x === 10 && y === 7) p(x, y, '#f1d27a');
                     }
                 }
-                else if (id === IDS.STICK) { if (x===y && x>2 && x<14) p(x, y, '#6b4931'); }
+                else if (id === IDS.STICK) {
+                    if (x === y && x >= 3 && x <= 13) p(x, y, '#78512b');
+                    if (x === y - 1 && x >= 4 && x <= 12) p(x, y, '#a17443');
+                    if (x === y + 1 && x >= 4 && x <= 13) p(x, y, '#4a3017');
+                    if ((x === 7 && y === 7) || (x === 11 && y === 11)) p(x, y, '#3b2410');
+                }
                 else if ([IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE].includes(id)) {
-                    if (x===y && x>4) p(x, y, '#6b4931');
-                    let headColor = id===IDS.WOOD_PICKAXE ? '#9e7b4f' : id===IDS.STONE_PICKAXE ? '#7d7d7d' : id===IDS.IRON_PICKAXE ? '#d0d0d0' : id===IDS.GOLD_PICKAXE ? '#ffcf33' : '#55e6e6';
-                    if (y<6 && x<13 && x>1 && Math.abs(x-(5-y))<3) p(x, y, headColor);
+                    const pal = id === IDS.WOOD_PICKAXE ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
+                              : id === IDS.STONE_PICKAXE ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
+                              : id === IDS.IRON_PICKAXE ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
+                              : id === IDS.GOLD_PICKAXE ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
+                    // Handle
+                    if (x === y && x >= 5 && x <= 13) p(x, y, '#855a30');
+                    if (x === y + 1 && x >= 6 && x <= 14) p(x, y, '#52361b');
+                    if (x === y - 1 && x >= 6 && x <= 13) p(x, y, '#a67744');
+                    if (x === 14 && y === 14) p(x, y, '#3d2613');
+                    // Pickaxe Arch
+                    if ((x === 1 && (y === 7 || y === 8)) || (y === 1 && (x === 7 || x === 8))) p(x, y, pal.border);
+                    if ((x === 2 && y === 7) || (x === 7 && y === 2)) p(x, y, pal.base);
+                    if ((x === 2 && y === 5) || (x === 3 && y === 4) || (x === 4 && y === 3) || (x === 5 && y === 2) || (x === 6 && y === 1)) p(x, y, pal.light);
+                    if ((x === 2 && y === 6) || (x === 3 && y === 5) || (x === 4 && y === 4) || (x === 5 && y === 3) || (x === 6 && y === 2)) p(x, y, pal.base);
+                    if ((x === 3 && y === 6) || (x === 4 && y === 5) || (x === 5 && y === 4) || (x === 6 && y === 3)) p(x, y, pal.dark);
+                    if ((x === 2 && y === 8) || (x === 3 && y === 7) || (x === 7 && y === 3) || (x === 8 && y === 2)) p(x, y, pal.border);
+                    if (x === 5 && y === 5) p(x, y, pal.dark);
                 }
                 else if ([IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD].includes(id)) {
-                    if (x===y && x>8) p(x, y, '#6b4931');
-                    let bColor = id===IDS.WOOD_SWORD ? '#9e7b4f' : id===IDS.STONE_SWORD ? '#7d7d7d' : id===IDS.IRON_SWORD ? '#d0d0d0' : id===IDS.GOLD_SWORD ? '#ffcf33' : '#55e6e6';
-                    let edgeColor = id===IDS.WOOD_SWORD ? '#8a6233' : id===IDS.STONE_SWORD ? '#a3a3a3' : id===IDS.IRON_SWORD ? '#f2f2f2' : id===IDS.GOLD_SWORD ? '#e6b800' : '#b8ffff';
-                    if (x===y && x<9 && x>1) p(x, y, bColor);
-                    if (Math.abs(x-y)===1 && x<9 && x>2) p(x, y, edgeColor);
-                    if (x+y===17 && x>5 && x<12) p(x, y, '#4a3321');
+                    const pal = id === IDS.WOOD_SWORD ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
+                              : id === IDS.STONE_SWORD ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
+                              : id === IDS.IRON_SWORD ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
+                              : id === IDS.GOLD_SWORD ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
+                    // Pommel & Grip
+                    if (x === 14 && y === 14) p(x, y, pal.dark);
+                    if ((x === 13 && y === 14) || (x === 14 && y === 13)) p(x, y, pal.border);
+                    if ((x === 12 && y === 12) || (x === 11 && y === 11)) p(x, y, '#5c3a1e');
+                    if (x === 12 && y === 11) p(x, y, '#3d2411');
+                    // Crossguard
+                    if ((x === 9 && y === 12) || (x === 12 && y === 9)) p(x, y, pal.light);
+                    if ((x === 9 && y === 11) || (x === 10 && y === 11) || (x === 10 && y === 10) || (x === 11 && y === 10) || (x === 11 && y === 9)) p(x, y, pal.dark);
+                    if ((x === 8 && y === 12) || (x === 12 && y === 8)) p(x, y, pal.border);
+                    // Blade
+                    if (x === y && x >= 3 && x <= 8) p(x, y, pal.light);
+                    if ((x === 2 && y === 3) || (x === 3 && y === 4) || (x === 4 && y === 5) || (x === 5 && y === 6) || (x === 6 && y === 7) || (x === 7 && y === 8)) p(x, y, pal.base);
+                    if ((x === 3 && y === 2) || (x === 4 && y === 3) || (x === 5 && y === 4) || (x === 6 && y === 5) || (x === 7 && y === 6) || (x === 8 && y === 7)) p(x, y, pal.dark);
+                    if ((x === 1 && y === 2) || (x === 2 && y === 1)) p(x, y, pal.base);
+                    if (x === 1 && y === 1) p(x, y, pal.light);
+                    if ((x === 2 && y === 4) || (x === 3 && y === 5) || (x === 4 && y === 6) || (x === 5 && y === 7) || (x === 6 && y === 8)) p(x, y, pal.border);
+                    if ((x === 4 && y === 2) || (x === 5 && y === 3) || (x === 6 && y === 4) || (x === 7 && y === 5) || (x === 8 && y === 6)) p(x, y, pal.border);
                 }
                 else if ([IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE].includes(id)) {
-                    if (x===y && x>4) p(x, y, '#6b4931');
-                    let aCol = id===IDS.WOOD_AXE ? '#9e7b4f' : id===IDS.STONE_AXE ? '#7d7d7d' : id===IDS.IRON_AXE ? '#d0d0d0' : id===IDS.GOLD_AXE ? '#ffcf33' : '#55e6e6';
-                    if ((y===4||y===5) && x<8 && x>2) p(x, y, aCol);
-                    if (y===3 && x>3 && x<7) p(x, y, aCol);
+                    const pal = id === IDS.WOOD_AXE ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
+                              : id === IDS.STONE_AXE ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
+                              : id === IDS.IRON_AXE ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
+                              : id === IDS.GOLD_AXE ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
+                    // Handle
+                    if (x === y && x >= 4 && x <= 13) p(x, y, '#855a30');
+                    if (x === y + 1 && x >= 5 && x <= 14) p(x, y, '#52361b');
+                    if (x === y - 1 && x >= 5 && x <= 13) p(x, y, '#a67744');
+                    if (x === 14 && y === 14) p(x, y, '#3d2613');
+                    // Axe Head & Blade
+                    if (x === 2 && y >= 2 && y <= 5) p(x, y, pal.light);
+                    if (x === 3 && y >= 2 && y <= 5) p(x, y, pal.base);
+                    if (x >= 4 && x <= 6 && y === 2) p(x, y, pal.dark);
+                    if (x >= 4 && x <= 5 && y === 3) p(x, y, pal.base);
+                    if (x === 6 && y === 3) p(x, y, pal.dark);
+                    if (x === 7 && y === 4) p(x, y, pal.border);
+                    if ((x === 2 || x === 3) && y === 6) p(x, y, pal.dark);
+                    if (x === 3 && y === 7) p(x, y, pal.border);
+                    if (x === 4 && y === 4) p(x, y, pal.dark);
+                    if (x === 5 && y === 4) p(x, y, pal.border);
                 }
-                else if (id === IDS.GOLD_INGOT) {
-                    if (y>6 && y<11 && x>3 && x<13) p(x, y, '#ffcf33');
-                    if (y===7 && x>4 && x<12) p(x, y, '#ffea80');
-                    if (y===10 && x>4 && x<12) p(x, y, '#e6b800');
+                else if ([IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL].includes(id)) {
+                    const pal = id === IDS.WOOD_SHOVEL ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
+                              : id === IDS.STONE_SHOVEL ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
+                              : id === IDS.IRON_SHOVEL ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
+                              : id === IDS.GOLD_SHOVEL ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
+                    // Handle
+                    if (x === y && x >= 6 && x <= 13) p(x, y, '#855a30');
+                    if (x === y + 1 && x >= 7 && x <= 14) p(x, y, '#52361b');
+                    if (x === y - 1 && x >= 7 && x <= 13) p(x, y, '#a67744');
+                    if (x === 14 && y === 14) p(x, y, '#3d2613');
+                    // Collar
+                    if ((x === 5 && y === 6) || (x === 6 && y === 5)) p(x, y, pal.border);
+                    // Shovel Scoop
+                    if ((x === 1 && y === 4) || (x === 2 && y === 3) || (x === 3 && y === 2) || (x === 4 && y === 1)) p(x, y, pal.light);
+                    if ((x === 2 && y === 4) || (x === 3 && y === 3) || (x === 4 && y === 2)) p(x, y, pal.base);
+                    if ((x === 2 && y === 5) || (x === 5 && y === 2)) p(x, y, pal.base);
+                    if ((x === 3 && y === 4) || (x === 4 && y === 3)) p(x, y, pal.light);
+                    if ((x === 3 && y === 5) || (x === 4 && y === 4) || (x === 5 && y === 3)) p(x, y, pal.dark);
+                    if ((x === 4 && y === 5) || (x === 5 && y === 4)) p(x, y, pal.border);
                 }
-                else if (id === IDS.IRON_INGOT) {
-                    if (y>6 && y<11 && x>3 && x<13) p(x, y, '#d0d0d0');
-                    if (y===7 && x>4 && x<12) p(x, y, '#ffffff');
-                    if (y===10 && x>4 && x<12) p(x, y, '#999999');
+                else if ([IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE].includes(id)) {
+                    const pal = id === IDS.WOOD_HOE ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
+                              : id === IDS.STONE_HOE ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
+                              : id === IDS.IRON_HOE ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
+                              : id === IDS.GOLD_HOE ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
+                    // Handle
+                    if (x === y && x >= 5 && x <= 13) p(x, y, '#855a30');
+                    if (x === y + 1 && x >= 6 && x <= 14) p(x, y, '#52361b');
+                    if (x === y - 1 && x >= 6 && x <= 13) p(x, y, '#a67744');
+                    if (x === 14 && y === 14) p(x, y, '#3d2613');
+                    // Tilling Blade & Hook
+                    if (y === 2 && x >= 2 && x <= 6) p(x, y, pal.light);
+                    if (y === 3 && x >= 2 && x <= 5) p(x, y, pal.base);
+                    if (x === 1 && (y === 3 || y === 4)) p(x, y, pal.light);
+                    if (x === 2 && y === 4) p(x, y, pal.base);
+                    if (x === 2 && y === 5) p(x, y, pal.dark);
+                    if (y === 4 && (x === 3 || x === 4)) p(x, y, pal.dark);
+                    if ((x === 5 && y === 4) || (x === 4 && y === 5)) p(x, y, pal.border);
+                }
+                else if (id === IDS.GOLD_INGOT || id === IDS.IRON_INGOT) {
+                    const isGold = (id === IDS.GOLD_INGOT);
+                    const lightCol = isGold ? '#fef08a' : '#ffffff';
+                    const baseCol  = isGold ? '#facc15' : '#e4e4e7';
+                    const midCol   = isGold ? '#eab308' : '#a1a1aa';
+                    const darkCol  = isGold ? '#ca8a04' : '#71717a';
+                    const shadowCol= isGold ? '#854d0e' : '#3f3f46';
+
+                    for (let iy = 5; iy <= 12; iy++) {
+                        for (let ix = 2; ix <= 13; ix++) {
+                            if (iy === 5 && ix >= 5 && ix <= 10) p(ix, iy, lightCol);
+                            else if (iy === 6 && ix >= 4 && ix <= 11) p(ix, iy, (ix === 4 || ix === 5) ? lightCol : baseCol);
+                            else if (iy === 7 && ix >= 4 && ix <= 11) p(ix, iy, baseCol);
+                            else if (iy >= 8 && iy <= 10 && ix >= 3 && ix <= 12) {
+                                if (ix === 3) p(ix, iy, lightCol);
+                                else if (ix === 12) p(ix, iy, darkCol);
+                                else p(ix, iy, (iy === 8) ? baseCol : midCol);
+                            }
+                            else if (iy === 11 && ix >= 3 && ix <= 12) p(ix, iy, darkCol);
+                            else if (iy === 12 && ix >= 4 && ix <= 12) p(ix, iy, shadowCol);
+                        }
+                    }
                 }
                 else if ([IDS.BUCKET, IDS.WATER_BUCKET, IDS.LAVA_BUCKET].includes(id)) {
                     if ((x >= 4 && x <= 11 && y === 5) || (x >= 3 && x <= 4 && y >= 6 && y <= 12) || (x >= 11 && x <= 12 && y >= 6 && y <= 12) || (x >= 5 && x <= 10 && y === 13)) p(x, y, '#b8c3c9');
                     if (x >= 5 && x <= 10 && y >= 6 && y <= 12) p(x, y, id === IDS.WATER_BUCKET ? '#258dcc' : id === IDS.LAVA_BUCKET ? '#d94b1f' : '#6e7c83');
                 }
                 else if (id === IDS.DIAMOND) {
-                    if (y > 5 && y < 12 && x > 3 && x < 13) p(x, y, '#55e6e6');
-                    if (y > 6 && y < 10 && x > 5 && x < 11) p(x, y, '#b8ffff');
-                    if (y === 10 && x > 4 && x < 12) p(x, y, '#22a9b5');
+                    const gemPixels = [
+                        [6, 3, '#f0f9ff'], [7, 3, '#ffffff'], [8, 3, '#f0f9ff'], [9, 3, '#e0f2fe'],
+                        [5, 4, '#e0f2fe'], [6, 4, '#bae6fd'], [7, 4, '#e0f2fe'], [8, 4, '#bae6fd'], [9, 4, '#bae6fd'], [10, 4, '#7dd3fc'],
+                        [4, 5, '#e0f2fe'], [5, 5, '#bae6fd'], [6, 5, '#ffffff'], [7, 5, '#7dd3fc'], [8, 5, '#38bdf8'], [9, 5, '#38bdf8'], [10, 5, '#0284c7'], [11, 5, '#0369a1'],
+                        [3, 6, '#bae6fd'], [4, 6, '#7dd3fc'], [5, 6, '#38bdf8'], [6, 6, '#38bdf8'], [7, 6, '#0284c7'], [8, 6, '#0284c7'], [9, 6, '#0369a1'], [10, 6, '#0369a1'], [11, 6, '#075985'], [12, 6, '#082f49'],
+                        [4, 7, '#38bdf8'], [5, 7, '#38bdf8'], [6, 7, '#0284c7'], [7, 7, '#0284c7'], [8, 7, '#0284c7'], [9, 7, '#0369a1'], [10, 7, '#0369a1'], [11, 7, '#075985'],
+                        [5, 8, '#0284c7'], [6, 8, '#0284c7'], [7, 8, '#0369a1'], [8, 8, '#0369a1'], [9, 8, '#075985'], [10, 8, '#075985'],
+                        [6, 9, '#0284c7'], [7, 9, '#0369a1'], [8, 9, '#075985'], [9, 9, '#075985'],
+                        [6, 10, '#0369a1'], [7, 10, '#075985'], [8, 10, '#075985'], [9, 10, '#0c4a6e'],
+                        [7, 11, '#075985'], [8, 11, '#0c4a6e'],
+                        [7, 12, '#0c4a6e'], [8, 12, '#082f49']
+                    ];
+                    gemPixels.forEach(([gx, gy, gcol]) => p(gx, gy, gcol));
                 }
                 else if (id === IDS.COAL) {
                     const coalShape = [
@@ -1237,11 +1758,37 @@ export function getMaxAnimals() {
                     }
                 }
                 else if (id === IDS.FURNACE) {
-                    p(x, y, stoneColors[(Math.floor(x/3) + Math.floor(y/3)) % stoneColors.length]);
-                    if (x===0||x===15||y===0||y===15) p(x,y,'#4a4a4a');
-                    if (y > 4 && y < 11 && x > 3 && x < 13) p(x, y, '#111'); 
-                    if (y === 3 && x > 2 && x < 14) p(x, y, '#555'); 
-                    if (y > 11 && x > 3 && x < 13) p(x, y, '#ffaa00'); 
+                    const isBorder = (x === 0 || x === 15 || y === 0 || y === 15);
+                    const isMouth = (x >= 4 && x <= 11 && y >= 5 && y <= 13);
+                    const isArchTop = (y === 4 && x >= 5 && x <= 10);
+                    const isKeystone = (y === 3 && (x === 7 || x === 8));
+
+                    if (isBorder) {
+                        p(x, y, (x + y) % 3 === 0 ? '#3f3f46' : '#52525b');
+                    } else if (isKeystone) {
+                        p(x, y, '#a1a1aa');
+                    } else if (isArchTop) {
+                        p(x, y, (x === 7 || x === 8) ? '#71717a' : '#52525b');
+                    } else if (isMouth) {
+                        if (y <= 8) {
+                            p(x, y, y === 5 ? '#09090b' : '#18181b');
+                        } else {
+                            const isGrateBar = (x === 5 || x === 7 || x === 9);
+                            if (isGrateBar && y <= 11) {
+                                p(x, y, '#27272a');
+                            } else {
+                                if (y === 13) p(x, y, (x === 7 || x === 8) ? '#fef08a' : '#f97316');
+                                else if (y === 12) p(x, y, (x === 7 || x === 8) ? '#fbbf24' : '#ea580c');
+                                else if (y === 11) p(x, y, (x % 2 === 0) ? '#ea580c' : '#c2410c');
+                                else if (y === 10) p(x, y, '#9a3412');
+                                else p(x, y, '#431407');
+                            }
+                        }
+                    } else {
+                        const n = ((Math.floor(x / 3) * 7 + Math.floor(y / 3) * 13) % 4);
+                        const c = n === 0 ? '#71717a' : (n === 1 ? '#52525b' : (n === 2 ? '#64748b' : '#78716c'));
+                        p(x, y, (x % 4 === 0 || y % 4 === 0) ? '#3f3f46' : c);
+                    }
                 }
                 else if (id === IDS.RAW_PORKCHOP) {
                     if(Math.hypot(x-8, y-8) < 5) p(x, y, randColor(['#ff99cc', '#ff66aa']));
@@ -1850,6 +2397,10 @@ export const SKIN_H = 32;
         if (id === IDS.FLOWER_RED) return '#e53935';
         if (id === IDS.FLOWER_YELLOW) return '#fdd835';
         if (id === IDS.DIRT || id === IDS.WOOD || id === IDS.PLANKS) return '#79553a';
+        if (id === IDS.PLOWED_DIRT) return '#573a23';
+        if (id === IDS.WHEAT_STAGE_1 || id === IDS.WHEAT_STAGE_2) return '#42b035';
+        if (id === IDS.WHEAT_STAGE_3) return '#c4b035';
+        if (id === IDS.WHEAT_STAGE_4) return '#eab308';
         if (id === IDS.GOLD_ORE || id === IDS.TORCH) return '#ffcf33';
         if (id === IDS.IRON_ORE) return '#c27b55';
         if (id === IDS.DIAMOND_ORE || id === IDS.DIAMOND) return '#55e6e6';
@@ -1865,6 +2416,7 @@ export const SKIN_H = 32;
 
     export function isSolidWorldBlock(x, y, block) {
         if (block === IDS.AIR || block === IDS.TORCH || block === IDS.LEAVES || block === IDS.SAPLING || block === IDS.WATER || block === IDS.LAVA || block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || block === IDS.LADDER) return false;
+        if (block === IDS.WHEAT_STAGE_1 || block === IDS.WHEAT_STAGE_2 || block === IDS.WHEAT_STAGE_3 || block === IDS.WHEAT_STAGE_4) return false;
         if (block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP) return false;
         return block !== IDS.WOOD || !nonCollidableTreeWood.has(`${x}_${y}`);
     }
@@ -2147,9 +2699,9 @@ export const SKIN_H = 32;
             if (drawX < -this.w) drawX += WORLD_WIDTH * TILE_SIZE;
             else if (drawX > canvas.width + this.w) drawX -= WORLD_WIDTH * TILE_SIZE;
 
-            let isSunset = (timeOfDay >= 0.35 && timeOfDay <= 0.54);
-            let isSunrise = (timeOfDay >= 0.84 || timeOfDay < 0.05);
-            let isNight = (timeOfDay > 0.54 && timeOfDay < 0.84);
+            let isSunset = (timeOfDay >= 0.35 && timeOfDay < 0.48);
+            let isSunrise = (timeOfDay >= 0.84 || timeOfDay < 0.04);
+            let isNight = (timeOfDay >= 0.48 && timeOfDay < 0.84);
 
             let bodyColor = 'rgba(255, 255, 255, 0.82)';
             let shadeColor = 'rgba(210, 225, 242, 0.88)';
@@ -3020,13 +3572,13 @@ export const SKIN_H = 32;
                     this.eatTimer++;
                     if (this.eatTimer > 20) {
                         this.eatTimer = 0;
-                        let val = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON) ? 8 : (sel.id === IDS.COOKED_CHICKEN ? 6 : (sel.id === IDS.APPLE ? 4 : 2));
+                        let val = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON) ? 8 : (sel.id === IDS.COOKED_CHICKEN ? 6 : (sel.id === IDS.BREAD ? 5 : (sel.id === IDS.APPLE ? 4 : 2)));
                         this.hunger = Math.min(20, this.hunger + val);
                         sel.count--;
                         if (sel.count <= 0) inventory[selectedHotbarIndex] = null;
                         updateHungerUI(); updateUI();
                         playSound('eat');
-                        let pColor = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON) ? '#8B4513' : (sel.id === IDS.COOKED_CHICKEN ? '#d98c53' : (sel.id === IDS.APPLE ? '#ff3333' : '#ff99cc'));
+                        let pColor = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON) ? '#8B4513' : (sel.id === IDS.COOKED_CHICKEN ? '#d98c53' : (sel.id === IDS.BREAD ? '#d2b48c' : (sel.id === IDS.APPLE ? '#ff3333' : '#ff99cc')));
                         for(let i=0; i<10; i++) particles.push(new Particle(this.x+this.width/2, this.y, pColor));
                     }
                 } else { this.eatTimer = 0; }
@@ -3217,7 +3769,9 @@ export const SKIN_H = 32;
             if (item && isTool(item.id) && item.durability <= 0) return 0;
             let id = item ? item.id : null;
             if (targetBlock === IDS.WOOD || targetBlock === IDS.PLANKS || targetBlock === IDS.LADDER || targetBlock === IDS.WOODEN_STAIRS || targetBlock === IDS.WOODEN_STAIRS_LEFT || targetBlock === IDS.WOODEN_STAIRS_RIGHT) {
-                if (id === IDS.GOLD_AXE) return 12; if (id === IDS.STONE_AXE) return 8; if (id === IDS.WOOD_AXE) return 5;
+                if (id === IDS.DIAMOND_AXE) return 18; if (id === IDS.GOLD_AXE) return 12; if (id === IDS.IRON_AXE) return 9; if (id === IDS.STONE_AXE) return 8; if (id === IDS.WOOD_AXE) return 5;
+            } else if (targetBlock === IDS.DIRT || targetBlock === IDS.PLOWED_DIRT || targetBlock === IDS.GRASS || targetBlock === IDS.SAND || targetBlock === IDS.SNOW) {
+                if (id === IDS.DIAMOND_SHOVEL) return 18; if (id === IDS.GOLD_SHOVEL) return 12; if (id === IDS.IRON_SHOVEL) return 9; if (id === IDS.STONE_SHOVEL) return 6; if (id === IDS.WOOD_SHOVEL) return 4;
             } else if (HARDNESS[targetBlock] >= 100) { 
                 const requiredTier = getRequiredMiningTier(targetBlock);
                 if (requiredTier > 0 && !canHarvestBlock(targetBlock)) return 0.1 * Math.pow(0.5, requiredTier - 1);
@@ -3228,7 +3782,13 @@ export const SKIN_H = 32;
         
         getWeaponDamage() {
             let item = inventory[selectedHotbarIndex]; if (!item) return 1;
-            const dmgMap = { [IDS.DIAMOND_SWORD]: 10, [IDS.IRON_SWORD]: 8, [IDS.GOLD_SWORD]: 8, [IDS.STONE_SWORD]: 6, [IDS.WOOD_SWORD]: 4, [IDS.DIAMOND_AXE]: 8, [IDS.IRON_AXE]: 7, [IDS.GOLD_AXE]: 6, [IDS.STONE_AXE]: 5, [IDS.WOOD_AXE]: 3, [IDS.DIAMOND_PICKAXE]: 4, [IDS.IRON_PICKAXE]: 3.5, [IDS.GOLD_PICKAXE]: 3, [IDS.STONE_PICKAXE]: 2.5, [IDS.WOOD_PICKAXE]: 2 };
+            const dmgMap = {
+                [IDS.DIAMOND_SWORD]: 10, [IDS.IRON_SWORD]: 8, [IDS.GOLD_SWORD]: 8, [IDS.STONE_SWORD]: 6, [IDS.WOOD_SWORD]: 4,
+                [IDS.DIAMOND_AXE]: 8, [IDS.IRON_AXE]: 7, [IDS.GOLD_AXE]: 6, [IDS.STONE_AXE]: 5, [IDS.WOOD_AXE]: 3,
+                [IDS.DIAMOND_PICKAXE]: 4, [IDS.IRON_PICKAXE]: 3.5, [IDS.GOLD_PICKAXE]: 3, [IDS.STONE_PICKAXE]: 2.5, [IDS.WOOD_PICKAXE]: 2,
+                [IDS.DIAMOND_SHOVEL]: 4.5, [IDS.IRON_SHOVEL]: 3.5, [IDS.GOLD_SHOVEL]: 3, [IDS.STONE_SHOVEL]: 2.5, [IDS.WOOD_SHOVEL]: 1.5,
+                [IDS.DIAMOND_HOE]: 3, [IDS.IRON_HOE]: 2.5, [IDS.GOLD_HOE]: 2, [IDS.STONE_HOE]: 1.5, [IDS.WOOD_HOE]: 1
+            };
             return dmgMap[item.id] || 1;
         }
 
@@ -3694,7 +4254,7 @@ export const SKIN_H = 32;
         }
 
         isTemptedBy(itemId) {
-            return itemId === IDS.SEEDS || itemId === IDS.RAW_PORKCHOP || itemId === IDS.COOKED_PORKCHOP || itemId === IDS.SAPLING;
+            return itemId === IDS.WHEAT;
         }
 
         update() {
@@ -4329,6 +4889,7 @@ export const SKIN_H = 32;
         fluidWakeQueue = new Set();
         leafDecayQueue = new Map();
         saplingGrowthQueue = new Map();
+        cropGrowthQueue = new Map();
         dirtToGrassQueue = new Map();
         snowRegrowthQueue = new Map();
         fallingBlocks = [];
@@ -5226,6 +5787,112 @@ export const SKIN_H = 32;
         }
     }
 
+    export function checkWaterNearCrop(x, y) {
+        if (!world || !world.length) return false;
+        if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
+        const soilY = y + 1;
+        for (let dx = -4; dx <= 4; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                const wx = x + dx;
+                const wy = soilY + dy;
+                if (wx >= 0 && wx < WORLD_WIDTH && wy >= 0 && wy < WORLD_HEIGHT) {
+                    if (world[wx]?.[wy] === IDS.WATER || (typeof isWater === 'function' && isWater(wx, wy)) || getFluid(wx, wy)?.type === IDS.WATER) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    export function registerPlantedCrop(x, y) {
+        const hasWater = checkWaterNearCrop(x, y);
+        const stageDuration = hasWater ? 1.0 : (4 / 3);
+        const nextStageAt = dayCount + timeOfDay + stageDuration;
+        cropGrowthQueue.set(`${x}_${y}`, {
+            stage: 1,
+            nextStageAt: nextStageAt,
+            hasWater: hasWater
+        });
+        return hasWater;
+    }
+
+    export function updateCropGrowth() {
+        if (!world || !world.length) return;
+        if (isMultiplayer && !isMultiplayerAuthority()) return;
+
+        for (let [key, info] of cropGrowthQueue) {
+            const [x, y] = key.split('_').map(Number);
+            const currentBlock = world[x]?.[y];
+            const isCrop = currentBlock === IDS.WHEAT_STAGE_1 || currentBlock === IDS.WHEAT_STAGE_2 || currentBlock === IDS.WHEAT_STAGE_3 || currentBlock === IDS.WHEAT_STAGE_4;
+            if (!isCrop) {
+                cropGrowthQueue.delete(key);
+                continue;
+            }
+
+            if (world[x]?.[y + 1] !== IDS.PLOWED_DIRT) {
+                cropGrowthQueue.delete(key);
+                if (currentBlock === IDS.WHEAT_STAGE_4) {
+                    spawnDroppedItem(IDS.WHEAT, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                    spawnDroppedItem(IDS.SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 2);
+                } else if (currentBlock === IDS.WHEAT_STAGE_3) {
+                    spawnDroppedItem(IDS.WHEAT, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                } else {
+                    spawnDroppedItem(IDS.SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                }
+                world[x][y] = IDS.AIR;
+                syncBlock(x, y, IDS.AIR);
+                continue;
+            }
+
+            if (currentBlock === IDS.WHEAT_STAGE_4 || info.stage >= 4) {
+                continue;
+            }
+
+            const hasWater = checkWaterNearCrop(x, y);
+            if (hasWater !== info.hasWater) {
+                const oldTotal = info.hasWater ? 1.0 : (4 / 3);
+                const newTotal = hasWater ? 1.0 : (4 / 3);
+                const remaining = Math.max(0, info.nextStageAt - (dayCount + timeOfDay));
+                const ratio = remaining / oldTotal;
+                info.nextStageAt = (dayCount + timeOfDay) + ratio * newTotal;
+                info.hasWater = hasWater;
+            }
+
+            if (dayCount + timeOfDay >= info.nextStageAt) {
+                let nextBlock = currentBlock;
+                let nextStage = info.stage;
+
+                if (currentBlock === IDS.WHEAT_STAGE_1) {
+                    nextBlock = IDS.WHEAT_STAGE_2;
+                    nextStage = 2;
+                } else if (currentBlock === IDS.WHEAT_STAGE_2) {
+                    nextBlock = IDS.WHEAT_STAGE_3;
+                    nextStage = 3;
+                } else if (currentBlock === IDS.WHEAT_STAGE_3) {
+                    nextBlock = IDS.WHEAT_STAGE_4;
+                    nextStage = 4;
+                }
+
+                world[x][y] = nextBlock;
+                syncBlock(x, y, nextBlock);
+
+                const sparkColor = nextStage === 4 ? '#facc15' : (nextStage === 3 ? '#a3e635' : '#4ade80');
+                for (let p = 0; p < 4; p++) {
+                    particles.push(new Particle(x * TILE_SIZE + Math.random() * TILE_SIZE, y * TILE_SIZE + Math.random() * TILE_SIZE, sparkColor));
+                }
+
+                if (nextStage >= 4) {
+                    info.stage = 4;
+                } else {
+                    info.stage = nextStage;
+                    const stageDuration = info.hasWater ? 1.0 : (4 / 3);
+                    info.nextStageAt = dayCount + timeOfDay + stageDuration;
+                }
+            }
+        }
+    }
+
     export function scheduleDirtToGrass(x, y) {
         if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return;
         if (world[x]?.[y] !== IDS.DIRT) return;
@@ -5432,16 +6099,16 @@ export const SKIN_H = 32;
     }
 
     export function drawDynamicSky(targetCtx, w, h, time) {
-        let duskAmount = time >= 0.34 && time < 0.54 ? smoothStep(Math.min(1, (time - 0.34) / 0.2)) : 0;
-        let dawnAmount = time >= 0.84 ? smoothStep(Math.min(1, (time - 0.84) / 0.16)) : time < 0.04 ? 1 : 0;
+        let duskAmount = time >= 0.34 && time < 0.48 ? smoothStep(Math.min(1, (time - 0.34) / 0.14)) : 0;
+        let dawnAmount = time >= 0.84 ? smoothStep(Math.min(1, (time - 0.84) / 0.14)) : time < 0.02 ? 1 : 0;
         let nightAmount = 0;
-        if (time >= 0.34 && time < 0.54) nightAmount = duskAmount;
-        else if (time >= 0.54 && time < 0.84) nightAmount = 1;
+        if (time >= 0.34 && time < 0.48) nightAmount = duskAmount;
+        else if (time >= 0.48 && time < 0.84) nightAmount = 1;
         else if (time >= 0.84) nightAmount = 1 - dawnAmount;
-        else if (time < 0.04) nightAmount = 1 - smoothStep(time / 0.04);
+        else if (time < 0.02) nightAmount = 1 - smoothStep(time / 0.02);
         let topColor = DAYLIGHT_TOP;
         let bottomColor = DAYLIGHT_BOTTOM;
-        if (time >= 0.34 && time < 0.54) {
+        if (time >= 0.34 && time < 0.48) {
             let sunsetProgress = duskAmount;
             if (sunsetProgress < 0.5) {
                 let sunsetBlend = smoothStep(sunsetProgress * 2);
@@ -5452,11 +6119,12 @@ export const SKIN_H = 32;
                 topColor = blendColor(TWILIGHT_TOP, NIGHT_TOP, nightBlend, skyTopColor);
                 bottomColor = blendColor(TWILIGHT_BOTTOM, NIGHT_BOTTOM, nightBlend, skyBottomColor);
             }
-        } else if (time >= 0.54 && time < 0.84) {
+        } else if (time >= 0.48 && time < 0.84) {
             topColor = NIGHT_TOP;
             bottomColor = NIGHT_BOTTOM;
-        } else if (time >= 0.84 || time < 0.04) {
-            let sunriseProgress = time >= 0.84 ? (time - 0.84) / 0.2 : (time + 0.16) / 0.2;
+        } else if (time >= 0.84 || time < 0.02) {
+            let sunriseProgress = time >= 0.84 ? (time - 0.84) / 0.18 : (time + 0.16) / 0.18;
+            sunriseProgress = Math.max(0, Math.min(1, sunriseProgress));
             if (sunriseProgress < 0.5) {
                 let twilightBlend = smoothStep(sunriseProgress * 2);
                 topColor = blendColor(NIGHT_TOP, TWILIGHT_TOP, twilightBlend, skyTopColor);
@@ -5490,12 +6158,12 @@ export const SKIN_H = 32;
 
     export function drawMountains(targetCtx, camX, h, time, w, offsetX = 0, offsetY = 0) {
         let darkFactor = 1;
-        if (time > 0.4 && time <= 0.5) darkFactor = 1 - (time - 0.4) * 8; 
-        else if (time > 0.5 && time <= 0.9) darkFactor = 0.2;
-        else if (time > 0.9) darkFactor = 0.2 + (time - 0.9) * 8;
+        if (time > 0.38 && time <= 0.48) darkFactor = 1 - (time - 0.38) * 8; 
+        else if (time > 0.48 && time <= 0.84) darkFactor = 0.2;
+        else if (time > 0.84) darkFactor = 0.2 + (time - 0.84) * 8;
         darkFactor = Math.max(0.12, Math.min(1, darkFactor));
 
-        const isSunset = (time > 0.35 && time <= 0.5);
+        const isSunset = (time > 0.35 && time < 0.48);
         const step = 8;
         const maxCols = Math.ceil(w / step) + 4;
 
@@ -6267,24 +6935,32 @@ export const SKIN_H = 32;
             targetR = 195; targetG = 230; targetB = 255; targetA = 0.16;
             targetFog = 0.55;
         } else if (activeBiome === 'desert') {
-            targetR = 255; targetG = 175; targetB = 45; targetA = 0.16;
+            if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+                targetR = 18; targetG = 32; targetB = 76; targetA = 0.14;
+            } else {
+                targetR = 255; targetG = 175; targetB = 45; targetA = 0.16;
+            }
         } else if (activeBiome === 'forest') {
             // Plain Woods: Rich lush emerald canopy grade with golden sun accents
-            if (timeOfDay >= 0.38 && timeOfDay <= 0.52) {
-                targetR = 255; targetG = 155; targetB = 60; targetA = 0.20;
-            } else if (timeOfDay > 0.52 && timeOfDay < 0.88) {
-                targetR = 24; targetG = 48; targetB = 92; targetA = 0.16;
+            if (timeOfDay >= 0.36 && timeOfDay < 0.48) {
+                targetR = 255; targetG = 155; targetB = 60; targetA = 0.18;
+            } else if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+                targetR = 18; targetG = 38; targetB = 84; targetA = 0.15;
             } else {
                 targetR = 75; targetG = 215; targetB = 95; targetA = 0.14;
             }
         } else if (activeBiome === 'mountains') {
-            targetR = 155; targetG = 190; targetB = 250; targetA = 0.11;
+            if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+                targetR = 16; targetG = 28; targetB = 68; targetA = 0.13;
+            } else {
+                targetR = 155; targetG = 190; targetB = 250; targetA = 0.11;
+            }
         } else {
             // Open Plains: Warm sun-drenched golden-meadow tint
-            if (timeOfDay >= 0.38 && timeOfDay <= 0.52) {
-                targetR = 255; targetG = 160; targetB = 65; targetA = 0.20;
-            } else if (timeOfDay > 0.52 && timeOfDay < 0.88) {
-                targetR = 28; targetG = 52; targetB = 98; targetA = 0.15;
+            if (timeOfDay >= 0.36 && timeOfDay < 0.48) {
+                targetR = 255; targetG = 160; targetB = 65; targetA = 0.18;
+            } else if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+                targetR = 20; targetG = 42; targetB = 90; targetA = 0.15;
             } else {
                 targetR = 145; targetG = 225; targetB = 85; targetA = 0.13;
             }
@@ -6296,11 +6972,11 @@ export const SKIN_H = 32;
         if (isNaN(currentBiomeHue.a)) currentBiomeHue.a = targetA;
         if (isNaN(currentFogDensity)) currentFogDensity = targetFog;
 
-        currentBiomeHue.r += (targetR - currentBiomeHue.r) * 0.04;
-        currentBiomeHue.g += (targetG - currentBiomeHue.g) * 0.04;
-        currentBiomeHue.b += (targetB - currentBiomeHue.b) * 0.04;
-        currentBiomeHue.a += (targetA - currentBiomeHue.a) * 0.04;
-        currentFogDensity += (targetFog - currentFogDensity) * 0.03;
+        currentBiomeHue.r += (targetR - currentBiomeHue.r) * 0.12;
+        currentBiomeHue.g += (targetG - currentBiomeHue.g) * 0.12;
+        currentBiomeHue.b += (targetB - currentBiomeHue.b) * 0.12;
+        currentBiomeHue.a += (targetA - currentBiomeHue.a) * 0.12;
+        currentFogDensity += (targetFog - currentFogDensity) * 0.08;
     }
 
     export function drawBiomeGrading(targetCtx, w, h) {
@@ -6378,9 +7054,9 @@ export const SKIN_H = 32;
         const presence = Math.max(0, Math.min(1.0, (rayCycle - 0.35) / 0.65));
 
         const isDaytime = (timeOfDay > 0.88 || timeOfDay < 0.48);
-        const isSunset = (timeOfDay >= 0.38 && timeOfDay <= 0.48);
+        const isSunset = (timeOfDay >= 0.38 && timeOfDay < 0.48);
         const isSunrise = (timeOfDay >= 0.88 || timeOfDay <= 0.06);
-        const isNight = (timeOfDay > 0.52 && timeOfDay < 0.86);
+        const isNight = (timeOfDay >= 0.48 && timeOfDay < 0.88);
 
         // Subtle intensity based on daylight, presence & caveSkyOpacity
         const skyClear = Math.max(0, 1.0 - caveSkyOpacity * 2.2) * presence;
@@ -6883,12 +7559,25 @@ export const SKIN_H = 32;
                         }
                         if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE);
                         ctx.restore();
-                    } else if (fabulousGraphics && (block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || block === IDS.SAPLING)) {
-                        // Gentle meadow wind sway on flowers and grass in fabulous graphics
+                    } else if ((fabulousGraphics || advancedGraphics) && (
+                        block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || 
+                        block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || 
+                        block === IDS.SAPLING ||
+                        block === IDS.WHEAT_STAGE_1 || block === IDS.WHEAT_STAGE_2 || 
+                        block === IDS.WHEAT_STAGE_3 || block === IDS.WHEAT_STAGE_4
+                    )) {
+                        // Gentle meadow & crop wind sway anchored to soil
+                        let swayFactor = 0.035;
+                        if (block === IDS.TALL_GRASS) swayFactor = 0.045;
+                        else if (block === IDS.WHEAT_STAGE_1) swayFactor = 0.018; // subtle sprout sway
+                        else if (block === IDS.WHEAT_STAGE_2) swayFactor = 0.028; // vegetative blade sway
+                        else if (block === IDS.WHEAT_STAGE_3) swayFactor = 0.042; // tall stalk sway
+                        else if (block === IDS.WHEAT_STAGE_4) swayFactor = 0.052; // heavy ripe grain heads nodding
+
                         const sway = Math.sin(frameCount * 0.045 + x * 0.7) * 2.0;
                         ctx.save();
                         ctx.translate(drawX + TILE_SIZE / 2, drawY + TILE_SIZE);
-                        ctx.transform(1, 0, sway * 0.04, 1, 0, 0); // shear sway from bottom
+                        ctx.transform(1, 0, sway * swayFactor, 1, 0, 0); // shear sway anchored from bottom soil
                         if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE / 2, -TILE_SIZE, TILE_SIZE, TILE_SIZE);
                         ctx.restore();
                     } else {
@@ -7316,9 +8005,15 @@ export const SKIN_H = 32;
         }
 
         let atmosphereColor = 'rgba(0, 0, 0, 0)';
-        if (timeOfDay > 0.4 && timeOfDay <= 0.55) atmosphereColor = `rgba(255, 116, 45, ${(timeOfDay - 0.4) * 0.08})`;
-        else if (timeOfDay > 0.55 && timeOfDay <= 0.9) atmosphereColor = 'rgba(22, 42, 105, 0.035)';
-        else if (timeOfDay > 0.9 || timeOfDay < 0.2) atmosphereColor = 'rgba(255, 184, 76, 0.025)';
+        if (timeOfDay >= 0.36 && timeOfDay < 0.48) {
+            const warmFactor = Math.sin((timeOfDay - 0.36) / 0.12 * Math.PI);
+            atmosphereColor = `rgba(255, 120, 50, ${(warmFactor * 0.035).toFixed(4)})`;
+        } else if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+            atmosphereColor = 'rgba(18, 32, 75, 0.035)';
+        } else if (timeOfDay >= 0.84 && timeOfDay < 0.96) {
+            const dawnFactor = Math.sin((timeOfDay - 0.84) / 0.12 * Math.PI);
+            atmosphereColor = `rgba(255, 180, 80, ${(dawnFactor * 0.025).toFixed(4)})`;
+        }
         if (atmosphereColor !== 'rgba(0, 0, 0, 0)') {
             ctx.fillStyle = atmosphereColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -8208,9 +8903,11 @@ try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay
     export function setEngineIsSleeping(newSleeping) { isSleeping = newSleeping; if (typeof window !== 'undefined') window.isSleeping = newSleeping; }
     export function setEngineIsBackgroundBuildMode(newMode) { isBackgroundBuildMode = newMode; if (typeof window !== 'undefined') window.isBackgroundBuildMode = newMode; }
     export function setEngineIsInventoryOpen(newOpen) { isInventoryOpen = newOpen; if (typeof window !== 'undefined') window.isInventoryOpen = newOpen; }
+    export function setEngineCropGrowthQueue(newQueue) { cropGrowthQueue = newQueue; if (typeof window !== 'undefined') window.cropGrowthQueue = newQueue; }
     export function setSelectedHotbarIndex(idx) { selectedHotbarIndex = idx; if (typeof window !== 'undefined') window.selectedHotbarIndex = idx; }
     export function setAttackAnimationTimer(t) { attackAnimationTimer = t; if (typeof window !== 'undefined') window.attackAnimationTimer = t; }
 
+try { if (typeof setEngineCropGrowthQueue !== "undefined") window.setEngineCropGrowthQueue = setEngineCropGrowthQueue; } catch(e) {}
 try { if (typeof setEngineWorld !== "undefined") window.setEngineWorld = setEngineWorld; } catch(e) {}
 try { if (typeof setEngineBgWorld !== "undefined") window.setEngineBgWorld = setEngineBgWorld; } catch(e) {}
 try { if (typeof setEnginePlayer !== "undefined") window.setEnginePlayer = setEnginePlayer; } catch(e) {}
@@ -8256,6 +8953,10 @@ try { if (typeof cachedSunGlowSunsetCanvas !== "undefined") window.cachedSunGlow
 try { if (typeof cachedMoonGlowCanvas !== "undefined") window.cachedMoonGlowCanvas = cachedMoonGlowCanvas; } catch(e) {}
 try { if (typeof cachedShadowCanvas !== "undefined") window.cachedShadowCanvas = cachedShadowCanvas; } catch(e) {}
 try { if (typeof auroraCanvas !== "undefined") window.auroraCanvas = auroraCanvas; } catch(e) {}
-try { if (typeof auroraCtx !== "undefined") window.auroraCtx = auroraCtx; } catch(e) {}
 try { if (typeof setWorldDimensions !== "undefined") window.setWorldDimensions = setWorldDimensions; } catch(e) {}
 try { if (typeof world !== "undefined") window.world = world; } catch(e) {}
+try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropGrowthQueue; } catch(e) {}
+try { if (typeof checkWaterNearCrop !== "undefined") window.checkWaterNearCrop = checkWaterNearCrop; } catch(e) {}
+try { if (typeof registerPlantedCrop !== "undefined") window.registerPlantedCrop = registerPlantedCrop; } catch(e) {}
+try { if (typeof updateCropGrowth !== "undefined") window.updateCropGrowth = updateCropGrowth; } catch(e) {}
+
