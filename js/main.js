@@ -31,7 +31,7 @@ import {
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
-    setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState, setGameState as setEngineGameState,
+    setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineState, setGameState as setEngineGameState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
@@ -45,7 +45,7 @@ import {
     updateTreeLeafDecay, updateSaplingGrowth, updateCropGrowth, updateNaturalRegrowth, checkWaterNearCrop, registerPlantedCrop, processDroppedItems,
     miningTarget,
     world, bgWorld, player, inventory, equippedArmor, entities, mobs, activeProjectiles, fallingBlocks,
-    particles, floatingTexts, clouds, fluids, fluidTick, furnaces, chests,
+    particles, noteParticles, spawnNoteParticle, floatingTexts, clouds, fluids, fluidTick, furnaces, jukeboxes, chests,
     mouse, keys, camera, isMultiplayer, currentMpRoom, currentMpWorldName, remotePlayers, isSleeping,
     sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue,
     saplingGrowthQueue, saplingBlockedWarnings, cropGrowthQueue, dirtToGrassQueue, snowRegrowthQueue,
@@ -54,6 +54,9 @@ import {
     currentDifficulty, currentWorldId,
     keepInventory, currentWorldAchievementsEnabled
 } from './engine.js';
+
+import { jukebox, getAudioTrack, saveAudioTrack, deleteAudioTrack } from './jukebox.js';
+import { updateMusicPlayerHUD, ejectActiveJukebox } from './ui.js';
 
 export {
     IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, HARDNESS, REACH, MOVE_SPEED, JUMP_FORCE,
@@ -77,7 +80,7 @@ export {
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
-    setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState,
+    setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
@@ -91,14 +94,16 @@ export {
     updateTreeLeafDecay, updateSaplingGrowth, updateCropGrowth, updateNaturalRegrowth, checkWaterNearCrop, registerPlantedCrop, processDroppedItems,
     miningTarget,
     world, bgWorld, player, inventory, equippedArmor, entities, mobs, activeProjectiles, fallingBlocks,
-    particles, floatingTexts, clouds, fluids, fluidTick, furnaces, chests,
+    particles, noteParticles, spawnNoteParticle, floatingTexts, clouds, fluids, fluidTick, furnaces, jukeboxes, chests,
     mouse, keys, camera, isMultiplayer, currentMpRoom, currentMpWorldName, remotePlayers, isSleeping,
     sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue,
     saplingGrowthQueue, saplingBlockedWarnings, cropGrowthQueue, dirtToGrassQueue, snowRegrowthQueue,
     hotbarWheelLockUntil,
     surfaceHeights, droppedItems, timeOfDay, dayCount, frameCount, STATE,
     currentDifficulty, currentWorldId,
-    keepInventory, currentWorldAchievementsEnabled
+    keepInventory, currentWorldAchievementsEnabled,
+    jukebox, getAudioTrack, saveAudioTrack, deleteAudioTrack,
+    updateMusicPlayerHUD, ejectActiveJukebox
 };
 
 export let attackAnimationTimer = 0;
@@ -136,7 +141,17 @@ export function setMainIsBackgroundBuildMode(mode) {
 }
 try { if (typeof window !== 'undefined') window.setMainIsBackgroundBuildMode = setMainIsBackgroundBuildMode; } catch(e) {}
 export let openedFurnace = null;
+export function setMainOpenedFurnace(f) {
+    openedFurnace = f;
+    if (typeof window !== 'undefined') window.openedFurnace = f;
+}
+try { if (typeof window !== 'undefined') window.setMainOpenedFurnace = setMainOpenedFurnace; } catch(e) {}
 export let openedChest = null;
+export function setMainOpenedChest(c) {
+    openedChest = c;
+    if (typeof window !== 'undefined') window.openedChest = c;
+}
+try { if (typeof window !== 'undefined') window.setMainOpenedChest = setMainOpenedChest; } catch(e) {}
 export let isInventoryOpen = false;
 export let monstersKilledCount = 0;
 export let deepBlocksMinedCount = 0;
@@ -211,6 +226,115 @@ export function processRemoteDropRequests() { if (typeof window !== 'undefined' 
 export function tryCompleteMultiplayerSleep() { if (typeof window !== 'undefined' && typeof window.tryCompleteMultiplayerSleep === 'function' && window.tryCompleteMultiplayerSleep !== tryCompleteMultiplayerSleep) return window.tryCompleteMultiplayerSleep(); }
 export function checkAfkKick() { if (typeof window !== 'undefined' && typeof window.checkAfkKick === 'function' && window.checkAfkKick !== checkAfkKick) return window.checkAfkKick(); }
 export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !== 'undefined' && typeof window.dropItemForWorld === 'function' && window.dropItemForWorld !== dropItemForWorld) return window.dropItemForWorld(itemId, x, y, count); }
+
+export function returnVinylToPlayer(vinylRecord, worldX, worldY) {
+    if (!vinylRecord) return;
+    const vinylObj = {
+        id: IDS.EMPTY_VINYL,
+        count: 1,
+        customName: vinylRecord.customName || vinylRecord.name || 'Vinyl Disc',
+        trackId: vinylRecord.trackId || null
+    };
+    const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+    let placed = false;
+    for (let i = 0; i < 27; i++) {
+        if (!liveInv[i]) {
+            liveInv[i] = vinylObj;
+            placed = true;
+            break;
+        }
+    }
+    if (!placed) {
+        const dropX = worldX !== undefined ? worldX : (player.x + player.width / 2);
+        const dropY = worldY !== undefined ? worldY : (player.y + 10);
+        if (typeof dropItemForWorld === 'function') dropItemForWorld(IDS.EMPTY_VINYL, dropX, dropY, 1);
+    }
+    if (typeof updateUI === 'function') updateUI();
+}
+
+export let pendingMusicTarget = null; // { x, y, slotIndex }
+
+export function promptUploadMusic(gx, gy, slotIndex) {
+    pendingMusicTarget = { x: gx, y: gy, slotIndex: slotIndex };
+    const input = document.getElementById('jukebox-file-input');
+    if (input) {
+        input.value = '';
+        input.click();
+    }
+}
+
+export function initJukeboxFileInput() {
+    const fileInput = document.getElementById('jukebox-file-input');
+    if (!fileInput) return;
+    fileInput.addEventListener('change', async (e) => {
+        const files = e.target.files;
+        if (!files || !files.length || !pendingMusicTarget) return;
+        const file = files[0];
+        const target = pendingMusicTarget;
+        pendingMusicTarget = null;
+
+        const rawName = file.name || 'Custom Track';
+        const cleanName = rawName.replace(/\.[^/.]+$/, '').trim() || 'Custom Track';
+        const trackId = 'track_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+
+        try {
+            await saveAudioTrack(trackId, file, cleanName);
+        } catch (err) {
+            console.warn('Could not save uploaded track to IndexedDB:', err);
+        }
+
+        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+        const held = (target.slotIndex >= 0 && liveInv[target.slotIndex]) ? liveInv[target.slotIndex] : liveInv[selectedHotbarIndex];
+
+        if (held && (held.id === IDS.EMPTY_VINYL || held.id === IDS.VINYL_DISC)) {
+            held.count--;
+            if (held.count <= 0) {
+                if (target.slotIndex >= 0) liveInv[target.slotIndex] = null;
+                else liveInv[selectedHotbarIndex] = null;
+            }
+        }
+
+        // Single active Jukebox rule: eject previous jukebox's disc if active
+        const currentActive = jukebox.getActiveJukebox();
+        if (currentActive && (currentActive.x !== target.x || currentActive.y !== target.y)) {
+            const liveJbs = (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : jukeboxes;
+            const prevJb = liveJbs.find(j => j.x === currentActive.x && j.y === currentActive.y);
+            if (prevJb && prevJb.record) {
+                returnVinylToPlayer(prevJb.record, prevJb.x * TILE_SIZE + 10, prevJb.y * TILE_SIZE + 10);
+                showToast('Ejected: ' + (prevJb.record.customName || 'Vinyl Disc'));
+                prevJb.record = null;
+                prevJb.isPlaying = false;
+            }
+            jukebox.stop();
+        }
+
+        // Insert new record into target Jukebox
+        const liveJbs = (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : jukeboxes;
+        let jb = liveJbs.find(j => j.x === target.x && j.y === target.y);
+        if (!jb) {
+            jb = { x: target.x, y: target.y, record: null, isPlaying: false };
+            liveJbs.push(jb);
+        }
+
+        if (jb.record) {
+            returnVinylToPlayer(jb.record, target.x * TILE_SIZE + 10, target.y * TILE_SIZE + 10);
+        }
+
+        jb.record = {
+            id: IDS.EMPTY_VINYL,
+            customName: cleanName,
+            trackId: trackId
+        };
+        jb.isPlaying = true;
+
+        await jukebox.play(file, { name: cleanName, trackId }, { x: target.x, y: target.y }, jb.record);
+
+        showToast('Now Playing: ' + cleanName);
+        if (typeof updateUI === 'function') updateUI();
+        if (typeof updateMusicPlayerHUD === 'function') updateMusicPlayerHUD();
+        unlockAchievement('sound_of_music');
+    });
+}
 
 
     // ==========================================
@@ -807,23 +931,23 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                     title = target.dataset.tip || 'Armour Slot';
                 }
             } else if (target.id === 'inv-offhand-slot') {
-                if (inventory[27]) title = ID_NAMES[inventory[27].id];
+                if (inventory[27]) title = inventory[27].customName || ID_NAMES[inventory[27].id];
                 else title = target.dataset.tip || 'Offhand (Shield / Torches)';
             } else if (target.parentNode && target.parentNode.id === 'inventory-storage-grid') {
                 let idx = Array.from(target.parentNode.children).indexOf(target) + 9;
-                if (inventory[idx]) title = ID_NAMES[inventory[idx].id];
+                if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
             } else if (target.parentNode && target.parentNode.id === 'inventory-hotbar-grid') {
                 let idx = Array.from(target.parentNode.children).indexOf(target);
-                if (inventory[idx]) title = ID_NAMES[inventory[idx].id];
+                if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
             } else if (target.parentNode && target.parentNode.id === 'inventory-grid') {
                 let idx = Array.from(target.parentNode.children).indexOf(target);
-                if (inventory[idx]) title = ID_NAMES[inventory[idx].id];
+                if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
             } else if (target.parentNode && target.parentNode.id === 'chest-grid') {
                 let idx = Array.from(target.parentNode.children).indexOf(target);
-                if (openedChest?.chest?.items[idx]) title = ID_NAMES[openedChest.chest.items[idx].id];
+                if (openedChest?.chest?.items[idx]) title = openedChest.chest.items[idx].customName || ID_NAMES[openedChest.chest.items[idx].id];
             } else if (target.parentNode && target.parentNode.id === 'hotbar') {
                 let idx = Array.from(target.parentNode.children).indexOf(target);
-                if (inventory[idx]) title = ID_NAMES[inventory[idx].id];
+                if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
             } else if (target.id === 'f-input' && openedFurnace?.input) {
                 title = ID_NAMES[openedFurnace.input.id];
             } else if (target.id === 'f-fuel' && openedFurnace?.fuel) {
@@ -871,7 +995,26 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             const r = curCanvas.getBoundingClientRect(); 
             mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; 
             mouse.worldX = mouse.x + camera.x; mouse.worldY = mouse.y + camera.y;
-            if (e.button === 0) { mouse.isDownLeft = true; attackAnimationTimer = 12; handleMeleeAttack(); }
+            if (e.button === 0) {
+                let gx = Math.floor(mouse.worldX / TILE_SIZE);
+                let gy = Math.floor(mouse.worldY / TILE_SIZE);
+                let pCX = player.x + player.width / 2;
+                let pCY = player.y + player.height / 2;
+                let bCX = gx * TILE_SIZE + TILE_SIZE / 2;
+                let bCY = gy * TILE_SIZE + TILE_SIZE / 2;
+                let inReach = Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE <= REACH;
+
+                const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+                const held = liveInv[selectedHotbarIndex];
+
+                if (inReach && world[gx]?.[gy] === IDS.JUKEBOX && held && (held.id === IDS.EMPTY_VINYL || held.id === IDS.VINYL_DISC)) {
+                    promptUploadMusic(gx, gy, selectedHotbarIndex);
+                    mouse.isDownLeft = false;
+                    return;
+                }
+
+                mouse.isDownLeft = true; attackAnimationTimer = 12; handleMeleeAttack();
+            }
             if (e.button === 2) { 
                 mouse.isDownRight = true;
                 attackAnimationTimer = 12;
@@ -1034,18 +1177,113 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             return true;
         }
         if (world[gx][gy] === IDS.FURNACE) {
-            openedFurnace = furnaces.find(f => f.x === gx && f.y === gy);
-            if (!openedFurnace) {
-                openedFurnace = {x:gx, y:gy, input:null, fuel:null, output:null, progress:0, burnTime:0, maxBurnTime:0};
-                furnaces.push(openedFurnace);
+            const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
+            let f = liveFurnaces.find(item => item.x === gx && item.y === gy);
+            if (!f) {
+                f = { x: gx, y: gy, input: null, fuel: null, output: null, progress: 0, burnTime: 0, maxBurnTime: 0 };
+                liveFurnaces.push(f);
             }
+            openedFurnace = f;
+            if (typeof window !== 'undefined') {
+                window.openedFurnace = f;
+                if (typeof window.setOpenedFurnace === 'function') window.setOpenedFurnace(f);
+            }
+            if (typeof UI !== 'undefined' && typeof UI.setOpenedFurnace === 'function') UI.setOpenedFurnace(f);
             toggleInventory(); return true;
         }
         if (world[gx][gy] === IDS.CHEST) {
             const chestData = getChestGroup(gx, gy);
             openedChest = { key: chestData.key, chest: chestData.chest, size: chestData.size, x: gx, y: gy };
+            if (typeof window !== 'undefined') {
+                window.openedChest = openedChest;
+                if (typeof window.setOpenedChest === 'function') window.setOpenedChest(openedChest);
+            }
+            if (typeof UI !== 'undefined' && typeof UI.setOpenedChest === 'function') UI.setOpenedChest(openedChest);
             toggleInventory();
             return true;
+        }
+        if (world[gx][gy] === IDS.JUKEBOX) {
+            const liveJbs = (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : jukeboxes;
+            let jb = liveJbs.find(j => j.x === gx && j.y === gy);
+            if (!jb) {
+                jb = { x: gx, y: gy, record: null, isPlaying: false };
+                liveJbs.push(jb);
+            }
+
+            const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+            const held = liveInv[selectedHotbarIndex];
+
+            if (held && (held.id === IDS.EMPTY_VINYL || held.id === IDS.VINYL_DISC)) {
+                if (!held.trackId) {
+                    promptUploadMusic(gx, gy, selectedHotbarIndex);
+                    return true;
+                }
+
+                // Single active Jukebox rule: eject previous jukebox's disc if active
+                const currentActive = jukebox.getActiveJukebox();
+                if (currentActive && (currentActive.x !== gx || currentActive.y !== gy)) {
+                    const prevJb = liveJbs.find(j => j.x === currentActive.x && j.y === currentActive.y);
+                    if (prevJb && prevJb.record) {
+                        returnVinylToPlayer(prevJb.record, prevJb.x * TILE_SIZE + 10, prevJb.y * TILE_SIZE + 10);
+                        showToast('Ejected: ' + (prevJb.record.customName || 'Vinyl Disc'));
+                        prevJb.record = null;
+                        prevJb.isPlaying = false;
+                    }
+                    jukebox.stop();
+                }
+
+                // If this jukebox already had a record, return it first!
+                if (jb.record) {
+                    returnVinylToPlayer(jb.record, gx * TILE_SIZE + 10, gy * TILE_SIZE + 10);
+                }
+
+                const trackName = held.customName || 'Custom Track';
+                const trackId = held.trackId;
+
+                jb.record = {
+                    id: IDS.EMPTY_VINYL,
+                    customName: trackName,
+                    trackId: trackId
+                };
+                jb.isPlaying = true;
+
+                // Decrement held vinyl
+                held.count--;
+                if (held.count <= 0) liveInv[selectedHotbarIndex] = null;
+                if (typeof updateUI === 'function') updateUI();
+
+                getAudioTrack(trackId).then(async (record) => {
+                    if (record && record.blob) {
+                        await jukebox.play(record.blob, { name: trackName, trackId }, { x: gx, y: gy }, jb.record);
+                        showToast('Now Playing: ' + trackName);
+                    } else {
+                        showToast('Could not load song for this disc.');
+                    }
+                    if (typeof updateMusicPlayerHUD === 'function') updateMusicPlayerHUD();
+                }).catch(err => {
+                    console.warn('Error fetching audio track:', err);
+                    showToast('Failed to load audio track.');
+                });
+
+                return true;
+            } else {
+                // Not holding vinyl
+                if (jb.record) {
+                    const ejectedRecord = jb.record;
+                    jb.record = null;
+                    jb.isPlaying = false;
+                    if (jukebox.getActiveJukebox() && jukebox.getActiveJukebox().x === gx && jukebox.getActiveJukebox().y === gy) {
+                        jukebox.stop();
+                    }
+                    returnVinylToPlayer(ejectedRecord, gx * TILE_SIZE + 10, gy * TILE_SIZE + 10);
+                    showToast('Ejected: ' + (ejectedRecord.customName || 'Vinyl Disc'));
+                    if (typeof updateMusicPlayerHUD === 'function') updateMusicPlayerHUD();
+                    return true;
+                } else {
+                    showToast('Insert a Vinyl Disc to play music.');
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -1158,6 +1396,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 if (bgBlockId === IDS.STONE) dropId = IDS.COBBLESTONE;
                 if (bgBlockId === IDS.WOODEN_STAIRS || bgBlockId === IDS.WOODEN_STAIRS_LEFT || bgBlockId === IDS.WOODEN_STAIRS_RIGHT) dropId = IDS.WOODEN_STAIRS;
                 if (bgBlockId === IDS.COBBLESTONE_STAIRS || bgBlockId === IDS.COBBLESTONE_STAIRS_LEFT || bgBlockId === IDS.COBBLESTONE_STAIRS_RIGHT) dropId = IDS.COBBLESTONE_STAIRS;
+                if (!canHarvestBlock(bgBlockId) && getRequiredMiningTier(bgBlockId) > 0) dropId = null;
                 if (dropId) giveItem(dropId, 1);
 
                 player.exhaustion += 0.05 * getDayHungerDrainMultiplier();
@@ -1215,13 +1454,36 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
             for(let p=0; p<8; p++) particles.push(new Particle(bCX, bCY, getBlockColor(blockId))); 
             
             if (blockId === IDS.FURNACE) {
-                let fIdx = furnaces.findIndex(f => f.x === gridX && f.y === gridY);
+                const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
+                let fIdx = liveFurnaces.findIndex(f => f.x === gridX && f.y === gridY);
                 if (fIdx > -1) {
-                    let f = furnaces[fIdx];
+                    let f = liveFurnaces[fIdx];
                     if (f.input) giveItem(f.input.id, f.input.count);
                     if (f.fuel) giveItem(f.fuel.id, f.fuel.count);
                     if (f.output) giveItem(f.output.id, f.output.count);
-                    furnaces.splice(fIdx, 1);
+                    const curOpened = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
+                    if (curOpened === f) {
+                        openedFurnace = null;
+                        if (typeof window !== 'undefined') window.openedFurnace = null;
+                        if (typeof UI !== 'undefined' && typeof UI.setOpenedFurnace === 'function') UI.setOpenedFurnace(null);
+                        if (isInventoryOpen) toggleInventory();
+                    }
+                    liveFurnaces.splice(fIdx, 1);
+                }
+            }
+            if (blockId === IDS.JUKEBOX) {
+                const liveJbs = (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : jukeboxes;
+                let jIdx = liveJbs.findIndex(j => j.x === gridX && j.y === gridY);
+                if (jIdx > -1) {
+                    let jb = liveJbs[jIdx];
+                    if (jb.record) {
+                        returnVinylToPlayer(jb.record, gridX * TILE_SIZE + 10, gridY * TILE_SIZE + 10);
+                    }
+                    if (jukebox.getActiveJukebox() && jukebox.getActiveJukebox().x === gridX && jukebox.getActiveJukebox().y === gridY) {
+                        jukebox.stop();
+                        if (typeof updateMusicPlayerHUD === 'function') updateMusicPlayerHUD();
+                    }
+                    liveJbs.splice(jIdx, 1);
                 }
             }
             if (blockId === IDS.CHEST) {
@@ -1309,10 +1571,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 giveItem(IDS.SEEDS, 2);
                 unlockAchievement('bumper_crop');
             }
-            if (!canHarvestBlock(blockId) && getRequiredMiningTier(blockId) > 0) dropId = null;
             if (isDoorBlock(blockId)) dropId = IDS.DOOR;
             if (blockId === IDS.STONE) dropId = IDS.COBBLESTONE;
-            if (blockId === IDS.SNOW) { giveItem(IDS.SNOWBALL, 4); dropId = null; }
+            if (blockId === IDS.SNOW) {
+                const heldItem = inventory[selectedHotbarIndex];
+                const isShovel = heldItem && [IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL].includes(heldItem.id);
+                if (isShovel) giveItem(IDS.SNOWBALL, 4);
+                dropId = null;
+            }
             if (blockId === IDS.COAL_ORE) dropId = IDS.COAL;
             if (blockId === IDS.IRON_ORE) dropId = IDS.IRON_ORE;
             if (blockId === IDS.DIAMOND_ORE) dropId = IDS.DIAMOND;
@@ -1331,6 +1597,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 else if (leafDropRoll < 0.07) dropId = IDS.APPLE;
                 else if (leafDropRoll < 0.15) dropId = IDS.STICK;
                 else dropId = null;
+            }
+            // Strict tool tier harvest enforcement: If the block requires a tool tier and the player lacks it, DROP NOTHING!
+            if (!canHarvestBlock(blockId) && getRequiredMiningTier(blockId) > 0) {
+                dropId = null;
             }
             if (dropId) giveItem(dropId, 1);
             detachedTorchCells.forEach(() => giveItem(IDS.TORCH, 1));
@@ -1428,7 +1698,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
 
         // --- Snowball throw: runs BEFORE any grid/reach checks so aim can point anywhere ---
         const offhandTorch = (!isBackgroundBuildMode && inventory[27] && inventory[27].id === IDS.TORCH) ? inventory[27] : null;
-        const isUnplaceableItem = id => isTool(id) || isFoodItem(id) || id === IDS.COAL || id === IDS.STICK || id === IDS.GOLD_INGOT || id === IDS.IRON_ORE || id === IDS.DIAMOND_ORE || id === IDS.IRON_INGOT || id === IDS.DIAMOND || id === IDS.FEATHER || id === IDS.SNOWBALL || id === IDS.WHEAT;
+        const isUnplaceableItem = id => isTool(id) || isFoodItem(id) || id === IDS.COAL || id === IDS.STICK || id === IDS.GOLD_INGOT || id === IDS.IRON_ORE || id === IDS.DIAMOND_ORE || id === IDS.IRON_INGOT || id === IDS.DIAMOND || id === IDS.FEATHER || id === IDS.SNOWBALL || id === IDS.WHEAT || id === IDS.EMPTY_VINYL;
         if (!sel && offhandTorch) { selectedIndex = 27; sel = offhandTorch; }
 
         if (sel && sel.id === IDS.SNOWBALL && sel.count > 0) {
@@ -1791,7 +2061,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 }
             }
             if (sel.id === IDS.FURNACE) {
-                furnaces.push({x: gx, y: gy, input: null, fuel: null, output: null, progress: 0, burnTime: 0, maxBurnTime: 0});
+                const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
+                liveFurnaces.push({x: gx, y: gy, input: null, fuel: null, output: null, progress: 0, burnTime: 0, maxBurnTime: 0});
+            }
+            if (sel.id === IDS.JUKEBOX) {
+                const liveJbs = (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : jukeboxes;
+                liveJbs.push({ x: gx, y: gy, record: null, isPlaying: false });
             }
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
@@ -1817,6 +2092,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         document.getElementById('hud').style.display = 'block';
         document.getElementById('gameCanvas').classList.remove('hidden');
         initCanvasMouseListeners();
+        initJukeboxFileInput();
 
         if (canvas && (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight)) {
             if (typeof resizeCanvases === 'function') resizeCanvases();
@@ -1933,14 +2209,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         }
         if (frameCount % 60 === 0) updateTimeUI();
 
-        furnaces.forEach(f => {
+        const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
+        const curOpenedFurnace = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
+        liveFurnaces.forEach(f => {
             let canSmelt = f.input && getSmeltResult(f.input.id) && (!f.output || (f.output.id === getSmeltResult(f.input.id) && f.output.count < 64));
             if (f.burnTime > 0) f.burnTime--;
             
             if (f.burnTime <= 0 && canSmelt && f.fuel && getFuelValue(f.fuel.id) > 0) {
                 f.maxBurnTime = getFuelValue(f.fuel.id); f.burnTime = f.maxBurnTime;
                 f.fuel.count--; if (f.fuel.count <= 0) f.fuel = null;
-                if (openedFurnace === f && isInventoryOpen) updateUI();
+                if (curOpenedFurnace === f && isInventoryOpen) updateUI();
             }
             
             if (f.burnTime > 0 && canSmelt) {
@@ -1950,12 +2228,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                     let resId = getSmeltResult(f.input.id);
                     f.input.count--; if (f.input.count <= 0) f.input = null;
                     if (f.output) f.output.count++; else f.output = { id: resId, count: 1 };
-                    if (openedFurnace === f && isInventoryOpen) updateUI();
+                    if (curOpenedFurnace === f && isInventoryOpen) updateUI();
                 }
             } else { f.progress = 0; }
             
             updateFurnaceVisual(f);
-            if (openedFurnace === f && isInventoryOpen && frameCount % 10 === 0) updateUI();
+            if (curOpenedFurnace === f && isInventoryOpen && frameCount % 10 === 0) updateUI();
         });
         
         checkAutosave(Date.now());
@@ -2073,6 +2351,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
         
         for (let i = 0; i < particles.length; i++) {
             if (particles[i].alive) particles[i].update();
+        }
+        for (let i = 0; i < noteParticles.length; i++) {
+            if (noteParticles[i].alive) noteParticles[i].update();
+        }
+        if (typeof jukebox !== 'undefined' && jukebox.isPlaying && jukebox.getActiveJukebox()) {
+            const aj = jukebox.getActiveJukebox();
+            if (world[aj.x]?.[aj.y] !== IDS.JUKEBOX) {
+                jukebox.stop();
+                if (typeof updateMusicPlayerHUD === 'function') updateMusicPlayerHUD();
+            } else if (frameCount % 14 === 0) {
+                spawnNoteParticle(aj.x * TILE_SIZE + TILE_SIZE / 2, aj.y * TILE_SIZE + 4);
+            }
         }
         for (let i = floatingTexts.length - 1; i >= 0; i--) {
             floatingTexts[i].update();
@@ -2660,6 +2950,7 @@ export async function bootGame() {
     if (typeof document !== 'undefined') {
         tooltipEl = document.getElementById('item-tooltip') || document.getElementById('tooltip');
         initCanvasMouseListeners();
+        initJukeboxFileInput();
     }
     if (typeof initCanvases === 'function') initCanvases();
     if (typeof loadSavedSettings === 'function') loadSavedSettings();
@@ -2696,4 +2987,10 @@ try { if (typeof submitClosedBetaPassword !== "undefined") window.submitClosedBe
 try { if (typeof toggleClosedBetaPasswordVisibility !== "undefined") window.toggleClosedBetaPasswordVisibility = toggleClosedBetaPasswordVisibility; } catch(e) {}
 try { if (typeof lockClosedBeta !== "undefined") window.lockClosedBeta = lockClosedBeta; } catch(e) {}
 try { if (typeof proceedWithBoot !== "undefined") window.proceedWithBoot = proceedWithBoot; } catch(e) {}
+try { if (typeof promptUploadMusic !== "undefined") window.promptUploadMusic = promptUploadMusic; } catch(e) {}
+try { if (typeof initJukeboxFileInput !== "undefined") window.initJukeboxFileInput = initJukeboxFileInput; } catch(e) {}
+try { if (typeof returnVinylToPlayer !== "undefined") window.returnVinylToPlayer = returnVinylToPlayer; } catch(e) {}
+try { if (typeof jukebox !== "undefined") window.jukebox = jukebox; } catch(e) {}
+try { if (typeof updateMusicPlayerHUD !== "undefined") window.updateMusicPlayerHUD = updateMusicPlayerHUD; } catch(e) {}
+try { if (typeof ejectActiveJukebox !== "undefined") window.ejectActiveJukebox = ejectActiveJukebox; } catch(e) {}
 

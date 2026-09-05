@@ -7,11 +7,17 @@ I built this project to learn, have fun, and share something cool that I worked 
 
 ✨ Features
 
-Multiplayer Mode: Play together with friends in the same world.
-Skyblock Mode: Try to survive on a tiny floating island and build your empire from almost nothing.
-Achievements: Complete goals and unlock up to 32 different achievements.
-Settings & Customization: Change your graphics, adjust sound levels, and pick your favorite game style.
-Skin Preview: Look at your character before jumping into the game.
+- **Multiplayer Mode**: Play together with friends online in real-time chunked worlds with chat and server browser.
+- **Agriculture & Farming**: Craft hoes to till farmland, cultivate wheat across 4 authentic growth stages, and bake fresh bread.
+- **Livestock & Overhauled Mobs**: Peaceful grazing cows, sheep, pigs, and chickens with animated quadruped walking cycles and drops.
+- **Jukebox & Vinyl Music Discs**: Craft a Jukebox, import your favorite MP3 music tracks, and enjoy custom audio playback with musical note particles and player HUD.
+- **Tool Progression & Realistic Harvesting**: Full tool suites across 5 tiers (Wood, Stone, Iron, Gold, Diamond) with strict Minecraft tool-tier drop rules.
+- **Smelting & Dynamic Furnaces**: Working furnaces with unlit idle textures, animated burning flames, cooking progress, and take-only output slots.
+- **Native Gamepad Support**: Plug-and-play Xbox, PlayStation, and Bluetooth controller support with analog stick movement, 360° targeting, and haptic rumble.
+- **Progressive Crack Animations**: 10-stage crisp pixelated block breaking fractures.
+- **Skyblock & Survival Modes**: Choose your survival experience across customizable world sizes and difficulties (Peaceful, Easy, Normal, Hard).
+- **Achievements System**: Complete goals and unlock over 30 unique survival and crafting achievements.
+- **Aseprite Pixel Skin Studio & Customization**: Paint custom skins in real-time 3D preview, customize UI accent themes, and fine-tune graphic shaders.
 
 🚀 How to Play
 

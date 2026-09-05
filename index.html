@@ -81,13 +81,13 @@
     </div>
 
     <div id="game-intro" class="hidden" aria-hidden="true">
-        <div id="intro-black-text">A <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link text-amber-300 hover:text-amber-200 underline" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a> game</div>
+        <div id="intro-black-text">A Gheorghes Rares game</div>
         <div id="intro-message-screen">
             <div id="intro-message">
                 <p>Dear whoever is reading this,</p>
                 <p>Thank you for choosing to boot up this game. It may not be the biggest adventure yet, but I poured my heart, curiosity, and a few personal touches into every block, with AI as my companion along the way.</p>
                 <p>This is my little homage to a childhood game that meant a lot to me: <strong>Minecraft2D: PocketCode Edition.</strong></p>
-                <p>Thank you for being here.<br>- <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link text-amber-300 hover:text-amber-200 underline font-bold" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a></p>
+                <p>Thank you for being here.<br>- <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link underline font-bold" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a></p>
             </div>
             <div id="intro-skip-hint">Press SPACE or Click anywhere to continue</div>
         </div>
@@ -357,7 +357,7 @@
             </div>
 
             <p class="menu-version" id="game-version-label"><a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v0.1.4</p>
-            <p class="menu-credit">A game totally not coded with AI by <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link text-amber-300 hover:text-amber-200 underline font-bold transition-colors" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a></p>
+            <p class="menu-credit">A game totally not coded with AI by <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link underline font-bold transition-colors" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a></p>
         </div>
 
         <div class="menu-skin-preview">
@@ -1290,7 +1290,7 @@
             <div class="settings-tab-content active custom-scrollbar" id="settings-tab-gameplay">
                 <div class="settings-section-title">Gameplay & Mechanics</div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div class="settings-row" id="settings-row-difficulty" style="display: none;">
+                    <div class="settings-row" id="settings-row-difficulty">
                         <span class="settings-label">Difficulty</span>
                         <button class="mc-btn" id="btn-settings-difficulty" onclick="cycleWorldDifficulty()">Normal</button>
                     </div>
@@ -1738,7 +1738,7 @@
                 </div>
 
                 <div class="credits-note-box">
-                    <p class="credits-note-text">Everything in these credits is <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link text-amber-300 hover:underline" title="Visit Gheorghes Rares on GitHub">Me</a> and AI.<br>That is the whole team. We are very efficient. Unemployed ass activities bruh.</p>
+                    <p class="credits-note-text">Everything in these credits is <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link hover:underline" title="Visit Gheorghes Rares on GitHub">Me</a> and AI.<br>That is the whole team. We are very efficient. Unemployed ass activities bruh.</p>
                     <p class="credits-easter-egg">Buna Adnanaaaaaaaaaa, stiu ca citesti asta acum, hehehehehe</p>
                 </div>
 
@@ -2336,6 +2336,43 @@
                         <!-- Content rendered dynamically -->
                     </div>
                 </div>
+                <!-- HUD Music Player (Jukebox) -->
+                <div id="hud-music-player" class="hidden hud-music-panel pointer-events-auto mt-1" title="Jukebox Music Player">
+                    <div class="hud-music-header flex items-center justify-between pb-1 border-b border-[#3b4752] mb-1.5">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <!-- Spinning Vinyl Disc Icon -->
+                            <div id="hud-music-disc-icon" class="hud-music-disc-spinning shrink-0">
+                                <svg viewBox="0 0 16 16" width="14" height="14" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <circle cx="8" cy="8" r="7" fill="#18181b" stroke="#09090b" stroke-width="1"/>
+                                    <circle cx="8" cy="8" r="4.5" fill="none" stroke="#27272a" stroke-width="1"/>
+                                    <circle cx="8" cy="8" r="2.5" fill="#dc2626"/>
+                                    <circle cx="8" cy="8" r="1" fill="#fef08a"/>
+                                </svg>
+                            </div>
+                            <span class="hud-music-badge text-emerald-400 font-['VT323'] text-base font-bold tracking-wider leading-none uppercase">JUKEBOX</span>
+                        </div>
+                        <button type="button" id="hud-music-eject-btn" class="hud-music-btn text-amber-400 hover:text-amber-300 font-bold text-sm leading-none px-1.5 py-0.5 rounded cursor-pointer flex items-center gap-1" title="Eject vinyl disc from Jukebox" aria-label="Eject vinyl">
+                            <span>⏏</span><span>EJECT</span>
+                        </button>
+                    </div>
+                    <div class="hud-music-body flex flex-col gap-1 text-sm font-['VT323']">
+                        <!-- Track title -->
+                        <div class="hud-music-title-wrap overflow-hidden whitespace-nowrap">
+                            <div id="hud-music-title" class="hud-music-title text-white font-bold text-base truncate">No disc playing</div>
+                        </div>
+                        <!-- Scrubber / Progress slider -->
+                        <div class="flex items-center gap-1.5">
+                            <input type="range" id="hud-music-seek" min="0" max="100" value="0" step="0.1" class="hud-music-range w-full flex-1 cursor-pointer" />
+                        </div>
+                        <!-- Controls row: Play/Pause button + Time Readout -->
+                        <div class="flex items-center justify-between text-xs text-gray-300 pt-0.5">
+                            <button type="button" id="hud-music-playpause-btn" class="hud-music-control-btn px-2 py-0.5 bg-[#2c333a] hover:bg-[#38434d] text-white border border-[#4a5763] rounded cursor-pointer text-xs font-bold leading-none">
+                                ▶ Play
+                            </button>
+                            <span id="hud-music-time" class="text-amber-300 font-mono text-xs">0:00 / 0:00</span>
+                        </div>
+                    </div>
+                </div>
                 <p id="sleep-status" class="hidden text-lg text-yellow-200 bg-black/60 px-2 py-1 border border-yellow-600 rounded"></p>
                 <div id="debug-info" class="text-base bg-black/85 p-3 border-2 border-green-500/80 text-green-400 hidden shadow-2xl rounded mt-1 font-mono leading-tight max-w-sm pointer-events-none">Debug Screen</div>
             </div>
@@ -2492,6 +2529,7 @@
         </div>
     </div>
 
+    <input type="file" id="jukebox-file-input" class="hidden" accept=".mp3,audio/mpeg,audio/*">
     <script type="module" src="js/main.js"></script>
 </body>
 </html>

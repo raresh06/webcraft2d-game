@@ -469,8 +469,21 @@ export function getMaxAnimals() {
     export let sleepTransitionMs = 3000;
     export let lastPlayerActivityAt = Date.now();
     export const PATCH_NOTES_0_1_4 = {
-        title: 'Beta 0.1.4',
+        title: 'Beta 0.1.4 (Farming, Livestock, Jukebox & Mechanics Overhaul)',
         items: [
+            'Agriculture & Farmland System: Craft hoes to till grass and dirt into fertile Farmland blocks. Farmland dynamically stays moist and hydrated when near water sources (within 4 blocks) and supports crop cultivation.',
+            'Progressive 4-Stage Wheat Farming: Plant wheat seeds on farmland to cultivate wheat across 4 authentic pixel-art growth stages (sprouts, vegetative blades, tall green stalks, and golden nodding wheat heads). Harvesting mature crops yields nutritious Wheat and bonus Seeds.',
+            'Nutritious Bread Crafting: Combine 3 harvested Wheat in the Crafting Table to bake fresh Bread, providing efficient hunger and saturation replenishment.',
+            'Complete Shovel & Hoe Tool Sets: Full tool progression across 5 material tiers (Wood, Stone, Iron, Gold, and Diamond). Shovels allow rapid excavation of dirt, grass, sand, gravel, and snow; Hoes till soil and harvest crops.',
+            'Bovine Livestock (Cows): Added peaceful grazing Cows inhabiting grassy biomes with udders, horns, animated quadruped walking legs, and head bobbing. Defeating cows yields Raw Beef and Leather.',
+            'Quadruped Animal Animation Overhaul: Overhauled procedural walking animations, natural leg cycles, and pixel art models for Cows, Sheep, Pigs, and Chickens.',
+            'Jukebox & Vinyl Music Discs: Craftable Jukebox block with disc slots, interactive disc insertion/ejection, custom MP3 track loading with persistent IndexedDB storage, floating Music Player HUD with audio waveform and progress scrubbers, and floating musical note particles.',
+            'Dynamic Unlit & Lit Furnace Textures: Authentically rendered furnace states - unlit dark stone grates when idle, bursting into animated glowing flames and dynamic light emissions when smelting ore or cooking food.',
+            'Furnace GUI & Smelting Pipeline: Seamless furnace opening, smart shift-clicking, automatic fuel consumption, cooking/smelting progress bar, and protected take-only output slot.',
+            'Realistic Tool Tier Harvesting: Authentic Minecraft drop mechanics - breaking stone or ores with bare hands or an insufficient pickaxe tier slowly breaks the block, but drops NO items whatsoever. Snow requires a shovel to drop snowballs.',
+            'Enhanced 10-Stage Block Fracture Animation: Rebuilt block breaking animation with 10 progressive Minecraft-style pixelated fracture stages with dynamic jagged crack lines and relief shading.',
+            'Persistent Difficulty Selector: Configurable Peaceful, Easy, Normal, and Hard modes with persistent storage, dynamic mob despawning in Peaceful, and accessible switching from both Pause and Main Menu settings.',
+            'UI Accent Color Customization: Integrated custom accent color theming across menu borders, buttons, hover states, How-to-Play tabs, and gamepad focus outlines.',
             'Native Gamepad API Controller Support: Full support for standard Xbox, PlayStation, and generic USB/Bluetooth gamepads with automatic plug-and-play detection.',
             'Analog Platformer Movement: Smooth, variable-speed platformer movement using the left analog stick with configurable deadzone filtering and non-linear response curves.',
             '360° Analog Aim Vector: 360-degree crosshair targeting using the right analog stick with adjustable sensitivity, Y-axis inversion, and automated facing fallback.',
@@ -479,14 +492,8 @@ export function getMaxAnimals() {
             'Bumper Hotbar Cycling: Instantly cycle active hotbar items with LB / L1 (previous) and RB / R1 (next).',
             'Haptic Vibration Rumble: Dual-rumble and haptic pulse feedback on block breaking, taking damage, tool breakage, and UI interactions with toggleable settings.',
             'Universal Gamepad UI Navigation: Full D-Pad and left-stick 2D spatial focus navigation across all menus, modals, and inventory screens (Main Menu, Settings, Worlds, Achievements, Profile, Pause, and Death screen).',
-            'Retro Gold UI Focus Glow: Animated Minecraft-gold focus outline (.gamepad-focused) with auto-scrolling into view and seamless mouse-controller coexistence.',
-            'Controller UI Action Buttons: Press A to click/activate buttons and toggle checkboxes, B to cancel/back out of any modal, and X on inventory slots to simulate right-click (split / take one).',
-            'Bumper Tab Cycling: Press LB / RB to quickly switch between tabs in Settings, Controls sub-tabs, and Achievements.',
-            'Controller Slider Stepping: Tilt Left / Right on volume, FOV, and sensitivity sliders to adjust values in real time.',
-            'Recipe Pinning to HUD: Click any recipe in the Crafting Table to pin it to your HUD with live material tracking and crafting station status while mining.',
-            'Live Connection Status & Ping Monitor: Real-time latency and network status badges in multiplayer.',
-            'Controls Settings Sub-Category: Merged controller rebinding and calibration into Controls sub-tabs with pixel-art controller preview and live button monitor.',
-            'Title Screen Background & Boot Fix: Resolved script load timing and duplicate identifier declarations, restoring animated background panorama and skin preview.'
+            'Retro Gold UI Focus Glow: Animated focus outline (.gamepad-focused) with auto-scrolling into view and seamless mouse-controller coexistence.',
+            'Recipe Pinning to HUD: Click any recipe in the Crafting Table to pin it to your HUD with live material tracking and crafting station status while mining.'
         ]
     };
 
@@ -620,6 +627,7 @@ export function getMaxAnimals() {
         WOODEN_STAIRS_RIGHT: 34, COBBLESTONE_STAIRS_RIGHT: 35,
         PLOWED_DIRT: 36, FARMLAND: 36,
         WHEAT_STAGE_1: 37, WHEAT_STAGE_2: 38, WHEAT_STAGE_3: 39, WHEAT_STAGE_4: 40,
+        JUKEBOX: 41,
         STICK: 100, WOOD_PICKAXE: 101, STONE_PICKAXE: 102, 
         WOOD_SWORD: 103, STONE_SWORD: 104, WOOD_AXE: 105, 
         COAL: 106, GOLD_INGOT: 107,
@@ -636,12 +644,14 @@ export function getMaxAnimals() {
         WOOD_SHOVEL: 147, STONE_SHOVEL: 148, IRON_SHOVEL: 149, GOLD_SHOVEL: 150, DIAMOND_SHOVEL: 151,
         WOOD_HOE: 152, STONE_HOE: 153, IRON_HOE: 154, GOLD_HOE: 155, DIAMOND_HOE: 156,
         WHEAT: 157, BREAD: 158,
-        RAW_BEEF: 159, COOKED_BEEF: 160, LEATHER: 161
+        RAW_BEEF: 159, COOKED_BEEF: 160, LEATHER: 161,
+        EMPTY_VINYL: 162, VINYL_DISC: 162
     };
 
 
     MINIMAP_COLOR_32.fill(0xFF7D7D7D); // default stone color (ABGR)
     MINIMAP_COLOR_32[IDS.AIR] = 0xFF0A0A0A;
+    MINIMAP_COLOR_32[IDS.JUKEBOX] = 0xFF213A5C;
     MINIMAP_COLOR_32[IDS.TORCH] = 0xFF33CFFF;
     MINIMAP_COLOR_32[IDS.GRASS] = 0xFF35B042;
     MINIMAP_COLOR_32[IDS.LEAVES] = 0xFF35B042;
@@ -682,6 +692,7 @@ export function getMaxAnimals() {
         [IDS.WOOD]: 60, [IDS.LEAVES]: 5, [IDS.PLANKS]: 60, [IDS.COAL_ORE]: 160, 
         [IDS.GOLD_ORE]: 180, [IDS.IRON_ORE]: 180, [IDS.DIAMOND_ORE]: 240,
         [IDS.CRAFTING_TABLE]: 60, [IDS.FURNACE]: 150, [IDS.TORCH]: 5, [IDS.SAPLING]: 5,
+        [IDS.JUKEBOX]: 60,
         [IDS.SHORT_GRASS]: 1, [IDS.TALL_GRASS]: 1, [IDS.FLOWER_RED]: 1, [IDS.FLOWER_YELLOW]: 1,
         [IDS.WHEAT_STAGE_1]: 1, [IDS.WHEAT_STAGE_2]: 1, [IDS.WHEAT_STAGE_3]: 1, [IDS.WHEAT_STAGE_4]: 1,
         [IDS.SAND]: 15, [IDS.SNOW]: 10, [IDS.CACTUS]: 20, [IDS.BED]: 30,
@@ -692,6 +703,8 @@ export function getMaxAnimals() {
     };
 
     export const ID_NAMES = Object.fromEntries(Object.entries(IDS).map(([k, v]) => [v, k.replace(/_/g, ' ')]));
+    ID_NAMES[IDS.JUKEBOX] = 'Jukebox';
+    ID_NAMES[IDS.EMPTY_VINYL] = 'Vinyl Disc';
     ID_NAMES[IDS.SHORT_GRASS] = 'Short Grass';
     ID_NAMES[IDS.TALL_GRASS] = 'Tall Grass';
     ID_NAMES[IDS.FLOWER_RED] = 'Poppy';
@@ -812,11 +825,34 @@ export function getMaxAnimals() {
     };
 
     export function getRequiredMiningTier(blockId) {
-        if (blockId === IDS.STONE || blockId === IDS.COAL_ORE) return 1;
+        if (blockId === IDS.STONE || blockId === IDS.COAL_ORE || blockId === IDS.COBBLESTONE || blockId === IDS.FURNACE || blockId === IDS.COBBLESTONE_STAIRS || blockId === IDS.COBBLESTONE_STAIRS_LEFT || blockId === IDS.COBBLESTONE_STAIRS_RIGHT) return 1;
         if (blockId === IDS.IRON_ORE) return 2;
         if (blockId === IDS.GOLD_ORE || blockId === IDS.DIAMOND_ORE) return 3;
         return 0;
     }
+
+    export const BLOCK_CRACK_STAGES = [
+        // Stage 0: 0% - 10%
+        [[7,7], [8,7], [8,8], [9,8]],
+        // Stage 1: 10% - 20%
+        [[7,7], [8,7], [8,8], [9,8], [6,6], [7,6], [9,9], [10,9], [8,6]],
+        // Stage 2: 20% - 30%
+        [[7,7], [8,7], [8,8], [9,8], [6,6], [7,6], [9,9], [10,9], [8,6], [5,5], [6,5], [10,10], [11,10], [8,9], [8,10]],
+        // Stage 3: 30% - 40%
+        [[7,7], [8,7], [8,8], [9,8], [6,6], [7,6], [9,9], [10,9], [8,6], [5,5], [6,5], [10,10], [11,10], [8,9], [8,10], [4,5], [4,4], [11,11], [12,11], [7,10], [7,11], [9,6], [10,5]],
+        // Stage 4: 40% - 50%
+        [[7,7], [8,7], [8,8], [9,8], [6,6], [7,6], [9,9], [10,9], [8,6], [5,5], [6,5], [10,10], [11,10], [8,9], [8,10], [4,5], [4,4], [11,11], [12,11], [7,10], [7,11], [9,6], [10,5], [3,4], [3,3], [12,12], [13,12], [6,11], [6,12], [11,5], [11,4], [6,7], [5,7]],
+        // Stage 5: 50% - 60%
+        [[7,7], [8,7], [8,8], [9,8], [6,6], [7,6], [9,9], [10,9], [8,6], [5,5], [6,5], [10,10], [11,10], [8,9], [8,10], [4,5], [4,4], [11,11], [12,11], [7,10], [7,11], [9,6], [10,5], [3,4], [3,3], [12,12], [13,12], [6,11], [6,12], [11,5], [11,4], [6,7], [5,7], [2,3], [1,3], [13,13], [14,13], [5,12], [5,13], [12,4], [13,3], [5,8], [4,8], [9,10], [10,11], [8,5], [8,4]],
+        // Stage 6: 60% - 70%
+        [[7,7], [8,7], [8,8], [9,8], [6,6], [7,6], [9,9], [10,9], [8,6], [5,5], [6,5], [10,10], [11,10], [8,9], [8,10], [4,5], [4,4], [11,11], [12,11], [7,10], [7,11], [9,6], [10,5], [3,4], [3,3], [12,12], [13,12], [6,11], [6,12], [11,5], [11,4], [6,7], [5,7], [2,3], [1,3], [13,13], [14,13], [5,12], [5,13], [12,4], [13,3], [5,8], [4,8], [9,10], [10,11], [8,5], [8,4], [3,8], [2,8], [11,12], [12,13], [8,3], [8,2], [4,9], [3,10], [10,6], [11,6], [12,6], [7,5], [6,4]],
+        // Stage 7: 70% - 80%
+        [[7,7], [8,7], [8,8], [9,8], [6,6], [7,6], [9,9], [10,9], [8,6], [5,5], [6,5], [10,10], [11,10], [8,9], [8,10], [4,5], [4,4], [11,11], [12,11], [7,10], [7,11], [9,6], [10,5], [3,4], [3,3], [12,12], [13,12], [6,11], [6,12], [11,5], [11,4], [6,7], [5,7], [2,3], [1,3], [13,13], [14,13], [5,12], [5,13], [12,4], [13,3], [5,8], [4,8], [9,10], [10,11], [8,5], [8,4], [3,8], [2,8], [11,12], [12,13], [8,3], [8,2], [4,9], [3,10], [10,6], [11,6], [12,6], [7,5], [6,4], [1,8], [0,8], [13,14], [14,14], [8,1], [8,0], [3,11], [2,12], [13,6], [14,6], [5,4], [5,3], [10,7], [11,8], [9,11], [10,12]],
+        // Stage 8: 80% - 90%
+        [[7,7], [8,7], [8,8], [9,8], [6,6], [7,6], [9,9], [10,9], [8,6], [5,5], [6,5], [10,10], [11,10], [8,9], [8,10], [4,5], [4,4], [11,11], [12,11], [7,10], [7,11], [9,6], [10,5], [3,4], [3,3], [12,12], [13,12], [6,11], [6,12], [11,5], [11,4], [6,7], [5,7], [2,3], [1,3], [13,13], [14,13], [5,12], [5,13], [12,4], [13,3], [5,8], [4,8], [9,10], [10,11], [8,5], [8,4], [3,8], [2,8], [11,12], [12,13], [8,3], [8,2], [4,9], [3,10], [10,6], [11,6], [12,6], [7,5], [6,4], [1,8], [0,8], [13,14], [14,14], [8,1], [8,0], [3,11], [2,12], [13,6], [14,6], [5,4], [5,3], [10,7], [11,8], [9,11], [10,12], [4,12], [3,13], [2,13], [12,7], [13,7], [9,5], [10,4], [10,3], [6,10], [5,11], [7,8], [7,9], [8,11], [8,12], [11,9], [12,10]],
+        // Stage 9: 90% - 100%
+        [[7,7], [8,7], [8,8], [9,8], [6,6], [7,6], [9,9], [10,9], [8,6], [5,5], [6,5], [10,10], [11,10], [8,9], [8,10], [4,5], [4,4], [11,11], [12,11], [7,10], [7,11], [9,6], [10,5], [3,4], [3,3], [12,12], [13,12], [6,11], [6,12], [11,5], [11,4], [6,7], [5,7], [2,3], [1,3], [13,13], [14,13], [5,12], [5,13], [12,4], [13,3], [5,8], [4,8], [9,10], [10,11], [8,5], [8,4], [3,8], [2,8], [11,12], [12,13], [8,3], [8,2], [4,9], [3,10], [10,6], [11,6], [12,6], [7,5], [6,4], [1,8], [0,8], [13,14], [14,14], [8,1], [8,0], [3,11], [2,12], [13,6], [14,6], [5,4], [5,3], [10,7], [11,8], [9,11], [10,12], [4,12], [3,13], [2,13], [12,7], [13,7], [9,5], [10,4], [10,3], [6,10], [5,11], [7,8], [7,9], [8,11], [8,12], [11,9], [12,10], [1,13], [0,13], [14,7], [15,7], [10,2], [10,1], [4,13], [4,14], [7,12], [7,13], [9,12], [9,13], [11,11], [12,11], [6,8], [6,9], [9,7], [9,8], [13,8], [14,8], [2,7], [1,7], [7,2], [7,1], [11,3], [12,2]]
+    ];
 
     export function getSelectedMiningTier() {
         const item = inventory[selectedHotbarIndex];
@@ -884,6 +920,7 @@ export function getMaxAnimals() {
     export let openedFurnace = null;
     export let chests = new Map();
     export let openedChest = null;
+    export let jukeboxes = [];
     
     export let isInventoryOpen = false;
     export let hotbarWheelLockUntil = 0;
@@ -1775,18 +1812,14 @@ export function getMaxAnimals() {
                     } else if (isArchTop) {
                         p(x, y, (x === 7 || x === 8) ? '#71717a' : '#52525b');
                     } else if (isMouth) {
-                        if (y <= 8) {
-                            p(x, y, y === 5 ? '#09090b' : '#18181b');
+                        if (y <= 7) {
+                            p(x, y, y === 5 ? '#09090b' : '#141416');
                         } else {
                             const isGrateBar = (x === 5 || x === 7 || x === 9);
                             if (isGrateBar && y <= 11) {
                                 p(x, y, '#27272a');
                             } else {
-                                if (y === 13) p(x, y, (x === 7 || x === 8) ? '#fef08a' : '#f97316');
-                                else if (y === 12) p(x, y, (x === 7 || x === 8) ? '#fbbf24' : '#ea580c');
-                                else if (y === 11) p(x, y, (x % 2 === 0) ? '#ea580c' : '#c2410c');
-                                else if (y === 10) p(x, y, '#9a3412');
-                                else p(x, y, '#431407');
+                                p(x, y, (y >= 11 && (x === 6 || x === 8 || x === 10)) ? '#18181b' : '#09090b');
                             }
                         }
                     } else {
@@ -1920,6 +1953,70 @@ export function getMaxAnimals() {
                         'H': '#b45309'
                     };
                     const row = leatherPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
+                }
+                else if (id === IDS.JUKEBOX) {
+                    const jukeboxPixels = [
+                        "BBBBBBBBBBBBBBBB",
+                        "BHHHHHHHHHHHHHHB",
+                        "BH..SSSSSSSS..HB",
+                        "BOPPPPPPPPPPPPOB",
+                        "BOPPWWTTTWWPPOOB",
+                        "BOPPWTTGTTWWPOOB",
+                        "BOPWTTGGGGTTWPOB",
+                        "BOPWTGGCCGGTWPOB",
+                        "BOPWTGGCCGGTWPOB",
+                        "BOPWTTGGGGTTWPOB",
+                        "BOPPWTTGTTWWPOOB",
+                        "BOPPWWTTTWWPPOOB",
+                        "BOPPPPPPPPPPPPOB",
+                        "BHHHHHHHHHHHHHHB",
+                        "BBBBBBBBBBBBBBBB",
+                        "BBBBBBBBBBBBBBBB"
+                    ];
+                    const col = {
+                        'B': '#2a1204',
+                        'H': '#92400e',
+                        '.': '#0f0a06',
+                        'S': '#18181b',
+                        'O': '#5c2a07',
+                        'P': '#78350f',
+                        'W': '#854d0e',
+                        'T': '#ca8a04',
+                        'G': '#eab308',
+                        'C': '#fef08a'
+                    };
+                    const row = jukeboxPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
+                }
+                else if (id === IDS.EMPTY_VINYL) {
+                    const vinylPixels = [
+                        "................",
+                        ".....OOOOOO.....",
+                        "...OOGGGGGGOO...",
+                        "..OGGRRRRRRGGO..",
+                        ".OGRRssssssRRGO.",
+                        ".OGRsSSSSSSsRGO.",
+                        "OGRsSSGGGGSSsRGO",
+                        "OGRsSGGCCGGSsRGO",
+                        "OGRsSGGCCGGSsRGO",
+                        "OGRsSSGGGGSSsRGO",
+                        ".OGRsSSSSSSsRGO.",
+                        ".OGRRssssssRRGO.",
+                        "..OGGRRRRRRGGO..",
+                        "...OOGGGGGGOO...",
+                        ".....OOOOOO.....",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#09090b',
+                        'G': '#18181b',
+                        'R': '#27272a',
+                        's': '#3f3f46',
+                        'S': '#dc2626',
+                        'C': '#f87171'
+                    };
+                    const row = vinylPixels[y];
                     if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.BED) {
@@ -2112,6 +2209,54 @@ export function getMaxAnimals() {
         largeChestTexture.src = largeChestTexture.toDataURL ? largeChestTexture.toDataURL() : '';
     }
     export const largeChestImage = largeChestTexture;
+
+    export const furnaceLitTexture = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (furnaceLitTexture) {
+        furnaceLitTexture.width = 16; furnaceLitTexture.height = 16;
+        const fCtx = furnaceLitTexture.getContext('2d');
+        const pLit = (x, y, color) => {
+            fCtx.fillStyle = color;
+            fCtx.fillRect(x, y, 1, 1);
+        };
+        for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+                const isBorder = (x === 0 || x === 15 || y === 0 || y === 15);
+                const isMouth = (x >= 4 && x <= 11 && y >= 5 && y <= 13);
+                const isArchTop = (y === 4 && x >= 5 && x <= 10);
+                const isKeystone = (y === 3 && (x === 7 || x === 8));
+
+                if (isBorder) {
+                    pLit(x, y, (x + y) % 3 === 0 ? '#3f3f46' : '#52525b');
+                } else if (isKeystone) {
+                    pLit(x, y, '#a1a1aa');
+                } else if (isArchTop) {
+                    pLit(x, y, (x === 7 || x === 8) ? '#71717a' : '#52525b');
+                } else if (isMouth) {
+                    if (y <= 7) {
+                        pLit(x, y, y === 5 ? '#09090b' : '#18181b');
+                    } else {
+                        const isGrateBar = (x === 5 || x === 7 || x === 9);
+                        if (isGrateBar && y <= 10) {
+                            pLit(x, y, '#27272a');
+                        } else {
+                            if (y === 13) pLit(x, y, (x === 7 || x === 8) ? '#fef08a' : '#f97316');
+                            else if (y === 12) pLit(x, y, (x === 7 || x === 8) ? '#fef08a' : '#ea580c');
+                            else if (y === 11) pLit(x, y, (x % 2 === 0) ? '#ea580c' : '#fbbf24');
+                            else if (y === 10) pLit(x, y, (x === 7 || x === 8) ? '#f97316' : '#9a3412');
+                            else if (y === 9) pLit(x, y, (x === 7) ? '#ea580c' : '#431407');
+                            else pLit(x, y, '#18181b');
+                        }
+                    }
+                } else {
+                    const n = ((Math.floor(x / 3) * 7 + Math.floor(y / 3) * 13) % 4);
+                    const c = n === 0 ? '#71717a' : (n === 1 ? '#52525b' : (n === 2 ? '#64748b' : '#78716c'));
+                    pLit(x, y, (x % 4 === 0 || y % 4 === 0) ? '#3f3f46' : c);
+                }
+            }
+        }
+        furnaceLitTexture.src = furnaceLitTexture.toDataURL ? furnaceLitTexture.toDataURL() : '';
+        textures.furnace_lit = furnaceLitTexture;
+    }
 
     export function getBedLength(x, y) {
         let length = 0;
@@ -2485,6 +2630,67 @@ export const SKIN_H = 32;
             ctx.globalAlpha = 1.0;
         }
     }
+
+    export class NoteParticle {
+        constructor(x = 0, y = 0) {
+            this.init(x, y);
+        }
+        init(x, y) {
+            this.startX = x;
+            this.x = x;
+            this.y = y;
+            const symbols = ['♪', '♫', '♬', '♩'];
+            this.symbol = symbols[Math.floor(Math.random() * symbols.length)];
+            const colors = ['#f43f5e', '#ec4899', '#a855f7', '#6366f1', '#3b82f6', '#06b6d4', '#10b981', '#eab308'];
+            this.color = colors[Math.floor(Math.random() * colors.length)];
+            this.life = 55 + Math.random() * 25;
+            this.maxLife = this.life;
+            this.vy = -(1.2 + Math.random() * 0.8);
+            this.freq = 0.08 + Math.random() * 0.06;
+            this.amp = 8 + Math.random() * 8;
+            this.time = Math.random() * 100;
+            this.size = 20 + Math.random() * 6;
+            this.alive = true;
+        }
+        update() {
+            if (!this.alive) return;
+            this.time += 1;
+            this.y += this.vy;
+            this.x = this.startX + Math.sin(this.time * this.freq) * this.amp;
+            this.life--;
+            if (this.life <= 0) this.alive = false;
+        }
+        draw(ctx, camX, camY) {
+            if (!this.alive) return;
+            const alpha = Math.max(0, Math.min(1, this.life / (this.maxLife * 0.25)));
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.font = `bold ${Math.round(this.size)}px "VT323", monospace`;
+            ctx.fillStyle = this.color;
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 4;
+            ctx.fillText(this.symbol, Math.round(this.x - camX), Math.round(this.y - camY));
+            ctx.restore();
+        }
+    }
+
+    export let noteParticles = [];
+    export function spawnNoteParticle(x, y) {
+        for (let i = 0; i < noteParticles.length; i++) {
+            if (!noteParticles[i].alive) {
+                noteParticles[i].init(x, y);
+                return noteParticles[i];
+            }
+        }
+        if (noteParticles.length < 50) {
+            const np = new NoteParticle(x, y);
+            noteParticles.push(np);
+            return np;
+        }
+        const np = noteParticles[0];
+        np.init(x, y);
+        return np;
+    }
     
     export function getBlockColor(id) {
         if (id === IDS.GRASS || id === IDS.LEAVES || id === IDS.SHORT_GRASS || id === IDS.TALL_GRASS) return '#42b035';
@@ -2503,6 +2709,7 @@ export const SKIN_H = 32;
         if (id === IDS.SNOW) return '#ffffff';
         if (id === IDS.CACTUS) return '#4caf50';
         if (id === IDS.BED) return '#d83b3b';
+        if (id === IDS.JUKEBOX) return '#5c3a21';
         if ([IDS.DOOR, IDS.DOOR_TOP, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP].includes(id)) return '#9e6b3d';
         if (id === IDS.WOOL) return '#f5f5f5';
         return '#7d7d7d'; 
@@ -3097,6 +3304,7 @@ export const SKIN_H = 32;
             if (block === IDS.WOOL) return 'wool';
             if (block === IDS.LADDER) return 'ladder';
             if (block === IDS.WOOD || block === IDS.PLANKS || block === IDS.CRAFTING_TABLE || 
+                block === IDS.JUKEBOX ||
                 block === IDS.WOODEN_STAIRS || block === IDS.WOODEN_STAIRS_LEFT || block === IDS.WOODEN_STAIRS_RIGHT ||
                 block === IDS.DOOR || block === IDS.DOOR_TOP || block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP ||
                 block === IDS.CHEST || block === IDS.BED) {
@@ -8167,6 +8375,14 @@ export const SKIN_H = 32;
                         ctx.transform(1, 0, sway * swayFactor, 1, 0, 0); // shear sway anchored from bottom soil
                         if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE / 2, -TILE_SIZE, TILE_SIZE, TILE_SIZE);
                         ctx.restore();
+                    } else if (block === IDS.FURNACE) {
+                        const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
+                        const isLit = liveFurnaces.some(f => f.x === x && f.y === y && f.burnTime > 0);
+                        const furnaceTex = (isLit && textures.furnace_lit) ? textures.furnace_lit : textures[IDS.FURNACE];
+                        if (furnaceTex) ctx.drawImage(furnaceTex, drawX, drawY, TILE_SIZE, TILE_SIZE);
+                        if (isLit) {
+                            visibleLightSources.push({ x: x * TILE_SIZE + TILE_SIZE/2, y: y * TILE_SIZE + TILE_SIZE/2, type: 'torch', gridX: x, gridY: y });
+                        }
                     } else {
                         if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
                     }
@@ -8424,6 +8640,9 @@ export const SKIN_H = 32;
         for (let i = 0; i < particles.length; i++) {
             if (particles[i].alive) particles[i].draw(ctx, camX, camY);
         }
+        for (let i = 0; i < noteParticles.length; i++) {
+            if (noteParticles[i].alive) noteParticles[i].draw(ctx, camX, camY);
+        }
         floatingTexts.forEach(t => t.draw(ctx, camX, camY));
         // Draw falling blocks and snowball projectiles
         fallingBlocks.forEach(fb => fb.draw(ctx, camX, camY));
@@ -8457,16 +8676,22 @@ export const SKIN_H = 32;
                     if (miningTarget.x === hX && miningTarget.y === hY && miningTarget.progress > 0) {
                         let activeBlock = curBgMode ? (bgWorld[hX]?.[hY] || IDS.AIR) : world[hX][hY];
                         let ratio = miningTarget.progress / (HARDNESS[activeBlock] || 100);
-                        const crackPixels = [
-                            [3, 3], [4, 4], [5, 5], [6, 6], [7, 7], [8, 8], [9, 9], [10, 10],
-                            [11, 4], [10, 5], [9, 6], [8, 7], [7, 8], [6, 9], [5, 10], [4, 11],
-                            [3, 8], [4, 8], [5, 8], [10, 7], [11, 7], [12, 7], [7, 3], [7, 4]
-                        ];
+                        let stageIdx = Math.min(9, Math.max(0, Math.floor(ratio * 10)));
+                        const crackPixels = BLOCK_CRACK_STAGES[stageIdx] || BLOCK_CRACK_STAGES[0];
                         const pixelSize = Math.max(2, Math.floor(TILE_SIZE / 16));
-                        ctx.fillStyle = curBgMode ? 'rgba(245, 158, 11, 0.85)' : 'rgba(20,20,20,0.82)';
-                        crackPixels.forEach(([pixelX, pixelY], index) => {
-                            if (ratio >= (index + 1) / crackPixels.length) ctx.fillRect(drawX + pixelX * pixelSize, drawY + pixelY * pixelSize, pixelSize, pixelSize);
-                        });
+
+                        // Render subtle light relief highlight behind cracks
+                        ctx.fillStyle = curBgMode ? 'rgba(255, 230, 150, 0.35)' : 'rgba(255, 255, 255, 0.28)';
+                        for (let i = 0; i < crackPixels.length; i++) {
+                            const [px, py] = crackPixels[i];
+                            ctx.fillRect(drawX + (px + 1) * pixelSize, drawY + (py + 1) * pixelSize, pixelSize, pixelSize);
+                        }
+                        // Render crisp dark fracture fissures
+                        ctx.fillStyle = curBgMode ? 'rgba(217, 119, 6, 0.95)' : 'rgba(10, 10, 10, 0.88)';
+                        for (let i = 0; i < crackPixels.length; i++) {
+                            const [px, py] = crackPixels[i];
+                            ctx.fillRect(drawX + px * pixelSize, drawY + py * pixelSize, pixelSize, pixelSize);
+                        }
                     }
 
                     // Controller Aim Reticle Overlay
@@ -9204,6 +9429,7 @@ export const SKIN_H = 32;
             case IDS.CHEST: return '#b67434';
             case IDS.FURNACE: return '#515459';
             case IDS.CRAFTING_TABLE: return '#885c32';
+            case IDS.JUKEBOX: return '#5c3a21';
             case IDS.CACTUS: return '#367c2a';
             case IDS.DOOR: case IDS.DOOR_TOP: case IDS.DOOR_OPEN: case IDS.DOOR_OPEN_TOP: return '#935e2e';
             default: return '#777777';
@@ -9375,6 +9601,7 @@ try { if (typeof isSolidWorldBlock !== "undefined") window.isSolidWorldBlock = i
 try { if (typeof isWater !== "undefined") window.isWater = isWater; } catch(e) {}
 try { if (typeof isWoodPartOfTree !== "undefined") window.isWoodPartOfTree = isWoodPartOfTree; } catch(e) {}
 try { if (typeof isWorldMapOpen !== "undefined") window.isWorldMapOpen = isWorldMapOpen; } catch(e) {}
+try { if (typeof jukeboxes !== "undefined") window.jukeboxes = jukeboxes; } catch(e) {}
 try { if (typeof keepInventory !== "undefined") window.keepInventory = keepInventory; } catch(e) {}
 try { if (typeof keys !== "undefined") window.keys = keys; } catch(e) {}
 try { if (typeof largeChestCtx !== "undefined") window.largeChestCtx = largeChestCtx; } catch(e) {}
@@ -9420,6 +9647,9 @@ try { if (typeof offscreenMapCtx !== "undefined") window.offscreenMapCtx = offsc
 try { if (typeof openedChest !== "undefined") window.openedChest = openedChest; } catch(e) {}
 try { if (typeof openedFurnace !== "undefined") window.openedFurnace = openedFurnace; } catch(e) {}
 try { if (typeof particles !== "undefined") window.particles = particles; } catch(e) {}
+try { if (typeof noteParticles !== "undefined") window.noteParticles = noteParticles; } catch(e) {}
+try { if (typeof spawnNoteParticle !== "undefined") window.spawnNoteParticle = spawnNoteParticle; } catch(e) {}
+try { if (typeof NoteParticle !== "undefined") window.NoteParticle = NoteParticle; } catch(e) {}
 try { if (typeof physicsAccumulator !== "undefined") window.physicsAccumulator = physicsAccumulator; } catch(e) {}
 try { if (typeof player !== "undefined") window.player = player; } catch(e) {}
 try { if (typeof playerSkinData !== "undefined") window.playerSkinData = playerSkinData; } catch(e) {}
@@ -9475,6 +9705,7 @@ try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay
     export function setEngineEntities(newEntities) { entities = newEntities; if (typeof window !== 'undefined') window.entities = newEntities; }
     export function setEngineFluids(newFluids) { fluids = newFluids; if (typeof window !== 'undefined') window.fluids = newFluids; }
     export function setEngineFurnaces(newFurnaces) { furnaces = newFurnaces; if (typeof window !== 'undefined') window.furnaces = newFurnaces; }
+    export function setEngineJukeboxes(newJukeboxes) { jukeboxes = newJukeboxes; if (typeof window !== 'undefined') window.jukeboxes = newJukeboxes; }
     export function setEngineChests(newChests) { chests = newChests; if (typeof window !== 'undefined') window.chests = newChests; }
     export function setEngineDroppedItems(newDrops) { droppedItems = newDrops; if (typeof window !== 'undefined') window.droppedItems = newDrops; }
     export function setEngineState(newState) { STATE = newState; if (typeof window !== 'undefined') window.STATE = newState; }
@@ -9505,6 +9736,7 @@ try { if (typeof setEngineEquippedArmor !== "undefined") window.setEngineEquippe
 try { if (typeof setEngineEntities !== "undefined") window.setEngineEntities = setEngineEntities; } catch(e) {}
 try { if (typeof setEngineFluids !== "undefined") window.setEngineFluids = setEngineFluids; } catch(e) {}
 try { if (typeof setEngineFurnaces !== "undefined") window.setEngineFurnaces = setEngineFurnaces; } catch(e) {}
+try { if (typeof setEngineJukeboxes !== "undefined") window.setEngineJukeboxes = setEngineJukeboxes; } catch(e) {}
 try { if (typeof setEngineChests !== "undefined") window.setEngineChests = setEngineChests; } catch(e) {}
 try { if (typeof setEngineDroppedItems !== "undefined") window.setEngineDroppedItems = setEngineDroppedItems; } catch(e) {}
 try { if (typeof setEngineState !== "undefined") window.setEngineState = setEngineState; } catch(e) {}

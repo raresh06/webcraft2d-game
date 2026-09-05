@@ -6,7 +6,7 @@ import {
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
-    setEngineFurnaces, setEngineChests, setEngineDroppedItems, setEngineState,
+    setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCropGrowthQueue,
@@ -31,6 +31,7 @@ import {
     startPresenceHeartbeat, stopPresenceHeartbeat
 } from './network.js';
 import * as Gamepad from './gamepad.js';
+import { jukebox, getAudioTrack, saveAudioTrack, deleteAudioTrack } from './jukebox.js';
 
 export const INVENTORY_SIZE = 28;
 export const SKIN_W = 16;
@@ -102,6 +103,7 @@ export let clouds = [];
 export let lightMap = [];
 export let fluids = new Map();
 export let furnaces = [];
+export let jukeboxes = [];
 export let openedFurnace = null;
 export let chests = new Map();
 export let openedChest = null;
@@ -110,6 +112,18 @@ export let hotbarWheelLockUntil = 0;
 export let heldItemIndex = -1;
 export let heldItemObj = null;
 export let heldItemDraggedOutside = false;
+
+export function setOpenedFurnace(f) {
+    openedFurnace = f;
+    if (typeof window !== 'undefined') window.openedFurnace = f;
+}
+try { if (typeof window !== 'undefined') window.setOpenedFurnace = setOpenedFurnace; } catch(e) {}
+
+export function setOpenedChest(c) {
+    openedChest = c;
+    if (typeof window !== 'undefined') window.openedChest = c;
+}
+try { if (typeof window !== 'undefined') window.setOpenedChest = setOpenedChest; } catch(e) {}
 
 export function setSelectedHotbarIndex(idx) {
     selectedHotbarIndex = idx;
@@ -401,7 +415,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             light: adjustBrightness(baseHex, 0.45),
             dark: adjustBrightness(baseHex, -0.22),
             darker: adjustBrightness(baseHex, -0.48),
-            glow: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`
+            glow: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.55)`,
+            rgb: `${rgb.r}, ${rgb.g}, ${rgb.b}`
         };
     }
 
@@ -479,6 +494,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             root.style.setProperty('--mc-accent-dark', palette.dark);
             root.style.setProperty('--mc-accent-darker', palette.darker);
             root.style.setProperty('--mc-accent-glow', palette.glow);
+            root.style.setProperty('--mc-accent-rgb', palette.rgb);
         }
 
         buildMinimapCircleBezel();
@@ -588,6 +604,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     }
                 }
             }
+            const savedDiff = localStorage.getItem('swc_difficulty');
+            if (savedDiff && DIFFICULTIES[savedDiff]) {
+                selectedDiffChoice = savedDiff;
+                if (!currentWorldId) {
+                    currentDifficulty = savedDiff;
+                    if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(savedDiff);
+                    if (typeof window !== 'undefined') window.currentDifficulty = savedDiff;
+                }
+            }
         } catch (e) {
             console.error('Failed to load settings', e);
         }
@@ -670,11 +695,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 loadSavedSettings();
                 applyMinimapShape();
                 applyAccentColor(currentAccentColor, currentAccentName);
+                initMusicPlayerHUD();
             });
         } else {
             loadSavedSettings();
             applyMinimapShape();
             applyAccentColor(currentAccentColor, currentAccentName);
+            initMusicPlayerHUD();
         }
     }
 
@@ -2137,6 +2164,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export const RECIPES = [
         { output: { id: IDS.BUCKET, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 3 }], reqTable: true, category: 'utility' },
+        { output: { id: IDS.JUKEBOX, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 8 }, { id: IDS.DIAMOND, count: 1 }], reqTable: true, category: 'utility' },
+        { output: { id: IDS.EMPTY_VINYL, count: 1 }, inputs: [{ id: IDS.COAL, count: 4 }, { id: IDS.IRON_INGOT, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.PLANKS, count: 4 }, inputs: [{ id: IDS.WOOD, count: 1 }], reqTable: false },
         { output: { id: IDS.CHEST, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 8 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.PLANKS, count: 2 }], reqTable: false },
@@ -4622,6 +4651,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         currentWorldId = 'world_' + Date.now();
         if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
         currentDifficulty = selectedDiffChoice;
+        if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(currentDifficulty);
+        if (typeof window !== 'undefined') window.currentDifficulty = currentDifficulty;
         setWorldDimensions(selectedWorldSizeChoice);
         let starterItems = document.getElementById('new-world-starter-items').checked;
         keepInventory = currentDifficulty !== 'hardcore' && document.getElementById('new-world-keep-inventory').checked;
@@ -4647,7 +4678,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         player.isDead = false; player.vy = 0; player.vx = 0; player.damageCooldown = 60;
         if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
         
-        entities = []; furnaces = []; timeOfDay = 0.15; dayCount = 1; frameCount = 0;
+        entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.15; dayCount = 1; frameCount = 0;
+        if (typeof setEngineFurnaces === 'function') setEngineFurnaces([]);
+        if (typeof window !== 'undefined') window.furnaces = [];
+        if (typeof setEngineJukeboxes === 'function') setEngineJukeboxes([]);
+        if (typeof window !== 'undefined') window.jukeboxes = [];
+        if (typeof jukebox !== 'undefined' && jukebox.stop) jukebox.stop();
         if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(0.15);
         if (typeof setEngineDayCount === 'function') setEngineDayCount(1);
         if (typeof setEngineFrameCount === 'function') setEngineFrameCount(0);
@@ -4743,7 +4779,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             worldSize: currentWorldSize, worldWidth: WORLD_WIDTH, worldHeight: WORLD_HEIGHT,
             worldRle: compressWorld(liveWorld), bgWorldRle: compressWorld(liveBgWorld), fluids: Object.fromEntries(fluids), timeOfDay: liveTimeOfDay, dayCount: liveDayCount, frameCount: liveFrameCount, difficulty: currentDifficulty, keepInventory, achievementsEnabled: currentWorldAchievementsEnabled, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
             player: { x: livePlayer.x, y: livePlayer.y, health: livePlayer.health, hunger: livePlayer.hunger, exhaustion: livePlayer.exhaustion, oxygen: livePlayer.oxygen, poisonTimer: livePlayer.poisonTimer || 0, facingRight: livePlayer.facingRight },
-            inventory: liveInventory, equippedArmor: liveEquippedArmor, furnaces: furnaces,
+            inventory: liveInventory, equippedArmor: liveEquippedArmor, furnaces: (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces,
+            jukeboxes: (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : (typeof jukeboxes !== 'undefined' ? jukeboxes : []),
             chests: Object.fromEntries(chests),
             saplingGrowthQueue: Object.fromEntries(saplingGrowthQueue),
             cropGrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.cropGrowthQueue) ? window.cropGrowthQueue : cropGrowthQueue),
@@ -5034,6 +5071,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             dirtToGrassQueue = new Map(Object.entries(data.dirtToGrassQueue || {}).map(([key, growAt]) => [key, Number(growAt)]).filter(([, growAt]) => Number.isFinite(growAt)));
             snowRegrowthQueue = new Map(Object.entries(data.snowRegrowthQueue || {}).map(([key, regrowAt]) => [key, Number(regrowAt)]).filter(([, regrowAt]) => Number.isFinite(regrowAt)));
             currentDifficulty = data.difficulty || 'normal';
+            if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(currentDifficulty);
+            if (typeof window !== 'undefined') window.currentDifficulty = currentDifficulty;
             keepInventory = currentDifficulty !== 'hardcore' && data.keepInventory === true;
             currentWorldAchievementsEnabled = data.achievementsEnabled !== undefined ? data.achievementsEnabled : (data.starterItems !== true && data.keepInventory !== true);
             
@@ -5081,6 +5120,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             updateHudArmorBar();
             
             furnaces = data.furnaces || [];
+            if (typeof setEngineFurnaces === 'function') setEngineFurnaces(furnaces);
+            if (typeof window !== 'undefined') window.furnaces = furnaces;
+            jukeboxes = data.jukeboxes || [];
+            if (typeof setEngineJukeboxes === 'function') setEngineJukeboxes(jukeboxes);
+            if (typeof window !== 'undefined') window.jukeboxes = jukeboxes;
+            if (typeof jukebox !== 'undefined' && jukebox.stop) jukebox.stop();
             chests = new Map(Object.entries(data.chests || {}).map(([key, value]) => [key, { items: Array.isArray(value.items) ? value.items : new Array(27).fill(null) }]));
             openedChest = null;
             fallingBlocks = [];
@@ -5729,20 +5774,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const diffBtn = document.getElementById('btn-settings-difficulty');
         if (!diffRow || !diffBtn) return;
 
-        // ONLY appear when inside an active world
-        const inWorld = (STATE === 'PLAYING' || STATE === 'PAUSED' || (currentWorldId !== null && STATE !== 'MENU') || isMultiplayer);
-        if (!inWorld) {
-            diffRow.style.display = 'none';
-            return;
-        }
+        // Difficulty is always accessible in settings
         diffRow.style.display = 'flex';
 
-        if (currentDifficulty === 'hardcore') {
+        const activeDiff = currentDifficulty || (typeof window !== 'undefined' && window.currentDifficulty) || localStorage.getItem('swc_difficulty') || 'normal';
+
+        if (activeDiff === 'hardcore') {
             diffBtn.innerText = 'Hardcore (Locked)';
             diffBtn.disabled = true;
             diffBtn.classList.add('opacity-75', 'cursor-not-allowed');
         } else {
-            const diffName = DIFFICULTIES[currentDifficulty]?.name || 'Normal';
+            const diffName = DIFFICULTIES[activeDiff]?.name || 'Normal';
             diffBtn.innerText = diffName;
             diffBtn.disabled = false;
             diffBtn.classList.remove('opacity-75', 'cursor-not-allowed');
@@ -5750,29 +5792,64 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function cycleWorldDifficulty() {
-        if (currentDifficulty === 'hardcore') {
+        const activeDiff = currentDifficulty || (typeof window !== 'undefined' && window.currentDifficulty) || localStorage.getItem('swc_difficulty') || 'normal';
+        if (activeDiff === 'hardcore') {
             showToast('Difficulty is locked in Hardcore mode');
             return;
         }
         const diffKeys = Object.keys(DIFFICULTIES).filter(k => k !== 'hardcore');
-        const currentIndex = diffKeys.indexOf(currentDifficulty);
+        const currentIndex = diffKeys.indexOf(activeDiff);
         const nextIndex = (currentIndex + 1) % diffKeys.length;
         const newDiff = diffKeys[nextIndex];
         
         currentDifficulty = newDiff;
-        localStorage.setItem('swc_difficulty', newDiff);
-        
+        if (typeof setEngineCurrentDifficulty === 'function') {
+            setEngineCurrentDifficulty(newDiff);
+        }
+        if (typeof window !== 'undefined') {
+            window.currentDifficulty = newDiff;
+        }
+        try {
+            localStorage.setItem('swc_difficulty', newDiff);
+        } catch(e) {}
+        selectedDiffChoice = newDiff;
+
+        // Despawn hostile mobs when switching to peaceful
+        if (newDiff === 'peaceful') {
+            const liveEntities = (typeof window !== 'undefined' && Array.isArray(window.entities)) ? window.entities : entities;
+            if (Array.isArray(liveEntities)) {
+                const peacefulEntities = liveEntities.filter(e => {
+                    const type = e.constructor?.name || e.type;
+                    return type !== 'Zombie' && type !== 'Creeper' && type !== 'Scorpion';
+                });
+                if (typeof setEngineEntities === 'function') setEngineEntities(peacefulEntities);
+                if (typeof window !== 'undefined') window.entities = peacefulEntities;
+            }
+        }
+
+        // If inside an active world, persist new difficulty to saved world record
+        if (currentWorldId) {
+            let worlds = getSavedWorlds();
+            let wIdx = worlds.findIndex(w => w.id === currentWorldId);
+            if (wIdx > -1) {
+                worlds[wIdx].difficulty = newDiff;
+                saveWorldsList(worlds);
+            }
+            saveCurrentWorld();
+        }
+
         updateSettingsDifficultyUI();
 
-        // If in multiplayer and host, update room difficulty
-        if (isMultiplayer && isHost && window.fbDb && window.fbModules && currentMpRoom) {
+        // If in multiplayer and host, update room difficulty safely
+        const hostActive = (typeof isHost !== 'undefined' ? isHost : (typeof window !== 'undefined' && window.isHost));
+        if (isMultiplayer && hostActive && typeof window !== 'undefined' && window.fbDb && window.fbModules && currentMpRoom) {
             const { doc, updateDoc } = window.fbModules;
             updateDoc(doc(window.fbDb, 'artifacts', window.fbAppId, 'public', 'data', 'rooms', currentMpRoom), {
                 difficulty: currentDifficulty
             }).catch(() => {});
         }
 
-        showToast(`Difficulty set to ${DIFFICULTIES[newDiff].name}`);
+        showToast(`Difficulty set to ${DIFFICULTIES[newDiff]?.name || newDiff}`);
     }
 
 
@@ -6027,6 +6104,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
             openedFurnace = null;
             openedChest = null;
+            if (typeof window !== 'undefined') {
+                window.openedFurnace = null;
+                window.openedChest = null;
+                if (typeof window.setMainOpenedFurnace === 'function') window.setMainOpenedFurnace(null);
+                if (typeof window.setMainOpenedChest === 'function') window.setMainOpenedChest(null);
+            }
             const searchInput = document.getElementById('crafting-search');
             if (searchInput && document.activeElement === searchInput) {
                 searchInput.blur();
@@ -6092,8 +6175,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const nameEl = document.getElementById('hotbar-item-name');
         let sel = inventory[selectedHotbarIndex];
         if (hotbarPopupTimeout) clearTimeout(hotbarPopupTimeout);
-        if (sel && ID_NAMES[sel.id]) {
-            nameEl.innerText = ID_NAMES[sel.id];
+        if (sel && (sel.customName || ID_NAMES[sel.id])) {
+            nameEl.innerText = sel.customName || ID_NAMES[sel.id];
             nameEl.style.display = 'block';
             nameEl.style.opacity = '1';
             hotbarPopupTimeout = setTimeout(() => {
@@ -6114,21 +6197,25 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (id === IDS.GOLD_ORE) return IDS.GOLD_INGOT;
         if (id === IDS.IRON_ORE) return IDS.IRON_INGOT;
         if (id === IDS.COAL_ORE) return IDS.COAL;
+        if (id === IDS.COBBLESTONE) return IDS.STONE;
         return null;
     }
     export function getFuelValue(id) {
-        if (id === IDS.WOOD || id === IDS.PLANKS) return 500;
-        if (id === IDS.STICK) return 200;
-        if (id === IDS.COAL) return 1800;
+        if (id === IDS.COAL) return 1600;
+        if (id === IDS.WOOD || id === IDS.PLANKS) return 300;
+        if (id === IDS.STICK) return 100;
+        if (id === IDS.WOOD_PICKAXE || id === IDS.WOOD_AXE || id === IDS.WOOD_SWORD || id === IDS.WOOD_SHOVEL || id === IDS.WOOD_HOE) return 200;
+        if (id === IDS.SAPLING) return 100;
         return 0;
     }
 
     export function updateFurnaceVisual(furnace) {
-        if (openedFurnace !== furnace || !isInventoryOpen) return;
+        const curOpened = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
+        if (!furnace || curOpened !== furnace || !isInventoryOpen) return;
         const flame = document.getElementById('f-flame');
         const progress = document.getElementById('f-prog');
-        flame.style.height = furnace.maxBurnTime > 0 ? `${Math.round((furnace.burnTime / furnace.maxBurnTime) * 100)}%` : '0%';
-        progress.style.width = `${Math.min(100, Math.round((furnace.progress / 200) * 100))}%`;
+        if (flame) flame.style.height = furnace.maxBurnTime > 0 ? `${Math.round((furnace.burnTime / furnace.maxBurnTime) * 100)}%` : '0%';
+        if (progress) progress.style.width = `${Math.min(100, Math.round((furnace.progress / 200) * 100))}%`;
     }
 
     export function moveItemToContainer(sourceItem, targetArray, startIndex = 0, endIndex = targetArray.length) {
@@ -6167,14 +6254,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function handleSlotClick(index, type, isShift, isRightClick = false) {
-        const containerItems = type === 'inv' ? inventory : type === 'chest' ? openedChest?.chest.items : openedFurnace;
+        const curOpenedFurnace = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
+        const curOpenedChest = openedChest || (typeof window !== 'undefined' ? window.openedChest : null);
+        const containerItems = type === 'inv' ? inventory : type === 'chest' ? curOpenedChest?.chest.items : curOpenedFurnace;
         if (!containerItems) return;
         let currentItem = containerItems[index];
         
         if (isShift && currentItem && !heldItemObj && !isRightClick) {
-            if (openedChest) {
+            if (curOpenedChest) {
                 if (type === 'inv') {
-                    moveItemToContainer(currentItem, openedChest.chest.items, 0, openedChest.size);
+                    moveItemToContainer(currentItem, curOpenedChest.chest.items, 0, curOpenedChest.size);
                     if (currentItem.count <= 0) containerItems[index] = null;
                 } else if (type === 'chest') {
                     let done = moveItemToContainer(currentItem, inventory, 0, 9);
@@ -6183,14 +6272,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     }
                     if (currentItem.count <= 0) containerItems[index] = null;
                 }
-                syncChest(openedChest.key);
+                syncChest(curOpenedChest.key);
                 if (!isMultiplayer) saveCurrentWorld();
-            } else if (openedFurnace) {
+            } else if (curOpenedFurnace) {
                 if (type === 'inv') {
                     if (getSmeltResult(currentItem.id)) {
-                        let fInput = openedFurnace.input;
+                        let fInput = curOpenedFurnace.input;
                         if (!fInput) {
-                            openedFurnace.input = { id: currentItem.id, count: currentItem.count };
+                            curOpenedFurnace.input = { id: currentItem.id, count: currentItem.count };
                             containerItems[index] = null;
                         } else if (fInput.id === currentItem.id && fInput.count < 64) {
                             let space = 64 - fInput.count;
@@ -6199,10 +6288,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                             currentItem.count -= add;
                             if (currentItem.count <= 0) containerItems[index] = null;
                         }
-                    } else if (getFuelValue(currentItem.id)) {
-                        let fFuel = openedFurnace.fuel;
+                    } else if (getFuelValue(currentItem.id) > 0) {
+                        let fFuel = curOpenedFurnace.fuel;
                         if (!fFuel) {
-                            openedFurnace.fuel = { id: currentItem.id, count: currentItem.count };
+                            curOpenedFurnace.fuel = { id: currentItem.id, count: currentItem.count };
                             containerItems[index] = null;
                         } else if (fFuel.id === currentItem.id && fFuel.count < 64) {
                             let space = 64 - fFuel.count;
@@ -6217,8 +6306,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     if (!done && currentItem.count > 0) {
                         moveItemToContainer(currentItem, inventory, 9, 27);
                     }
+                    if (index === 'output' && currentItem.id === IDS.IRON_INGOT) unlockAchievement('acquire_hardware');
                     if (currentItem.count <= 0) containerItems[index] = null;
                 }
+                if (!isMultiplayer) saveCurrentWorld();
             } else {
                 if (type === 'inv') {
                     if (isArmor(currentItem.id)) {
@@ -6258,8 +6349,41 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                         heldItemObj = currentItem;
                         containerItems[index] = null;
                     }
+                    if (type === 'furnace' && index === 'output') {
+                        if (heldItemObj?.id === IDS.IRON_INGOT) unlockAchievement('acquire_hardware');
+                        playSound('pop');
+                    }
                 }
             } else {
+                // Furnace slot interaction rules
+                if (type === 'furnace') {
+                    if (index === 'output') {
+                        // Output slot is strictly take-only! You cannot put items into it.
+                        if (currentItem && currentItem.id === heldItemObj.id && !isTool(currentItem.id) && heldItemObj.count < 64) {
+                            let space = 64 - heldItemObj.count;
+                            let amount = Math.min(space, currentItem.count);
+                            heldItemObj.count += amount;
+                            currentItem.count -= amount;
+                            if (currentItem.count <= 0) containerItems[index] = null;
+                            if (heldItemObj.id === IDS.IRON_INGOT) unlockAchievement('acquire_hardware');
+                            playSound('pop');
+                        }
+                        setHeldItemObj(heldItemObj);
+                        updateUI(false);
+                        return;
+                    }
+                    if (index === 'input' && !getSmeltResult(heldItemObj.id)) {
+                        setHeldItemObj(heldItemObj);
+                        updateUI(false);
+                        return;
+                    }
+                    if (index === 'fuel' && getFuelValue(heldItemObj.id) <= 0) {
+                        setHeldItemObj(heldItemObj);
+                        updateUI(false);
+                        return;
+                    }
+                }
+
                 if (currentItem) {
                     if (currentItem.id === heldItemObj.id && !isTool(currentItem.id) && currentItem.count < 64) {
                         if (isRightClick) {
@@ -6287,9 +6411,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     }
                 }
             }
-            if (openedChest && type === 'chest') {
-                syncChest(openedChest.key);
+            if (curOpenedChest && type === 'chest') {
+                syncChest(curOpenedChest.key);
                 if (!isMultiplayer) saveCurrentWorld();
+            }
+            if (type === 'furnace' && !isMultiplayer) {
+                saveCurrentWorld();
             }
         }
         
@@ -6316,14 +6443,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function setupFurnaceSlot(elementId, slotKey) {
         const slot = document.getElementById(elementId);
+        if (!slot) return;
         slot.innerHTML = '';
         slot.onmousedown = (e) => { 
             e.preventDefault();
             window.getSelection()?.removeAllRanges();
             if(e.button === 0 || e.button === 2) handleSlotClick(slotKey, 'furnace', e.shiftKey, e.button === 2); 
         };
-        if (openedFurnace && openedFurnace[slotKey]) {
-            populateSlotItemDOM(slot, openedFurnace[slotKey]);
+        const curOpened = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
+        if (curOpened && curOpened[slotKey]) {
+            populateSlotItemDOM(slot, curOpened[slotKey]);
         }
     }
 
@@ -6515,6 +6644,178 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     try { loadPinnedRecipe(); } catch(e) {}
 
+    export function formatMusicTime(seconds) {
+        if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    let isScrubbingMusic = false;
+
+    export function updateMusicPlayerHUD() {
+        const hud = document.getElementById('hud-music-player');
+        if (!hud) return;
+
+        const activeTrack = (typeof jukebox !== 'undefined') ? jukebox.getActiveTrack() : null;
+        const isPlaying = (typeof jukebox !== 'undefined') ? jukebox.isPlaying : false;
+
+        if (!activeTrack && !isPlaying) {
+            hud.classList.add('hidden');
+            return;
+        }
+
+        hud.classList.remove('hidden');
+
+        const titleEl = document.getElementById('hud-music-title');
+        const seekEl = document.getElementById('hud-music-seek');
+        const timeEl = document.getElementById('hud-music-time');
+        const discIcon = document.getElementById('hud-music-disc-icon');
+        const playPauseBtn = document.getElementById('hud-music-playpause-btn');
+
+        if (titleEl) {
+            const trackName = activeTrack?.name || 'Vinyl Disc';
+            titleEl.textContent = trackName;
+            titleEl.title = trackName;
+        }
+
+        const duration = (typeof jukebox !== 'undefined') ? jukebox.getDuration() : 0;
+        const curTime = (typeof jukebox !== 'undefined') ? jukebox.getCurrentTime() : 0;
+
+        if (seekEl && !isScrubbingMusic) {
+            seekEl.max = duration > 0 ? duration : 100;
+            seekEl.value = curTime;
+        }
+
+        if (timeEl) {
+            timeEl.textContent = `${formatMusicTime(curTime)} / ${formatMusicTime(duration)}`;
+        }
+
+        if (discIcon) {
+            if (isPlaying) {
+                discIcon.classList.remove('hud-music-disc-paused');
+            } else {
+                discIcon.classList.add('hud-music-disc-paused');
+            }
+        }
+
+        if (playPauseBtn) {
+            if (isPlaying) {
+                playPauseBtn.innerHTML = '⏸ Pause';
+                playPauseBtn.title = 'Pause music';
+            } else {
+                playPauseBtn.innerHTML = '▶ Play';
+                playPauseBtn.title = 'Play music';
+            }
+        }
+    }
+
+    export function ejectActiveJukebox() {
+        if (typeof jukebox === 'undefined') return;
+        const active = jukebox.getActiveJukebox();
+        const activeVinyl = jukebox.getActiveVinyl();
+        const activeTrack = jukebox.getActiveTrack();
+
+        if (active) {
+            const liveJbs = (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : jukeboxes;
+            const jb = liveJbs.find(j => j.x === active.x && j.y === active.y);
+            if (jb) {
+                jb.record = null;
+                jb.isPlaying = false;
+            }
+        }
+
+        jukebox.stop();
+
+        if (activeVinyl || activeTrack) {
+            const vinylObj = {
+                id: IDS.EMPTY_VINYL,
+                count: 1,
+                customName: activeVinyl?.customName || activeTrack?.name || 'Vinyl Disc',
+                trackId: activeVinyl?.trackId || activeTrack?.trackId || null
+            };
+            const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+            let placed = false;
+            for (let i = 0; i < 27; i++) {
+                if (!liveInv[i]) {
+                    liveInv[i] = vinylObj;
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) {
+                const dropX = active ? (active.x * TILE_SIZE + 10) : (player.x + player.width / 2);
+                const dropY = active ? (active.y * TILE_SIZE + 10) : (player.y + 10);
+                if (typeof dropItemForWorld === 'function') dropItemForWorld(IDS.EMPTY_VINYL, dropX, dropY, 1);
+            }
+            updateUI();
+            showToast('Ejected: ' + (vinylObj.customName || 'Vinyl Disc'));
+        }
+
+        updateMusicPlayerHUD();
+    }
+
+    export function initMusicPlayerHUD() {
+        const seekEl = document.getElementById('hud-music-seek');
+        const playPauseBtn = document.getElementById('hud-music-playpause-btn');
+        const ejectBtn = document.getElementById('hud-music-eject-btn');
+
+        if (seekEl) {
+            seekEl.addEventListener('mousedown', () => { isScrubbingMusic = true; });
+            seekEl.addEventListener('touchstart', () => { isScrubbingMusic = true; }, { passive: true });
+
+            seekEl.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value) || 0;
+                const timeEl = document.getElementById('hud-music-time');
+                if (timeEl && typeof jukebox !== 'undefined') {
+                    timeEl.textContent = `${formatMusicTime(val)} / ${formatMusicTime(jukebox.getDuration())}`;
+                }
+            });
+
+            seekEl.addEventListener('change', (e) => {
+                isScrubbingMusic = false;
+                const val = parseFloat(e.target.value) || 0;
+                if (typeof jukebox !== 'undefined') jukebox.seek(val);
+                updateMusicPlayerHUD();
+            });
+
+            seekEl.addEventListener('mouseup', () => { isScrubbingMusic = false; });
+            seekEl.addEventListener('touchend', () => { isScrubbingMusic = false; });
+        }
+
+        if (playPauseBtn) {
+            playPauseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (typeof jukebox === 'undefined') return;
+                if (jukebox.isPlaying) {
+                    jukebox.pause();
+                } else {
+                    if (jukebox.audio && jukebox.audio.src) {
+                        jukebox.resume();
+                    }
+                }
+                updateMusicPlayerHUD();
+            });
+        }
+
+        if (ejectBtn) {
+            ejectBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                ejectActiveJukebox();
+            });
+        }
+
+        if (typeof jukebox !== 'undefined' && typeof jukebox.subscribe === 'function') {
+            jukebox.subscribe((event) => {
+                if (event === 'timeupdate') {
+                    if (!isScrubbingMusic) updateMusicPlayerHUD();
+                } else if (event === 'statechange' || event === 'start' || event === 'stop' || event === 'ended') {
+                    updateMusicPlayerHUD();
+                }
+            });
+        }
+    }
+
     export function renderCraftingRecipes() {
         const craftList = document.getElementById('crafting-list');
         if (!craftList) return;
@@ -6678,28 +6979,38 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const cPanel = document.getElementById('crafting-panel');
         const fPanel = document.getElementById('furnace-panel');
 
-        if (openedFurnace) {
+        const curOpenedFurnace = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
+        const curOpenedChest = openedChest || (typeof window !== 'undefined' ? window.openedChest : null);
+        const chestPanel = document.getElementById('chest-panel');
+
+        if (curOpenedFurnace) {
             invMenu.classList.remove('crafting-table-mode');
             document.getElementById('header-inventory').classList.add('hidden');
             document.getElementById('header-crafting').classList.add('hidden');
             cPanel.classList.add('hidden');
+            if (chestPanel) chestPanel.classList.add('hidden');
             fPanel.classList.remove('hidden');
+            fPanel.style.display = 'flex';
             setupFurnaceSlot('f-input', 'input');
             setupFurnaceSlot('f-fuel', 'fuel');
             setupFurnaceSlot('f-output', 'output');
+            updateFurnaceVisual(curOpenedFurnace);
         } else {
-            const chestPanel = document.getElementById('chest-panel');
-            chestPanel.classList.toggle('hidden', !openedChest);
-            if (openedChest) {
+            if (fPanel) {
+                fPanel.classList.add('hidden');
+                fPanel.style.display = '';
+            }
+            if (chestPanel) chestPanel.classList.toggle('hidden', !curOpenedChest);
+            if (curOpenedChest) {
                 invMenu.classList.remove('crafting-table-mode');
                 cPanel.classList.add('hidden');
                 document.getElementById('header-inventory').classList.add('hidden');
                 document.getElementById('header-crafting').classList.add('hidden');
-                document.getElementById('chest-title').innerText = openedChest.size === 54 ? 'Large Chest' : 'Chest';
+                document.getElementById('chest-title').innerText = curOpenedChest.size === 54 ? 'Large Chest' : 'Chest';
                 const chestGrid = document.getElementById('chest-grid');
                 chestGrid.innerHTML = '';
                 const frag = document.createDocumentFragment();
-                for (let i = 0; i < openedChest.size; i++) {
+                for (let i = 0; i < curOpenedChest.size; i++) {
                     const slot = document.createElement('div');
                     slot.className = 'slot';
                     slot.onmousedown = e => {
@@ -6707,21 +7018,20 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                         window.getSelection()?.removeAllRanges();
                         if (e.button === 0 || e.button === 2) {
                             handleSlotClick(i, 'chest', e.shiftKey, e.button === 2);
-                            syncChest(openedChest.key);
+                            syncChest(curOpenedChest.key);
                             if (!isMultiplayer) saveCurrentWorld();
                         }
                     };
-                    populateSlotItemDOM(slot, openedChest.chest.items[i]);
+                    populateSlotItemDOM(slot, curOpenedChest.chest.items[i]);
                     frag.appendChild(slot);
                 }
                 chestGrid.appendChild(frag);
             } else {
                 cPanel.classList.remove('hidden');
             }
-            fPanel.classList.add('hidden');
-            if (!openedChest) cPanel.classList.remove('hidden');
+            if (!curOpenedChest) cPanel.classList.remove('hidden');
             
-            if (nearTable && !openedChest) {
+            if (nearTable && !curOpenedChest) {
                 invMenu.classList.add('crafting-table-mode');
                 document.getElementById('header-inventory').classList.add('hidden');
                 document.getElementById('header-crafting').classList.remove('hidden');
@@ -8641,6 +8951,10 @@ try { if (typeof recentSkinColors !== "undefined") window.recentSkinColors = rec
 try { if (typeof recordPurchasedSkin !== "undefined") window.recordPurchasedSkin = recordPurchasedSkin; } catch(e) {}
 try { if (typeof redoSkinEdit !== "undefined") window.redoSkinEdit = redoSkinEdit; } catch(e) {}
 try { if (typeof renderAchievementsList !== "undefined") window.renderAchievementsList = renderAchievementsList; } catch(e) {}
+try { if (typeof updateMusicPlayerHUD !== "undefined") window.updateMusicPlayerHUD = updateMusicPlayerHUD; } catch(e) {}
+try { if (typeof ejectActiveJukebox !== "undefined") window.ejectActiveJukebox = ejectActiveJukebox; } catch(e) {}
+try { if (typeof initMusicPlayerHUD !== "undefined") window.initMusicPlayerHUD = initMusicPlayerHUD; } catch(e) {}
+try { if (typeof jukeboxes !== "undefined") window.jukeboxes = jukeboxes; } catch(e) {}
 try { if (typeof renderCraftingRecipes !== "undefined") window.renderCraftingRecipes = renderCraftingRecipes; } catch(e) {}
 try { if (typeof renderEditorCanvas !== "undefined") window.renderEditorCanvas = renderEditorCanvas; } catch(e) {}
 try { if (typeof renderPaletteMatrix !== "undefined") window.renderPaletteMatrix = renderPaletteMatrix; } catch(e) {}
@@ -8841,6 +9155,11 @@ try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropG
         document.addEventListener('click', (e) => {
             const target = e.target;
             if (!target) return;
+
+            // Do not intercept clicks on intro screen text
+            if (typeof target.closest === 'function' && target.closest('#intro-black-text')) {
+                return;
+            }
 
             // 1. Author link click
             const authorEl = typeof target.closest === 'function' && target.closest('.author-github-link, [data-author-link="true"]');
