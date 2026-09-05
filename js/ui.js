@@ -1,6 +1,6 @@
 import {
     IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT,
-    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion,
+    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
@@ -3096,7 +3096,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             else if (id === IDS.DIAMOND) unlockAchievement('diamonds');
             else if (id === IDS.SEEDS) unlockAchievement('time_to_farm');
             else if (id === IDS.FLOWER_RED || id === IDS.FLOWER_YELLOW) unlockAchievement('wild_florist');
-            else if (id === IDS.COOKED_PORKCHOP || id === IDS.COOKED_CHICKEN || id === IDS.COOKED_MUTTON) unlockAchievement('delicious_fish');
+            else if (id === IDS.COOKED_PORKCHOP || id === IDS.COOKED_CHICKEN || id === IDS.COOKED_MUTTON || id === IDS.COOKED_BEEF) unlockAchievement('delicious_fish');
             else if (id === IDS.GOLD_INGOT) unlockAchievement('shiny_bling');
             else if (id === IDS.WHEAT) unlockAchievement('bumper_crop');
             else if (id === IDS.BREAD) unlockAchievement('bake_bread');
@@ -4670,8 +4670,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (ry < WORLD_HEIGHT && curWorld[rx] && (curWorld[rx][ry] === IDS.GRASS || curWorld[rx][ry] === IDS.SNOW || curWorld[rx][ry] === IDS.DIRT)) {
                 let roll = Math.random();
                 let animal;
-                if (roll < 0.40) animal = new Sheep(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
-                else if (roll < 0.72) animal = new Pig(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                if (roll < 0.25) animal = new Sheep(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                else if (roll < 0.50) animal = new Pig(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                else if (roll < 0.75) animal = new Cow(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
                 else animal = new Chicken(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
                 entities.push(animal);
             }
@@ -5088,11 +5089,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 if (e.type === 'Pig') inst = new Pig(e.x, e.y);
                 else if (e.type === 'Chicken') inst = new Chicken(e.x, e.y);
                 else if (e.type === 'Sheep') inst = new Sheep(e.x, e.y);
+                else if (e.type === 'Cow') inst = new Cow(e.x, e.y);
                 else if (e.type === 'Creeper') inst = new Creeper(e.x, e.y);
                 else if (e.type === 'Scorpion') inst = new Scorpion(e.x, e.y);
                 else inst = new Zombie(e.x, e.y);
                 inst.health = e.health;
-                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep) inst.dir = e.dir;
+                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow) inst.dir = e.dir;
                 return inst;
             });
             ensureDesertScorpions();
@@ -6105,6 +6107,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (id === IDS.RAW_PORKCHOP) return IDS.COOKED_PORKCHOP;
         if (id === IDS.RAW_CHICKEN) return IDS.COOKED_CHICKEN;
         if (id === IDS.RAW_MUTTON) return IDS.COOKED_MUTTON;
+        if (id === IDS.RAW_BEEF) return IDS.COOKED_BEEF;
         if (id === IDS.GOLD_ORE) return IDS.GOLD_INGOT;
         if (id === IDS.IRON_ORE) return IDS.IRON_INGOT;
         if (id === IDS.COAL_ORE) return IDS.COAL;

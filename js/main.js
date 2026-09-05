@@ -24,7 +24,7 @@ import {
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
-    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, FallingBlock, SnowballProjectile,
+    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
@@ -70,7 +70,7 @@ export {
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
-    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, FallingBlock, SnowballProjectile,
+    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
@@ -1074,6 +1074,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                         else if (z instanceof Chicken) {
                             giveItem(IDS.RAW_CHICKEN, 1);
                             if (Math.random() < 0.5) giveItem(IDS.FEATHER, 1);
+                        }
+                        else if (z instanceof Cow) {
+                            giveItem(IDS.RAW_BEEF, Math.floor(Math.random() * 2) + 1);
+                            let leatherCount = Math.floor(Math.random() * 3);
+                            if (leatherCount > 0) giveItem(IDS.LEATHER, leatherCount);
                         }
                         else if (z instanceof Zombie) {
                             if(Math.random() < 0.5) giveItem(IDS.RAW_PORKCHOP, 1);
@@ -2291,7 +2296,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                 let pigs = entities.filter(e => e instanceof Pig).length;
                 let chickens = entities.filter(e => e instanceof Chicken).length;
                 let sheep = entities.filter(e => e instanceof Sheep).length;
-                let hostiles = entities.length - pigs - chickens - sheep;
+                let cows = entities.filter(e => e instanceof Cow).length;
+                let hostiles = entities.length - pigs - chickens - sheep - cows;
                 
                 let debugGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(px)));
                 let surfaceY = typeof getWorldSurfaceY === 'function' ? getWorldSurfaceY(debugGridX) : 0;
@@ -2314,7 +2320,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) { if (typeof window !=
                         `Biome: ${biome}\n` +
                         `Diff: ${currentDifficulty.toUpperCase()}\n` +
                         `Multiplayer: ${isMultiplayer ? currentMpRoom : 'Local'}\n` +
-                        `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Bad:${hostiles})\n` +
+                        `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Bad:${hostiles})\n` +
                         `Target: ${targetBlockName}\n` +
                         `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%) | Day Scale: ${typeof getDayDifficultyMultiplier === 'function' ? getDayDifficultyMultiplier().toFixed(2) : 1}x (Hunger: ${typeof getDayHungerDrainMultiplier === 'function' ? getDayHungerDrainMultiplier().toFixed(2) : 1}x)`;
                 }

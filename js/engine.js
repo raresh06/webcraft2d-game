@@ -635,7 +635,8 @@ export function getMaxAnimals() {
         DIAMOND_PICKAXE: 125, DIAMOND_SWORD: 126, DIAMOND_AXE: 127,
         WOOD_SHOVEL: 147, STONE_SHOVEL: 148, IRON_SHOVEL: 149, GOLD_SHOVEL: 150, DIAMOND_SHOVEL: 151,
         WOOD_HOE: 152, STONE_HOE: 153, IRON_HOE: 154, GOLD_HOE: 155, DIAMOND_HOE: 156,
-        WHEAT: 157, BREAD: 158
+        WHEAT: 157, BREAD: 158,
+        RAW_BEEF: 159, COOKED_BEEF: 160, LEATHER: 161
     };
 
 
@@ -715,6 +716,9 @@ export function getMaxAnimals() {
     ID_NAMES[IDS.BREAD] = 'Bread';
     ID_NAMES[IDS.RAW_MUTTON] = 'Raw Mutton';
     ID_NAMES[IDS.COOKED_MUTTON] = 'Cooked Mutton';
+    ID_NAMES[IDS.RAW_BEEF] = 'Raw Beef';
+    ID_NAMES[IDS.COOKED_BEEF] = 'Cooked Beef';
+    ID_NAMES[IDS.LEATHER] = 'Leather';
     ID_NAMES[IDS.BONE] = 'Bone';
     ID_NAMES[IDS.SNOWBALL] = 'Snowball';
     ID_NAMES[IDS.LADDER] = 'Ladder';
@@ -837,7 +841,8 @@ export function getMaxAnimals() {
     export function isFoodItem(id) {
         return id === IDS.RAW_PORKCHOP || id === IDS.COOKED_PORKCHOP || id === IDS.APPLE ||
                id === IDS.RAW_CHICKEN || id === IDS.COOKED_CHICKEN || id === IDS.RAW_MUTTON ||
-               id === IDS.COOKED_MUTTON || id === IDS.BREAD;
+               id === IDS.COOKED_MUTTON || id === IDS.BREAD ||
+               id === IDS.RAW_BEEF || id === IDS.COOKED_BEEF;
     }
     export let surfaceHeights = [];
     export let nonCollidableTreeWood = new Set();
@@ -1827,6 +1832,95 @@ export function getMaxAnimals() {
                 else if (id === IDS.COOKED_MUTTON) {
                     if (Math.hypot(x-8, y-8) < 5) p(x, y, randColor(['#8c4a38', '#733828', '#a65d49']));
                     if (x > 9 && y > 9 && Math.hypot(x-11, y-11) < 2) p(x, y, '#e6ccb3');
+                }
+                else if (id === IDS.RAW_BEEF) {
+                    const beefPixels = [
+                        "................",
+                        "....OOOOO.......",
+                        "...OffffFOOO....",
+                        "..OffMMMMFFFFO..",
+                        ".OfMMMMMMMMMMFO.",
+                        ".OfMMDDMMMMMMFO.",
+                        ".OfMDDVVMDDMMMFO",
+                        ".OfMDVVVDMMMMFO.",
+                        ".OfMMDDMDDMMMFO.",
+                        "..OfMMMMMMMMFO..",
+                        "...OfMMDDMMFO...",
+                        "....OfMMMMFO....",
+                        ".....OfMMFO.....",
+                        "......OOOO......",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#450a0a',
+                        'f': '#fef08a',
+                        'F': '#fde047',
+                        'M': '#dc2626',
+                        'D': '#991b1b',
+                        'V': '#ffffff'
+                    };
+                    const row = beefPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
+                }
+                else if (id === IDS.COOKED_BEEF) {
+                    const cookedPixels = [
+                        "................",
+                        "....OOOOO.......",
+                        "...OBBBBCCOO....",
+                        "..OBBMMMMCCCCo..",
+                        ".OBMMGGMMMMMMCO.",
+                        ".OBMMGGMMGGMMCO.",
+                        ".OBMGGMMGGMMMCO.",
+                        ".OBMMGGMMGGMMCO.",
+                        ".OBMMMMGGMMMMCO.",
+                        "..OBMMMMMMMMCO..",
+                        "...OBMMDDMMCO...",
+                        "....OBMMMMCO....",
+                        ".....OBMMCO.....",
+                        "......OOOO......",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#1c0d02',
+                        'B': '#fef3c7',
+                        'C': '#78350f',
+                        'o': '#92400e',
+                        'M': '#b45309',
+                        'G': '#451a03',
+                        'D': '#78350f'
+                    };
+                    const row = cookedPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
+                }
+                else if (id === IDS.LEATHER) {
+                    const leatherPixels = [
+                        "................",
+                        "...OO.....OO....",
+                        "..OLLOOOOOLLO...",
+                        ".OLLLLMMMMLLLO..",
+                        ".OLLMMHHHHMMLLO.",
+                        ".OLMMHHHHHHMLLO.",
+                        "..OMMHHHHHHMMO..",
+                        "..OMMHHHHHHMMO..",
+                        ".OLMMHHHHHHMLLO.",
+                        ".OLLMMHHHHMMLLO.",
+                        ".OLLLLMMMMLLLO..",
+                        "..OLLOOOOOLLO...",
+                        "...OO.....OO....",
+                        "................",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#381e05',
+                        'L': '#78350f',
+                        'M': '#92400e',
+                        'H': '#b45309'
+                    };
+                    const row = leatherPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.BED) {
                     if (x < 12 && y < 6) p(x, y, y === 0 ? '#9e2020' : '#c52b2b');
@@ -3572,13 +3666,13 @@ export const SKIN_H = 32;
                     this.eatTimer++;
                     if (this.eatTimer > 20) {
                         this.eatTimer = 0;
-                        let val = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON) ? 8 : (sel.id === IDS.COOKED_CHICKEN ? 6 : (sel.id === IDS.BREAD ? 5 : (sel.id === IDS.APPLE ? 4 : 2)));
+                        let val = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? 8 : (sel.id === IDS.COOKED_CHICKEN ? 6 : (sel.id === IDS.BREAD ? 5 : (sel.id === IDS.APPLE ? 4 : (sel.id === IDS.RAW_BEEF ? 3 : 2))));
                         this.hunger = Math.min(20, this.hunger + val);
                         sel.count--;
                         if (sel.count <= 0) inventory[selectedHotbarIndex] = null;
                         updateHungerUI(); updateUI();
                         playSound('eat');
-                        let pColor = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON) ? '#8B4513' : (sel.id === IDS.COOKED_CHICKEN ? '#d98c53' : (sel.id === IDS.BREAD ? '#d2b48c' : (sel.id === IDS.APPLE ? '#ff3333' : '#ff99cc')));
+                        let pColor = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? '#8B4513' : (sel.id === IDS.RAW_BEEF ? '#991b1b' : (sel.id === IDS.COOKED_CHICKEN ? '#d98c53' : (sel.id === IDS.BREAD ? '#d2b48c' : (sel.id === IDS.APPLE ? '#ff3333' : '#ff99cc'))));
                         for(let i=0; i<10; i++) particles.push(new Particle(this.x+this.width/2, this.y, pColor));
                     }
                 } else { this.eatTimer = 0; }
@@ -4078,6 +4172,8 @@ export const SKIN_H = 32;
             this.panic = false;
             this.panicTimer = 0;
             this.isTempted = false;
+            this.walkAnimTime = 0;
+            this.idleSeed = Math.random() * 1000;
         }
 
         isTemptedBy(itemId) {
@@ -4244,6 +4340,12 @@ export const SKIN_H = 32;
                 }
             }
 
+            if (this.vx !== 0) {
+                this.walkAnimTime = (this.walkAnimTime || 0) + (Math.abs(this.vx) / (this.baseSpeed || 1)) * 0.22;
+            } else {
+                this.walkAnimTime = 0;
+            }
+
             this.applyPhysics();
         }
     }
@@ -4251,6 +4353,504 @@ export const SKIN_H = 32;
     export class Pig extends Animal {
         constructor(x, y) {
             super(x, y, TILE_SIZE * 0.85, TILE_SIZE * 0.65, 10, MOVE_SPEED * 0.3);
+        }
+
+        isTemptedBy(itemId) {
+            return itemId === IDS.WHEAT || itemId === IDS.APPLE;
+        }
+
+        update() {
+            this.updateAnimalAI();
+        }
+
+        takeDamage(amt, knockbackDir) {
+            if (this.damageCooldown > 0) return;
+            this.health -= amt;
+            this.damageCooldown = 15;
+            this.vy = -4;
+            this.vx = knockbackDir * 6;
+            this.panic = true;
+            this.panicTimer = 180;
+            this.dir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
+            for (let i = 0; i < 6; i++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ffafcc'));
+            for (let i = 0; i < 3; i++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#f43f5e'));
+            floatingTexts.push(new FloatingText(this.x + this.width / 2, this.y - 10, amt, "#ffcc00"));
+        }
+
+        draw(ctx, camX, camY) {
+            const drawX = this.x - camX;
+            const drawY = this.y - camY;
+            const w = this.width;
+            const h = this.height;
+
+            if (advancedGraphics) {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 6, w * (2 / 2.2), 8);
+            }
+
+            ctx.save();
+            ctx.translate(drawX + w / 2, drawY + h / 2);
+            if (this.dir < 0) ctx.scale(-1, 1);
+
+            const isMoving = Math.abs(this.vx) > 0.05;
+            const walk = this.walkAnimTime || 0;
+            const idle = Math.sin((frameCount + this.idleSeed) * 0.07);
+            const bodyBob = isMoving ? Math.abs(Math.sin(walk * 2)) * 1.2 : idle * 0.6;
+            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 200 < 8);
+
+            const isDamaged = this.damageCooldown > 0;
+            const bodyBase = isDamaged ? '#ff4d4d' : '#f472b6';
+            const bodyHigh = isDamaged ? '#ff9999' : '#fbcfe8';
+            const bodyShade = isDamaged ? '#b91c1c' : '#db2777';
+            const hoofColor = isDamaged ? '#450a0a' : '#500724';
+            const nearHoof = isDamaged ? '#7f1d1d' : '#831843';
+            const snoutBase = isDamaged ? '#ff8080' : '#fb7185';
+            const snoutHigh = isDamaged ? '#ffcccc' : '#fda4af';
+            const nostril = isDamaged ? '#990000' : '#881337';
+            const blush = isDamaged ? '#b91c1c' : '#f43f5e';
+
+            const farLegSwing = isMoving ? Math.sin(walk) * 3 : 0;
+            const nearLegSwing = isMoving ? -Math.sin(walk) * 3 : 0;
+            const farLegLift = (isMoving && Math.sin(walk) > 0) ? Math.sin(walk) * 1.5 : 0;
+            const nearLegLift = (isMoving && -Math.sin(walk) > 0) ? -Math.sin(walk) * 1.5 : 0;
+
+            // 1. Far Legs (Back and Front)
+            ctx.fillStyle = bodyShade;
+            ctx.fillRect(-w * 0.44 + farLegSwing, h * 0.15 - farLegLift, w * 0.17, h * 0.35);
+            ctx.fillRect(w * 0.05 - farLegSwing, h * 0.15 - nearLegLift, w * 0.17, h * 0.35);
+            // Far Hooves
+            ctx.fillStyle = hoofColor;
+            ctx.fillRect(-w * 0.44 + farLegSwing, h * 0.5 - 2 - farLegLift, w * 0.17, 3);
+            ctx.fillRect(w * 0.05 - farLegSwing, h * 0.5 - 2 - nearLegLift, w * 0.17, 3);
+
+            // 2. Curly Tail (Back)
+            const tailWiggle = Math.sin(frameCount * (this.panic ? 0.6 : 0.25)) * 1.5;
+            ctx.fillStyle = snoutBase;
+            ctx.fillRect(-w * 0.5 - 3, -h * 0.18 + bodyBob + tailWiggle, 3, 2);
+            ctx.fillRect(-w * 0.5 - 4, -h * 0.18 + bodyBob + tailWiggle - 3, 2, 3);
+            ctx.fillRect(-w * 0.5 - 2, -h * 0.18 + bodyBob + tailWiggle - 4, 3, 2);
+
+            // 3. Torso / Body
+            ctx.fillStyle = bodyBase;
+            ctx.fillRect(-w * 0.5, -h * 0.48 + bodyBob, w * 0.68, h * 0.68);
+            // Body Top Highlight
+            ctx.fillStyle = bodyHigh;
+            ctx.fillRect(-w * 0.48, -h * 0.48 + bodyBob, w * 0.64, 3);
+            // Body Belly Shadow
+            ctx.fillStyle = bodyShade;
+            ctx.fillRect(-w * 0.5, h * 0.12 + bodyBob, w * 0.68, 3);
+
+            // 4. Head & Neck
+            const headBob = bodyBob * 0.8;
+            ctx.fillStyle = bodyBase;
+            ctx.fillRect(w * 0.08, -h * 0.54 + headBob, w * 0.38, h * 0.64);
+            ctx.fillStyle = bodyHigh;
+            ctx.fillRect(w * 0.1, -h * 0.54 + headBob, w * 0.34, 3);
+            ctx.fillStyle = bodyShade;
+            ctx.fillRect(w * 0.08, h * 0.04 + headBob, w * 0.38, 2);
+
+            // Cute Floppy Ear
+            const earTwitch = Math.sin(frameCount * 0.12) * 0.8;
+            ctx.fillStyle = snoutBase;
+            ctx.fillRect(w * 0.16, -h * 0.54 - 4 + headBob + earTwitch, 4, 5);
+            ctx.fillStyle = isDamaged ? '#7f1d1d' : '#be123c';
+            ctx.fillRect(w * 0.18, -h * 0.54 - 3 + headBob + earTwitch, 2, 3);
+
+            // Rosy Cheek Blush
+            ctx.fillStyle = blush;
+            ctx.fillRect(w * 0.22, -h * 0.12 + headBob, 4, 3);
+
+            // Cute Eye
+            if (isBlinking) {
+                ctx.fillStyle = nearHoof;
+                ctx.fillRect(w * 0.24, -h * 0.28 + headBob, 4, 1.5);
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(w * 0.23, -h * 0.34 + headBob, 5, 4.5);
+                ctx.fillStyle = '#1e1b4b';
+                ctx.fillRect(w * 0.27, -h * 0.34 + headBob, 2.5, 4.5);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(w * 0.24, -h * 0.34 + headBob, 1.5, 1.5);
+            }
+
+            // 3D Snout
+            ctx.fillStyle = snoutBase;
+            ctx.fillRect(w * 0.38, -h * 0.26 + headBob, w * 0.18, h * 0.36);
+            ctx.fillStyle = snoutHigh;
+            ctx.fillRect(w * 0.38, -h * 0.26 + headBob, w * 0.18, 2);
+            // Nostrils
+            ctx.fillStyle = nostril;
+            ctx.fillRect(w * 0.52, -h * 0.18 + headBob, 2, 2.5);
+            ctx.fillRect(w * 0.52, -h * 0.04 + headBob, 2, 2.5);
+
+            // 5. Near Legs (Back and Front)
+            ctx.fillStyle = bodyBase;
+            ctx.fillRect(-w * 0.30 + nearLegSwing, h * 0.18 - nearLegLift, w * 0.17, h * 0.32);
+            ctx.fillRect(w * 0.20 + farLegSwing, h * 0.18 - farLegLift, w * 0.17, h * 0.32);
+            // Near Hooves
+            ctx.fillStyle = nearHoof;
+            ctx.fillRect(-w * 0.30 + nearLegSwing, h * 0.5 - 2 - nearLegLift, w * 0.17, 3);
+            ctx.fillRect(w * 0.20 + farLegSwing, h * 0.5 - 2 - farLegLift, w * 0.17, 3);
+
+            ctx.restore();
+        }
+    }
+
+    export class Chicken extends Animal {
+        constructor(x, y) {
+            super(x, y, TILE_SIZE * 0.5, TILE_SIZE * 0.6, 4, MOVE_SPEED * 0.25);
+            this.peckTimer = 0;
+        }
+
+        isTemptedBy(itemId) {
+            return itemId === IDS.SEEDS || itemId === IDS.WHEAT || itemId === IDS.SAPLING;
+        }
+
+        update() {
+            this.updateAnimalAI();
+            if (this.vy > 2.2) this.vy = 2.2;
+            if (this.vx === 0 && Math.random() < 0.012 && this.peckTimer <= 0) {
+                this.peckTimer = 22;
+            }
+            if (this.peckTimer > 0) this.peckTimer--;
+        }
+
+        takeDamage(amt, knockbackDir) {
+            if (this.damageCooldown > 0) return;
+            this.health -= amt;
+            this.damageCooldown = 15;
+            this.vy = -4;
+            this.vx = knockbackDir * 6;
+            this.panic = true;
+            this.panicTimer = 180;
+            this.dir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
+            for (let i = 0; i < 6; i++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ffffff'));
+            for (let i = 0; i < 3; i++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ef4444'));
+            floatingTexts.push(new FloatingText(this.x + this.width / 2, this.y - 10, amt, "#ffcc00"));
+        }
+
+        draw(ctx, camX, camY) {
+            const drawX = this.x - camX;
+            const drawY = this.y - camY;
+            const w = this.width;
+            const h = this.height;
+
+            if (advancedGraphics) {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 5, w * (2 / 2.2), 7);
+            }
+
+            ctx.save();
+            ctx.translate(drawX + w / 2, drawY + h / 2);
+            if (this.dir < 0) ctx.scale(-1, 1);
+
+            const isMoving = Math.abs(this.vx) > 0.05;
+            const isAirborne = !this.isGrounded || this.vy > 0.5;
+            const walk = this.walkAnimTime || 0;
+            const idle = Math.sin((frameCount + this.idleSeed) * 0.08);
+            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 190 < 8);
+
+            const isDamaged = this.damageCooldown > 0;
+            const featherWhite = isDamaged ? '#ff7f7f' : '#ffffff';
+            const featherShade = isDamaged ? '#ff4d4d' : '#cbd5e1';
+            const featherDark = isDamaged ? '#cc0000' : '#94a3b8';
+            const combRed = isDamaged ? '#b91c1c' : '#ef4444';
+            const combLight = isDamaged ? '#f87171' : '#fca5a5';
+            const wattleRed = isDamaged ? '#991b1b' : '#dc2626';
+            const beakAmber = isDamaged ? '#d97706' : '#f59e0b';
+            const beakLight = isDamaged ? '#fde047' : '#fbbf24';
+            const legYellow = isDamaged ? '#ca8a04' : '#f59e0b';
+            const clawDark = isDamaged ? '#854d0e' : '#d97706';
+
+            // Head Bobbing & Pecking Animation
+            const headBobX = isMoving ? Math.sin(walk) * 2 : 0;
+            const peckBobY = (this.peckTimer > 0) ? Math.sin(this.peckTimer / 22 * Math.PI) * 3.5 : 0;
+            const headBobY = (isMoving ? Math.abs(Math.sin(walk)) * 1 : idle * 0.4) + peckBobY;
+
+            // Wing Flapping Animation
+            let wingAngle = 0;
+            if (isAirborne) {
+                wingAngle = Math.sin(frameCount * 0.8) * 0.5;
+            } else if (this.panic) {
+                wingAngle = Math.sin(frameCount * 0.6) * 0.35;
+            } else if (isMoving) {
+                wingAngle = Math.sin(walk) * 0.12;
+            }
+
+            // Leg Swings
+            const leftLegSwing = isMoving ? Math.sin(walk) * 3 : 0;
+            const rightLegSwing = isMoving ? -Math.sin(walk) * 3 : 0;
+            const leftLegLift = (isMoving && Math.sin(walk) < 0) ? Math.abs(Math.sin(walk)) * 2 : 0;
+            const rightLegLift = (isMoving && -Math.sin(walk) < 0) ? Math.abs(Math.sin(walk)) * 2 : 0;
+
+            // 1. Far Leg
+            ctx.fillStyle = clawDark;
+            ctx.fillRect(-w * 0.18 + leftLegSwing, h * 0.2 - leftLegLift, 2.5, h * 0.28);
+            // Far Foot / Claws
+            ctx.fillRect(-w * 0.18 + leftLegSwing - 1, h * 0.48 - 1 - leftLegLift, 5, 2);
+
+            // 2. Tail Feathers (Upturned at back)
+            const tailWiggle = Math.sin(frameCount * 0.15) * 0.6;
+            ctx.fillStyle = featherWhite;
+            ctx.fillRect(-w * 0.5, -h * 0.32 + tailWiggle, 4, 6);
+            ctx.fillRect(-w * 0.54, -h * 0.40 + tailWiggle, 3, 5);
+            ctx.fillStyle = featherShade;
+            ctx.fillRect(-w * 0.48, -h * 0.24 + tailWiggle, 3, 3);
+
+            // 3. Body
+            ctx.fillStyle = featherWhite;
+            ctx.fillRect(-w * 0.42, -h * 0.28, w * 0.62, h * 0.5);
+            ctx.fillStyle = featherShade;
+            ctx.fillRect(-w * 0.42, h * 0.14, w * 0.62, 3);
+            ctx.fillStyle = featherDark;
+            ctx.fillRect(-w * 0.42, h * 0.20, w * 0.45, 1.5);
+
+            // 4. Head & Neck
+            const hx = w * 0.12 + headBobX;
+            const hy = -h * 0.54 + headBobY;
+            ctx.fillStyle = featherWhite;
+            ctx.fillRect(hx, hy, w * 0.34, h * 0.42);
+            ctx.fillStyle = featherShade;
+            ctx.fillRect(hx, hy + h * 0.36, w * 0.34, 2);
+
+            // Red Comb (Head crown)
+            ctx.fillStyle = combRed;
+            ctx.fillRect(hx + 2, hy - 4, 3, 4);
+            ctx.fillRect(hx + 5, hy - 6, 3, 6);
+            ctx.fillRect(hx + 8, hy - 3, 3, 3);
+            ctx.fillStyle = combLight;
+            ctx.fillRect(hx + 3, hy - 4, 1.5, 2);
+            ctx.fillRect(hx + 6, hy - 5, 1.5, 3);
+
+            // Red Wattle (under chin)
+            ctx.fillStyle = wattleRed;
+            ctx.fillRect(hx + w * 0.24, hy + h * 0.32, 3, 4);
+
+            // Amber Beak
+            ctx.fillStyle = beakAmber;
+            ctx.fillRect(hx + w * 0.28, hy + h * 0.14, 5, 3.5);
+            ctx.fillStyle = beakLight;
+            ctx.fillRect(hx + w * 0.28, hy + h * 0.14, 5, 1.5);
+            ctx.fillStyle = clawDark;
+            ctx.fillRect(hx + w * 0.28, hy + h * 0.24, 4, 1);
+
+            // Eye
+            if (isBlinking) {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(hx + 4, hy + h * 0.14, 3, 1.5);
+            } else {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(hx + 4, hy + h * 0.10, 3.5, 3.5);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(hx + 4, hy + h * 0.10, 1.5, 1.5);
+            }
+
+            // 5. Wing (Flapping overlay)
+            ctx.save();
+            ctx.translate(-w * 0.08, -h * 0.12);
+            ctx.rotate(wingAngle);
+            ctx.fillStyle = featherWhite;
+            ctx.fillRect(-w * 0.24, -h * 0.12, w * 0.44, h * 0.32);
+            ctx.fillStyle = featherShade;
+            ctx.fillRect(-w * 0.22, h * 0.12, w * 0.40, 2);
+            ctx.fillStyle = featherDark;
+            ctx.fillRect(-w * 0.12, 0, w * 0.26, 1.5);
+            ctx.restore();
+
+            // 6. Near Leg
+            ctx.fillStyle = legYellow;
+            ctx.fillRect(w * 0.06 + rightLegSwing, h * 0.2 - rightLegLift, 2.5, h * 0.28);
+            // Near Foot / Claws
+            ctx.fillStyle = clawDark;
+            ctx.fillRect(w * 0.06 + rightLegSwing - 1, h * 0.48 - 1 - rightLegLift, 5, 2);
+
+            ctx.restore();
+        }
+    }
+
+    export class Sheep extends Animal {
+        constructor(x, y) {
+            super(x, y, TILE_SIZE * 0.85, TILE_SIZE * 0.7, 8, MOVE_SPEED * 0.22);
+            this.isSheared = false;
+            this.eatAnim = 0;
+        }
+
+        isTemptedBy(itemId) {
+            return itemId === IDS.WHEAT || itemId === IDS.SEEDS || itemId === IDS.SAPLING;
+        }
+
+        update() {
+            this.updateAnimalAI();
+            if (this.eatAnim > 0) this.eatAnim--;
+            if (this.isSheared && this.isGrounded && Math.random() < 0.004) {
+                let gx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+                let gy = Math.floor((this.y + this.height + 2) / TILE_SIZE);
+                if (gx >= 0 && gx < WORLD_WIDTH && gy >= 0 && gy < WORLD_HEIGHT) {
+                    if (world[gx]?.[gy] === IDS.GRASS || world[gx]?.[gy] === IDS.SHORT_GRASS) {
+                        this.isSheared = false;
+                        this.eatAnim = 35;
+                        for (let p = 0; p < 10; p++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height - 4, '#35b042'));
+                    }
+                }
+            }
+        }
+
+        takeDamage(amount, knockbackDir) {
+            if (this.damageCooldown > 0) return;
+            this.health -= amount;
+            this.damageCooldown = 15;
+            this.vy = -3.5;
+            this.vx = knockbackDir * 6;
+            this.panic = true;
+            this.panicTimer = 180;
+            this.dir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
+            for (let i = 0; i < 6; i++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ffffff'));
+            for (let i = 0; i < 3; i++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#e2b49a'));
+            floatingTexts.push(new FloatingText(this.x + this.width / 2, this.y - 10, amount, '#ffcc00'));
+        }
+
+        draw(ctx, camX, camY) {
+            const drawX = this.x - camX;
+            const drawY = this.y - camY;
+            const w = this.width;
+            const h = this.height;
+
+            if (advancedGraphics) {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 6, w * (2 / 2.2), 8);
+            }
+
+            ctx.save();
+            ctx.translate(drawX + w / 2, drawY + h / 2);
+            if (this.dir < 0) ctx.scale(-1, 1);
+
+            const isMoving = Math.abs(this.vx) > 0.05;
+            const walk = this.walkAnimTime || 0;
+            const idle = Math.sin((frameCount + this.idleSeed) * 0.06);
+            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 210 < 8);
+            const isGrazing = this.eatAnim > 0;
+            const headDip = isGrazing ? 5 : 0;
+            const bodyBob = isMoving ? Math.abs(Math.sin(walk * 2)) * 1.2 : idle * 0.6;
+
+            const isDamaged = this.damageCooldown > 0;
+            const woolWhite = isDamaged ? '#ff9999' : '#ffffff';
+            const woolShade = isDamaged ? '#ff6666' : '#e2e8f0';
+            const woolDark = isDamaged ? '#cc3333' : '#cbd5e1';
+            const skinBase = isDamaged ? '#ff8080' : '#e2b49a';
+            const skinLight = isDamaged ? '#ffaaaa' : '#f5d0b5';
+            const skinShade = isDamaged ? '#b91c1c' : '#c58f72';
+            const hoofColor = isDamaged ? '#450a0a' : '#44352b';
+            const earPink = isDamaged ? '#cc0000' : '#fca5a5';
+
+            const farLegSwing = isMoving ? Math.sin(walk) * 3 : 0;
+            const nearLegSwing = isMoving ? -Math.sin(walk) * 3 : 0;
+            const farLegLift = (isMoving && Math.sin(walk) > 0) ? Math.sin(walk) * 1.5 : 0;
+            const nearLegLift = (isMoving && -Math.sin(walk) > 0) ? -Math.sin(walk) * 1.5 : 0;
+
+            // 1. Far Legs (Back and Front)
+            ctx.fillStyle = isDamaged ? '#b91c1c' : (this.isSheared ? skinShade : skinBase);
+            ctx.fillRect(-w * 0.42 + farLegSwing, h * 0.16 - farLegLift, w * 0.15, h * 0.34);
+            ctx.fillRect(w * 0.08 - farLegSwing, h * 0.16 - nearLegLift, w * 0.15, h * 0.34);
+            // Far Hooves
+            ctx.fillStyle = hoofColor;
+            ctx.fillRect(-w * 0.42 + farLegSwing, h * 0.5 - 2 - farLegLift, w * 0.15, 3);
+            ctx.fillRect(w * 0.08 - farLegSwing, h * 0.5 - 2 - nearLegLift, w * 0.15, 3);
+
+            // 2. Body (Sheared vs Unsheared)
+            if (this.isSheared) {
+                // Trimmed skin body
+                ctx.fillStyle = skinLight;
+                ctx.fillRect(-w * 0.48, -h * 0.36 + bodyBob, w * 0.65, h * 0.54);
+                ctx.fillStyle = skinShade;
+                ctx.fillRect(-w * 0.48, h * 0.12 + bodyBob, w * 0.65, 3);
+                // Fleece stubble tufts
+                ctx.fillStyle = woolWhite;
+                ctx.fillRect(-w * 0.44, -h * 0.36 + bodyBob, 4, 3);
+                ctx.fillRect(-w * 0.25, -h * 0.34 + bodyBob, 5, 3);
+                ctx.fillRect(-w * 0.08, -h * 0.36 + bodyBob, 4, 3);
+                ctx.fillRect(-w * 0.34, -h * 0.12 + bodyBob, 4, 2.5);
+                ctx.fillRect(-w * 0.15, -h * 0.08 + bodyBob, 4, 2.5);
+            } else {
+                // Fluffy Cloud Wool Mounds!
+                ctx.fillStyle = woolWhite;
+                ctx.fillRect(-w * 0.5, -h * 0.46 + bodyBob, w * 0.72, h * 0.66);
+                // Cloud scalloped top bumps
+                ctx.fillRect(-w * 0.46, -h * 0.52 + bodyBob, w * 0.22, h * 0.1);
+                ctx.fillRect(-w * 0.20, -h * 0.54 + bodyBob, w * 0.24, h * 0.12);
+                ctx.fillRect(w * 0.06, -h * 0.50 + bodyBob, w * 0.16, h * 0.1);
+                // Cloud scalloped back bump
+                ctx.fillRect(-w * 0.54, -h * 0.38 + bodyBob, w * 0.08, h * 0.44);
+                // Cloud shading & creases
+                ctx.fillStyle = woolShade;
+                ctx.fillRect(-w * 0.5, h * 0.14 + bodyBob, w * 0.72, 4);
+                ctx.fillStyle = woolDark;
+                ctx.fillRect(-w * 0.24, -h * 0.44 + bodyBob, 2, h * 0.4);
+                ctx.fillRect(0, -h * 0.40 + bodyBob, 2, h * 0.4);
+            }
+
+            // 3. Head & Face
+            const headBob = bodyBob * 0.7 + headDip;
+            ctx.fillStyle = skinBase;
+            ctx.fillRect(w * 0.12, -h * 0.42 + headBob, w * 0.36, h * 0.56);
+            ctx.fillStyle = skinLight;
+            ctx.fillRect(w * 0.14, -h * 0.42 + headBob, w * 0.32, 3);
+            ctx.fillStyle = skinShade;
+            ctx.fillRect(w * 0.12, h * 0.10 + headBob, w * 0.36, 2);
+
+            // Wool Cap on Head (if not sheared)
+            if (!this.isSheared) {
+                ctx.fillStyle = woolWhite;
+                ctx.fillRect(w * 0.10, -h * 0.54 + headBob, w * 0.38, 5);
+                ctx.fillRect(w * 0.14, -h * 0.60 + headBob, w * 0.28, 4);
+                ctx.fillStyle = woolShade;
+                ctx.fillRect(w * 0.10, -h * 0.46 + headBob, w * 0.38, 2);
+            }
+
+            // Floppy Ears
+            const earSway = Math.sin(frameCount * 0.1) * 0.8;
+            ctx.fillStyle = skinShade;
+            ctx.fillRect(w * 0.18, -h * 0.38 + headBob + earSway, 3, 5);
+            ctx.fillRect(w * 0.15, -h * 0.34 + headBob + earSway, 3, 6);
+            ctx.fillStyle = earPink;
+            ctx.fillRect(w * 0.16, -h * 0.32 + headBob + earSway, 1.5, 4);
+
+            // Muzzle / Mouth (chewing when grazing)
+            const chewOffset = (isGrazing && frameCount % 6 < 3) ? 1 : 0;
+            ctx.fillStyle = skinShade;
+            ctx.fillRect(w * 0.36 + chewOffset, -h * 0.12 + headBob, w * 0.14, 4);
+            ctx.fillStyle = hoofColor;
+            ctx.fillRect(w * 0.46 + chewOffset, -h * 0.08 + headBob, 2, 2);
+
+            // Eye
+            if (isBlinking) {
+                ctx.fillStyle = hoofColor;
+                ctx.fillRect(w * 0.28, -h * 0.24 + headBob, 3, 1.5);
+            } else {
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(w * 0.28, -h * 0.28 + headBob, 3.5, 3.5);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(w * 0.28, -h * 0.28 + headBob, 1.5, 1.5);
+            }
+
+            // 4. Near Legs (Back and Front)
+            ctx.fillStyle = isDamaged ? '#ff4d4d' : skinLight;
+            ctx.fillRect(-w * 0.28 + nearLegSwing, h * 0.18 - nearLegLift, w * 0.15, h * 0.32);
+            ctx.fillRect(w * 0.22 + farLegSwing, h * 0.18 - farLegLift, w * 0.15, h * 0.32);
+            // Wool Cuffs above hooves (if not sheared)
+            if (!this.isSheared) {
+                ctx.fillStyle = woolWhite;
+                ctx.fillRect(-w * 0.30 + nearLegSwing, h * 0.34 - nearLegLift, w * 0.19, 3);
+                ctx.fillRect(w * 0.20 + farLegSwing, h * 0.34 - farLegLift, w * 0.19, 3);
+            }
+            // Near Hooves
+            ctx.fillStyle = hoofColor;
+            ctx.fillRect(-w * 0.28 + nearLegSwing, h * 0.5 - 2 - nearLegLift, w * 0.15, 3);
+            ctx.fillRect(w * 0.22 + farLegSwing, h * 0.5 - 2 - farLegLift, w * 0.15, 3);
+
+            ctx.restore();
+        }
+    }
+
+    export class Cow extends Animal {
+        constructor(x, y) {
+            super(x, y, TILE_SIZE * 0.95, TILE_SIZE * 0.75, 10, MOVE_SPEED * 0.22);
         }
 
         isTemptedBy(itemId) {
@@ -4263,191 +4863,176 @@ export const SKIN_H = 32;
 
         takeDamage(amt, knockbackDir) {
             if (this.damageCooldown > 0) return;
-            this.health -= amt; this.damageCooldown = 15;
-            this.vy = -4; this.vx = knockbackDir * 6; 
-            
-            this.panic = true; this.panicTimer = 180; this.dir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
-            for(let i=0; i<5; i++) particles.push(new Particle(this.x+this.width/2, this.y+this.height/2, '#ff99cc'));
-            floatingTexts.push(new FloatingText(this.x + this.width/2, this.y - 10, amt, "#ffcc00"));
+            this.health -= amt;
+            this.damageCooldown = 15;
+            this.vy = -3.5;
+            this.vx = knockbackDir * 5;
+            this.panic = true;
+            this.panicTimer = 180;
+            this.dir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
+            for (let i = 0; i < 5; i++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#451a03'));
+            for (let i = 0; i < 4; i++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#f8fafc'));
+            floatingTexts.push(new FloatingText(this.x + this.width / 2, this.y - 10, amt, "#ffcc00"));
         }
 
         draw(ctx, camX, camY) {
-            const drawX = this.x - camX; const drawY = this.y - camY;
-            const w = this.width; const h = this.height;
+            const drawX = this.x - camX;
+            const drawY = this.y - camY;
+            const w = this.width;
+            const h = this.height;
 
             if (advancedGraphics) {
-                ctx.drawImage(cachedShadowCanvas, drawX + w/2 - w/2.2, drawY + h - 6, w * (2/2.2), 8);
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 6, w * (2 / 2.2), 8);
             }
 
             ctx.save();
-            ctx.translate(drawX + w/2, drawY + h/2);
+            ctx.translate(drawX + w / 2, drawY + h / 2);
             if (this.dir < 0) ctx.scale(-1, 1);
 
-            if (this.damageCooldown > 0) ctx.fillStyle = '#ff4d4d'; 
-            else ctx.fillStyle = '#fca5a5';
+            const isMoving = Math.abs(this.vx) > 0.05;
+            const walk = this.walkAnimTime || 0;
+            const idle = Math.sin((frameCount + this.idleSeed) * 0.07);
+            const bodyBob = isMoving ? Math.abs(Math.sin(walk * 2)) * 1.2 : idle * 0.6;
+            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 220 < 8);
 
-            ctx.fillRect(-w/2, -h/2 + 2, w * 0.75, h * 0.65);
-            ctx.fillStyle = '#f87171'; 
-            ctx.fillRect(-w/2, h/6, w * 0.75, h * 0.15);
+            const isDamaged = this.damageCooldown > 0;
+            const hideWhite = isDamaged ? '#ff9999' : '#f8fafc';
+            const hideHighlight = isDamaged ? '#ffcccc' : '#ffffff';
+            const hideShade = isDamaged ? '#ff6666' : '#cbd5e1';
+            const spotBlack = isDamaged ? '#660000' : '#27272a';
+            const spotOutline = isDamaged ? '#400000' : '#18181b';
+            const hoofDark = isDamaged ? '#330000' : '#18181b';
+            const hoofLight = isDamaged ? '#550000' : '#27272a';
+            const muzzlePink = isDamaged ? '#ff8080' : '#fbcfe8';
+            const muzzleHigh = isDamaged ? '#ffaaaa' : '#ffe4e6';
+            const nostrilDark = isDamaged ? '#990000' : '#9f1239';
+            const udderPink = isDamaged ? '#ff8080' : '#fbcfe8';
+            const teatPink = isDamaged ? '#cc0000' : '#f43f5e';
+            const hornIvory = isDamaged ? '#ffcc80' : '#fef08a';
+            const hornBase = isDamaged ? '#d97706' : '#ca8a04';
 
-            ctx.fillStyle = this.damageCooldown > 0 ? '#ff4d4d' : '#fca5a5';
-            ctx.fillRect(w/8, -h/2 - 2, w * 0.4, h * 0.65);
+            const farLegSwing = isMoving ? Math.sin(walk) * 3 : 0;
+            const nearLegSwing = isMoving ? -Math.sin(walk) * 3 : 0;
+            const farLegLift = (isMoving && Math.sin(walk) > 0) ? Math.sin(walk) * 1.5 : 0;
+            const nearLegLift = (isMoving && -Math.sin(walk) > 0) ? -Math.sin(walk) * 1.5 : 0;
 
-            ctx.fillStyle = '#f43f5e';
-            ctx.fillRect(w*0.35, -h/6, w * 0.22, h * 0.35);
-            ctx.fillStyle = '#9f1239'; 
-            ctx.fillRect(w*0.48, -h/12, 2, 3);
-            ctx.fillRect(w*0.48, h/12, 2, 3);
+            // 1. Far Legs (Back and Front)
+            ctx.fillStyle = hideShade;
+            ctx.fillRect(-w * 0.44 + farLegSwing, h * 0.15 - farLegLift, w * 0.16, h * 0.35);
+            ctx.fillRect(w * 0.08 - farLegSwing, h * 0.15 - nearLegLift, w * 0.16, h * 0.35);
+            // Black spot on far back leg
+            ctx.fillStyle = spotOutline;
+            ctx.fillRect(-w * 0.44 + farLegSwing, h * 0.20 - farLegLift, w * 0.16, 4);
+            // Far Hooves
+            ctx.fillStyle = hoofDark;
+            ctx.fillRect(-w * 0.44 + farLegSwing, h * 0.5 - 2 - farLegLift, w * 0.16, 3);
+            ctx.fillRect(w * 0.08 - farLegSwing, h * 0.5 - 2 - nearLegLift, w * 0.16, 3);
 
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(w*0.25, -h/3, 4, 4);
-            ctx.fillStyle = '#1e3a8a';
-            ctx.fillRect(w*0.3, -h/3, 2, 4);
+            // 2. Udder (underneath body between hind legs)
+            ctx.fillStyle = udderPink;
+            ctx.fillRect(-w * 0.22, h * 0.12 + bodyBob, w * 0.16, 4);
+            ctx.fillStyle = teatPink;
+            ctx.fillRect(-w * 0.20, h * 0.12 + bodyBob + 4, 2, 2.5);
+            ctx.fillRect(-w * 0.10, h * 0.12 + bodyBob + 4, 2, 2.5);
 
-            ctx.fillStyle = '#fb7185';
-            ctx.fillRect(w*0.15, -h/2 - 5, 4, 4);
-
-            let legSwing = (this.vx !== 0) ? Math.sin(frameCount * 0.3) * h/6 : 0;
-
-            ctx.fillStyle = this.damageCooldown > 0 ? '#ff4d4d' : '#f87171';
-            ctx.fillRect(-w/2 + 2 + legSwing, h/4, w*0.18, h*0.28);
-            ctx.fillRect(-w/4 - legSwing, h/4, w*0.18, h*0.28);
-            ctx.fillRect(w/12 + legSwing, h/4, w*0.18, h*0.28);
-            ctx.fillRect(w/4 - legSwing, h/4, w*0.18, h*0.28);
-
-            ctx.fillStyle = '#451a03';
-            ctx.fillRect(-w/2 + 2 + legSwing, h/2 - 2, w*0.18, 3);
-            ctx.fillRect(-w/4 - legSwing, h/2 - 2, w*0.18, 3);
-            ctx.fillRect(w/12 + legSwing, h/2 - 2, w*0.18, 3);
-            ctx.fillRect(w/4 - legSwing, h/2 - 2, w*0.18, 3);
-
-            ctx.fillStyle = '#f43f5e';
-            ctx.fillRect(-w/2 - 4, -h/4, 4, 2);
-            ctx.fillRect(-w/2 - 4, -h/4 - 3, 2, 4);
-
-            ctx.restore();
-        }
-    }
-
-    export class Chicken extends Animal {
-        constructor(x, y) {
-            super(x, y, TILE_SIZE * 0.5, TILE_SIZE * 0.6, 4, MOVE_SPEED * 0.25);
-        }
-
-        isTemptedBy(itemId) {
-            return itemId === IDS.SEEDS || itemId === IDS.SAPLING || itemId === IDS.WOOD;
-        }
-
-        update() {
-            this.updateAnimalAI();
-            if (this.vy > 2.5) this.vy = 2.5; 
-        }
-
-        takeDamage(amt, knockbackDir) {
-            if (this.damageCooldown > 0) return;
-            this.health -= amt; this.damageCooldown = 15;
-            this.vy = -4; this.vx = knockbackDir * 6; 
-            
-            this.panic = true; this.panicTimer = 180; this.dir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
-            for(let i=0; i<5; i++) particles.push(new Particle(this.x+this.width/2, this.y+this.height/2, '#ffffff'));
-            floatingTexts.push(new FloatingText(this.x + this.width/2, this.y - 10, amt, "#ffcc00"));
-        }
-
-        draw(ctx, camX, camY) {
-            const drawX = this.x - camX; const drawY = this.y - camY;
-            const w = this.width; const h = this.height;
-
-            if (advancedGraphics) {
-                ctx.drawImage(cachedShadowCanvas, drawX + w/2 - w/2.2, drawY + h - 6, w * (2/2.2), 8);
-            }
-
+            // 3. Swishing Tail (Back)
+            const tailSwish = Math.sin(frameCount * (this.panic ? 0.5 : 0.12) + this.idleSeed) * 0.3;
             ctx.save();
-            ctx.translate(drawX + w/2, drawY + h/2);
-            if (this.dir < 0) ctx.scale(-1, 1);
-
-            ctx.fillStyle = this.damageCooldown > 0 ? '#ff4d4d' : '#ffffff';
-            ctx.fillRect(-w/2, -h/4, w*0.8, h*0.6); 
-            ctx.fillRect(w/4, -h/2, w*0.3, h*0.4); 
-
-            ctx.fillStyle = '#ff0000'; 
-            ctx.fillRect(w*0.3, -h/2 - h*0.2, w*0.2, h*0.2);
-            ctx.fillRect(w*0.3, -h/4, w*0.1, h*0.15); 
-
-            ctx.fillStyle = '#ffaa00'; 
-            ctx.fillRect(w*0.55, -h/3, w*0.2, h*0.15);
-
-            ctx.fillStyle = '#000000'; 
-            ctx.fillRect(w*0.35, -h/2.5, 2, 2);
-
-            let legSwing = (this.vx !== 0) ? Math.sin(frameCount * 0.4) * h/6 : 0;
-
-            ctx.fillStyle = '#ffff00'; 
-            ctx.fillRect(-w/4 + legSwing, h/3, 2, h*0.2);
-            ctx.fillRect(w/8 - legSwing, h/3, 2, h*0.2);
-
+            ctx.translate(-w * 0.48, -h * 0.24 + bodyBob);
+            ctx.rotate(tailSwish);
+            ctx.fillStyle = hideWhite;
+            ctx.fillRect(-2, 0, 2.5, h * 0.38);
+            // Black tassel tuft
+            ctx.fillStyle = spotBlack;
+            ctx.fillRect(-3.5, h * 0.34, 5, 5);
             ctx.restore();
-        }
-    }
 
-    export class Sheep extends Animal {
-        constructor(x, y) {
-            super(x, y, TILE_SIZE * 0.85, TILE_SIZE * 0.7, 8, MOVE_SPEED * 0.22);
-            this.isSheared = false;
-        }
+            // 4. Torso / Body
+            ctx.fillStyle = hideWhite;
+            ctx.fillRect(-w * 0.48, -h * 0.48 + bodyBob, w * 0.70, h * 0.68);
+            // Top Highlight Stripe
+            ctx.fillStyle = hideHighlight;
+            ctx.fillRect(-w * 0.46, -h * 0.48 + bodyBob, w * 0.66, 3);
+            // Belly Shadow
+            ctx.fillStyle = hideShade;
+            ctx.fillRect(-w * 0.48, h * 0.14 + bodyBob, w * 0.70, 3);
 
-        isTemptedBy(itemId) {
-            return itemId === IDS.SEEDS || itemId === IDS.SAPLING || itemId === IDS.GRASS;
-        }
+            // Organic Black Cow Spots on Torso
+            ctx.fillStyle = spotBlack;
+            // Main flank spot
+            ctx.fillRect(-w * 0.28, -h * 0.48 + bodyBob, w * 0.26, h * 0.45);
+            ctx.fillRect(-w * 0.34, -h * 0.40 + bodyBob, w * 0.12, h * 0.30);
+            ctx.fillRect(-w * 0.14, -h * 0.44 + bodyBob, w * 0.14, h * 0.36);
+            // Hind patch
+            ctx.fillRect(-w * 0.48, -h * 0.38 + bodyBob, w * 0.12, h * 0.28);
+            ctx.fillRect(-w * 0.48, -h * 0.48 + bodyBob, w * 0.16, 4);
 
-        update() {
-            this.updateAnimalAI();
-            if (this.isSheared && this.isGrounded && Math.random() < 0.004) {
-                let gx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
-                let gy = Math.floor((this.y + this.height + 2) / TILE_SIZE);
-                if (gx >= 0 && gx < WORLD_WIDTH && gy >= 0 && gy < WORLD_HEIGHT) {
-                    if (world[gx]?.[gy] === IDS.GRASS || world[gx]?.[gy] === IDS.SHORT_GRASS) {
-                        this.isSheared = false;
-                        for (let p = 0; p < 8; p++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height - 4, '#35b042'));
-                    }
-                }
+            // 5. Head & Neck
+            const headBob = bodyBob * 0.75;
+            ctx.fillStyle = hideWhite;
+            ctx.fillRect(w * 0.10, -h * 0.52 + headBob, w * 0.38, h * 0.62);
+            ctx.fillStyle = hideHighlight;
+            ctx.fillRect(w * 0.12, -h * 0.52 + headBob, w * 0.34, 3);
+            ctx.fillStyle = hideShade;
+            ctx.fillRect(w * 0.10, h * 0.06 + headBob, w * 0.38, 2);
+
+            // Black patch over eye / head
+            ctx.fillStyle = spotBlack;
+            ctx.fillRect(w * 0.10, -h * 0.52 + headBob, w * 0.20, h * 0.36);
+            ctx.fillRect(w * 0.22, -h * 0.42 + headBob, w * 0.14, h * 0.22);
+
+            // Ivory Horns on top of head
+            ctx.fillStyle = hornBase;
+            ctx.fillRect(w * 0.18, -h * 0.52 - 3 + headBob, 3.5, 3);
+            ctx.fillRect(w * 0.28, -h * 0.52 - 3 + headBob, 3.5, 3);
+            ctx.fillStyle = hornIvory;
+            ctx.fillRect(w * 0.16, -h * 0.52 - 6 + headBob, 3, 3);
+            ctx.fillRect(w * 0.30, -h * 0.52 - 6 + headBob, 3, 3);
+
+            // Floppy Cow Ears (lateral droop with twitch)
+            const earTwitch = Math.sin(frameCount * 0.08) * 0.8;
+            ctx.fillStyle = hideWhite;
+            ctx.fillRect(w * 0.06, -h * 0.40 + headBob + earTwitch, 4, 4);
+            ctx.fillRect(w * 0.04, -h * 0.36 + headBob + earTwitch, 4, 4);
+            ctx.fillStyle = muzzlePink;
+            ctx.fillRect(w * 0.05, -h * 0.36 + headBob + earTwitch, 2.5, 3);
+
+            // Large Soulful Cow Eye
+            if (isBlinking) {
+                ctx.fillStyle = hoofDark;
+                ctx.fillRect(w * 0.26, -h * 0.26 + headBob, 4.5, 1.5);
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(w * 0.25, -h * 0.30 + headBob, 5, 4.5);
+                ctx.fillStyle = '#1e1b4b';
+                ctx.fillRect(w * 0.28, -h * 0.30 + headBob, 3, 4.5);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(w * 0.26, -h * 0.30 + headBob, 1.5, 1.5);
             }
-        }
 
-        takeDamage(amount, knockbackDir) {
-            if (this.damageCooldown > 0) return;
-            this.health -= amount; this.damageCooldown = 15;
-            this.vy = -3.5; this.vx = knockbackDir * 6;
-            this.panic = true; this.panicTimer = 180; this.dir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
-            floatingTexts.push(new FloatingText(this.x + this.width / 2, this.y - 10, amount, '#ffcc00'));
-        }
+            // Muzzle / Snout (with gentle cud-chewing motion when idle)
+            const cudChew = (!isMoving && frameCount % 60 < 22) ? Math.sin(frameCount * 0.4) * 1 : 0;
+            ctx.fillStyle = muzzlePink;
+            ctx.fillRect(w * 0.38, -h * 0.20 + headBob + cudChew, w * 0.18, h * 0.34);
+            ctx.fillStyle = muzzleHigh;
+            ctx.fillRect(w * 0.38, -h * 0.20 + headBob + cudChew, w * 0.18, 2);
+            // Nostrils
+            ctx.fillStyle = nostrilDark;
+            ctx.fillRect(w * 0.50, -h * 0.12 + headBob + cudChew, 2.5, 2.5);
+            ctx.fillRect(w * 0.50, -h * 0.02 + headBob + cudChew, 2.5, 2.5);
 
-        draw(ctx, camX, camY) {
-            const drawX = this.x - camX; const drawY = this.y - camY;
-            const w = this.width; const h = this.height;
-            if (advancedGraphics) {
-                ctx.drawImage(cachedShadowCanvas, drawX + w/2 - w/2.2, drawY + h - 6, w * (2/2.2), 8);
-            }
-            ctx.save(); ctx.translate(drawX + w/2, drawY + h/2);
-            if (this.dir < 0) ctx.scale(-1, 1);
-            ctx.fillStyle = this.damageCooldown > 0 ? '#ffb3b3' : (this.isSheared ? '#d0d0d0' : '#f5f5f5');
-            ctx.fillRect(-w/2, -h/3, w * (this.isSheared ? 0.7 : 0.82), h * (this.isSheared ? 0.52 : 0.66));
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(-w * 0.38, -h/2, w * 0.3, h * 0.25);
-            ctx.fillRect(-w * 0.05, -h/2 - 2, w * 0.3, h * 0.28);
-            ctx.fillRect(w * 0.28, -h/2, w * 0.2, h * 0.25);
-            ctx.fillStyle = '#bdbdbd';
-            ctx.fillRect(w/5, -h/2, w * 0.52, h * 0.52);
-            ctx.fillStyle = '#333';
-            ctx.fillRect(w * 0.48, -h/3, 3, 3);
-            ctx.fillRect(w * 0.66, -h/5, 3, 2);
-            let legSwing = (this.vx !== 0) ? Math.sin(frameCount * 0.3) * (h / 6) : 0;
-            ctx.fillStyle = this.damageCooldown > 0 ? '#ffb3b3' : '#d0d0d0';
-            ctx.fillRect(-w * 0.38 + legSwing, h/4, w * 0.16, h/3);
-            ctx.fillRect(-w * 0.20 - legSwing, h/4, w * 0.16, h/3);
-            ctx.fillRect(w * 0.08 + legSwing, h/4, w * 0.16, h/3);
-            ctx.fillRect(w * 0.24 - legSwing, h/4, w * 0.16, h/3);
-            ctx.fillStyle = '#888';
-            ctx.fillRect(w * 0.68, -h/2 - 5, w * 0.16, h * 0.18);
+            // 6. Near Legs (Back and Front)
+            ctx.fillStyle = hideWhite;
+            ctx.fillRect(-w * 0.30 + nearLegSwing, h * 0.18 - nearLegLift, w * 0.16, h * 0.32);
+            ctx.fillRect(w * 0.22 + farLegSwing, h * 0.18 - farLegLift, w * 0.16, h * 0.32);
+            // Spot on near front leg
+            ctx.fillStyle = spotBlack;
+            ctx.fillRect(w * 0.22 + farLegSwing, h * 0.24 - farLegLift, w * 0.16, 4);
+            // Near Hooves
+            ctx.fillStyle = hoofLight;
+            ctx.fillRect(-w * 0.30 + nearLegSwing, h * 0.5 - 2 - nearLegLift, w * 0.16, 3);
+            ctx.fillRect(w * 0.22 + farLegSwing, h * 0.5 - 2 - farLegLift, w * 0.16, 3);
+
             ctx.restore();
         }
     }
@@ -5283,7 +5868,7 @@ export const SKIN_H = 32;
 
     export function spawnAnimals(count = 1, nearPlayerBias = 0.35) {
         let maxAnimals = getMaxAnimals();
-        let currentAnimals = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep).length;
+        let currentAnimals = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow).length;
         if (currentAnimals >= maxAnimals) return;
 
         let activePlayers = [{ x: player.x, y: player.y }];
@@ -5322,11 +5907,12 @@ export const SKIN_H = 32;
                 torsoBlock !== undefined && nonSolid.has(torsoBlock)) {
                 
                 let roll = Math.random();
-                let animalType = roll < 0.40 ? 'Sheep' : roll < 0.72 ? 'Pig' : 'Chicken';
+                let animalType = roll < 0.25 ? 'Sheep' : roll < 0.50 ? 'Pig' : roll < 0.75 ? 'Cow' : 'Chicken';
                 let spawnWorldY = (gy - 2) * TILE_SIZE;
                 
                 if (animalType === 'Sheep') entities.push(new Sheep(spawnX, spawnWorldY));
                 else if (animalType === 'Pig') entities.push(new Pig(spawnX, spawnWorldY));
+                else if (animalType === 'Cow') entities.push(new Cow(spawnX, spawnWorldY));
                 else entities.push(new Chicken(spawnX, spawnWorldY));
                 currentAnimals++;
 
@@ -5341,6 +5927,7 @@ export const SKIN_H = 32;
                             let hSpawnY = (hgy - 2) * TILE_SIZE;
                             if (animalType === 'Sheep') entities.push(new Sheep(hSpawnX, hSpawnY));
                             else if (animalType === 'Pig') entities.push(new Pig(hSpawnX, hSpawnY));
+                            else if (animalType === 'Cow') entities.push(new Cow(hSpawnX, hSpawnY));
                             else entities.push(new Chicken(hSpawnX, hSpawnY));
                             currentAnimals++;
                         }
@@ -5378,7 +5965,7 @@ export const SKIN_H = 32;
     export function spawnMobs(forcePassive = false) {
         let diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
         if (diff.mobSpawn <= 0) {
-            entities = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep);
+            entities = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow);
             if (!forcePassive) return;
         }
 
@@ -5419,7 +6006,7 @@ export const SKIN_H = 32;
             return;
         }
 
-        const currentAnimalCount = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep).length;
+        const currentAnimalCount = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow).length;
         if (!isNight && currentAnimalCount < getMaxAnimals() && Math.random() < 0.04) {
             spawnAnimals(1, 0.30);
         }
@@ -6499,9 +7086,9 @@ export const SKIN_H = 32;
 
         // 3. Animals
         const animals = [];
-        ['sheep', 'pig', 'chicken', 'sheep', 'pig', 'chicken'].forEach((type, index) => {
+        ['sheep', 'pig', 'chicken', 'cow', 'sheep', 'pig', 'chicken', 'cow'].forEach((type, index) => {
             const x = 12 + menuRandom() * (WORLD_WIDTH - 24);
-            const entity = type === 'sheep' ? new Sheep(x * TILE_SIZE, 0) : type === 'pig' ? new Pig(x * TILE_SIZE, 0) : new Chicken(x * TILE_SIZE, 0);
+            const entity = type === 'sheep' ? new Sheep(x * TILE_SIZE, 0) : type === 'pig' ? new Pig(x * TILE_SIZE, 0) : type === 'cow' ? new Cow(x * TILE_SIZE, 0) : new Chicken(x * TILE_SIZE, 0);
             entity.dir = menuRandom() > 0.5 ? 1 : -1;
             entity.menuSpeed = 0.7 + menuRandom() * 0.4;
             entity.y = (terrain[Math.floor(x)] || baseH) * TILE_SIZE - entity.height;
@@ -8632,6 +9219,7 @@ try { if (typeof Animal !== "undefined") window.Animal = Animal; } catch(e) {}
 try { if (typeof BACKGROUND_BUILDING_BLOCKS !== "undefined") window.BACKGROUND_BUILDING_BLOCKS = BACKGROUND_BUILDING_BLOCKS; } catch(e) {}
 try { if (typeof Chicken !== "undefined") window.Chicken = Chicken; } catch(e) {}
 try { if (typeof Cloud !== "undefined") window.Cloud = Cloud; } catch(e) {}
+try { if (typeof Cow !== "undefined") window.Cow = Cow; } catch(e) {}
 try { if (typeof Creeper !== "undefined") window.Creeper = Creeper; } catch(e) {}
 try { if (typeof DAYLIGHT_BOTTOM !== "undefined") window.DAYLIGHT_BOTTOM = DAYLIGHT_BOTTOM; } catch(e) {}
 try { if (typeof DAYLIGHT_TOP !== "undefined") window.DAYLIGHT_TOP = DAYLIGHT_TOP; } catch(e) {}

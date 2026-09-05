@@ -1409,6 +1409,7 @@ if (typeof window !== 'undefined') {
             Pig: typeof Pig !== 'undefined' ? Pig : (typeof window !== 'undefined' ? window.Pig : null),
             Chicken: typeof Chicken !== 'undefined' ? Chicken : (typeof window !== 'undefined' ? window.Chicken : null),
             Sheep: typeof Sheep !== 'undefined' ? Sheep : (typeof window !== 'undefined' ? window.Sheep : null),
+            Cow: typeof Cow !== 'undefined' ? Cow : (typeof window !== 'undefined' ? window.Cow : null),
             Zombie: typeof Zombie !== 'undefined' ? Zombie : (typeof window !== 'undefined' ? window.Zombie : null),
             Creeper: typeof Creeper !== 'undefined' ? Creeper : (typeof window !== 'undefined' ? window.Creeper : null),
             Scorpion: typeof Scorpion !== 'undefined' ? Scorpion : (typeof window !== 'undefined' ? window.Scorpion : null)
@@ -1451,6 +1452,7 @@ if (typeof window !== 'undefined') {
             Pig: typeof Pig !== 'undefined' ? Pig : (typeof window !== 'undefined' ? window.Pig : null),
             Chicken: typeof Chicken !== 'undefined' ? Chicken : (typeof window !== 'undefined' ? window.Chicken : null),
             Sheep: typeof Sheep !== 'undefined' ? Sheep : (typeof window !== 'undefined' ? window.Sheep : null),
+            Cow: typeof Cow !== 'undefined' ? Cow : (typeof window !== 'undefined' ? window.Cow : null),
             Zombie: typeof Zombie !== 'undefined' ? Zombie : (typeof window !== 'undefined' ? window.Zombie : null),
             Creeper: typeof Creeper !== 'undefined' ? Creeper : (typeof window !== 'undefined' ? window.Creeper : null),
             Scorpion: typeof Scorpion !== 'undefined' ? Scorpion : (typeof window !== 'undefined' ? window.Scorpion : null)
