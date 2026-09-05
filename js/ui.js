@@ -3672,7 +3672,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const wifiIcon = document.getElementById('profile-wifi-icon');
         const authActionLabel = document.getElementById('profile-auth-action-label');
         const myTagDisplay = document.getElementById('friends-my-tag-display');
-        const friendsTabCount = document.getElementById('profile-tab-friends-count');
         const friendsTabWarning = document.getElementById('profile-tab-friends-warning');
 
         const activeName = currentUserProfile?.username || localStorage.getItem('swc_player_name') || 'Player';
@@ -3695,15 +3694,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (emailEl) emailEl.innerText = currentUserProfile?.email || 'Cloud Webcraft Account';
         }
 
-        const friendCount = (currentUserProfile && Array.isArray(currentUserProfile.friends)) ? currentUserProfile.friends.length : 0;
         if (isGuest) {
-            if (friendsTabCount) friendsTabCount.classList.add('hidden');
             if (friendsTabWarning) friendsTabWarning.classList.remove('hidden');
         } else {
-            if (friendsTabCount) {
-                friendsTabCount.classList.remove('hidden');
-                friendsTabCount.innerText = friendCount.toString();
-            }
             if (friendsTabWarning) friendsTabWarning.classList.add('hidden');
         }
 
@@ -3789,16 +3782,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const isGuest = !currentUserProfile || currentUserProfile.isGuest;
             const guestBanner = document.getElementById('friends-guest-banner');
             const accountContent = document.getElementById('friends-account-content');
-            const friendsTabCount = document.getElementById('profile-tab-friends-count');
             const friendsTabWarning = document.getElementById('profile-tab-friends-warning');
 
             if (isGuest) {
-                if (friendsTabCount) friendsTabCount.classList.add('hidden');
                 if (friendsTabWarning) friendsTabWarning.classList.remove('hidden');
                 if (guestBanner) guestBanner.classList.remove('hidden');
                 if (accountContent) accountContent.classList.add('hidden');
             } else {
-                if (friendsTabCount) friendsTabCount.classList.remove('hidden');
                 if (friendsTabWarning) friendsTabWarning.classList.add('hidden');
                 if (guestBanner) guestBanner.classList.add('hidden');
                 if (accountContent) accountContent.classList.remove('hidden');
@@ -3822,7 +3812,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export async function renderFriendsList() {
         const container = document.getElementById('friends-list-container');
         const counter = document.getElementById('friends-list-counter');
-        const tabBadge = document.getElementById('profile-tab-friends-count');
         if (!container) return;
 
         const isGuest = !currentUserProfile || currentUserProfile.isGuest;
@@ -3833,7 +3822,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         const friends = Array.isArray(currentUserProfile.friends) ? currentUserProfile.friends : [];
         if (counter) counter.innerText = `${friends.length} Friend${friends.length === 1 ? '' : 's'}`;
-        if (tabBadge) tabBadge.innerText = friends.length.toString();
         // 1. Check and render incoming friend requests
         const requestsSection = document.getElementById('friend-requests-section');
         const requestsCounter = document.getElementById('friend-requests-counter');
