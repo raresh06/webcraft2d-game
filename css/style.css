@@ -1925,6 +1925,12 @@
   .uppercase {
     text-transform: uppercase;
   }
+  .no-underline {
+    text-decoration-line: none;
+  }
+  .underline {
+    text-decoration-line: underline;
+  }
   .accent-\[\#166534\] {
     accent-color: #166534;
   }
@@ -2162,6 +2168,12 @@
     .hover\:bg-red-700:hover {
       background-color: var(--color-red-700);
     }
+    .hover\:text-amber-200:hover {
+      color: var(--color-amber-200);
+    }
+    .hover\:text-amber-300:hover {
+      color: var(--color-amber-300);
+    }
     .hover\:text-black:hover {
       color: var(--color-black);
     }
@@ -2170,6 +2182,9 @@
     }
     .hover\:text-white:hover {
       color: var(--color-white);
+    }
+    .hover\:underline:hover {
+      text-decoration-line: underline;
     }
   }
   .focus\:border-\[\#ffcc00\]:focus {
@@ -2661,6 +2676,7 @@ input, textarea {
   letter-spacing: 2px;
   text-align: left;
   line-height: 1;
+  transition: color 0.15s ease, filter 0.15s ease, transform 0.15s ease;
 }
 @media (max-width: 480px) {
   .mc-title {
@@ -2671,6 +2687,25 @@ input, textarea {
   position: relative;
   top: -80px;
   left: 0;
+}
+#main-menu .menu-brand .game-github-link {
+  display: inline-block;
+  text-decoration: none;
+  cursor: pointer;
+}
+#main-menu .menu-brand .game-github-link:hover .mc-title, #main-menu .menu-brand .mc-title:hover {
+  color: #ffffff;
+  filter: drop-shadow(0 0 18px rgba(255, 204, 0, 0.5));
+  transform: scale(1.02);
+}
+.author-github-link, .game-github-link {
+  cursor: pointer;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease, filter 0.15s ease, text-decoration-color 0.15s ease;
+}
+.author-github-link:hover, .game-github-link:hover {
+  filter: brightness(1.2);
 }
 .menu-credit {
   position: fixed;

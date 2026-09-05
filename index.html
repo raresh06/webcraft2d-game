@@ -34,7 +34,7 @@
             <!-- Informational Text -->
             <div class="space-y-2 mb-5 text-[#c8d1dc] text-lg sm:text-xl font-['VT323'] leading-snug">
                 <p>
-                    Welcome to the private testing phase of <strong>Webcraft 2D</strong>.
+                    Welcome to the private testing phase of <strong><a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-[#ffcc00] hover:underline" title="Visit Webcraft2D on GitHub">Webcraft 2D</a></strong>.
                     This build is confidential, under active development, and not yet open to the public.
                 </p>
                 <p class="text-[#8e9aa8] text-base sm:text-lg">
@@ -81,13 +81,13 @@
     </div>
 
     <div id="game-intro" class="hidden" aria-hidden="true">
-        <div id="intro-black-text">A Gheorghes Rares game</div>
+        <div id="intro-black-text">A <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link text-amber-300 hover:text-amber-200 underline" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a> game</div>
         <div id="intro-message-screen">
             <div id="intro-message">
                 <p>Dear whoever is reading this,</p>
                 <p>Thank you for choosing to boot up this game. It may not be the biggest adventure yet, but I poured my heart, curiosity, and a few personal touches into every block, with AI as my companion along the way.</p>
                 <p>This is my little homage to a childhood game that meant a lot to me: <strong>Minecraft2D: PocketCode Edition.</strong></p>
-                <p>Thank you for being here.<br>- Gheorghes Rares</p>
+                <p>Thank you for being here.<br>- <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link text-amber-300 hover:text-amber-200 underline font-bold" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a></p>
             </div>
             <div id="intro-skip-hint">Press SPACE or Click anywhere to continue</div>
         </div>
@@ -228,7 +228,7 @@
                     </svg>
                     <div>
                         <div class="text-amber-400 font-bold font-['VT323'] text-xl leading-none">GUEST SESSION NOTICE</div>
-                        <div class="text-[#fde68a] font-['VT323'] text-lg leading-tight mt-0.5">Achievements & Emerald rewards are locked. Create or log in to a Webcraft account to unlock!</div>
+                        <div class="text-[#fde68a] font-['VT323'] text-lg leading-tight mt-0.5">Achievements & Emerald rewards are locked. Create or log in to a <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:underline font-bold" title="Visit Webcraft2D on GitHub">Webcraft</a> account to unlock!</div>
                     </div>
                 </div>
                 <button type="button" class="mc-btn !w-auto !px-3 !py-1 !text-2xl !bg-[#855b14] hover:!bg-[#a16e19] !text-white flex-shrink-0" onclick="closeAchievements(); openAuthProfileModal('credentials');">Log In / Sign Up</button>
@@ -342,7 +342,9 @@
 
         <div class="flex flex-col items-center justify-center w-full h-full relative z-10">
             <div class="menu-brand relative mb-6 inline-block">
-                <h1 class="mc-title">Webcraft2D</h1>
+                <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link inline-block no-underline cursor-pointer" title="Visit Webcraft2D on GitHub">
+                    <h1 class="mc-title">Webcraft2D</h1>
+                </a>
                 <span id="menu-splash" class="mc-splash">Multiplayer!</span>
             </div>
             
@@ -354,8 +356,8 @@
                 <button id="btn-main-settings" class="mc-btn" onclick="openSettings()">Settings</button>
             </div>
 
-            <p class="menu-version" id="game-version-label">Webcraft2D Beta v0.1.4</p>
-            <p class="menu-credit">A game totally not coded with AI by Gheorghes Rares</p>
+            <p class="menu-version" id="game-version-label"><a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v0.1.4</p>
+            <p class="menu-credit">A game totally not coded with AI by <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link text-amber-300 hover:text-amber-200 underline font-bold transition-colors" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a></p>
         </div>
 
         <div class="menu-skin-preview">
@@ -382,8 +384,8 @@
             <!-- Red Minecraft Close Button (Prompts Guest Confirmation) -->
             <div class="flex justify-between items-start mb-3">
                 <div>
-                    <div class="auth-title-badge">WEBCRAFT PROFILES</div>
-                    <h2 id="auth-modal-title" class="auth-main-title">Welcome to Webcraft</h2>
+                    <div class="auth-title-badge"><a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link hover:underline" title="Visit Webcraft2D on GitHub">WEBCRAFT</a> PROFILES</div>
+                    <h2 id="auth-modal-title" class="auth-main-title">Welcome to <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link hover:underline" title="Visit Webcraft2D on GitHub">Webcraft</a></h2>
                 </div>
                 <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 !text-white flex items-center justify-center leading-none" onclick="promptGuestOnAuthClose()" aria-label="Close modal">X</button>
             </div>
@@ -547,11 +549,11 @@
                 <!-- Header with Version Badge -->
                 <div class="auth-header text-center mb-2.5">
                     <div class="credits-banner !py-1 !px-3 mb-1.5 inline-flex justify-center">
-                        <span class="credits-game-title">Webcraft2D</span>
+                        <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="credits-game-title game-github-link hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a>
                         <span class="credits-version-badge">Beta v0.1.4</span>
                     </div>
                     <h2 id="recommend-main-title" class="auth-main-title text-3xl">Account Created!</h2>
-                    <p id="recommend-subtitle" class="auth-subtitle text-lg">Welcome to the world of Webcraft, <strong id="recommend-player-name" class="text-amber-300 font-bold">Player</strong>!</p>
+                    <p id="recommend-subtitle" class="auth-subtitle text-lg">Welcome to the world of <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:underline font-bold" title="Visit Webcraft2D on GitHub">Webcraft</a>, <strong id="recommend-player-name" class="text-amber-300 font-bold">Player</strong>!</p>
                 </div>
 
                 <!-- Account Status Info Card -->
@@ -560,7 +562,7 @@
                         <canvas id="recommend-avatar-canvas" width="56" height="56" class="profile-head-art"></canvas>
                     </div>
                     <div class="flex-1 min-w-0 text-left">
-                        <div id="recommend-status-title" class="text-amber-400 font-['VT323'] text-2xl font-bold leading-tight">Webcraft Profile Active</div>
+                        <div id="recommend-status-title" class="text-amber-400 font-['VT323'] text-2xl font-bold leading-tight"><a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link hover:underline" title="Visit Webcraft2D on GitHub">Webcraft</a> Profile Active</div>
                         <div id="recommend-status-desc" class="text-gray-300 font-['VT323'] text-lg leading-tight mt-0.5">Achievements & Emerald rewards are now enabled for this account!</div>
                     </div>
                 </div>
@@ -609,11 +611,11 @@
                 <!-- Credits-style Banner & Version Badge -->
                 <div class="auth-header text-center mb-2.5">
                     <div class="credits-banner !py-1 !px-3 mb-1.5 inline-flex justify-center">
-                        <span class="credits-game-title">Webcraft2D</span>
+                        <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="credits-game-title game-github-link hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a>
                         <span class="credits-version-badge">Beta v0.1.4</span>
                     </div>
                     <h2 class="auth-main-title text-3xl">Welcome Back, <span id="welcome-back-player-name" class="text-amber-300">Player</span>!</h2>
-                    <p class="auth-subtitle text-lg">Here is what you have missed since you were gone in Webcraft 2D Beta:</p>
+                    <p class="auth-subtitle text-lg">Here is what you have missed since you were gone in <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:underline font-bold" title="Visit Webcraft2D on GitHub">Webcraft 2D</a> Beta:</p>
                 </div>
 
                 <!-- Scrollable Highlights Box -->
@@ -628,7 +630,7 @@
                     <div class="flex items-start gap-2.5 pb-2 border-b border-[#28323c]">
                         <span class="text-emerald-400 text-lg flex-shrink-0 mt-0.5">✦</span>
                         <div>
-                            <span class="text-white font-['VT323'] text-xl font-bold">Webcraft Profiles & Achievements</span>
+                            <span class="text-white font-['VT323'] text-xl font-bold"><a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link hover:underline" title="Visit Webcraft2D on GitHub">Webcraft</a> Profiles & Achievements</span>
                             <p class="text-[#a1b3c2] font-['VT323'] text-lg leading-tight m-0">Save skins, customize your identity, and earn 32+ challenges with emerald rewards across singleplayer and multiplayer.</p>
                         </div>
                     </div>
@@ -670,7 +672,7 @@
             <div class="auth-title-badge !bg-amber-800/90 !border-amber-500 mb-2">GUEST CONFIRMATION</div>
             <h2 id="guest-confirm-title" class="auth-main-title text-3xl mb-2 text-white">Continue as Guest?</h2>
             <p class="auth-subtitle mb-4 text-gray-300">
-                You will be playing in guest mode. <span class="text-amber-300 font-bold">Achievements and emerald rewards</span> are only granted and saved for registered Webcraft accounts!
+                You will be playing in guest mode. <span class="text-amber-300 font-bold">Achievements and emerald rewards</span> are only granted and saved for registered <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:underline font-bold" title="Visit Webcraft2D on GitHub">Webcraft</a> accounts!
             </p>
             <div class="auth-actions-group">
                 <button type="button" class="mc-btn auth-primary-btn !h-12 !text-2xl" onclick="confirmContinueAsGuest()">Yes, Continue as Guest</button>
@@ -916,7 +918,7 @@
                         <span class="text-amber-400 font-bold text-2xl font-['VT323']">GUEST RESTRICTION</span>
                     </div>
                     <p class="text-amber-200 font-['VT323'] text-lg leading-tight mb-3">
-                        Guests cannot add accounts as friends. You can create a free Webcraft account or log in to add friends, share your unique @tag, and sync your game across devices!
+                        Guests cannot add accounts as friends. You can create a free <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:underline font-bold" title="Visit Webcraft2D on GitHub">Webcraft</a> account or log in to add friends, share your unique @tag, and sync your game across devices!
                     </p>
                     <button type="button" class="mc-btn auth-primary-btn !h-11 !text-xl w-full flex items-center justify-center" onclick="closeProfileDetailsModal(); openAuthProfileModal('credentials');">
                         Create Account / Log In
@@ -987,7 +989,7 @@
         <section class="whats-new-panel">
             <button id="whats-new-startup-toggle" class="whats-new-startup-toggle" type="button" onclick="toggleWhatsNewStartup()" aria-pressed="true">Startup: ON</button>
             <button class="whats-new-close" type="button" onclick="closeWhatsNew()" aria-label="Close What's New">X</button>
-            <h2 id="whats-new-title" class="screen-title text-4xl font-bold mb-3 font-['VT323'] pr-10">What's New in Webcraft2D Beta 0.1.4</h2>
+            <h2 id="whats-new-title" class="screen-title text-4xl font-bold mb-3 font-['VT323'] pr-10">What's New in <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:text-amber-200 underline" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta 0.1.4</h2>
             <div class="whats-new-content" tabindex="0">
                 <div id="whats-new-entries"></div>
             </div>
@@ -1714,19 +1716,19 @@
             <h2 id="credits-title" class="screen-title text-4xl font-bold mb-2 font-['VT323'] pr-10">Credits</h2>
             <div class="credits-content custom-scrollbar" tabindex="0">
                 <div class="credits-banner">
-                    <span class="credits-game-title">Webcraft2D</span>
+                    <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="credits-game-title game-github-link hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a>
                     <span class="credits-version-badge">Beta v0.1.4</span>
                 </div>
 
                 <div class="credits-cards-container">
                     <div class="credits-card">
                         <span class="credits-role">Created, designed, tested, and survived by</span>
-                        <span class="credits-name credits-highlight">Gheorghes Rares</span>
+                        <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="credits-name credits-highlight author-github-link hover:underline cursor-pointer" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a>
                     </div>
 
                     <div class="credits-card">
                         <span class="credits-role">Ideas, code, debugging, and questionable life decisions</span>
-                        <span class="credits-name credits-highlight">Gheorghes Rares</span>
+                        <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="credits-name credits-highlight author-github-link hover:underline cursor-pointer" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a>
                     </div>
 
                     <div class="credits-card">
@@ -1736,7 +1738,7 @@
                 </div>
 
                 <div class="credits-note-box">
-                    <p class="credits-note-text">Everything in these credits is Me and AI.<br>That is the whole team. We are very efficient. Unemployed ass activities bruh.</p>
+                    <p class="credits-note-text">Everything in these credits is <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link text-amber-300 hover:underline" title="Visit Gheorghes Rares on GitHub">Me</a> and AI.<br>That is the whole team. We are very efficient. Unemployed ass activities bruh.</p>
                     <p class="credits-easter-egg">Buna Adnanaaaaaaaaaa, stiu ca citesti asta acum, hehehehehe</p>
                 </div>
 
@@ -1747,7 +1749,7 @@
                     </div>
                     <div class="credits-legal-body">
                         <p class="credits-legal-text">
-                            Webcraft2D is a free, non-commercial, independent fan-game project created solely for educational and entertainment purposes.
+                            <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:text-amber-200 underline font-bold" title="Visit Webcraft2D on GitHub">Webcraft2D</a> is a free, non-commercial, independent fan-game project created solely for educational and entertainment purposes.
                         </p>
                         <p class="credits-legal-text">
                             This project is not affiliated with, endorsed by, sponsored by, or associated in any way with Mojang Studios, Microsoft Corporation, Minecraft, or any adjacent game titles or trademarks. All copyrights, trademarks, character concepts, block designs, and game names belong exclusively to their respective owners.
@@ -1835,7 +1837,7 @@
                         <span class="text-amber-400 font-bold text-2xl font-['VT323']">GUEST RESTRICTION</span>
                     </div>
                     <p class="text-amber-200 font-['VT323'] text-lg leading-tight mb-3">
-                        Guests cannot get skins from the Skins Shop. You can create a free Webcraft account or log in to unlock, purchase, and sync community skins across devices!
+                        Guests cannot get skins from the Skins Shop. You can create a free <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:underline font-bold" title="Visit Webcraft2D on GitHub">Webcraft</a> account or log in to unlock, purchase, and sync community skins across devices!
                     </p>
                     <button type="button" class="mc-btn auth-primary-btn !h-11 !text-xl w-full flex items-center justify-center" onclick="closeSkins(); openAuthProfileModal('credentials');">
                         Create Account / Log In

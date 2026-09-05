@@ -240,7 +240,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function updateVersionLabels() {
         const versionLabel = document.getElementById('game-version-label');
-        if (versionLabel) versionLabel.innerText = `Webcraft2D Beta v${DISPLAY_VERSION}`;
+        if (versionLabel) versionLabel.innerHTML = `<a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v${DISPLAY_VERSION}`;
     }
 
     updateVersionLabels();
@@ -3469,19 +3469,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
             if (isGuest) {
                 if (recTitle) recTitle.innerText = "Guest Session Active";
-                if (recSubtitle) recSubtitle.innerHTML = `Playing Webcraft as <strong class="text-amber-300 font-bold">${currentUserProfile?.username || 'Guest'}</strong>`;
+                if (recSubtitle) recSubtitle.innerHTML = `Playing <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link hover:underline" title="Visit Webcraft2D on GitHub">Webcraft</a> as <strong class="text-amber-300 font-bold">${currentUserProfile?.username || 'Guest'}</strong>`;
                 if (statusTitle) {
                     statusTitle.innerText = "Guest Mode (No Rewards)";
                     statusTitle.className = "text-amber-400 font-['VT323'] text-2xl font-bold leading-tight";
                 }
                 if (statusDesc) {
-                    statusDesc.innerHTML = `<span class="text-amber-300 font-bold">Achievements & Emerald rewards are locked.</span> Create or log in to a Webcraft account anytime to unlock rewards and cloud saves!`;
+                    statusDesc.innerHTML = `<span class="text-amber-300 font-bold">Achievements & Emerald rewards are locked.</span> Create or log in to a <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link underline font-bold" title="Visit Webcraft2D on GitHub">Webcraft</a> account anytime to unlock rewards and cloud saves!`;
                 }
             } else {
                 if (recTitle) recTitle.innerText = "Account Created!";
-                if (recSubtitle) recSubtitle.innerHTML = `Welcome to the world of Webcraft, <strong class="text-amber-300 font-bold">${currentUserProfile?.username || 'Player'}</strong>!`;
+                if (recSubtitle) recSubtitle.innerHTML = `Welcome to the world of <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:underline font-bold" title="Visit Webcraft2D on GitHub">Webcraft</a>, <strong class="text-amber-300 font-bold">${currentUserProfile?.username || 'Player'}</strong>!`;
                 if (statusTitle) {
-                    statusTitle.innerText = "Webcraft Profile Active";
+                    statusTitle.innerHTML = `<a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link hover:underline" title="Visit Webcraft2D on GitHub">Webcraft</a> Profile Active`;
                     statusTitle.className = "text-emerald-400 font-['VT323'] text-2xl font-bold leading-tight";
                 }
                 if (statusDesc) {
@@ -4398,7 +4398,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const msgScreen = document.getElementById('intro-message-screen');
             if (msgScreen) msgScreen.classList.add('visible');
             const skipHint = document.getElementById('intro-skip-hint');
-            if (skipHint) skipHint.innerText = 'Press SPACE or Click anywhere to enter Webcraft2D';
+            if (skipHint) skipHint.innerHTML = 'Press SPACE or Click anywhere to enter <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:text-amber-200 underline" title="Visit Webcraft2D on GitHub">Webcraft2D</a>';
             introPhaseLockUntil = Date.now() + 700;
             introTimer = setTimeout(advanceIntro, 14000);
         } else {
@@ -4415,6 +4415,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (!intro) { showMainMenu(); return; }
         intro.style.pointerEvents = 'auto';
         intro.onclick = (e) => {
+            if (e && e.target && typeof e.target.closest === 'function' && e.target.closest('a, .author-github-link, .game-github-link')) {
+                return;
+            }
             if (e && e.stopPropagation) e.stopPropagation();
             advanceIntro();
         };
@@ -8829,4 +8832,62 @@ try { if (typeof copyPlayerTag !== "undefined") window.copyPlayerTag = copyPlaye
 try { if (typeof setCurrentUserProfile !== "undefined") window.setCurrentUserProfile = setCurrentUserProfile; } catch(e) {}
 try { if (typeof getPixelWarningSvg !== "undefined") window.getPixelWarningSvg = getPixelWarningSvg; } catch(e) {}
 try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropGrowthQueue; } catch(e) {}
+
+    // Universal Click Handler for Author & Game GitHub links
+    export const AUTHOR_GITHUB_URL = 'https://github.com/raresh06';
+    export const GAME_GITHUB_URL = 'https://github.com/raresh06/webcraft2d-game';
+
+    if (typeof document !== 'undefined') {
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            if (!target) return;
+
+            // 1. Author link click
+            const authorEl = typeof target.closest === 'function' && target.closest('.author-github-link, [data-author-link="true"]');
+            if (authorEl) {
+                if (authorEl.tagName !== 'A' || !authorEl.getAttribute('href')) {
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
+                    window.open(AUTHOR_GITHUB_URL, '_blank', 'noopener,noreferrer');
+                }
+                return;
+            }
+
+            // 2. Game repository link click
+            const gameEl = typeof target.closest === 'function' && target.closest('.game-github-link, .credits-game-title, .mc-title-link, [data-game-link="true"]');
+            if (gameEl) {
+                if (gameEl.tagName !== 'A' || !gameEl.getAttribute('href')) {
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
+                    window.open(GAME_GITHUB_URL, '_blank', 'noopener,noreferrer');
+                }
+                return;
+            }
+
+            // 3. Fallback: Main menu title click
+            if (target.classList && target.classList.contains('mc-title') && typeof target.closest === 'function' && target.closest('#main-menu')) {
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+                window.open(GAME_GITHUB_URL, '_blank', 'noopener,noreferrer');
+                return;
+            }
+
+            // 4. Fallback: Match author's name or Webcraft directly clicked in text (excluding inputs)
+            if (typeof target.matches === 'function' && target.matches('span, p, div, b, strong, em, h1, h2, h3, h4, h5, h6') && !target.closest('input, textarea, select, button')) {
+                const text = (target.textContent || '').trim();
+                if (/^[-–—\s]*Gheorghes\s+Rares[-–—\s]*$/i.test(text) || text.toLowerCase() === 'raresh06') {
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
+                    window.open(AUTHOR_GITHUB_URL, '_blank', 'noopener,noreferrer');
+                    return;
+                }
+                if (/^Webcraft(2D)?(\s+Beta)?$/i.test(text)) {
+                    if (e.preventDefault) e.preventDefault();
+                    if (e.stopPropagation) e.stopPropagation();
+                    window.open(GAME_GITHUB_URL, '_blank', 'noopener,noreferrer');
+                    return;
+                }
+            }
+        }, true);
+    }
 
