@@ -6297,8 +6297,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (!furnace || curOpened !== furnace || !isInventoryOpen) return;
         const flame = document.getElementById('f-flame');
         const progress = document.getElementById('f-prog');
-        if (flame) flame.style.height = furnace.maxBurnTime > 0 ? `${Math.round((furnace.burnTime / furnace.maxBurnTime) * 100)}%` : '0%';
+        const isBurning = furnace.burnTime > 0;
+
+        if (flame) flame.style.height = isBurning ? `${Math.round((furnace.burnTime / furnace.maxBurnTime) * 100)}%` : '0%';
         if (progress) progress.style.width = `${Math.min(100, Math.round((furnace.progress / 200) * 100))}%`;
+
+        const fireChamber = document.getElementById('furnace-fire-chamber');
+        if (fireChamber) fireChamber.classList.toggle('is-burning', isBurning);
+
+        const workspace = document.querySelector('.furnace-workspace');
+        if (workspace) workspace.classList.toggle('is-burning', isBurning);
     }
 
     export function moveItemToContainer(sourceItem, targetArray, startIndex = 0, endIndex = targetArray.length) {
@@ -7086,7 +7094,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     switchCraftBtn = document.createElement('button');
                     switchCraftBtn.id = 'btn-furnace-switch-crafting';
                     switchCraftBtn.className = 'mt-3 px-3 py-1 bg-[#5c3a1d] hover:bg-[#7a4e27] text-[#ffd899] border-2 border-[#b07d4b] rounded text-sm font-["VT323"] cursor-pointer shadow transition-colors flex items-center gap-1.5';
-                    switchCraftBtn.innerHTML = '<span>Crafting Table ➔</span>';
+                    switchCraftBtn.innerHTML = '<span>Crafting Table</span> <svg viewBox="0 0 6 5" width="8" height="7" class="inline-block flex-shrink-0" style="shape-rendering: crispEdges;"><rect x="0" y="2" width="4" height="1" fill="currentColor"/><rect x="3" y="1" width="1" height="1" fill="currentColor"/><rect x="4" y="2" width="1" height="1" fill="currentColor"/><rect x="3" y="3" width="1" height="1" fill="currentColor"/></svg>';
                     fPanel.appendChild(switchCraftBtn);
                 }
                 switchCraftBtn.style.display = 'flex';
@@ -7156,8 +7164,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     if (!switchFurnaceBtn) {
                         switchFurnaceBtn = document.createElement('button');
                         switchFurnaceBtn.id = 'btn-crafting-switch-furnace';
-                        switchFurnaceBtn.className = 'px-2 py-0.5 bg-[#374151] hover:bg-[#4b5563] text-orange-300 border border-orange-500 rounded text-xs font-["VT323"] cursor-pointer shadow transition-colors ml-auto';
-                        switchFurnaceBtn.innerHTML = '<span>➔ Furnace</span>';
+                        switchFurnaceBtn.className = 'px-2 py-0.5 bg-[#374151] hover:bg-[#4b5563] text-orange-300 border border-orange-500 rounded text-xs font-["VT323"] cursor-pointer shadow transition-colors ml-auto flex items-center gap-1';
+                        switchFurnaceBtn.innerHTML = '<span>Furnace</span> <svg viewBox="0 0 6 5" width="8" height="7" class="inline-block flex-shrink-0" style="shape-rendering: crispEdges;"><rect x="0" y="2" width="4" height="1" fill="currentColor"/><rect x="3" y="1" width="1" height="1" fill="currentColor"/><rect x="4" y="2" width="1" height="1" fill="currentColor"/><rect x="3" y="3" width="1" height="1" fill="currentColor"/></svg>';
                         const cHeader = document.getElementById('header-crafting');
                         if (cHeader) cHeader.appendChild(switchFurnaceBtn);
                     }

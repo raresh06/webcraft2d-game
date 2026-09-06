@@ -2051,9 +2051,9 @@
             box-shadow: inset 0 0 0 2px #5c3c20, 8px 8px 0 rgba(0,0,0,0.55) !important;
         }
         #inventory-menu.crafting-table-mode #crafting-panel {
-            background: rgba(36, 22, 10, 0.85) !important;
-            border-color: #8c5a2b !important;
-            box-shadow: inset 0 0 0 2px #1f1207 !important;
+            background-color: #301d0f !important;
+            border-color: #a8723c !important;
+            box-shadow: inset 0 0 0 2px #1f1207, 0 0 14px rgba(0,0,0,0.4) !important;
         }
         #inventory-menu.crafting-table-mode #inventory-grid,
         #inventory-menu.crafting-table-mode #inventory-storage-grid,
@@ -3528,22 +3528,134 @@
         #chest-panel { max-width: min(560px, calc(100vw - 32px)); padding: 14px !important; background: #20252b !important; border: 4px solid !important; border-top-color: #aebac2 !important; border-left-color: #aebac2 !important; border-right-color: #080a0c !important; border-bottom-color: #080a0c !important; border-radius: 0 !important; box-shadow: inset 0 0 0 2px #2a3036, 7px 7px 0 rgba(0,0,0,0.45) !important; }
         #chest-panel h2 { color: var(--mc-accent-color) !important; text-shadow: 3px 3px 0 #080a0c; }
         #chest-grid { max-width: 100%; overflow: auto; }
-        #furnace-panel { width: min(360px, calc(100vw - 32px)); min-height: 250px; box-sizing: border-box; padding: 16px !important; background: #20252b !important; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 5px) !important; border: 4px solid !important; border-top-color: #aebac2 !important; border-left-color: #aebac2 !important; border-right-color: #080a0c !important; border-bottom-color: #080a0c !important; border-radius: 0 !important; box-shadow: inset 0 0 0 2px #2a3036, 7px 7px 0 rgba(0,0,0,0.45) !important; }
-        #furnace-panel h2 { width: 100%; margin: 0 0 14px !important; padding-bottom: 8px; color: var(--mc-accent-color) !important; border-bottom: 2px solid #46515a; text-align: left; text-shadow: 3px 3px 0 #080a0c; }
-        .furnace-workspace { width: 100%; display: grid; grid-template-columns: 82px 1fr 96px; align-items: center; justify-items: center; gap: 10px; }
-        .furnace-station, .furnace-process-column { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; }
-        .furnace-station-label { margin-bottom: 5px; color: #d9e1e7; font: bold 19px/1 'VT323', monospace; text-shadow: 2px 2px 0 #080a0c; }
-        .furnace-fuel-label { margin-top: 2px; color: #ffad62; }
-        .furnace-arrow { height: 17px; color: #aebac2; font: 22px/0.8 'VT323', monospace; text-shadow: 2px 2px 0 #080a0c; }
-        .furnace-process-column { gap: 6px; }
-        .furnace-process { width: 48px !important; height: 112px !important; border: 3px solid #080a0c !important; background: #10151a !important; box-shadow: inset 0 0 0 2px #46515a, 2px 2px 0 rgba(0,0,0,0.4); }
-        .furnace-process #f-flame { background: linear-gradient(180deg, #ffe36c, #ff7b22 58%, #c53d1e) !important; opacity: 0.92; }
-        .furnace-process #f-prog { background: rgba(76, 198, 116, 0.22) !important; border-right: 2px solid #8be0a0; }
-        .furnace-process > span { font-size: 24px; color: var(--mc-accent-color); }
-        #furnace-panel #f-input, #furnace-panel #f-fuel { width: 52px !important; height: 52px !important; }
-        #furnace-panel #f-output { width: 76px !important; height: 76px !important; background: rgba(110, 73, 20, 0.38) !important; border-color: var(--mc-accent-color) !important; box-shadow: inset 0 0 0 2px var(--mc-accent-glow), 0 0 12px var(--mc-accent-glow); }
-        .furnace-output-hint { margin-top: 7px; color: #aebac2; font: 16px/1 'VT323', monospace; text-align: center; }
-        @media (max-width: 640px) { #furnace-panel { width: min(360px, calc(100vw - 24px)); } .furnace-workspace { grid-template-columns: 76px 1fr 86px; gap: 5px; } }
+        /* ============================================================
+           AUTHENTIC COBBLESTONE FURNACE THEME
+           ============================================================ */
+        #furnace-panel {
+            width: min(380px, calc(100vw - 28px));
+            min-height: 270px;
+            box-sizing: border-box;
+            padding: 16px 18px !important;
+            background-color: #2e2e36 !important;
+            /* Authentic cobblestone block texture with stone fissures & mortar */
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(0,0,0,0.35) 0%, transparent 45%),
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.3) 0 2px, transparent 2px 24px),
+                repeating-linear-gradient(90deg, rgba(0,0,0,0.2) 0 2px, transparent 2px 32px),
+                linear-gradient(135deg, #373742 0%, #292932 50%, #1e1e24 100%) !important;
+            border: 5px solid !important;
+            border-top-color: #7b7b8a !important;
+            border-left-color: #7b7b8a !important;
+            border-right-color: #141418 !important;
+            border-bottom-color: #141418 !important;
+            border-radius: 0 !important;
+            box-shadow: 
+                inset 0 0 0 2px #444450,
+                inset 0 0 0 4px #1c1c22,
+                8px 8px 0 rgba(0,0,0,0.65),
+                0 12px 30px rgba(0,0,0,0.7) !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #furnace-panel h2 {
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            color: #ffb347 !important;
+            text-shadow: 2px 2px 0 #0c0d10, 0 0 10px rgba(255, 150, 40, 0.4);
+        }
+
+        /* Furnace Workspace / Hearth Chamber */
+        .furnace-workspace {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 88px 1fr 96px;
+            align-items: center;
+            justify-items: center;
+            gap: 12px;
+            padding: 14px 10px;
+            background: #181820;
+            border: 3px solid #101014;
+            border-top-color: #0c0c10;
+            border-left-color: #0c0c10;
+            border-right-color: #3e3e4a;
+            border-bottom-color: #3e3e4a;
+            box-shadow: inset 0 0 14px rgba(0,0,0,0.8);
+            position: relative;
+            transition: box-shadow 0.3s ease;
+        }
+
+        /* Firebox warm amber ambient glow when furnace is burning */
+        .furnace-workspace.is-burning {
+            box-shadow: inset 0 0 22px rgba(255, 110, 0, 0.35), inset 0 0 5px rgba(255, 200, 50, 0.45);
+        }
+
+        .furnace-label {
+            letter-spacing: 0.5px;
+            text-shadow: 2px 2px 0 #0c0d10;
+        }
+
+        /* Slots styling inside furnace */
+        #furnace-panel .slot {
+            background-color: #24242e !important;
+            border: 3px solid !important;
+            border-top-color: #121218 !important;
+            border-left-color: #121218 !important;
+            border-right-color: #4c4c5c !important;
+            border-bottom-color: #4c4c5c !important;
+            box-shadow: inset 0 0 0 1px #08080c !important;
+            transition: none !important;
+        }
+
+        #furnace-panel .slot:hover {
+            background-color: #383846 !important;
+            border-top-color: #202028 !important;
+            border-left-color: #202028 !important;
+            border-right-color: #747488 !important;
+            border-bottom-color: #747488 !important;
+            box-shadow: inset 0 0 0 1px #08080c, 0 0 8px rgba(255, 170, 0, 0.35) !important;
+        }
+
+        /* Output Slot - Large Forge Bezel */
+        #furnace-panel #f-output {
+            background: rgba(38, 28, 14, 0.6) !important;
+            border: 4px solid !important;
+            border-top-color: #8f6027 !important;
+            border-left-color: #8f6027 !important;
+            border-right-color: #ffe082 !important;
+            border-bottom-color: #ffe082 !important;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.7), 0 0 10px rgba(255, 170, 0, 0.3) !important;
+        }
+
+        #furnace-panel #f-output:hover {
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 0 18px rgba(255, 190, 40, 0.6) !important;
+        }
+
+        /* Authentic Burning Flame Animation */
+        .furnace-flame-container {
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.7));
+        }
+
+        #furnace-fire-chamber.is-burning svg {
+            animation: furnace-flicker 0.4s steps(2, start) infinite alternate;
+        }
+
+        @keyframes furnace-flicker {
+            0% { filter: drop-shadow(0 0 2px #ff7700) brightness(1); }
+            100% { filter: drop-shadow(0 0 7px #ffaa00) brightness(1.22); }
+        }
+
+        /* Smelting Arrow Track */
+        .furnace-arrow-track {
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.8));
+        }
+
+        @media (max-width: 640px) {
+            #furnace-panel { width: min(360px, calc(100vw - 20px)); padding: 12px !important; }
+            .furnace-workspace { grid-template-columns: 78px 1fr 88px; gap: 8px; }
+        }
         .news-entry, .news-entry h3, .news-entry summary, .news-entry li { color: #fff !important; text-shadow: 2px 2px 0 #080a0c; }
         /* ============================================================
            ASEPRITE-STYLE SKIN EDITOR STUDIO
