@@ -2243,11 +2243,12 @@
             border: 1px solid #78350f;
             cursor: pointer;
         }
-        .hud-music-control-btn {
+        .hud-music-control-btn, .hud-music-btn {
+            border-radius: 0 !important;
             box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3);
             transition: all 0.1s ease;
         }
-        .hud-music-control-btn:active {
+        .hud-music-control-btn:active, .hud-music-btn:active {
             transform: translateY(1px);
             box-shadow: none;
         }

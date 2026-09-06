@@ -31,7 +31,7 @@ import {
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
-    setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineState, setGameState as setEngineGameState,
+    setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineSaplingGrowthQueue, setEngineState, setGameState as setEngineGameState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
@@ -261,6 +261,15 @@ export let pendingMusicTarget = null; // { x, y, slotIndex }
 
 export function promptUploadMusic(gx, gy, slotIndex) {
     pendingMusicTarget = { x: gx, y: gy, slotIndex: slotIndex };
+    // Clear all mouse down flags so when OS file picker opens/closes, right-click does not get stuck down
+    if (typeof resetMouseInputState === 'function') resetMouseInputState();
+    else {
+        mouse.isDownRight = false;
+        mouse.isDownLeft = false;
+        continuousPlaceCooldown = 20;
+        lastPlacedCell.x = -1;
+        lastPlacedCell.y = -1;
+    }
     const input = document.getElementById('jukebox-file-input');
     if (input) {
         input.value = '';
@@ -271,8 +280,15 @@ export function promptUploadMusic(gx, gy, slotIndex) {
 export function initJukeboxFileInput() {
     const fileInput = document.getElementById('jukebox-file-input');
     if (!fileInput) return;
+
+    fileInput.addEventListener('cancel', () => {
+        pendingMusicTarget = null;
+        if (typeof resetMouseInputState === 'function') resetMouseInputState();
+    });
+
     fileInput.addEventListener('change', async (e) => {
         const files = e.target.files;
+        if (typeof resetMouseInputState === 'function') resetMouseInputState();
         if (!files || !files.length || !pendingMusicTarget) return;
         const file = files[0];
         const target = pendingMusicTarget;
@@ -1068,6 +1084,20 @@ export function initJukeboxFileInput() {
         initCanvasMouseListeners();
     }
 
+    export function resetMouseInputState() {
+        mouse.isDownLeft = false;
+        mouse.isDownRight = false;
+        mouse.down = false;
+        mouse.rightDown = false;
+        if (miningTarget) miningTarget.progress = 0;
+        if (player && typeof player.resetEat === 'function') player.resetEat();
+        continuousPlaceCooldown = 15;
+        lastPlacedCell.x = -1;
+        lastPlacedCell.y = -1;
+        Object.keys(keys).forEach(k => delete keys[k]);
+    }
+    if (typeof window !== 'undefined') window.resetMouseInputState = resetMouseInputState;
+
     window.addEventListener('mouseup', (e) => {
         if (e.button === 0) {
             mouse.isDownLeft = false;
@@ -1080,6 +1110,14 @@ export function initJukeboxFileInput() {
             lastPlacedCell.x = -1; 
             lastPlacedCell.y = -1; 
         }
+    });
+
+    window.addEventListener('blur', () => {
+        resetMouseInputState();
+    });
+
+    window.addEventListener('focus', () => {
+        resetMouseInputState();
     });
 
     document.addEventListener('selectstart', (e) => {
@@ -1611,9 +1649,9 @@ export function initJukeboxFileInput() {
             if (blockId === IDS.FLOWER_YELLOW) dropId = IDS.FLOWER_YELLOW;
             if (blockId === IDS.LEAVES) {
                 const leafDropRoll = Math.random();
-                if (leafDropRoll < 0.02) dropId = IDS.SAPLING;
-                else if (leafDropRoll < 0.07) dropId = IDS.APPLE;
-                else if (leafDropRoll < 0.15) dropId = IDS.STICK;
+                if (leafDropRoll < 0.10) dropId = IDS.SAPLING;
+                else if (leafDropRoll < 0.18) dropId = IDS.APPLE;
+                else if (leafDropRoll < 0.35) dropId = IDS.STICK;
                 else dropId = null;
             }
             // Strict tool tier harvest enforcement: If the block requires a tool tier and the player lacks it, DROP NOTHING!
@@ -1913,11 +1951,12 @@ export function initJukeboxFileInput() {
         }
 
         if (sel.id === IDS.SAPLING) {
-            if (gy >= WORLD_HEIGHT - 1 || world[gx][gy] !== IDS.AIR || ![IDS.DIRT, IDS.GRASS].includes(world[gx][gy + 1]) || intersectsEntity(gx, gy)) return false;
+            if (gy >= WORLD_HEIGHT - 1 || world[gx][gy] !== IDS.AIR || ![IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[gx][gy + 1]) || intersectsEntity(gx, gy)) return false;
             const growthAt = dayCount + timeOfDay + SAPLING_GROWTH_DAYS;
             world[gx][gy] = IDS.SAPLING;
             const hasClearGrowthSpace = canSaplingGrowAt(gx, gy);
             saplingGrowthQueue.set(`${gx}_${gy}`, growthAt);
+            if (typeof window !== 'undefined') window.saplingGrowthQueue = saplingGrowthQueue;
             syncBlock(gx, gy, IDS.SAPLING, { growthAt });
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
@@ -2097,8 +2136,28 @@ export function initJukeboxFileInput() {
     }
     
 
+    export function recoverUnqueuedSaplings() {
+        if (!world || !world.length) return;
+        const activeQueue = (typeof window !== 'undefined' && window.saplingGrowthQueue) ? window.saplingGrowthQueue : saplingGrowthQueue;
+        for (let x = 0; x < WORLD_WIDTH; x++) {
+            if (!world[x]) continue;
+            for (let y = 0; y < WORLD_HEIGHT; y++) {
+                if (world[x][y] === IDS.SAPLING) {
+                    const key = `${x}_${y}`;
+                    if (!activeQueue.has(key)) {
+                        const growthAt = dayCount + timeOfDay + SAPLING_GROWTH_DAYS;
+                        activeQueue.set(key, growthAt);
+                        saplingGrowthQueue.set(key, growthAt);
+                    }
+                }
+            }
+        }
+        if (typeof window !== 'undefined') window.saplingGrowthQueue = activeQueue;
+    }
+
     export function startGameplay() {
         ensureTreeWoodNonCollidable();
+        recoverUnqueuedSaplings();
         document.getElementById('main-menu').classList.add('hidden');
         document.getElementById('worlds-menu').classList.add('hidden'); 
         document.getElementById('shared-menu-bg').classList.add('hidden');

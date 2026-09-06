@@ -86,7 +86,18 @@ export function syncFluidState() { if (typeof window !== 'undefined' && typeof w
 export function syncLocalPlayerState(immediate) { if (typeof window !== 'undefined' && typeof window.syncLocalPlayerState === 'function' && window.syncLocalPlayerState !== syncLocalPlayerState) return window.syncLocalPlayerState(immediate); }
 export function broadcastDataPacket(packet) { if (typeof window !== 'undefined' && typeof window.broadcastDataPacket === 'function' && window.broadcastDataPacket !== broadcastDataPacket) return window.broadcastDataPacket(packet); }
 export function deleteWorld(id, prompt) { if (typeof window !== 'undefined' && typeof window.deleteWorld === 'function' && window.deleteWorld !== deleteWorld) return window.deleteWorld(id, prompt); }
-export function spawnDroppedItem(itemId, x, y, count = 1) { if (typeof window !== 'undefined' && typeof window.spawnDroppedItem === 'function' && window.spawnDroppedItem !== spawnDroppedItem) return window.spawnDroppedItem(itemId, x, y, count); }
+export function spawnDroppedItem(itemId, x, y, count = 1) {
+    let dropId = `drop_${(typeof window !== 'undefined' && window.user?.uid) || 'local'}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const DropClass = (typeof ItemDrop !== 'undefined') ? ItemDrop : (typeof window !== 'undefined' ? window.ItemDrop : null);
+    if (DropClass) {
+        const drop = new DropClass(itemId, x, y, count, dropId);
+        droppedItems.push(drop);
+        if (typeof window !== 'undefined') {
+            window.droppedItems = droppedItems;
+        }
+        return drop;
+    }
+}
 export function toggleBackgroundBuildMode(mode) { if (typeof window !== 'undefined' && typeof window.toggleBackgroundBuildMode === 'function' && window.toggleBackgroundBuildMode !== toggleBackgroundBuildMode) return window.toggleBackgroundBuildMode(mode); }
 export function isMultiplayerAuthority() { if (typeof window !== 'undefined' && typeof window.isMultiplayerAuthority === 'function' && window.isMultiplayerAuthority !== isMultiplayerAuthority) return window.isMultiplayerAuthority(); return true; }
 export let currentAccentColor = (typeof window !== 'undefined' && window.currentAccentColor) ? window.currentAccentColor : '#e5a823';
@@ -566,11 +577,13 @@ export function getMaxAnimals() {
     }
 
     export function getDayHungerDrainMultiplier() {
-        if (currentDifficulty === 'peaceful') return 1.0;
+        if (currentDifficulty === 'peaceful') return 0;
         const currentDays = Math.max(1, dayCount);
         // Slowly increases hunger exhaustion drain: +1.5% per day past day 1, capped at 1.75x (around day 51)
         const progress = Math.min(50, currentDays - 1);
-        return 1 + (progress * 0.015);
+        const baseMult = 1 + (progress * 0.015);
+        if (currentDifficulty === 'easy') return 0.5 * baseMult;
+        return baseMult;
     }
 
     export const diffDescriptions = {
@@ -666,6 +679,7 @@ export function getMaxAnimals() {
     };
 
     export const ID_NAMES = Object.fromEntries(Object.entries(IDS).map(([k, v]) => [v, k.replace(/_/g, ' ')]));
+    ID_NAMES[IDS.SAPLING] = 'Oak Sapling';
     ID_NAMES[IDS.JUKEBOX] = 'Jukebox';
     ID_NAMES[IDS.EMPTY_VINYL] = 'Vinyl Disc';
     ID_NAMES[IDS.SHORT_GRASS] = 'Short Grass';
@@ -1996,25 +2010,134 @@ export function getMaxAnimals() {
                     }
                 }
                 else if (id === IDS.RAW_PORKCHOP) {
-                    if(Math.hypot(x-8, y-8) < 5) p(x, y, randColor(['#ff99cc', '#ff66aa']));
-                    if(x > 9 && y > 9 && Math.hypot(x-11, y-11) < 3) p(x, y, '#fff'); 
+                    const porkPixels = [
+                        "................",
+                        "....OOOO........",
+                        "...OFFFFOO......",
+                        "..OFFLLMMFOO....",
+                        ".OFLLMMMMLLFO...",
+                        ".OFLMMDDMMLLFO..",
+                        ".OLMMDDDDMMMbBO.",
+                        ".OLMDDDDDDMbbbBO",
+                        ".OLMMDDDDMMMbBO.",
+                        ".OFLLMMMMLLFO...",
+                        "..OFLLMMLLFO....",
+                        "...OFFFFFOO.....",
+                        "....OOOOOO......",
+                        "................",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#4c0519', 'F': '#fff1f2', 'f': '#ffe4e6', 'L': '#fda4af',
+                        'M': '#fb7185', 'D': '#e11d48', 'B': '#ffffff', 'b': '#cbd5e1'
+                    };
+                    const row = porkPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.COOKED_PORKCHOP) {
-                    if(Math.hypot(x-8, y-8) < 5) p(x, y, randColor(['#8B4513', '#A0522D']));
-                    if(x > 9 && y > 9 && Math.hypot(x-11, y-11) < 3) p(x, y, '#ccc');
+                    const cookedPorkPixels = [
+                        "................",
+                        "....OOOO........",
+                        "...OCCCCOO......",
+                        "..OCCLLMMCOO....",
+                        ".OCLLMMMMLLCO...",
+                        ".OCLMMDDMMLLCO..",
+                        ".OLMGDDDDMMMbBO.",
+                        ".OLMDDGGDDMbbbBO",
+                        ".OLMMDDDDMMMbBO.",
+                        ".OCLLMMMMLLCO...",
+                        "..OCLLMMLLCO....",
+                        "...OCCCCCOO.....",
+                        "....OOOOOO......",
+                        "................",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#271202', 'C': '#fef3c7', 'L': '#d97706', 'M': '#b45309',
+                        'D': '#78350f', 'G': '#451a03', 'B': '#f8fafc', 'b': '#94a3b8'
+                    };
+                    const row = cookedPorkPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.APPLE) {
-                    if(Math.hypot(x-8, y-9) < 4.5) p(x, y, randColor(['#ff3333', '#e60000', '#cc0000']));
-                    if(x===8 && y>4 && y<7) p(x, y, '#4a2c11'); 
-                    if(x===9 && y===5) p(x, y, '#33cc33'); 
+                    const applePixels = [
+                        "................",
+                        ".......sE.......",
+                        "......SGG.......",
+                        ".....SOOO.......",
+                        "....OLLRRO......",
+                        "...OLRRRRRO.....",
+                        "..OLRRRRRRRRO...",
+                        "..ORRRRRRRRRRO..",
+                        "..OMMRRRRRMMMD..",
+                        "..OMMMRRMMMMMD..",
+                        "..OMMMMMMMMMMD..",
+                        "...OMMMMMMMMD...",
+                        "...ODDMMMMDDD...",
+                        "....ODDDDDDDO...",
+                        ".....OOOOOO.....",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#450a0a', 'S': '#542609', 's': '#78350f', 'E': '#86efac',
+                        'G': '#22c55e', 'L': '#ffffff', 'R': '#ef4444', 'M': '#dc2626', 'D': '#991b1b'
+                    };
+                    const row = applePixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.RAW_CHICKEN) {
-                    if(Math.hypot(x-8, y-8) < 4) p(x, y, randColor(['#ffcccc', '#ffb3b3']));
-                    if(x > 9 && y > 9 && Math.hypot(x-11, y-11) < 2) p(x, y, '#fff'); 
+                    const rawChickenPixels = [
+                        "................",
+                        "...OOOO.........",
+                        "..OPLLMMO.......",
+                        ".OPLLMMMMO......",
+                        ".OPLMMMMDDO.....",
+                        ".OPMMMMMDDO.....",
+                        "..OMMMMDDO......",
+                        "...OMMDDO.......",
+                        "....OMDO........",
+                        ".....OBO........",
+                        "......ObBO......",
+                        ".......ObBO.....",
+                        "......ObbbBO....",
+                        "......OBBBB.....",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#3f1d1d', 'P': '#fed7aa', 'L': '#fca5a5', 'M': '#f87171',
+                        'D': '#dc2626', 'B': '#f8fafc', 'b': '#cbd5e1'
+                    };
+                    const row = rawChickenPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.COOKED_CHICKEN) {
-                    if(Math.hypot(x-8, y-8) < 4) p(x, y, randColor(['#d98c53', '#cc7a3d']));
-                    if(x > 9 && y > 9 && Math.hypot(x-11, y-11) < 2) p(x, y, '#e6ccb3');
+                    const cookedChickenPixels = [
+                        "................",
+                        "...OOOO.........",
+                        "..OKGGMMO.......",
+                        ".OKGGMMMMO......",
+                        ".OKGMMMMDDO.....",
+                        ".OKMMMMMDDO.....",
+                        "..OMMMMDDO......",
+                        "...OMMDDO.......",
+                        "....OMDO........",
+                        ".....OBO........",
+                        "......ObBO......",
+                        ".......ObBO.....",
+                        "......ObbbBO....",
+                        "......OBBBB.....",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#271202', 'K': '#fef08a', 'G': '#f59e0b', 'M': '#d97706',
+                        'D': '#78350f', 'B': '#f8fafc', 'b': '#cbd5e1'
+                    };
+                    const row = cookedChickenPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.FEATHER) {
                     if (x+y>8 && x+y<24 && Math.abs(x-y)<3) p(x,y, '#ffffff');
@@ -2026,12 +2149,56 @@ export function getMaxAnimals() {
                     if ((x + y) % 4 === 0 && x > 1 && x < 14 && y > 2 && y < 14) p(x, y, '#d0d0d0');
                 }
                 else if (id === IDS.RAW_MUTTON) {
-                    if (Math.hypot(x-8, y-8) < 5) p(x, y, randColor(['#d98282', '#c96f6f', '#ed9b9b']));
-                    if (x > 9 && y > 9 && Math.hypot(x-11, y-11) < 2) p(x, y, '#fff');
+                    const rawMuttonPixels = [
+                        "................",
+                        "....OOOO........",
+                        "...OFFFFOO......",
+                        "..OFFLLMMFOO....",
+                        ".OFLLMMMMMDDO...",
+                        ".OFLMMDDDDDDDDO.",
+                        ".OLMDDDDDDMMMbBO",
+                        ".OLMDDDDDDMMbbbB",
+                        "..OMDDDDMMMMObBO",
+                        "...OMMMMMMMFO...",
+                        "....OMMMMMFO....",
+                        ".....OFFFFO.....",
+                        "......OOOO......",
+                        "................",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#360808', 'F': '#f8fafc', 'f': '#e2e8f0', 'L': '#e11d48',
+                        'M': '#be123c', 'D': '#881337', 'B': '#ffffff', 'b': '#94a3b8'
+                    };
+                    const row = rawMuttonPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.COOKED_MUTTON) {
-                    if (Math.hypot(x-8, y-8) < 5) p(x, y, randColor(['#8c4a38', '#733828', '#a65d49']));
-                    if (x > 9 && y > 9 && Math.hypot(x-11, y-11) < 2) p(x, y, '#e6ccb3');
+                    const cookedMuttonPixels = [
+                        "................",
+                        "....OOOO........",
+                        "...OCCCCOO......",
+                        "..OCCLLMMCOO....",
+                        ".OCLLMMMMMDDO...",
+                        ".OCLMMDDDDDDDDO.",
+                        ".OLMDDDDDDMMMbBO",
+                        ".OLMDDDDDDMMbbbB",
+                        "..OMDDDDMMMMObBO",
+                        "...OMMMMMMCO....",
+                        "....OMMMMMCO....",
+                        ".....OCCCCO.....",
+                        "......OOOO......",
+                        "................",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#1c0c04', 'C': '#d97706', 'L': '#b45309', 'M': '#78350f',
+                        'D': '#451a03', 'B': '#f8fafc', 'b': '#94a3b8'
+                    };
+                    const row = cookedMuttonPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.RAW_BEEF) {
                     const beefPixels = [
@@ -2798,6 +2965,31 @@ export const SKIN_H = 32;
         }
     }
 
+    export const NOTE_PATTERNS = [
+        // 0: Single Eighth Note ♪ (8x8)
+        [
+            "....###.",
+            "....###.",
+            "....##.#",
+            "....##..",
+            "....##..",
+            "..####..",
+            ".######.",
+            "..####.."
+        ],
+        // 1: Beamed Double Note ♫ (9x8)
+        [
+            ".#######.",
+            ".#######.",
+            ".##...##.",
+            ".##...##.",
+            ".##...##.",
+            "####.####",
+            "#########",
+            ".###..###"
+        ]
+    ];
+
     export class NoteParticle {
         constructor(x = 0, y = 0) {
             this.init(x, y);
@@ -2806,8 +2998,7 @@ export const SKIN_H = 32;
             this.startX = x;
             this.x = x;
             this.y = y;
-            const symbols = ['♪', '♫', '♬', '♩'];
-            this.symbol = symbols[Math.floor(Math.random() * symbols.length)];
+            this.patternIndex = Math.random() < 0.5 ? 0 : 1;
             const colors = ['#f43f5e', '#ec4899', '#a855f7', '#6366f1', '#3b82f6', '#06b6d4', '#10b981', '#eab308'];
             this.color = colors[Math.floor(Math.random() * colors.length)];
             this.life = 55 + Math.random() * 25;
@@ -2816,7 +3007,7 @@ export const SKIN_H = 32;
             this.freq = 0.08 + Math.random() * 0.06;
             this.amp = 8 + Math.random() * 8;
             this.time = Math.random() * 100;
-            this.size = 20 + Math.random() * 6;
+            this.pSize = 2;
             this.alive = true;
         }
         update() {
@@ -2830,13 +3021,35 @@ export const SKIN_H = 32;
         draw(ctx, camX, camY) {
             if (!this.alive) return;
             const alpha = Math.max(0, Math.min(1, this.life / (this.maxLife * 0.25)));
+            const pattern = NOTE_PATTERNS[this.patternIndex] || NOTE_PATTERNS[0];
+            const rows = pattern.length;
+            const cols = pattern[0].length;
+            const pSize = this.pSize;
+            const originX = Math.round(this.x - camX - (cols * pSize) / 2);
+            const originY = Math.round(this.y - camY - (rows * pSize) / 2);
+
             ctx.save();
             ctx.globalAlpha = alpha;
-            ctx.font = `bold ${Math.round(this.size)}px "VT323", monospace`;
+            // 1) 1-texel black pixel drop-shadow
+            ctx.fillStyle = '#000000';
+            for (let r = 0; r < rows; r++) {
+                const rowStr = pattern[r];
+                for (let c = 0; c < cols; c++) {
+                    if (rowStr[c] === '#') {
+                        ctx.fillRect(originX + c * pSize + 1, originY + r * pSize + 1, pSize, pSize);
+                    }
+                }
+            }
+            // 2) Main colored pixel note
             ctx.fillStyle = this.color;
-            ctx.shadowColor = '#000000';
-            ctx.shadowBlur = 4;
-            ctx.fillText(this.symbol, Math.round(this.x - camX), Math.round(this.y - camY));
+            for (let r = 0; r < rows; r++) {
+                const rowStr = pattern[r];
+                for (let c = 0; c < cols; c++) {
+                    if (rowStr[c] === '#') {
+                        ctx.fillRect(originX + c * pSize, originY + r * pSize, pSize, pSize);
+                    }
+                }
+            }
             ctx.restore();
         }
     }
@@ -4004,24 +4217,39 @@ export const SKIN_H = 32;
                 playSound('step', { material: 'water' });
             }
 
-            if (diff.starve && frameCount % 120 === 0 && hungerRate > 1.0) {
-                this.exhaustion += 0.012 * (hungerRate - 1);
-            }
-
-            const maxExhaustion = Math.max(2.4, 4 / hungerRate);
-            if (this.exhaustion >= maxExhaustion) {
+            if (currentDifficulty === 'peaceful') {
                 this.exhaustion = 0;
-                this.hunger = Math.max(0, this.hunger - 1);
-                updateHungerUI();
-                if(this.hunger === 0) document.getElementById('hunger-bar').classList.add('shake-ui');
-                else document.getElementById('hunger-bar').classList.remove('shake-ui');
-            }
+                // On Peaceful, hunger naturally regenerates to max (20) if depleted
+                if (this.hunger < 20 && frameCount % 20 === 0) {
+                    this.hunger++;
+                    updateHungerUI();
+                }
+                // On Peaceful, health always regenerates rapidly
+                if (this.health < this.maxHealth && frameCount % diff.hpRegen === 0) {
+                    this.health++;
+                    updateHealthUI();
+                }
+            } else {
+                if (diff.starve && frameCount % 120 === 0 && hungerRate > 1.0) {
+                    this.exhaustion += 0.012 * (hungerRate - 1);
+                }
 
-            if (this.hunger >= 18 && this.health < this.maxHealth && frameCount % diff.hpRegen === 0) {
-                this.health++; this.exhaustion += 2 * hungerRate; updateHealthUI(); 
-            }
-            if (this.hunger === 0 && diff.starve && frameCount % 60 === 0) {
-                this.takeDamage(1);
+                const exhaustionCap = (currentDifficulty === 'easy') ? 8.0 : 4.0;
+                const maxExhaustion = Math.max(2.4, exhaustionCap / Math.max(0.1, hungerRate));
+                if (this.exhaustion >= maxExhaustion) {
+                    this.exhaustion = 0;
+                    this.hunger = Math.max(0, this.hunger - 1);
+                    updateHungerUI();
+                    if(this.hunger === 0) document.getElementById('hunger-bar').classList.add('shake-ui');
+                    else document.getElementById('hunger-bar').classList.remove('shake-ui');
+                }
+
+                if (this.hunger >= 18 && this.health < this.maxHealth && frameCount % diff.hpRegen === 0) {
+                    this.health++; this.exhaustion += 2 * hungerRate; updateHealthUI(); 
+                }
+                if (this.hunger === 0 && diff.starve && frameCount % 60 === 0) {
+                    this.takeDamage(1);
+                }
             }
 
             // Head suffocation when inside solid blocks (e.g. sand lands on player's head)
@@ -6644,9 +6872,9 @@ export const SKIN_H = 32;
             world[x][y] = IDS.AIR;
             syncBlock(x, y, IDS.AIR);
             let roll = Math.random();
-            if (roll < 0.12) spawnDroppedItem(IDS.SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-            else if (roll < 0.26) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-            else if (roll < 0.30) spawnDroppedItem(IDS.APPLE, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+            if (roll < 0.15) spawnDroppedItem(IDS.SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+            else if (roll < 0.35) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+            else if (roll < 0.40) spawnDroppedItem(IDS.APPLE, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
             leafDecayQueue.delete(key);
         }
     }
@@ -6695,7 +6923,7 @@ export const SKIN_H = 32;
     }
 
     export function canSaplingGrowAt(x, y) {
-        if (world[x]?.[y] !== IDS.SAPLING || ![IDS.DIRT, IDS.GRASS].includes(world[x]?.[y + 1])) return false;
+        if (world[x]?.[y] !== IDS.SAPLING || ![IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[x]?.[y + 1])) return false;
         const height = getSaplingGrowthHeight(x, y);
         const trunkCells = new Set();
         for (let trunkOffset = 0; trunkOffset <= height; trunkOffset++) trunkCells.add(`${x}_${y - trunkOffset}`);
@@ -8796,6 +9024,7 @@ export const SKIN_H = 32;
             }
         }
 
+        droppedItems.forEach(d => { if (d && typeof d.draw === 'function') d.draw(ctx, camX, camY); });
         entities.forEach(e => e.draw(ctx, camX, camY));
         player.draw(ctx, camX, camY);
         
@@ -9924,10 +10153,17 @@ try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay
     export function setEngineIsBackgroundBuildMode(newMode) { isBackgroundBuildMode = newMode; if (typeof window !== 'undefined') window.isBackgroundBuildMode = newMode; }
     export function setEngineIsInventoryOpen(newOpen) { isInventoryOpen = newOpen; if (typeof window !== 'undefined') window.isInventoryOpen = newOpen; }
     export function setEngineCropGrowthQueue(newQueue) { cropGrowthQueue = newQueue; if (typeof window !== 'undefined') window.cropGrowthQueue = newQueue; }
+    export function setEngineSaplingGrowthQueue(newQueue) { saplingGrowthQueue = newQueue; if (typeof window !== 'undefined') window.saplingGrowthQueue = newQueue; }
+    export function setEngineDirtToGrassQueue(newQueue) { dirtToGrassQueue = newQueue; if (typeof window !== 'undefined') window.dirtToGrassQueue = newQueue; }
+    export function setEngineSnowRegrowthQueue(newQueue) { snowRegrowthQueue = newQueue; if (typeof window !== 'undefined') window.snowRegrowthQueue = newQueue; }
     export function setSelectedHotbarIndex(idx) { selectedHotbarIndex = idx; if (typeof window !== 'undefined') window.selectedHotbarIndex = idx; }
     export function setAttackAnimationTimer(t) { attackAnimationTimer = t; if (typeof window !== 'undefined') window.attackAnimationTimer = t; }
 
 try { if (typeof setEngineCropGrowthQueue !== "undefined") window.setEngineCropGrowthQueue = setEngineCropGrowthQueue; } catch(e) {}
+try { if (typeof setEngineSaplingGrowthQueue !== "undefined") window.setEngineSaplingGrowthQueue = setEngineSaplingGrowthQueue; } catch(e) {}
+try { if (typeof setEngineDirtToGrassQueue !== "undefined") window.setEngineDirtToGrassQueue = setEngineDirtToGrassQueue; } catch(e) {}
+try { if (typeof setEngineSnowRegrowthQueue !== "undefined") window.setEngineSnowRegrowthQueue = setEngineSnowRegrowthQueue; } catch(e) {}
+try { if (typeof spawnDroppedItem !== "undefined") window.spawnDroppedItem = spawnDroppedItem; } catch(e) {}
 try { if (typeof setEngineWorld !== "undefined") window.setEngineWorld = setEngineWorld; } catch(e) {}
 try { if (typeof setEngineBgWorld !== "undefined") window.setEngineBgWorld = setEngineBgWorld; } catch(e) {}
 try { if (typeof setEnginePlayer !== "undefined") window.setEnginePlayer = setEnginePlayer; } catch(e) {}

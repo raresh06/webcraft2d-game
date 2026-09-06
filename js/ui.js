@@ -9,7 +9,7 @@ import {
     setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
-    setEngineCropGrowthQueue,
+    setEngineCropGrowthQueue, setEngineSaplingGrowthQueue, setEngineDirtToGrassQueue, setEngineSnowRegrowthQueue,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
     setEngineIsBackgroundBuildMode, setMinimapShape, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex,
     setEngineAccentColor, drawTimeClock, drawPlayerHead,
@@ -2163,6 +2163,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
 
     export const RECIPES = [
+        { output: { id: IDS.SAPLING, count: 1 }, inputs: [{ id: IDS.SEEDS, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: false, category: 'utility' },
+        { output: { id: IDS.SAPLING, count: 1 }, inputs: [{ id: IDS.LEAVES, count: 2 }], reqTable: false, category: 'utility' },
         { output: { id: IDS.BUCKET, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 3 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.JUKEBOX, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 8 }, { id: IDS.DIAMOND, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.EMPTY_VINYL, count: 1 }, inputs: [{ id: IDS.COAL, count: 4 }, { id: IDS.IRON_INGOT, count: 1 }], reqTable: true, category: 'utility' },
@@ -3058,6 +3060,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         ].includes(id);
     }
 
+    export function isVinyl(id) {
+        return id === IDS.EMPTY_VINYL || (typeof IDS.VINYL_DISC !== 'undefined' && id === IDS.VINYL_DISC);
+    }
+
+    export function isNonStackable(id) {
+        if (!id) return false;
+        if (isTool(id)) return true;
+        if (typeof isArmor === 'function' && isArmor(id)) return true;
+        if (isVinyl(id)) return true;
+        return false;
+    }
+
+    export function getItemMaxStack(id) {
+        return isNonStackable(id) ? 1 : 64;
+    }
+
     export function ensureToolDurability(item) {
         if (!item || !TOOL_DURABILITY[item.id]) return item;
         const maxDurability = TOOL_DURABILITY[item.id];
@@ -3102,17 +3120,26 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function giveItem(id, amount = 1) {
         const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
         let initialAmount = amount;
-        for (let i = 0; i < 27; i++) { 
-            if (liveInv[i] && liveInv[i].id === id && liveInv[i].count < 64 && !isTool(id)) {
-                let space = 64 - liveInv[i].count;
-                let add = Math.min(space, amount);
-                liveInv[i].count += add; amount -= add;
-                if (amount <= 0) break;
+        const maxStack = getItemMaxStack(id);
+        if (maxStack > 1) {
+            for (let i = 0; i < 27; i++) { 
+                if (liveInv[i] && liveInv[i].id === id && liveInv[i].count < maxStack) {
+                    let space = maxStack - liveInv[i].count;
+                    let add = Math.min(space, amount);
+                    liveInv[i].count += add; amount -= add;
+                    if (amount <= 0) break;
+                }
             }
         }
         if (amount > 0) {
             for (let i = 0; i < 27; i++) { 
-                if (!liveInv[i]) { liveInv[i] = { id: id, count: amount }; ensureToolDurability(liveInv[i]); amount = 0; break; }
+                if (!liveInv[i]) {
+                    let add = Math.min(maxStack, amount);
+                    liveInv[i] = { id: id, count: add };
+                    ensureToolDurability(liveInv[i]);
+                    amount -= add;
+                    if (amount <= 0) break;
+                }
             }
         }
         if (amount > 0 && STATE === 'PLAYING') {
@@ -3137,9 +3164,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function canFitItem(id, amount) {
         const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
         let capacity = 0;
+        const maxStack = getItemMaxStack(id);
         for (let i = 0; i < 27; i++) {
-            if (liveInv[i] && liveInv[i].id === id && !isTool(id)) capacity += Math.max(0, 64 - liveInv[i].count);
-            else if (!liveInv[i]) capacity += isTool(id) ? 1 : 64;
+            if (liveInv[i] && liveInv[i].id === id && maxStack > 1) capacity += Math.max(0, maxStack - liveInv[i].count);
+            else if (!liveInv[i]) capacity += maxStack;
             if (capacity >= amount) return true;
         }
         return false;
@@ -4722,7 +4750,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
         if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
         if (starterItems) {
-            giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 32); giveItem(IDS.RAW_PORKCHOP, 5); giveItem(IDS.TORCH, 16);
+            giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 32); giveItem(IDS.RAW_PORKCHOP, 5); giveItem(IDS.TORCH, 16); giveItem(IDS.SAPLING, 4);
         }
         updateArmorUI();
         updateHudArmorBar();
@@ -4782,10 +4810,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             inventory: liveInventory, equippedArmor: liveEquippedArmor, furnaces: (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces,
             jukeboxes: (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : (typeof jukeboxes !== 'undefined' ? jukeboxes : []),
             chests: Object.fromEntries(chests),
-            saplingGrowthQueue: Object.fromEntries(saplingGrowthQueue),
+            saplingGrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.saplingGrowthQueue) ? window.saplingGrowthQueue : saplingGrowthQueue),
             cropGrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.cropGrowthQueue) ? window.cropGrowthQueue : cropGrowthQueue),
-            dirtToGrassQueue: Object.fromEntries(dirtToGrassQueue),
-            snowRegrowthQueue: Object.fromEntries(snowRegrowthQueue),
+            dirtToGrassQueue: Object.fromEntries((typeof window !== 'undefined' && window.dirtToGrassQueue) ? window.dirtToGrassQueue : dirtToGrassQueue),
+            snowRegrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.snowRegrowthQueue) ? window.snowRegrowthQueue : snowRegrowthQueue),
             treeWoodCells: [...nonCollidableTreeWood],
             entities: liveEntities.map(e => ({ type: e.constructor.name, x: e.x, y: e.y, health: e.health, dir: e.dir || 1 }))
         };
@@ -5065,11 +5093,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 window.frameCount = frameCount;
             }
             saplingGrowthQueue = new Map(Object.entries(data.saplingGrowthQueue || {}).map(([key, growthAt]) => [key, Number(growthAt)]).filter(([, growthAt]) => Number.isFinite(growthAt)));
+            if (typeof window !== 'undefined') window.saplingGrowthQueue = saplingGrowthQueue;
+            if (typeof setEngineSaplingGrowthQueue === 'function') setEngineSaplingGrowthQueue(saplingGrowthQueue);
+            else if (typeof window !== 'undefined' && typeof window.setEngineSaplingGrowthQueue === 'function') window.setEngineSaplingGrowthQueue(saplingGrowthQueue);
+
             cropGrowthQueue = new Map(Object.entries(data.cropGrowthQueue || {}));
             if (typeof window !== 'undefined') window.cropGrowthQueue = cropGrowthQueue;
             if (typeof setEngineCropGrowthQueue === 'function') setEngineCropGrowthQueue(cropGrowthQueue);
+            else if (typeof window !== 'undefined' && typeof window.setEngineCropGrowthQueue === 'function') window.setEngineCropGrowthQueue(cropGrowthQueue);
+
             dirtToGrassQueue = new Map(Object.entries(data.dirtToGrassQueue || {}).map(([key, growAt]) => [key, Number(growAt)]).filter(([, growAt]) => Number.isFinite(growAt)));
+            if (typeof window !== 'undefined') window.dirtToGrassQueue = dirtToGrassQueue;
+            if (typeof setEngineDirtToGrassQueue === 'function') setEngineDirtToGrassQueue(dirtToGrassQueue);
+            else if (typeof window !== 'undefined' && typeof window.setEngineDirtToGrassQueue === 'function') window.setEngineDirtToGrassQueue(dirtToGrassQueue);
+
             snowRegrowthQueue = new Map(Object.entries(data.snowRegrowthQueue || {}).map(([key, regrowAt]) => [key, Number(regrowAt)]).filter(([, regrowAt]) => Number.isFinite(regrowAt)));
+            if (typeof window !== 'undefined') window.snowRegrowthQueue = snowRegrowthQueue;
+            if (typeof setEngineSnowRegrowthQueue === 'function') setEngineSnowRegrowthQueue(snowRegrowthQueue);
+            else if (typeof window !== 'undefined' && typeof window.setEngineSnowRegrowthQueue === 'function') window.setEngineSnowRegrowthQueue(snowRegrowthQueue);
             currentDifficulty = data.difficulty || 'normal';
             if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(currentDifficulty);
             if (typeof window !== 'undefined') window.currentDifficulty = currentDifficulty;
@@ -6180,6 +6221,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         } 
         else {
             if (container) container.classList.add('hidden');
+            if (typeof window !== 'undefined' && typeof window.resetMouseInputState === 'function') {
+                window.resetMouseInputState();
+            }
             hotbarWheelLockUntil = performance.now() + 500;
             if (heldItemObj) { 
                 if(!giveItem(heldItemObj.id, heldItemObj.count)) { } 
@@ -6312,7 +6356,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function moveItemToContainer(sourceItem, targetArray, startIndex = 0, endIndex = targetArray.length) {
         if (!sourceItem || sourceItem.count <= 0) return true;
-        const maxStack = isTool(sourceItem.id) ? 1 : 64;
+        const maxStack = getItemMaxStack(sourceItem.id);
 
         // Pass 1: Smart Stacking into existing non-full matching stacks
         if (maxStack > 1) {
@@ -6335,7 +6379,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 targetArray[i] = {
                     id: sourceItem.id,
                     count: toMove,
-                    ...(sourceItem.durability !== undefined ? { durability: sourceItem.durability, maxDurability: sourceItem.maxDurability } : {})
+                    ...(sourceItem.durability !== undefined ? { durability: sourceItem.durability, maxDurability: sourceItem.maxDurability } : {}),
+                    ...(sourceItem.customName ? { customName: sourceItem.customName } : {}),
+                    ...(sourceItem.trackId ? { trackId: sourceItem.trackId } : {})
                 };
                 sourceItem.count -= toMove;
                 if (sourceItem.count <= 0) return true;
@@ -6451,8 +6497,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 if (type === 'furnace') {
                     if (index === 'output') {
                         // Output slot is strictly take-only! You cannot put items into it.
-                        if (currentItem && currentItem.id === heldItemObj.id && !isTool(currentItem.id) && heldItemObj.count < 64) {
-                            let space = 64 - heldItemObj.count;
+                        const maxStack = getItemMaxStack(heldItemObj.id);
+                        if (currentItem && currentItem.id === heldItemObj.id && maxStack > 1 && heldItemObj.count < maxStack) {
+                            let space = maxStack - heldItemObj.count;
                             let amount = Math.min(space, currentItem.count);
                             heldItemObj.count += amount;
                             currentItem.count -= amount;
@@ -6477,12 +6524,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 }
 
                 if (currentItem) {
-                    if (currentItem.id === heldItemObj.id && !isTool(currentItem.id) && currentItem.count < 64) {
+                    const maxStack = getItemMaxStack(currentItem.id);
+                    if (currentItem.id === heldItemObj.id && maxStack > 1 && currentItem.count < maxStack) {
                         if (isRightClick) {
                             currentItem.count += 1; heldItemObj.count -= 1;
                             if (heldItemObj.count <= 0) heldItemObj = null;
                         } else {
-                            let space = 64 - currentItem.count; let amount = Math.min(space, heldItemObj.count);
+                            let space = maxStack - currentItem.count; let amount = Math.min(space, heldItemObj.count);
                             currentItem.count += amount; heldItemObj.count -= amount;
                             if (heldItemObj.count <= 0) heldItemObj = null;
                         }
@@ -6493,7 +6541,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     }
                 } else {
                     if (isRightClick) {
-                        let placedItem = { id: heldItemObj.id, count: 1, ...(heldItemObj.durability !== undefined ? { durability: heldItemObj.durability, maxDurability: heldItemObj.maxDurability } : {}) };
+                        let placedItem = { id: heldItemObj.id, count: 1, ...(heldItemObj.durability !== undefined ? { durability: heldItemObj.durability, maxDurability: heldItemObj.maxDurability } : {}), ...(heldItemObj.customName ? { customName: heldItemObj.customName } : {}), ...(heldItemObj.trackId ? { trackId: heldItemObj.trackId } : {}) };
                         containerItems[index] = placedItem;
                         heldItemObj.count -= 1;
                         if (heldItemObj.count <= 0) heldItemObj = null;
@@ -9053,6 +9101,7 @@ try { if (typeof getSavedSkins !== "undefined") window.getSavedSkins = getSavedS
 try { if (typeof getSavedWorlds !== "undefined") window.getSavedWorlds = getSavedWorlds; } catch(e) {}
 try { if (typeof getSkinToneFromContext !== "undefined") window.getSkinToneFromContext = getSkinToneFromContext; } catch(e) {}
 try { if (typeof getSmeltResult !== "undefined") window.getSmeltResult = getSmeltResult; } catch(e) {}
+try { if (typeof getItemMaxStack !== "undefined") window.getItemMaxStack = getItemMaxStack; } catch(e) {}
 try { if (typeof giveItem !== "undefined") window.giveItem = giveItem; } catch(e) {}
 try { if (typeof goToMySkinsFromOwnedModal !== "undefined") window.goToMySkinsFromOwnedModal = goToMySkinsFromOwnedModal; } catch(e) {}
 try { if (typeof handleArmorSlotClick !== "undefined") window.handleArmorSlotClick = handleArmorSlotClick; } catch(e) {}
@@ -9077,7 +9126,9 @@ try { if (typeof isErasing !== "undefined") window.isErasing = isErasing; } catc
 try { if (typeof isMyGallerySkin !== "undefined") window.isMyGallerySkin = isMyGallerySkin; } catch(e) {}
 try { if (typeof isSkinInMySkins !== "undefined") window.isSkinInMySkins = isSkinInMySkins; } catch(e) {}
 try { if (typeof isSkinOwned !== "undefined") window.isSkinOwned = isSkinOwned; } catch(e) {}
+try { if (typeof isNonStackable !== "undefined") window.isNonStackable = isNonStackable; } catch(e) {}
 try { if (typeof isTool !== "undefined") window.isTool = isTool; } catch(e) {}
+try { if (typeof isVinyl !== "undefined") window.isVinyl = isVinyl; } catch(e) {}
 try { if (typeof lastAutosaveTimestamp !== "undefined") window.lastAutosaveTimestamp = lastAutosaveTimestamp; } catch(e) {}
 try { if (typeof lastSplashText !== "undefined") window.lastSplashText = lastSplashText; } catch(e) {}
 try { if (typeof lastUiClickSoundTime !== "undefined") window.lastUiClickSoundTime = lastUiClickSoundTime; } catch(e) {}

@@ -1272,10 +1272,18 @@ if (typeof window !== 'undefined') {
     }
 
     export function spawnDroppedItem(itemId, x, y, count = 1) {
+        if (typeof window !== 'undefined' && typeof window.spawnDroppedItem === 'function' && window.spawnDroppedItem !== spawnDroppedItem) {
+            return window.spawnDroppedItem(itemId, x, y, count);
+        }
         let dropId = `drop_${window.user?.uid || 'local'}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const DropClass = (typeof ItemDrop !== 'undefined') ? ItemDrop : (typeof window !== 'undefined' ? window.ItemDrop : null);
         if (DropClass) {
-            droppedItems.push(new DropClass(itemId, x, y, count, dropId));
+            const drop = new DropClass(itemId, x, y, count, dropId);
+            droppedItems.push(drop);
+            if (typeof window !== 'undefined' && Array.isArray(window.droppedItems) && window.droppedItems !== droppedItems) {
+                window.droppedItems.push(drop);
+            }
+            return drop;
         }
     }
 
@@ -2356,7 +2364,7 @@ if (typeof window !== 'undefined') {
                 inventory.fill(null);
                 equippedArmor = [null, null, null, null];
                 if (roomData.starterItems !== false) {
-                    giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 16); giveItem(IDS.COOKED_PORKCHOP, 10); giveItem(IDS.TORCH, 32);
+                    giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 16); giveItem(IDS.COOKED_PORKCHOP, 10); giveItem(IDS.TORCH, 32); giveItem(IDS.SAPLING, 4);
                 }
                 camera.x = player.x + player.width / 2 - canvas.width / 2;
                 camera.y = player.y + player.height / 2 - canvas.height / 2;
