@@ -1,30 +1,96 @@
-<img width="1024" height="576" alt="image png-2" src="https://github.com/user-attachments/assets/b8dad173-4a2a-429a-b002-e3825e0b37dd" />
+<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/24766ac6-143f-4b39-bcfe-6f2ee37f3982" />
 
-[Webcraft2D](https://github.com/raresh06/webcraft2d-game) 🎮
+# ⛏️ Webcraft2D
 
-Welcome to [Webcraft2D](https://github.com/raresh06/webcraft2d-game)! This is my 2D block-building game inspired by a childhood favorite of mine, Minecraft2D: PocketCode Edition.
-I built this project to learn, have fun, and share something cool that I worked on. It might not be a huge AAA game, but I poured a lot of heart into it!
+**Webcraft2D** is an action-packed, feature-rich 2D browser-based sandbox survival game inspired by Minecraft. Built from scratch using modern vanilla Web technologies, Webcraft2D combines classic block-building creativity with survival mechanics, procedural world exploration, crafting pipelines, animal husbandry, and native controller support—all running smoothly directly in your web browser.
 
-✨ Features
+---
 
-- **Multiplayer Mode**: Play together with friends online in real-time chunked worlds with chat and server browser.
-- **Agriculture & Farming**: Craft hoes to till farmland, cultivate wheat across 4 authentic growth stages, and bake fresh bread.
-- **Livestock & Overhauled Mobs**: Peaceful grazing cows, sheep, pigs, and chickens with animated quadruped walking cycles and drops.
-- **Jukebox & Vinyl Music Discs**: Craft a Jukebox, import your favorite MP3 music tracks, and enjoy custom audio playback with musical note particles and player HUD.
-- **Tool Progression & Realistic Harvesting**: Full tool suites across 5 tiers (Wood, Stone, Iron, Gold, Diamond) with strict Minecraft tool-tier drop rules.
-- **Smelting & Dynamic Furnaces**: Working furnaces with unlit idle textures, animated burning flames, cooking progress, and take-only output slots.
-- **Native Gamepad Support**: Plug-and-play Xbox, PlayStation, and Bluetooth controller support with analog stick movement, 360° targeting, and haptic rumble.
-- **Progressive Crack Animations**: 10-stage crisp pixelated block breaking fractures.
-- **Skyblock & Survival Modes**: Choose your survival experience across customizable world sizes and difficulties (Peaceful, Easy, Normal, Hard).
-- **Achievements System**: Complete goals and unlock over 30 unique survival and crafting achievements.
-- **Aseprite Pixel Skin Studio & Customization**: Paint custom skins in real-time 3D preview, customize UI accent themes, and fine-tune graphic shaders.
+## 🌟 Game Features Overview
 
-🚀 How to Play
+### 🌍 World Generation & Exploration
+* **Procedural Biomes**: Explore dynamically generated worlds featuring grassy plains, dense forests, sandy deserts, snowy tundras, and deep subterranean cave networks.
+* **Day & Night Cycle**: Experience full day-night transitions complete with dynamic lighting, smooth skies, and aggressive night-time hostiles.
+* **Subterranean Caves & Ores**: Mine underground to discover rich seams of Coal, Iron, Gold, Diamond, Redstone, and Lapis Lazuli embedded deep in stone strata.
 
-You can try the game directly in your web browser by following this link:
-[🎮 Play Webcraft2D Here](https://raresh06.github.io/webcraft2d-game/)
+### ⛏️ Mining, Tools & Progression
+* **Authentic Mining Tiers**: Gear up across 5 material tiers: **Wood, Stone, Iron, Gold, and Diamond**. Lower tier tools cannot harvest high-grade ores, enforcing authentic progression.
+* **Full Toolset**: Craft Pickaxes, Shovels, Axes, Swords, and Hoes—each optimized with specific mining speeds, durability, and block drop rules.
+* **10-Stage Block Fracture**: Authentic pixelated crack animations visually indicate block damage as you mine.
 
-🛠️ About the Project
+### 🌾 Agriculture, Farming & Cooking
+* **Tillable Farmland**: Use hoes to convert soil into fertile farmland near water sources to accelerate crop growth.
+* **Progressive Crop Cultivation**: Plant Wheat Seeds and watch them evolve through multiple growth stages into golden wheat ready for harvest.
+* **Baking & Cooking**: Cook raw meats in a furnace or combine harvested wheat into fresh Bread to keep your hunger bar full and restore health.
 
-This game was created by [Gheorghes Rares](https://github.com/raresh06) as a fun way to bring a childhood memory back to life on the web.
-Thank you for checking out my game!
+### 🐄 Livestock & Passive Mobs
+* **Animal Husbandry**: Encounter peaceful mobs including Cows, Pigs, Sheep, and Chickens roaming the surface biomes.
+* **Living Ecosystems**: Animals feature custom procedural walking animations, head bobbing, and idle behaviors.
+* **Resource Production**: Harvest animals for Raw Meats, Leather, and Wool, or use an empty bucket to milk cows for Milk Buckets.
+
+### 🎵 Custom Audio, Jukeboxes & Music Discs
+* **13 Vinyl Discs**: Collect rare music records throughout the world and play them in craftable Jukebox blocks with ambient particle effects.
+* **Custom MP3 Player**: Import local MP3 files directly into your in-game Jukeboxes. Audio files persist locally via IndexedDB storage.
+* **Floating Audio HUD**: Track music playback with interactive seek bars, volume controls, and real-time audio waveform visualizers.
+
+### 🔥 Smelting & Container Storage
+* **Dynamic Furnaces**: Smelt ores into refined ingots, transform sand into glass, and cook raw food into nutritious meals. Furnaces feature lit/unlit states and cast dynamic light while burning fuel.
+* **Container Inventories**: Store items, tools, and materials across chest networks, furnaces, and player inventories with full state persistence across world saves.
+
+### 🎮 Native Gamepad & Controller Support
+* **Plug-and-Play Compatibility**: Full support for Xbox, PlayStation DualShock/DualSense, Nintendo Switch Pro, and standard Bluetooth/USB gamepads.
+* **Dual Analog Controls**: Smooth platformer movement with the left stick and 360° crosshair aiming with the right stick.
+* **Spatial UI Navigation**: Navigate hotbars, inventory slots, settings, and crafting grids using D-Pad and analog stick focus navigation.
+* **Haptic Feedback**: Dual-motor vibration support for block breaking, taking damage, and tool feedback.
+
+### ⚙️ World Modes & Quality of Life
+* **Multiple Difficulties**: Play on **Peaceful** (no hostile spawns or hunger), **Easy**, **Normal**, or **Hard**.
+* **Recipe Pinning HUD**: Pin crafting requirements directly to your HUD to track materials in real time while exploring.
+* **Dynamic Theme Engines**: Customize UI accent colors, focus rings, and glowing elements with dynamic color palettes.
+
+---
+
+## 🎮 Game Controls
+
+### Keyboard & Mouse
+| Action | Key Binding |
+| :--- | :--- |
+| **Move Left / Right** | `A` / `D` or `Left Arrow` / `Right Arrow` |
+| **Jump** | `W`, `Space`, or `Up Arrow` |
+| **Crouch / Sneak** | `S` or `Down Arrow` |
+| **Mine Block / Attack** | `Left Click` (Hold) |
+| **Place Block / Interact / Till** | `Right Click` |
+| **Open Inventory & Crafting** | `E` |
+| **Hotbar Selection** | `1` – `9` or `Mouse Wheel` |
+| **Pause / Settings** | `ESC` |
+
+### Gamepad / Controller
+| Action | Button |
+| :--- | :--- |
+| **Move / Aim** | `Left Stick` (Movement) / `Right Stick` (Aim Crosshair) |
+| **Jump / Crouch** | `A` / `Cross` (Jump) • `B` / `Circle` (Crouch) |
+| **Mine / Attack** | `RT` / `R2` |
+| **Place / Interact** | `LT` / `L2` |
+| **Hotbar Navigation** | `LB` / `RB` (L1 / R1) |
+| **UI Navigation** | `D-Pad` or `Left Stick` |
+
+---
+
+## 🛠️ Built With
+
+* **Rendering Engine**: Native HTML5 `<canvas>` API with custom pixel-art render passes.
+* **Language**: Vanilla Modern JavaScript (ES6+), HTML5, and CSS3.
+* **Audio Engine**: Web Audio API & Web Storage (IndexedDB) for persistent local music tracks.
+* **Input Engine**: Gamepad API for hardware controller support and rumble feedback.
+* **Storage**: LocalStorage & IndexedDB for saving world states, inventory contents, difficulty settings, and custom audio files.
+
+---
+
+## 🚀 How to Run Locally
+
+Webcraft2D runs completely in the browser without any heavy dependencies, build tools, or frameworks required! But you can also download a fully electron compiled version for Windows, MacOS with Apple Silicon or with Intel.
+
+### Option 1: Direct File Launch
+1. Clone or download the repository:
+   ```bash
+   git clone [https://github.com/raresh06/webcraft2d-game.git](https://github.com/raresh06/webcraft2d-game.git)
