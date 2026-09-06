@@ -153,6 +153,11 @@ export function setMainOpenedChest(c) {
 }
 try { if (typeof window !== 'undefined') window.setMainOpenedChest = setMainOpenedChest; } catch(e) {}
 export let isInventoryOpen = false;
+export function setMainIsInventoryOpen(val) {
+    isInventoryOpen = val;
+    if (typeof window !== 'undefined') window.isInventoryOpen = val;
+}
+try { if (typeof window !== 'undefined') window.setMainIsInventoryOpen = setMainIsInventoryOpen; } catch(e) {}
 export let monstersKilledCount = 0;
 export let deepBlocksMinedCount = 0;
 export let caveSkyOpacity = 0;
@@ -715,7 +720,8 @@ export function initJukeboxFileInput() {
 
         // 4. In-Game HUD Elements & Overlays
         if (isVisible('world-map-modal') || isWorldMapOpen) { if (!callClose('toggleWorldMap', false)) { const wmm = document.getElementById('world-map-modal'); if (wmm) wmm.classList.add('hidden'); } return true; }
-        if (isInventoryOpen) { callClose('toggleInventory'); return true; }
+        const curInventoryOpen = isInventoryOpen || (typeof UI !== 'undefined' && UI.isInventoryOpen) || (typeof window !== 'undefined' && window.isInventoryOpen) || isVisible('inventory-container');
+        if (curInventoryOpen) { callClose('toggleInventory'); return true; }
         if (isVisible('pause-menu') || STATE === 'PAUSED') { callClose('resumeGame'); return true; }
         if (STATE === 'PLAYING') { callClose('pauseGame'); return true; }
         return false;
@@ -920,42 +926,47 @@ export function initJukeboxFileInput() {
             if (!overInventory) heldItemDraggedOutside = true;
         } else { dragEl.style.display = 'none'; }
         
-        let target = (e.target && typeof e.target.closest === 'function') ? e.target.closest('.slot, .armor-slot, .offhand-slot') : null;
-        if(target && !curHeld && STATE === 'PLAYING' && isInventoryOpen) {
-            let title = null;
-            if (target.classList.contains('armor-slot')) {
-                let armorIdx = parseInt(target.id.replace('armor-slot-', ''), 10);
-                if (Number.isFinite(armorIdx) && equippedArmor[armorIdx]) {
-                    title = ID_NAMES[equippedArmor[armorIdx].id];
-                } else {
-                    title = target.dataset.tip || 'Armour Slot';
+        const curInventoryOpen = isInventoryOpen || (typeof UI !== 'undefined' && UI.isInventoryOpen) || (typeof window !== 'undefined' && window.isInventoryOpen) || (document.getElementById('inventory-container') && !document.getElementById('inventory-container').classList.contains('hidden'));
+        let target = (e.target && typeof e.target.closest === 'function') ? e.target.closest('.slot, .armor-slot, .offhand-slot, .craft-slot, .recipe-card, [data-tip]') : null;
+        if (target && !curHeld && STATE === 'PLAYING' && curInventoryOpen) {
+            let title = target.dataset.tip || null;
+            if (!title) {
+                if (target.classList.contains('armor-slot')) {
+                    let armorIdx = parseInt(target.id.replace('armor-slot-', ''), 10);
+                    if (Number.isFinite(armorIdx) && equippedArmor[armorIdx]) {
+                        title = ID_NAMES[equippedArmor[armorIdx].id];
+                    } else {
+                        title = target.dataset.tip || 'Armour Slot';
+                    }
+                } else if (target.id === 'inv-offhand-slot') {
+                    if (inventory[27]) title = inventory[27].customName || ID_NAMES[inventory[27].id];
+                    else title = target.dataset.tip || 'Offhand (Shield / Torches)';
+                } else if (target.parentNode && target.parentNode.id === 'inventory-storage-grid') {
+                    let idx = Array.from(target.parentNode.children).indexOf(target) + 9;
+                    if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
+                } else if (target.parentNode && target.parentNode.id === 'inventory-hotbar-grid') {
+                    let idx = Array.from(target.parentNode.children).indexOf(target);
+                    if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
+                } else if (target.parentNode && target.parentNode.id === 'inventory-grid') {
+                    let idx = Array.from(target.parentNode.children).indexOf(target);
+                    if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
+                } else if (target.parentNode && target.parentNode.id === 'chest-grid') {
+                    let idx = Array.from(target.parentNode.children).indexOf(target);
+                    const curChest = openedChest || (typeof window !== 'undefined' ? window.openedChest : null);
+                    if (curChest?.chest?.items[idx]) title = curChest.chest.items[idx].customName || ID_NAMES[curChest.chest.items[idx].id];
+                } else if (target.parentNode && target.parentNode.id === 'hotbar') {
+                    let idx = Array.from(target.parentNode.children).indexOf(target);
+                    if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
+                } else if (target.id === 'f-input') {
+                    const curFurnace = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
+                    if (curFurnace?.input) title = ID_NAMES[curFurnace.input.id];
+                } else if (target.id === 'f-fuel') {
+                    const curFurnace = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
+                    if (curFurnace?.fuel) title = ID_NAMES[curFurnace.fuel.id];
+                } else if (target.id === 'f-output') {
+                    const curFurnace = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
+                    if (curFurnace?.output) title = ID_NAMES[curFurnace.output.id];
                 }
-            } else if (target.id === 'inv-offhand-slot') {
-                if (inventory[27]) title = inventory[27].customName || ID_NAMES[inventory[27].id];
-                else title = target.dataset.tip || 'Offhand (Shield / Torches)';
-            } else if (target.parentNode && target.parentNode.id === 'inventory-storage-grid') {
-                let idx = Array.from(target.parentNode.children).indexOf(target) + 9;
-                if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
-            } else if (target.parentNode && target.parentNode.id === 'inventory-hotbar-grid') {
-                let idx = Array.from(target.parentNode.children).indexOf(target);
-                if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
-            } else if (target.parentNode && target.parentNode.id === 'inventory-grid') {
-                let idx = Array.from(target.parentNode.children).indexOf(target);
-                if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
-            } else if (target.parentNode && target.parentNode.id === 'chest-grid') {
-                let idx = Array.from(target.parentNode.children).indexOf(target);
-                if (openedChest?.chest?.items[idx]) title = openedChest.chest.items[idx].customName || ID_NAMES[openedChest.chest.items[idx].id];
-            } else if (target.parentNode && target.parentNode.id === 'hotbar') {
-                let idx = Array.from(target.parentNode.children).indexOf(target);
-                if (inventory[idx]) title = inventory[idx].customName || ID_NAMES[inventory[idx].id];
-            } else if (target.id === 'f-input' && openedFurnace?.input) {
-                title = ID_NAMES[openedFurnace.input.id];
-            } else if (target.id === 'f-fuel' && openedFurnace?.fuel) {
-                title = ID_NAMES[openedFurnace.fuel.id];
-            } else if (target.id === 'f-output' && openedFurnace?.output) {
-                title = ID_NAMES[openedFurnace.output.id];
-            } else {
-                title = target.dataset.tip || null;
             }
 
             const tipEl = tooltipEl || (typeof document !== 'undefined' ? (document.getElementById('item-tooltip') || document.getElementById('tooltip')) : null);
@@ -963,6 +974,7 @@ export function initJukeboxFileInput() {
                 if (title) {
                     tipEl.innerText = title;
                     tipEl.style.display = 'block';
+                    tipEl.style.zIndex = '9999';
                     tipEl.style.left = (e.clientX + 15) + 'px';
                     tipEl.style.top = (e.clientY + 15) + 'px';
                 } else {
@@ -1107,7 +1119,6 @@ export function initJukeboxFileInput() {
             setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
             spawnAnimals(2, 0.30);
-            for (let i = 0; i < 2; i++) spawnMobs(false);
             updateSleepStatus();
             return;
         }
@@ -1121,7 +1132,6 @@ export function initJukeboxFileInput() {
             setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
             spawnAnimals(2, 0.30);
-            for (let i = 0; i < 2; i++) spawnMobs(false);
             updateSleepStatus();
         }
     }
@@ -2201,7 +2211,6 @@ export function initJukeboxFileInput() {
         if (dayCount !== previousDayCount && (!isMultiplayer || isMultiplayerAuthority())) {
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
             spawnAnimals(2, 0.30);
-            for (let i = 0; i < 2; i++) spawnMobs(false);
         }
         if (!isMultiplayer || isMultiplayerAuthority()) {
             updateFluids();

@@ -6534,7 +6534,7 @@ input, textarea {
   padding: 3px 8px;
   font-size: 18px;
   pointer-events: none;
-  z-index: 1000;
+  z-index: 9999;
   display: none;
   text-shadow: 1px 1px 0 #000;
   border-radius: 2px;
@@ -7675,7 +7675,16 @@ input, textarea {
   padding: 0 !important;
   border: none !important;
   color: #ffb347 !important;
-  text-shadow: 2px 2px 0 #0c0d10, 0 0 10px rgba(255, 150, 40, 0.4);
+  text-shadow: 2px 2px 0 #0c0d10;
+}
+.defense-card {
+  background: linear-gradient(180deg, #13171d 0%, #0c0f13 100%);
+  box-shadow: inset 1px 1px 0 #28303a, inset -1px -1px 0 #050608, 0 3px 6px rgba(0,0,0,0.5);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.defense-card.active-protection {
+  border-color: #0891b2 !important;
+  box-shadow: inset 1px 1px 0 #155e75, inset -1px -1px 0 #050608, 0 0 10px rgba(6, 182, 212, 0.25);
 }
 .furnace-workspace {
   width: 100%;

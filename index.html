@@ -2426,9 +2426,18 @@
                                     <span class="text-[#ffd34d] text-base font-bold font-['VT323'] leading-none">Offhand</span>
                                     <div id="inv-offhand-slot" class="slot offhand-slot empty" data-tip="Offhand (Shield / Torches)"></div>
                                 </div>
-                                <div class="flex flex-col items-center gap-1">
-                                    <span class="text-gray-300 text-sm font-['VT323'] leading-none">Protection</span>
-                                    <div id="inv-defense-readout" class="text-lg font-bold text-cyan-300 font-['VT323'] bg-[#080a0c] px-3 py-0.5 border border-cyan-700 text-center shadow whitespace-nowrap flex items-center justify-center gap-1">🛡️ Defense: 0%</div>
+                                <div id="inv-defense-card" class="defense-card flex flex-col items-center justify-center bg-[#101418] border-2 border-[#2b333c] px-3 py-1.5 shadow-md w-28 select-none">
+                                    <div class="flex items-center gap-1.5 mb-0.5">
+                                        <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 text-cyan-400" fill="currentColor">
+                                            <path d="M8 0L2 2v5c0 4.4 2.6 8.5 6 9 3.4-.5 6-4.6 6-9V2L8 0zm0 2.2l4 1.3v3.7c0 3.3-1.8 6.4-4 7-2.2-.6-4-3.7-4-7V3.5l4-1.3z"/>
+                                        </svg>
+                                        <span class="text-[#a0aec0] text-xs font-bold font-['VT323'] tracking-wider uppercase">Protection</span>
+                                    </div>
+                                    <div id="inv-defense-readout" class="flex items-baseline gap-1">
+                                        <span id="inv-defense-pct" class="text-2xl font-bold text-gray-400 font-['VT323'] leading-none">0%</span>
+                                        <span class="text-xs text-gray-400 font-['VT323']">DEF</span>
+                                    </div>
+                                    <div id="inv-defense-points" class="text-xs text-gray-500 font-['VT323'] mt-0.5">0 / 20 Armor</div>
                                 </div>
                             </div>
                         </div>
@@ -2456,8 +2465,7 @@
                         <!-- Furnace Stone Arch & Header -->
                         <div class="furnace-header flex items-center justify-between w-full mb-3 pb-2 border-b-2 border-[#45474f]">
                             <div class="flex items-center gap-2">
-                                <span class="text-xl">🔥</span>
-                                <h2 class="text-[#ffb347] text-2xl font-bold font-['VT323'] tracking-wide drop-shadow m-0">Furnace</h2>
+                                <h2 class="text-[#ffb347] text-2xl font-bold font-['VT323'] tracking-wide m-0">Furnace</h2>
                             </div>
                             <span class="furnace-badge text-sm font-['VT323'] px-2 py-0.5 rounded text-gray-300 bg-[#1e2025] border border-[#3e424b]">Smelting</span>
                         </div>

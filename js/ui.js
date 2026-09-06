@@ -6150,6 +6150,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         isInventoryOpen = !isInventoryOpen;
         if (typeof window !== 'undefined') window.isInventoryOpen = isInventoryOpen;
         if (typeof setEngineIsInventoryOpen === 'function') setEngineIsInventoryOpen(isInventoryOpen);
+        if (typeof window !== 'undefined' && typeof window.setMainIsInventoryOpen === 'function') window.setMainIsInventoryOpen(isInventoryOpen);
         const container = document.getElementById('inventory-container');
         if (isInventoryOpen) {
             if (container) container.classList.remove('hidden');
@@ -6517,7 +6518,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function populateSlotItemDOM(slot, item, imgClass = 'w-8 h-8') {
-        if (!item || !item.id) return;
+        if (!item || !item.id) {
+            delete slot.dataset.tip;
+            return;
+        }
+        slot.dataset.tip = item.customName || ID_NAMES[item.id] || '';
         ensureToolDurability(item);
         const img = document.createElement('img');
         img.src = textures[item.id]?.src || '';
@@ -7335,8 +7340,26 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         const totalDefense = getTotalArmorDefense();
         const reductionPct = Math.round(getArmorDamageReductionRatio() * 100);
+        const defensePctEl = document.getElementById('inv-defense-pct');
+        const defensePtsEl = document.getElementById('inv-defense-points');
+        const defenseCard = document.getElementById('inv-defense-card');
+        if (defensePctEl) {
+            defensePctEl.innerText = `${reductionPct}%`;
+            defensePctEl.className = reductionPct > 0 
+                ? "text-2xl font-bold text-cyan-300 font-['VT323'] leading-none drop-shadow"
+                : "text-2xl font-bold text-gray-400 font-['VT323'] leading-none";
+        }
+        if (defensePtsEl) {
+            defensePtsEl.innerText = `${totalDefense} / 20 Armor`;
+            defensePtsEl.className = totalDefense > 0
+                ? "text-xs text-cyan-400/80 font-['VT323'] mt-0.5"
+                : "text-xs text-gray-500 font-['VT323'] mt-0.5";
+        }
+        if (defenseCard) {
+            defenseCard.classList.toggle('active-protection', reductionPct > 0);
+        }
         const defenseReadout = document.getElementById('inv-defense-readout');
-        if (defenseReadout) {
+        if (defenseReadout && !defensePctEl) {
             defenseReadout.innerText = `Defense: ${reductionPct}%`;
         }
 
