@@ -1388,7 +1388,11 @@ export function initJukeboxFileInput() {
             if (miningTarget.x !== gridX || miningTarget.y !== gridY) { miningTarget.x = gridX; miningTarget.y = gridY; miningTarget.progress = 0; }
 
             miningTarget.progress += player.getToolPower(bgBlockId);
-            if (frameCount % 10 === 0) particles.push(new Particle(mouse.worldX, mouse.worldY, getBlockColor(bgBlockId)));
+            if (frameCount % 5 === 0) {
+                const chipX = bCX + (Math.random() - 0.5) * TILE_SIZE * 0.7;
+                const chipY = bCY + (Math.random() - 0.5) * TILE_SIZE * 0.7;
+                particles.push(new Particle(chipX, chipY, getBlockColor(bgBlockId)));
+            }
 
             let reqHardness = HARDNESS[bgBlockId] || 100;
             if (miningTarget.progress >= reqHardness) {
@@ -1396,7 +1400,7 @@ export function initJukeboxFileInput() {
                 if (typeof Gamepad !== 'undefined' && typeof Gamepad.triggerGamepadVibration === 'function') {
                     Gamepad.triggerGamepadVibration(90, 0.4, 0.6);
                 }
-                for (let p = 0; p < 8; p++) particles.push(new Particle(bCX, bCY, getBlockColor(bgBlockId)));
+                for (let p = 0; p < 12; p++) particles.push(new Particle(bCX + (Math.random() - 0.5) * 12, bCY + (Math.random() - 0.5) * 12, getBlockColor(bgBlockId)));
 
                 bgWorld[gridX][gridY] = IDS.AIR;
                 syncBlock(gridX, gridY, IDS.AIR, { isBackground: true });
@@ -1452,7 +1456,11 @@ export function initJukeboxFileInput() {
 
         miningTarget.progress += player.getToolPower(blockId);
         
-        if(frameCount % 10 === 0) particles.push(new Particle(mouse.worldX, mouse.worldY, getBlockColor(blockId)));
+        if (frameCount % 5 === 0) {
+            const chipX = bCX + (Math.random() - 0.5) * TILE_SIZE * 0.7;
+            const chipY = bCY + (Math.random() - 0.5) * TILE_SIZE * 0.7;
+            particles.push(new Particle(chipX, chipY, getBlockColor(blockId)));
+        }
 
         let reqHardness = HARDNESS[blockId] || 100;
         
@@ -1461,7 +1469,7 @@ export function initJukeboxFileInput() {
             if (typeof Gamepad !== 'undefined' && typeof Gamepad.triggerGamepadVibration === 'function') {
                 Gamepad.triggerGamepadVibration(90, 0.4, 0.6);
             }
-            for(let p=0; p<8; p++) particles.push(new Particle(bCX, bCY, getBlockColor(blockId))); 
+            for (let p = 0; p < 12; p++) particles.push(new Particle(bCX + (Math.random() - 0.5) * 12, bCY + (Math.random() - 0.5) * 12, getBlockColor(blockId))); 
             
             if (blockId === IDS.FURNACE) {
                 const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;

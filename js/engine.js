@@ -467,7 +467,18 @@ export function getMaxAnimals() {
     export let lastHotbarItemId = null;
     export let sleepStartTime = 0;
     export let sleepTransitionMs = 3000;
-    export let lastPlayerActivityAt = Date.now();
+    export const PATCH_NOTES_0_1_4_PATCH_1 = {
+        title: 'Beta 0.1.4 (Patch 1 - Visuals, Combat & UI Polish)',
+        items: [
+            'Authentic 16x16 Pixel-Art Block Breaking Animation: Upgraded the block breaking animation to an authentic 16x16 texel fracture system across 10 progressive stages, featuring dual-pass 3D relief highlights, dark core hairline fissures, block damage stress darkening, and integer-snapped physical micro-vibration.',
+            'Symmetrical Inventory Equipment Showcase: Redesigned the backpack equipment panel with a balanced, symmetrical 54px right-side container mirroring the vertical armor slots. Integrates the Offhand slot, stone pixel divider, and a compact pixel-art Defense Station with high-contrast text and dynamic tooltips.',
+            'Furnace UI Aesthetic Refinement: Removed the fire emoji and orange text glow from the Furnace header, restoring an authentic pixel-art stone aesthetic matching the rest of the game UI.',
+            'Daytime Hostile Mob Spawning Prevention: Fixed hostile mob spawning algorithms to prevent creepers, zombies, skeletons, spiders, and desert scorpions from spawning during daytime hours and after sleeping in a bed.',
+            'Inventory Item Hover Tooltips: Added interactive pixel-art tooltips displaying item names and metadata upon hovering over slots across inventory, hotbar, chest, furnace, armor, and offhand slots.',
+            'Escape Key Navigation Hierarchy: Pressing the Escape key now intelligently closes foreground container interfaces (Crafting Table, Furnace, Chest, Backpack) first before opening the Pause Menu.'
+        ]
+    };
+
     export const PATCH_NOTES_0_1_4 = {
         title: 'Beta 0.1.4 (Farming, Livestock, Jukebox & Mechanics Overhaul)',
         items: [
@@ -529,56 +540,8 @@ export function getMaxAnimals() {
         ]
     };
 
-    export const PATCH_NOTES_0_1_2 = {
-        title: 'Beta 0.1.2',
-        items: [
-            'Full Armor System: Added 12 craftable armor pieces spanning Iron, Gold, and Diamond tiers (Helmets, Chestplates, Leggings, Boots) with unique defense ratings and crafting recipes.',
-            'Armor Equipment Inventory: Integrated 4 dedicated equipment slots in the backpack UI with quick shift-click auto-equipping and drag-and-drop support.',
-            'Dynamic Visual Armor Overlays: Segmented armor plates render directly over the player character model and inventory paperdoll preview (helmet, chestplate, pauldrons, leggings, and boots).',
-            'Armor Durability & Protection: Equipping armor reduces incoming mob, projectile, and contact damage. Armor pieces feature individual durability bars, breakage audio, and alerts.',
-            'HUD Armor Defense Bar: Added an active armor defense bar above the player health bar displaying shield ratings for equipped gear.',
-            'Background Wall Building Mode: Toggle Background Mode (B key or UI toggle) to place and mine background walls behind foreground structures with atmospheric depth shading.',
-            'Sand Physics & Gravity Mechanics: Added real-time falling physics for unsupported sand blocks, natural chain-reaction cave collapses, and impact damage (1 damage) when falling sand strikes the player\'s head.',
-            'Head Suffocation Mechanics: Players trapped inside solid blocks or buried under falling sand now suffer periodic suffocation damage until freed.',
-            'Snowball Throwing Combat: Breaking snow blocks now yields snowballs (IDS.SNOWBALL). Right-click throws aerodynamic snowballs with physics trajectory, sound effects, particles, and impact damage.',
-            'Multiplayer Snowball Synchronization: Network synchronization for thrown snowball projectiles and impact hits across online peers.',
-            'Desert Scorpions & Venomous Poison: Added new hostile Desert Scorpions inhabiting desert biomes with multi-legged animations, stinger attacks, and a damage-over-time poison status effect.',
-            'Expanded Multi-Tier Achievements: Overhauled the achievement system from 14 to 30 milestones categorized across 4 color-coded difficulty tiers (Easy, Medium, Hard, and Master).',
-            'Synthesized Web Audio Engine: Procedural audio synthesizer for block placement, material-based footsteps (grass, stone, sand, wood, ladder, water), eating, damage, tool breaking, armor breakage, and snowball throws.',
-            'Backpack Paperdoll Preview: Added a live interactive Player Paperdoll preview inside the inventory interface displaying real-time skin and equipped armor.',
-            'Main Menu Skin Preview: Updated title screen preview to display the classic front view by default, transitioning to an animated walking side view upon clicking.'
-        ]
-    };
-
-    export const PATCH_NOTES_0_1_0 = {
-        title: 'Beta 0.1.0',
-        items: [
-            'Added a full Minecraft-style Achievements system with 14 survival, mining, crafting, exploration, and combat milestones.',
-            'Added dual-tab independent achievement progress tracking for Singleplayer and Multiplayer modes with unlock timestamps.',
-            'Added animated in-game "Achievement Get!" sliding notification banner with sound effect synthesis.',
-            'Added achievement restriction checks: starting with Starter Items or Keep Inventory disables achievements with in-menu guidance warnings.',
-            'Added dedicated Achievements buttons in both the Main Menu and in-game Pause Menu.',
-            'Added World Size selection (Small: 512x256, Big: 1024x320) for both Singleplayer and Multiplayer worlds with performance advisory.',
-            'Added natural vegetation generation across biomes: small wild grass tufts, tall wild grass, red poppies, and yellow dandelions.',
-            'Added seed harvesting mechanics from wild grass (20% drop chance) and plant placement on grass/dirt.',
-            'Added intelligent animal AI with temptation attraction when the player holds wheat seeds in hand.',
-            'Expanded mob spawning caps tailored to world sizes: up to 20 (small) / 40 (big) in Singleplayer and 15 (small) / 30 (big) in Multiplayer.',
-            'Enhanced tree generation with multiple natural varieties: Oak, Tall Oak, Fancy Oak, Pine, Tall Pine, and Bushes.',
-            'Fixed leaf decay algorithm with 4-block living wood connectivity validation, preserving neighboring trees when trees are harvested.',
-            'Removed tree generation from mountain peaks and rock cliffs for pure alpine ridge generation.',
-            'Added a fullscreen interactive World Map (press "M" or click the HUD minimap) with panning, zooming, player locator, and controls legend.',
-            'Redesigned the Crafting Table interface with a warm wooden workbench theme, brass bevels, and custom pixel-art emblem.',
-            'Added a real-time Recipe Search box in the Crafting Table with instant output & ingredient filtering and quick clear.',
-            'Optimized DOM recycling and DocumentFragment batching, eliminating UI stutters when opening inventories or crafting items.',
-            'Added Large Chest support with 54-slot storage grids and multiplayer synchronization.',
-            'Added safe spawn point elevation checks preventing fall or collision damage on initial world entry.',
-            'Improved random terrain generation with smoother biome blending, natural surface contours, and diverse elevation profiles.',
-            'Improved underground cave generation with richer interconnected caverns, spacious cave pockets, and deep subterranean chambers.'
-        ]
-    };
-
-    export const LATEST_PATCH_NOTES = PATCH_NOTES_0_1_4;
-    export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3, PATCH_NOTES_0_1_2, PATCH_NOTES_0_1_0];
+    export const LATEST_PATCH_NOTES = PATCH_NOTES_0_1_4_PATCH_1;
+    export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_1_4_PATCH_1, PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3];
 
     export let mapSeed = Math.floor(Math.random() * 1000000);
     export function seededRandom() {
@@ -852,6 +815,210 @@ export function getMaxAnimals() {
         [[8,8], [7,8], [8,7], [9,8], [8,9], [6,8], [8,6], [10,8], [8,10], [7,7], [9,9], [6,6], [5,6], [10,10], [11,10], [9,7], [10,6], [7,9], [6,10], [5,5], [4,5], [11,11], [12,11], [11,5], [12,5], [5,11], [4,11], [8,5], [8,11], [3,5], [2,5], [13,11], [13,12], [13,4], [13,3], [4,12], [3,12], [8,4], [8,3], [9,4], [6,11], [6,12], [1,5], [0,5], [14,12], [14,13], [14,3], [14,2], [3,13], [2,13], [7,3], [6,3], [10,4], [10,3], [10,11], [11,12], [15,2], [15,13], [1,13], [8,2], [8,1], [5,3], [4,2], [11,3], [12,2], [2,8], [3,8], [4,8], [12,8], [13,8], [14,8], [3,2], [2,2], [13,1], [14,1], [1,14], [0,14], [8,12], [8,13], [8,14], [6,5], [5,4], [10,9], [11,9], [9,10], [9,11], [1,2], [0,2], [8,0], [8,15], [15,1], [15,8], [15,14], [4,6], [3,7], [12,6], [13,7], [4,10], [3,9], [12,10], [13,9]],
         // Stage 9: 90% - 100%
         [[8,8], [7,8], [8,7], [9,8], [8,9], [6,8], [8,6], [10,8], [8,10], [7,7], [9,9], [6,6], [5,6], [10,10], [11,10], [9,7], [10,6], [7,9], [6,10], [5,5], [4,5], [11,11], [12,11], [11,5], [12,5], [5,11], [4,11], [8,5], [8,11], [3,5], [2,5], [13,11], [13,12], [13,4], [13,3], [4,12], [3,12], [8,4], [8,3], [9,4], [6,11], [6,12], [1,5], [0,5], [14,12], [14,13], [14,3], [14,2], [3,13], [2,13], [7,3], [6,3], [10,4], [10,3], [10,11], [11,12], [15,2], [15,13], [1,13], [8,2], [8,1], [5,3], [4,2], [11,3], [12,2], [2,8], [3,8], [4,8], [12,8], [13,8], [14,8], [3,2], [2,2], [13,1], [14,1], [1,14], [0,14], [8,12], [8,13], [8,14], [6,5], [5,4], [10,9], [11,9], [9,10], [9,11], [1,2], [0,2], [8,0], [8,15], [15,1], [15,8], [15,14], [4,6], [3,7], [12,6], [13,7], [4,10], [3,9], [12,10], [13,9], [1,1], [0,1], [14,0], [15,0], [0,15], [1,15], [14,15], [15,15], [7,1], [6,1], [9,1], [10,1], [7,14], [6,14], [9,14], [10,14], [2,4], [1,3], [14,4], [13,5], [2,11], [1,12], [14,11], [13,10]]
+    ];
+
+    export const BLOCK_CRACK_SEGMENTS = [
+        // Stage 0: 0% - 10% (Center impact star)
+        [
+            [0.48, 0.50, 0.44, 0.44], [0.48, 0.50, 0.54, 0.56],
+            [0.48, 0.50, 0.54, 0.44], [0.48, 0.50, 0.43, 0.56]
+        ],
+        // Stage 1: 10% - 20%
+        [
+            [0.48, 0.50, 0.44, 0.44], [0.48, 0.50, 0.54, 0.56],
+            [0.48, 0.50, 0.54, 0.44], [0.48, 0.50, 0.43, 0.56],
+            [0.44, 0.44, 0.38, 0.42], [0.54, 0.56, 0.60, 0.62],
+            [0.54, 0.44, 0.60, 0.38], [0.43, 0.56, 0.38, 0.64]
+        ],
+        // Stage 2: 20% - 30%
+        [
+            [0.48, 0.50, 0.44, 0.44], [0.48, 0.50, 0.54, 0.56],
+            [0.48, 0.50, 0.54, 0.44], [0.48, 0.50, 0.43, 0.56],
+            [0.44, 0.44, 0.38, 0.42], [0.54, 0.56, 0.60, 0.62],
+            [0.54, 0.44, 0.60, 0.38], [0.43, 0.56, 0.38, 0.64],
+            [0.38, 0.42, 0.32, 0.35], [0.60, 0.62, 0.68, 0.60],
+            [0.60, 0.38, 0.68, 0.32], [0.38, 0.64, 0.30, 0.72],
+            [0.44, 0.44, 0.46, 0.34]
+        ],
+        // Stage 3: 30% - 40%
+        [
+            [0.48, 0.50, 0.44, 0.44], [0.48, 0.50, 0.54, 0.56],
+            [0.48, 0.50, 0.54, 0.44], [0.48, 0.50, 0.43, 0.56],
+            [0.44, 0.44, 0.38, 0.42], [0.54, 0.56, 0.60, 0.62],
+            [0.54, 0.44, 0.60, 0.38], [0.43, 0.56, 0.38, 0.64],
+            [0.38, 0.42, 0.32, 0.35], [0.60, 0.62, 0.68, 0.60],
+            [0.60, 0.38, 0.68, 0.32], [0.38, 0.64, 0.30, 0.72],
+            [0.44, 0.44, 0.46, 0.34], [0.32, 0.35, 0.24, 0.28],
+            [0.68, 0.60, 0.76, 0.70], [0.68, 0.32, 0.78, 0.26],
+            [0.30, 0.72, 0.24, 0.80], [0.54, 0.56, 0.52, 0.68],
+            [0.38, 0.42, 0.46, 0.34]
+        ],
+        // Stage 4: 40% - 50%
+        [
+            [0.48, 0.50, 0.44, 0.44], [0.48, 0.50, 0.54, 0.56],
+            [0.48, 0.50, 0.54, 0.44], [0.48, 0.50, 0.43, 0.56],
+            [0.44, 0.44, 0.38, 0.42], [0.54, 0.56, 0.60, 0.62],
+            [0.54, 0.44, 0.60, 0.38], [0.43, 0.56, 0.38, 0.64],
+            [0.38, 0.42, 0.32, 0.35], [0.60, 0.62, 0.68, 0.60],
+            [0.60, 0.38, 0.68, 0.32], [0.38, 0.64, 0.30, 0.72],
+            [0.44, 0.44, 0.46, 0.34], [0.32, 0.35, 0.24, 0.28],
+            [0.68, 0.60, 0.76, 0.70], [0.68, 0.32, 0.78, 0.26],
+            [0.30, 0.72, 0.24, 0.80], [0.54, 0.56, 0.52, 0.68],
+            [0.38, 0.42, 0.46, 0.34], [0.24, 0.28, 0.18, 0.22],
+            [0.76, 0.70, 0.84, 0.78], [0.78, 0.26, 0.86, 0.20],
+            [0.24, 0.80, 0.16, 0.86], [0.32, 0.35, 0.22, 0.44],
+            [0.68, 0.60, 0.78, 0.52], [0.46, 0.34, 0.48, 0.18],
+            [0.52, 0.68, 0.54, 0.84]
+        ],
+        // Stage 5: 50% - 60%
+        [
+            [0.48, 0.50, 0.44, 0.44], [0.48, 0.50, 0.54, 0.56],
+            [0.48, 0.50, 0.54, 0.44], [0.48, 0.50, 0.43, 0.56],
+            [0.44, 0.44, 0.38, 0.42], [0.54, 0.56, 0.60, 0.62],
+            [0.54, 0.44, 0.60, 0.38], [0.43, 0.56, 0.38, 0.64],
+            [0.38, 0.42, 0.32, 0.35], [0.60, 0.62, 0.68, 0.60],
+            [0.60, 0.38, 0.68, 0.32], [0.38, 0.64, 0.30, 0.72],
+            [0.44, 0.44, 0.46, 0.34], [0.32, 0.35, 0.24, 0.28],
+            [0.68, 0.60, 0.76, 0.70], [0.68, 0.32, 0.78, 0.26],
+            [0.30, 0.72, 0.24, 0.80], [0.54, 0.56, 0.52, 0.68],
+            [0.38, 0.42, 0.46, 0.34], [0.24, 0.28, 0.18, 0.22],
+            [0.76, 0.70, 0.84, 0.78], [0.78, 0.26, 0.86, 0.20],
+            [0.24, 0.80, 0.16, 0.86], [0.32, 0.35, 0.22, 0.44],
+            [0.68, 0.60, 0.78, 0.52], [0.46, 0.34, 0.48, 0.18],
+            [0.52, 0.68, 0.54, 0.84], [0.18, 0.22, 0.10, 0.14],
+            [0.84, 0.78, 0.92, 0.86], [0.86, 0.20, 0.94, 0.12],
+            [0.16, 0.86, 0.10, 0.92], [0.22, 0.44, 0.12, 0.48],
+            [0.78, 0.52, 0.88, 0.50], [0.60, 0.38, 0.78, 0.52],
+            [0.38, 0.64, 0.22, 0.44]
+        ],
+        // Stage 6: 60% - 70%
+        [
+            [0.48, 0.50, 0.44, 0.44], [0.48, 0.50, 0.54, 0.56],
+            [0.48, 0.50, 0.54, 0.44], [0.48, 0.50, 0.43, 0.56],
+            [0.44, 0.44, 0.38, 0.42], [0.54, 0.56, 0.60, 0.62],
+            [0.54, 0.44, 0.60, 0.38], [0.43, 0.56, 0.38, 0.64],
+            [0.38, 0.42, 0.32, 0.35], [0.60, 0.62, 0.68, 0.60],
+            [0.60, 0.38, 0.68, 0.32], [0.38, 0.64, 0.30, 0.72],
+            [0.44, 0.44, 0.46, 0.34], [0.32, 0.35, 0.24, 0.28],
+            [0.68, 0.60, 0.76, 0.70], [0.68, 0.32, 0.78, 0.26],
+            [0.30, 0.72, 0.24, 0.80], [0.54, 0.56, 0.52, 0.68],
+            [0.38, 0.42, 0.46, 0.34], [0.24, 0.28, 0.18, 0.22],
+            [0.76, 0.70, 0.84, 0.78], [0.78, 0.26, 0.86, 0.20],
+            [0.24, 0.80, 0.16, 0.86], [0.32, 0.35, 0.22, 0.44],
+            [0.68, 0.60, 0.78, 0.52], [0.46, 0.34, 0.48, 0.18],
+            [0.52, 0.68, 0.54, 0.84], [0.18, 0.22, 0.10, 0.14],
+            [0.84, 0.78, 0.92, 0.86], [0.86, 0.20, 0.94, 0.12],
+            [0.16, 0.86, 0.10, 0.92], [0.22, 0.44, 0.12, 0.48],
+            [0.78, 0.52, 0.88, 0.50], [0.60, 0.38, 0.78, 0.52],
+            [0.38, 0.64, 0.22, 0.44], [0.10, 0.14, 0.04, 0.0],
+            [0.92, 0.86, 1.0, 0.92], [0.94, 0.12, 1.0, 0.08],
+            [0.10, 0.92, 0.08, 1.0], [0.48, 0.18, 0.50, 0.0],
+            [0.54, 0.84, 0.52, 1.0], [0.12, 0.48, 0.0, 0.50],
+            [0.88, 0.50, 1.0, 0.52]
+        ],
+        // Stage 7: 70% - 80%
+        [
+            [0.48, 0.50, 0.44, 0.44], [0.48, 0.50, 0.54, 0.56],
+            [0.48, 0.50, 0.54, 0.44], [0.48, 0.50, 0.43, 0.56],
+            [0.44, 0.44, 0.38, 0.42], [0.54, 0.56, 0.60, 0.62],
+            [0.54, 0.44, 0.60, 0.38], [0.43, 0.56, 0.38, 0.64],
+            [0.38, 0.42, 0.32, 0.35], [0.60, 0.62, 0.68, 0.60],
+            [0.60, 0.38, 0.68, 0.32], [0.38, 0.64, 0.30, 0.72],
+            [0.44, 0.44, 0.46, 0.34], [0.32, 0.35, 0.24, 0.28],
+            [0.68, 0.60, 0.76, 0.70], [0.68, 0.32, 0.78, 0.26],
+            [0.30, 0.72, 0.24, 0.80], [0.54, 0.56, 0.52, 0.68],
+            [0.38, 0.42, 0.46, 0.34], [0.24, 0.28, 0.18, 0.22],
+            [0.76, 0.70, 0.84, 0.78], [0.78, 0.26, 0.86, 0.20],
+            [0.24, 0.80, 0.16, 0.86], [0.32, 0.35, 0.22, 0.44],
+            [0.68, 0.60, 0.78, 0.52], [0.46, 0.34, 0.48, 0.18],
+            [0.52, 0.68, 0.54, 0.84], [0.18, 0.22, 0.10, 0.14],
+            [0.84, 0.78, 0.92, 0.86], [0.86, 0.20, 0.94, 0.12],
+            [0.16, 0.86, 0.10, 0.92], [0.22, 0.44, 0.12, 0.48],
+            [0.78, 0.52, 0.88, 0.50], [0.60, 0.38, 0.78, 0.52],
+            [0.38, 0.64, 0.22, 0.44], [0.10, 0.14, 0.04, 0.0],
+            [0.92, 0.86, 1.0, 0.92], [0.94, 0.12, 1.0, 0.08],
+            [0.10, 0.92, 0.08, 1.0], [0.48, 0.18, 0.50, 0.0],
+            [0.54, 0.84, 0.52, 1.0], [0.12, 0.48, 0.0, 0.50],
+            [0.88, 0.50, 1.0, 0.52], [0.18, 0.22, 0.0, 0.24],
+            [0.84, 0.78, 0.86, 1.0], [0.86, 0.20, 0.88, 0.0],
+            [0.16, 0.86, 0.0, 0.84], [0.32, 0.35, 0.46, 0.34],
+            [0.68, 0.60, 0.52, 0.68], [0.48, 0.18, 0.68, 0.32],
+            [0.52, 0.68, 0.30, 0.72]
+        ],
+        // Stage 8: 80% - 90%
+        [
+            [0.48, 0.50, 0.44, 0.44], [0.48, 0.50, 0.54, 0.56],
+            [0.48, 0.50, 0.54, 0.44], [0.48, 0.50, 0.43, 0.56],
+            [0.44, 0.44, 0.38, 0.42], [0.54, 0.56, 0.60, 0.62],
+            [0.54, 0.44, 0.60, 0.38], [0.43, 0.56, 0.38, 0.64],
+            [0.38, 0.42, 0.32, 0.35], [0.60, 0.62, 0.68, 0.60],
+            [0.60, 0.38, 0.68, 0.32], [0.38, 0.64, 0.30, 0.72],
+            [0.44, 0.44, 0.46, 0.34], [0.32, 0.35, 0.24, 0.28],
+            [0.68, 0.60, 0.76, 0.70], [0.68, 0.32, 0.78, 0.26],
+            [0.30, 0.72, 0.24, 0.80], [0.54, 0.56, 0.52, 0.68],
+            [0.38, 0.42, 0.46, 0.34], [0.24, 0.28, 0.18, 0.22],
+            [0.76, 0.70, 0.84, 0.78], [0.78, 0.26, 0.86, 0.20],
+            [0.24, 0.80, 0.16, 0.86], [0.32, 0.35, 0.22, 0.44],
+            [0.68, 0.60, 0.78, 0.52], [0.46, 0.34, 0.48, 0.18],
+            [0.52, 0.68, 0.54, 0.84], [0.18, 0.22, 0.10, 0.14],
+            [0.84, 0.78, 0.92, 0.86], [0.86, 0.20, 0.94, 0.12],
+            [0.16, 0.86, 0.10, 0.92], [0.22, 0.44, 0.12, 0.48],
+            [0.78, 0.52, 0.88, 0.50], [0.60, 0.38, 0.78, 0.52],
+            [0.38, 0.64, 0.22, 0.44], [0.10, 0.14, 0.04, 0.0],
+            [0.92, 0.86, 1.0, 0.92], [0.94, 0.12, 1.0, 0.08],
+            [0.10, 0.92, 0.08, 1.0], [0.48, 0.18, 0.50, 0.0],
+            [0.54, 0.84, 0.52, 1.0], [0.12, 0.48, 0.0, 0.50],
+            [0.88, 0.50, 1.0, 0.52], [0.18, 0.22, 0.0, 0.24],
+            [0.84, 0.78, 0.86, 1.0], [0.86, 0.20, 0.88, 0.0],
+            [0.16, 0.86, 0.0, 0.84], [0.32, 0.35, 0.46, 0.34],
+            [0.68, 0.60, 0.52, 0.68], [0.48, 0.18, 0.68, 0.32],
+            [0.52, 0.68, 0.30, 0.72], [0.24, 0.28, 0.36, 0.14],
+            [0.36, 0.14, 0.48, 0.18], [0.76, 0.70, 0.64, 0.86],
+            [0.64, 0.86, 0.54, 0.84], [0.78, 0.26, 0.66, 0.12],
+            [0.66, 0.12, 0.50, 0.0], [0.24, 0.80, 0.34, 0.90],
+            [0.34, 0.90, 0.52, 1.0], [0.10, 0.14, 0.0, 0.10],
+            [0.94, 0.12, 0.92, 0.0], [0.10, 0.92, 0.0, 0.94],
+            [0.92, 0.86, 0.90, 1.0]
+        ],
+        // Stage 9: 90% - 100% (Complete intricate shatter)
+        [
+            [0.48, 0.50, 0.44, 0.44], [0.48, 0.50, 0.54, 0.56],
+            [0.48, 0.50, 0.54, 0.44], [0.48, 0.50, 0.43, 0.56],
+            [0.44, 0.44, 0.38, 0.42], [0.54, 0.56, 0.60, 0.62],
+            [0.54, 0.44, 0.60, 0.38], [0.43, 0.56, 0.38, 0.64],
+            [0.38, 0.42, 0.32, 0.35], [0.60, 0.62, 0.68, 0.60],
+            [0.60, 0.38, 0.68, 0.32], [0.38, 0.64, 0.30, 0.72],
+            [0.44, 0.44, 0.46, 0.34], [0.32, 0.35, 0.24, 0.28],
+            [0.68, 0.60, 0.76, 0.70], [0.68, 0.32, 0.78, 0.26],
+            [0.30, 0.72, 0.24, 0.80], [0.54, 0.56, 0.52, 0.68],
+            [0.38, 0.42, 0.46, 0.34], [0.24, 0.28, 0.18, 0.22],
+            [0.76, 0.70, 0.84, 0.78], [0.78, 0.26, 0.86, 0.20],
+            [0.24, 0.80, 0.16, 0.86], [0.32, 0.35, 0.22, 0.44],
+            [0.68, 0.60, 0.78, 0.52], [0.46, 0.34, 0.48, 0.18],
+            [0.52, 0.68, 0.54, 0.84], [0.18, 0.22, 0.10, 0.14],
+            [0.84, 0.78, 0.92, 0.86], [0.86, 0.20, 0.94, 0.12],
+            [0.16, 0.86, 0.10, 0.92], [0.22, 0.44, 0.12, 0.48],
+            [0.78, 0.52, 0.88, 0.50], [0.60, 0.38, 0.78, 0.52],
+            [0.38, 0.64, 0.22, 0.44], [0.10, 0.14, 0.04, 0.0],
+            [0.92, 0.86, 1.0, 0.92], [0.94, 0.12, 1.0, 0.08],
+            [0.10, 0.92, 0.08, 1.0], [0.48, 0.18, 0.50, 0.0],
+            [0.54, 0.84, 0.52, 1.0], [0.12, 0.48, 0.0, 0.50],
+            [0.88, 0.50, 1.0, 0.52], [0.18, 0.22, 0.0, 0.24],
+            [0.84, 0.78, 0.86, 1.0], [0.86, 0.20, 0.88, 0.0],
+            [0.16, 0.86, 0.0, 0.84], [0.32, 0.35, 0.46, 0.34],
+            [0.68, 0.60, 0.52, 0.68], [0.48, 0.18, 0.68, 0.32],
+            [0.52, 0.68, 0.30, 0.72], [0.24, 0.28, 0.36, 0.14],
+            [0.36, 0.14, 0.48, 0.18], [0.76, 0.70, 0.64, 0.86],
+            [0.64, 0.86, 0.54, 0.84], [0.78, 0.26, 0.66, 0.12],
+            [0.66, 0.12, 0.50, 0.0], [0.24, 0.80, 0.34, 0.90],
+            [0.34, 0.90, 0.52, 1.0], [0.10, 0.14, 0.0, 0.10],
+            [0.94, 0.12, 0.92, 0.0], [0.10, 0.92, 0.0, 0.94],
+            [0.92, 0.86, 0.90, 1.0], [0.04, 0.0, 0.0, 0.04],
+            [1.0, 0.08, 0.94, 0.0], [0.0, 0.94, 0.08, 1.0],
+            [1.0, 0.92, 0.90, 1.0], [0.24, 0.28, 0.12, 0.48],
+            [0.76, 0.70, 0.88, 0.50], [0.78, 0.26, 0.60, 0.38],
+            [0.24, 0.80, 0.38, 0.64]
+        ]
     ];
 
     export function getSelectedMiningTier() {
@@ -8679,28 +8846,51 @@ export const SKIN_H = 32;
 
                     if (miningTarget.x === hX && miningTarget.y === hY && miningTarget.progress > 0) {
                         let activeBlock = curBgMode ? (bgWorld[hX]?.[hY] || IDS.AIR) : world[hX][hY];
-                        let ratio = miningTarget.progress / (HARDNESS[activeBlock] || 100);
-                        let stageIdx = Math.min(9, Math.max(0, Math.floor(ratio * 10)));
-                        const crackPixels = BLOCK_CRACK_STAGES[stageIdx] || BLOCK_CRACK_STAGES[0];
-                        const pScale = TILE_SIZE / 16;
-                        const dotSize = Math.max(1, Math.floor(TILE_SIZE / 28));
+                        let ratio = Math.max(0, Math.min(1, miningTarget.progress / (HARDNESS[activeBlock] || 100)));
+                        let stageIdx = Math.min(9, Math.floor(ratio * 10));
+                        const crackPixels = (typeof BLOCK_CRACK_STAGES !== 'undefined' && BLOCK_CRACK_STAGES[stageIdx]) ? BLOCK_CRACK_STAGES[stageIdx] : [];
 
-                        // Render subtle hairline relief highlight behind cracks (1px offset)
-                        ctx.fillStyle = curBgMode ? 'rgba(255, 230, 150, 0.22)' : 'rgba(255, 255, 255, 0.20)';
-                        for (let i = 0; i < crackPixels.length; i++) {
-                            const [px, py] = crackPixels[i];
-                            const rx = Math.floor(px * pScale);
-                            const ry = Math.floor(py * pScale);
-                            ctx.fillRect(drawX + rx + 1, drawY + ry + 1, dotSize, dotSize);
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(drawX, drawY, TILE_SIZE, TILE_SIZE);
+                        ctx.clip();
+
+                        // 1. Subtle block structural stress darkening as damage increases
+                        if (ratio > 0.15) {
+                            ctx.fillStyle = curBgMode ? `rgba(180, 83, 9, ${ratio * 0.18})` : `rgba(0, 0, 0, ${ratio * 0.22})`;
+                            ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
                         }
-                        // Render crisp dark fine hairline fracture fissures
-                        ctx.fillStyle = curBgMode ? 'rgba(180, 83, 9, 0.95)' : 'rgba(12, 12, 12, 0.92)';
-                        for (let i = 0; i < crackPixels.length; i++) {
-                            const [px, py] = crackPixels[i];
-                            const rx = Math.floor(px * pScale);
-                            const ry = Math.floor(py * pScale);
-                            ctx.fillRect(drawX + rx, drawY + ry, dotSize, dotSize);
+
+                        // 2. Crisp integer pixel micro-shake on mining impact (integer snap keeps pixel-art sharp)
+                        const shakeIntensity = (ratio > 0.05) ? Math.min(1.5, ratio * 1.5) : 0;
+                        const shakeX = (shakeIntensity > 0) ? Math.round(Math.sin(frameCount * 3.0) * shakeIntensity) : 0;
+                        const shakeY = (shakeIntensity > 0) ? Math.round(Math.cos(frameCount * 3.6) * (shakeIntensity * 0.6)) : 0;
+
+                        if (crackPixels.length > 0) {
+                            // 3. Pixel-Art 3D Relief Highlight (+1px physical offset)
+                            ctx.fillStyle = curBgMode ? 'rgba(255, 235, 175, 0.40)' : 'rgba(255, 255, 255, 0.35)';
+                            for (let i = 0; i < crackPixels.length; i++) {
+                                const [tx, ty] = crackPixels[i];
+                                const x0 = Math.floor(tx * TILE_SIZE / 16);
+                                const x1 = Math.floor((tx + 1) * TILE_SIZE / 16);
+                                const y0 = Math.floor(ty * TILE_SIZE / 16);
+                                const y1 = Math.floor((ty + 1) * TILE_SIZE / 16);
+                                ctx.fillRect(drawX + x0 + shakeX + 1, drawY + y0 + shakeY + 1, x1 - x0, y1 - y0);
+                            }
+
+                            // 4. Pixel-Art Dark Core Fracture Fissure (Snap-to-grid 16x16 texels)
+                            ctx.fillStyle = curBgMode ? 'rgba(120, 53, 15, 0.96)' : 'rgba(10, 10, 10, 0.95)';
+                            for (let i = 0; i < crackPixels.length; i++) {
+                                const [tx, ty] = crackPixels[i];
+                                const x0 = Math.floor(tx * TILE_SIZE / 16);
+                                const x1 = Math.floor((tx + 1) * TILE_SIZE / 16);
+                                const y0 = Math.floor(ty * TILE_SIZE / 16);
+                                const y1 = Math.floor((ty + 1) * TILE_SIZE / 16);
+                                ctx.fillRect(drawX + x0 + shakeX, drawY + y0 + shakeY, x1 - x0, y1 - y0);
+                            }
                         }
+
+                        ctx.restore();
                     }
 
                     // Controller Aim Reticle Overlay
@@ -9648,6 +9838,8 @@ try { if (typeof minimapImageData !== "undefined") window.minimapImageData = min
 try { if (typeof minimapOffscreenCanvas !== "undefined") window.minimapOffscreenCanvas = minimapOffscreenCanvas; } catch(e) {}
 try { if (typeof minimapOffscreenCtx !== "undefined") window.minimapOffscreenCtx = minimapOffscreenCtx; } catch(e) {}
 try { if (typeof miningTarget !== "undefined") window.miningTarget = miningTarget; } catch(e) {}
+try { if (typeof BLOCK_CRACK_STAGES !== "undefined") window.BLOCK_CRACK_STAGES = BLOCK_CRACK_STAGES; } catch(e) {}
+try { if (typeof BLOCK_CRACK_SEGMENTS !== "undefined") window.BLOCK_CRACK_SEGMENTS = BLOCK_CRACK_SEGMENTS; } catch(e) {}
 try { if (typeof mouse !== "undefined") window.mouse = mouse; } catch(e) {}
 try { if (typeof nonCollidableTreeWood !== "undefined") window.nonCollidableTreeWood = nonCollidableTreeWood; } catch(e) {}
 try { if (typeof notifyBlockedSaplings !== "undefined") window.notifyBlockedSaplings = notifyBlockedSaplings; } catch(e) {}

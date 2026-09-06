@@ -249,7 +249,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 }
 
     export const GAME_VERSION = '0.1.4';
-    export const DISPLAY_VERSION = '0.1.4';
+    export const DISPLAY_VERSION = '0.1.4 Patch 1';
     export const GAME_BUILD = 'webcraft2d-beta-0.1.4';
 
     export function updateVersionLabels() {
@@ -3271,39 +3271,39 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             return;
         }
 
-        // 1. Beta 0.1.4 (Latest Release)
-        const v14 = UPDATE_HISTORY_LOGS[0];
+        // 1. Beta 0.1.4 Patch 1 (Latest Release)
+        const vPatch1 = UPDATE_HISTORY_LOGS[0];
+        if (vPatch1) {
+            const artPatch1 = document.createElement('article');
+            artPatch1.className = 'news-entry is-newest';
+            artPatch1.innerHTML = `
+                <div class="news-entry-header">
+                    <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${vPatch1.title}</h3>
+                    <span class="news-badge">PATCH 1</span>
+                </div>
+                ${renderPatchNoteList(vPatch1.items)}
+            `;
+            entriesRoot.appendChild(artPatch1);
+        }
+
+        // 2. Beta 0.1.4 (Farming, Livestock, Jukebox & Mechanics Overhaul)
+        const v14 = UPDATE_HISTORY_LOGS[1];
         if (v14) {
             const art14 = document.createElement('article');
-            art14.className = 'news-entry is-newest';
+            art14.className = 'news-entry';
+            art14.style.borderColor = '#0284c7';
+            art14.style.boxShadow = 'inset 0 0 0 1px #080a0c, 0 0 0 1px rgba(2, 132, 199, 0.45)';
             art14.innerHTML = `
                 <div class="news-entry-header">
-                    <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${v14.title}</h3>
-                    <span class="news-badge">NEW</span>
+                    <h3 class="text-sky-400 font-bold text-2xl font-['VT323']">${v14.title}</h3>
+                    <span class="news-badge" style="background: #0284c7; color: #fff;">0.1.4</span>
                 </div>
                 ${renderPatchNoteList(v14.items)}
             `;
             entriesRoot.appendChild(art14);
         }
 
-        // 2. Beta 0.1.3 (Full Major Architecture & Feature Overhaul)
-        const v13 = UPDATE_HISTORY_LOGS[1];
-        if (v13) {
-            const art13 = document.createElement('article');
-            art13.className = 'news-entry';
-            art13.style.borderColor = '#10b981';
-            art13.style.boxShadow = 'inset 0 0 0 1px #080a0c, 0 0 0 1px rgba(16, 185, 129, 0.45)';
-            art13.innerHTML = `
-                <div class="news-entry-header">
-                    <h3 class="text-emerald-400 font-bold text-2xl font-['VT323']">${v13.title}</h3>
-                    <span class="news-badge" style="background: #059669; color: #fff;">0.1.3</span>
-                </div>
-                ${renderPatchNoteList(v13.items)}
-            `;
-            entriesRoot.appendChild(art13);
-        }
-
-        // 3. Older Versions (0.1.2, 0.1.0) inside clean collapsible summaries
+        // 3. Older Versions (Beta 0.1.3) inside clean collapsible summaries
         for (let i = 2; i < UPDATE_HISTORY_LOGS.length; i++) {
             const entry = UPDATE_HISTORY_LOGS[i];
             if (!entry) continue;
@@ -3794,7 +3794,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                 createdEl.innerText = `Member since: ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
             } else {
-                createdEl.innerText = isGuest ? 'Session Started: Today' : 'Member since: Beta v0.1.4';
+                createdEl.innerText = isGuest ? 'Session Started: Today' : `Member since: Beta v${DISPLAY_VERSION}`;
             }
         }
 
@@ -7347,16 +7347,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             defensePctEl.innerText = `${reductionPct}%`;
             defensePctEl.className = reductionPct > 0 
                 ? "text-2xl font-bold text-cyan-300 font-['VT323'] leading-none drop-shadow"
-                : "text-2xl font-bold text-gray-400 font-['VT323'] leading-none";
+                : "text-2xl font-bold text-white font-['VT323'] leading-none drop-shadow";
         }
         if (defensePtsEl) {
-            defensePtsEl.innerText = `${totalDefense} / 20 Armor`;
+            defensePtsEl.innerText = `${totalDefense}/20`;
             defensePtsEl.className = totalDefense > 0
-                ? "text-xs text-cyan-400/80 font-['VT323'] mt-0.5"
-                : "text-xs text-gray-500 font-['VT323'] mt-0.5";
+                ? "text-xs font-bold text-cyan-200 font-['VT323'] leading-none mt-1 drop-shadow"
+                : "text-xs font-bold text-[#ffd34d] font-['VT323'] leading-none mt-1";
         }
         if (defenseCard) {
             defenseCard.classList.toggle('active-protection', reductionPct > 0);
+            defenseCard.dataset.tip = `Protection: ${reductionPct}% Damage Reduction (${totalDefense} / 20 Armor Points)`;
         }
         const defenseReadout = document.getElementById('inv-defense-readout');
         if (defenseReadout && !defensePctEl) {
