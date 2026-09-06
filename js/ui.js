@@ -6081,6 +6081,71 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         return false;
     }
 
+    export function checkNearFurnace() {
+        const p = player || (typeof window !== 'undefined' ? window.player : null);
+        if (!p) return null;
+        let px = Math.floor((p.x + p.width / 2) / TILE_SIZE); 
+        let py = Math.floor((p.y + p.height / 2) / TILE_SIZE);
+        const w = (typeof world !== 'undefined' && world) || (typeof window !== 'undefined' ? window.world : null);
+        if (!w) return null;
+        for(let x = px - 3; x <= px + 3; x++) {
+            for(let y = py - 3; y <= py + 3; y++) {
+                if(x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT && w[x] && w[x][y] === IDS.FURNACE) {
+                    return { x, y };
+                }
+            }
+        }
+        return null;
+    }
+
+    export function findNearbyWorkstation() {
+        const p = player || (typeof window !== 'undefined' ? window.player : null);
+        if (!p) return null;
+        const w = (typeof world !== 'undefined' && world) || (typeof window !== 'undefined' ? window.world : null);
+        if (!w) return null;
+
+        const pCX = p.x + p.width / 2;
+        const pCY = p.y + p.height / 2;
+        const px = Math.floor(pCX / TILE_SIZE);
+        const py = Math.floor(pCY / TILE_SIZE);
+
+        const m = (typeof window !== 'undefined' && window.mouse) ? window.mouse : ((typeof mouse !== 'undefined' && mouse) ? mouse : null);
+        let mTileX = -999, mTileY = -999;
+        if (m && Number.isFinite(m.worldX) && Number.isFinite(m.worldY)) {
+            mTileX = Math.floor(m.worldX / TILE_SIZE);
+            mTileY = Math.floor(m.worldY / TILE_SIZE);
+        }
+
+        const candidates = [];
+        for (let x = px - 3; x <= px + 3; x++) {
+            for (let y = py - 3; y <= py + 3; y++) {
+                if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) continue;
+                const bId = w[x]?.[y];
+                if (bId === IDS.FURNACE || bId === IDS.CRAFTING_TABLE) {
+                    const bCX = (x + 0.5) * TILE_SIZE;
+                    const bCY = (y + 0.5) * TILE_SIZE;
+                    const distP = Math.hypot(pCX - bCX, pCY - bCY);
+                    if (distP > 3.6 * TILE_SIZE) continue;
+
+                    const isDirectMouse = (x === mTileX && y === mTileY);
+                    const distM = (m && Number.isFinite(m.worldX)) ? Math.hypot(m.worldX - bCX, m.worldY - bCY) : 9999;
+                    const isFacing = p.facingRight ? (bCX >= pCX - 8) : (bCX <= pCX + 8);
+
+                    let score = distP;
+                    if (isFacing) score -= 1.2 * TILE_SIZE;
+                    if (distM < 2.5 * TILE_SIZE) score -= (2.5 * TILE_SIZE - distM) * 0.5;
+                    if (isDirectMouse) score -= 10000;
+
+                    candidates.push({ type: bId, x, y, score, distP });
+                }
+            }
+        }
+
+        if (candidates.length === 0) return null;
+        candidates.sort((a, b) => a.score - b.score);
+        return candidates[0];
+    }
+
     export function toggleInventory() {
         isInventoryOpen = !isInventoryOpen;
         if (typeof window !== 'undefined') window.isInventoryOpen = isInventoryOpen;
@@ -6089,6 +6154,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (isInventoryOpen) {
             if (container) container.classList.remove('hidden');
             keys = {};
+
+            // If neither furnace nor chest was explicitly opened prior to this (e.g. opened via 'E' key), determine best nearby station
+            if (!openedFurnace && !openedChest) {
+                const bestStation = findNearbyWorkstation();
+                if (bestStation && bestStation.type === IDS.FURNACE) {
+                    const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
+                    let f = liveFurnaces.find(item => item.x === bestStation.x && item.y === bestStation.y);
+                    if (!f) {
+                        f = { x: bestStation.x, y: bestStation.y, input: null, fuel: null, output: null, progress: 0, burnTime: 0, maxBurnTime: 0 };
+                        liveFurnaces.push(f);
+                    }
+                    setOpenedFurnace(f);
+                    if (typeof window !== 'undefined' && typeof window.setMainOpenedFurnace === 'function') {
+                        window.setMainOpenedFurnace(f);
+                    }
+                }
+            }
+
             updateUI();
             const tip = typeof document !== 'undefined' ? (document.getElementById('item-tooltip') || document.getElementById('tooltip')) : null;
             if (tip) tip.style.display = 'none';
@@ -6995,6 +7078,28 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             setupFurnaceSlot('f-fuel', 'fuel');
             setupFurnaceSlot('f-output', 'output');
             updateFurnaceVisual(curOpenedFurnace);
+
+            // Quick switcher to nearby crafting table if both are accessible
+            let switchCraftBtn = document.getElementById('btn-furnace-switch-crafting');
+            if (nearTable) {
+                if (!switchCraftBtn) {
+                    switchCraftBtn = document.createElement('button');
+                    switchCraftBtn.id = 'btn-furnace-switch-crafting';
+                    switchCraftBtn.className = 'mt-3 px-3 py-1 bg-[#5c3a1d] hover:bg-[#7a4e27] text-[#ffd899] border-2 border-[#b07d4b] rounded text-sm font-["VT323"] cursor-pointer shadow transition-colors flex items-center gap-1.5';
+                    switchCraftBtn.innerHTML = '<span>Crafting Table ➔</span>';
+                    fPanel.appendChild(switchCraftBtn);
+                }
+                switchCraftBtn.style.display = 'flex';
+                switchCraftBtn.onclick = () => {
+                    setOpenedFurnace(null);
+                    if (typeof window !== 'undefined' && typeof window.setMainOpenedFurnace === 'function') {
+                        window.setMainOpenedFurnace(null);
+                    }
+                    updateUI();
+                };
+            } else if (switchCraftBtn) {
+                switchCraftBtn.style.display = 'none';
+            }
         } else {
             if (fPanel) {
                 fPanel.classList.add('hidden');
@@ -7042,6 +7147,36 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 if (textures[IDS.CRAFTING_TABLE]) {
                     ctIcon.appendChild(textures[IDS.CRAFTING_TABLE].cloneNode());
                     ctIcon.firstChild.className = 'w-full h-full pixelated';
+                }
+
+                // Quick switcher to nearby furnace if both are accessible
+                const nearFurnacePos = checkNearFurnace();
+                let switchFurnaceBtn = document.getElementById('btn-crafting-switch-furnace');
+                if (nearFurnacePos) {
+                    if (!switchFurnaceBtn) {
+                        switchFurnaceBtn = document.createElement('button');
+                        switchFurnaceBtn.id = 'btn-crafting-switch-furnace';
+                        switchFurnaceBtn.className = 'px-2 py-0.5 bg-[#374151] hover:bg-[#4b5563] text-orange-300 border border-orange-500 rounded text-xs font-["VT323"] cursor-pointer shadow transition-colors ml-auto';
+                        switchFurnaceBtn.innerHTML = '<span>➔ Furnace</span>';
+                        const cHeader = document.getElementById('header-crafting');
+                        if (cHeader) cHeader.appendChild(switchFurnaceBtn);
+                    }
+                    switchFurnaceBtn.style.display = 'inline-flex';
+                    switchFurnaceBtn.onclick = () => {
+                        const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
+                        let f = liveFurnaces.find(item => item.x === nearFurnacePos.x && item.y === nearFurnacePos.y);
+                        if (!f) {
+                            f = { x: nearFurnacePos.x, y: nearFurnacePos.y, input: null, fuel: null, output: null, progress: 0, burnTime: 0, maxBurnTime: 0 };
+                            liveFurnaces.push(f);
+                        }
+                        setOpenedFurnace(f);
+                        if (typeof window !== 'undefined' && typeof window.setMainOpenedFurnace === 'function') {
+                            window.setMainOpenedFurnace(f);
+                        }
+                        updateUI();
+                    };
+                } else if (switchFurnaceBtn) {
+                    switchFurnaceBtn.style.display = 'none';
                 }
             } else {
                 invMenu.classList.remove('crafting-table-mode');
@@ -8805,6 +8940,8 @@ try { if (typeof checkAfkKick !== "undefined") window.checkAfkKick = checkAfkKic
 try { if (typeof checkArmorAchievements !== "undefined") window.checkArmorAchievements = checkArmorAchievements; } catch(e) {}
 try { if (typeof checkAutosave !== "undefined") window.checkAutosave = checkAutosave; } catch(e) {}
 try { if (typeof checkNearCraftingTable !== "undefined") window.checkNearCraftingTable = checkNearCraftingTable; } catch(e) {}
+try { if (typeof checkNearFurnace !== "undefined") window.checkNearFurnace = checkNearFurnace; } catch(e) {}
+try { if (typeof findNearbyWorkstation !== "undefined") window.findNearbyWorkstation = findNearbyWorkstation; } catch(e) {}
 try { if (typeof clearCraftingSearch !== "undefined") window.clearCraftingSearch = clearCraftingSearch; } catch(e) {}
 try { if (typeof clearUnsupportedWorldStorage !== "undefined") window.clearUnsupportedWorldStorage = clearUnsupportedWorldStorage; } catch(e) {}
 try { if (typeof closeAccentColorPicker !== "undefined") window.closeAccentColorPicker = closeAccentColorPicker; } catch(e) {}
