@@ -205,9 +205,9 @@ export function setWorldDimensions(size) {
 
 export function getMaxAnimals() {
     if (isMultiplayer) {
-        return currentWorldSize === 'big' ? 18 : 10;
+        return currentWorldSize === 'big' ? 40 : 30;
     } else {
-        return currentWorldSize === 'big' ? 22 : 12;
+        return 40;
     }
 }
 
@@ -3277,11 +3277,11 @@ export const SKIN_H = 32;
                     hasFeeder = true;
                 } else {
                     const left = getFluid(x - 1, y);
-                    if (left && left.type === fluid.type && (left.source || left.level < fluid.level)) {
+                    if (left && left.type === fluid.type && (left.source || (!left.falling && left.level < fluid.level))) {
                         hasFeeder = true;
                     }
                     const right = getFluid(x + 1, y);
-                    if (right && right.type === fluid.type && (right.source || right.level < fluid.level)) {
+                    if (right && right.type === fluid.type && (right.source || (!right.falling && right.level < fluid.level))) {
                         hasFeeder = true;
                     }
                 }
@@ -3292,10 +3292,19 @@ export const SKIN_H = 32;
                 }
             }
 
-            // 2. Downward Flow (Gravity)
+            // 2. Downward Flow (Gravity) & Resting State Transitions
             const belowY = y + 1;
-            if (belowY < WORLD_HEIGHT && !isSolidWorldBlock(x, belowY, world[x]?.[belowY])) {
-                const belowFluid = getFluid(x, belowY);
+            const isBelowSolid = belowY >= WORLD_HEIGHT || isSolidWorldBlock(x, belowY, world[x]?.[belowY]);
+            const belowFluid = getFluid(x, belowY);
+            const isResting = isBelowSolid || (belowFluid && belowFluid.type === fluid.type && !belowFluid.falling);
+
+            // If previously marked as falling but now resting on solid ground or resting fluid, clear falling flag
+            if (isResting && fluid.falling) {
+                toSet.push([x, y, { ...fluid, falling: false }]);
+                fluid.falling = false;
+            }
+
+            if (!isBelowSolid) {
                 if (!belowFluid) {
                     // Flow straight down
                     toSet.push([x, belowY, { type: fluid.type, source: false, level: 0, falling: true }]);
@@ -3310,29 +3319,41 @@ export const SKIN_H = 32;
                         toSolidify.push([x, belowY, IDS.STONE]);
                     }
                     continue;
-                } else if (!belowFluid.falling && !belowFluid.source) {
+                } else if (!belowFluid.falling && !belowFluid.source && !isSolidWorldBlock(x, belowY + 1, world[x]?.[belowY + 1])) {
                     toSet.push([x, belowY, { type: fluid.type, source: false, level: 0, falling: true }]);
                 }
             }
 
             // 3. Horizontal Spread (Only when resting on a solid block or fluid beneath)
-            const isResting = belowY >= WORLD_HEIGHT || isSolidWorldBlock(x, belowY, world[x]?.[belowY]) || (getFluid(x, belowY)?.type === fluid.type);
             if (isResting && fluid.level < maxFlow) {
-                const nextLevel = fluid.level + 1;
+                const nextLevel = fluid.source ? 1 : fluid.level + 1;
                 for (const dir of [-1, 1]) {
                     const nx = x + dir;
                     if (nx < 0 || nx >= WORLD_WIDTH) continue;
                     if (isSolidWorldBlock(nx, y, world[nx]?.[y])) continue;
 
                     const nbrFluid = getFluid(nx, y);
+                    const willDropBelow = (y + 1 < WORLD_HEIGHT && !isSolidWorldBlock(nx, y + 1, world[nx]?.[y + 1]));
                     if (!nbrFluid) {
-                        toSet.push([nx, y, { type: fluid.type, source: false, level: nextLevel, falling: false }]);
+                        toSet.push([nx, y, { type: fluid.type, source: false, level: nextLevel, falling: willDropBelow }]);
                     } else if (nbrFluid.type !== fluid.type) {
                         // Horizontal meeting of Water and Lava -> Cobblestone
                         toSolidify.push([nx, y, IDS.COBBLESTONE]);
                     } else if (!nbrFluid.source && nbrFluid.level > nextLevel) {
-                        toSet.push([nx, y, { type: fluid.type, source: false, level: nextLevel, falling: false }]);
+                        toSet.push([nx, y, { type: fluid.type, source: false, level: nextLevel, falling: willDropBelow }]);
                     }
+                }
+            }
+
+            // 4. Classic 2-Source Infinite Water Spring
+            if (isWaterCell && !fluid.source && isResting) {
+                let adjacentSources = 0;
+                const left = getFluid(x - 1, y);
+                const right = getFluid(x + 1, y);
+                if (left && left.type === IDS.WATER && left.source) adjacentSources++;
+                if (right && right.type === IDS.WATER && right.source) adjacentSources++;
+                if (adjacentSources >= 2) {
+                    toSet.push([x, y, { type: IDS.WATER, source: true, level: 0, falling: false }]);
                 }
             }
         }
@@ -5285,7 +5306,7 @@ export const SKIN_H = 32;
 
     export class Pigeon extends Animal {
         constructor(x, y) {
-            super(x, y, TILE_SIZE * 0.45, TILE_SIZE * 0.45, 20, MOVE_SPEED * 0.28);
+            super(x, y, TILE_SIZE * 0.54, TILE_SIZE * 0.48, 20, MOVE_SPEED * 0.28);
             this.state = 'ground'; // 'ground' | 'flying' | 'perching'
             this.peckTimer = 0;
             this.perchTimer = 0;
@@ -5648,7 +5669,7 @@ export const SKIN_H = 32;
             const h = this.height;
 
             if (advancedGraphics && this.state !== 'flying') {
-                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 4, w * (2 / 2.2), 6);
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w * 0.45, drawY + h - 3, w * 0.9, 5);
             }
 
             ctx.save();
@@ -5661,139 +5682,250 @@ export const SKIN_H = 32;
             const isMoving = Math.abs(this.vx) > 0.05 && isGrounded;
             const walk = this.walkAnimTime || 0;
             const idle = Math.sin((frameCount + this.idleSeed) * 0.07);
-            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 180 < 7);
+            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 190 < 6);
 
-            const shimmer = (Math.sin(frameCount * 0.12 + this.idleSeed) + 1) / 2;
-            const collarColor = isDamaged ? '#ff6666' : (shimmer > 0.5 ? '#059669' : '#7c3aed');
-            const collarHighlight = isDamaged ? '#ff9999' : (shimmer > 0.5 ? '#34d399' : '#a78bfa');
+            // Shimmering iridescent neck cycle
+            const shimmerTime = (frameCount * 0.09 + this.idleSeed);
+            const shimmerVal = (Math.sin(shimmerTime) + 1) * 0.5;
 
-            const bodyBase = isDamaged ? '#ff7f7f' : '#64748b';
-            const bodyLight = isDamaged ? '#ffa8a8' : '#94a3b8';
-            const bodyDark = isDamaged ? '#cc4444' : '#475569';
-            const wingBarDark = isDamaged ? '#990000' : '#1e293b';
-            const wingBarMid = isDamaged ? '#bb2222' : '#334155';
-            const beakColor = isDamaged ? '#333333' : '#1e293b';
-            const cereColor = isDamaged ? '#ffcccc' : '#f1f5f9';
-            const footPink = isDamaged ? '#ef4444' : '#f43f5e';
-            const footDark = isDamaged ? '#b91c1c' : '#be123c';
-            const eyeRing = isDamaged ? '#ef4444' : '#f97316';
+            // Palette setup with damage flash override
+            const cHeadBase = isDamaged ? '#ff7070' : '#334155';
+            const cHeadTop = isDamaged ? '#ffa0a0' : '#475569';
+            const cHeadDark = isDamaged ? '#cc4444' : '#1e293b';
 
-            const headBobX = isMoving ? Math.sin(walk) * 2.2 : (isFlying ? 1 : 0);
-            const peckBobY = (this.peckTimer > 0) ? Math.sin(this.peckTimer / 26 * Math.PI) * 4 : 0;
-            const headBobY = (isMoving ? Math.abs(Math.sin(walk)) * 1.2 : idle * 0.3) + peckBobY + (this.headTilt * 3);
+            const cBreastBase = isDamaged ? '#ff8080' : '#4b5563';
+            const cBreastHigh = isDamaged ? '#ffa5a5' : '#64748b';
+            const cBreastDark = isDamaged ? '#cc4444' : '#334155';
+            const cBellyDark = isDamaged ? '#aa3333' : '#1e293b';
+
+            const cWingShield = isDamaged ? '#ffb0b0' : '#94a3b8';
+            const cWingLight = isDamaged ? '#ffd0d0' : '#cbd5e1';
+            const cWingBar = isDamaged ? '#991111' : '#0f172a';
+            const cWingPrimaries = isDamaged ? '#bb2222' : '#1e293b';
+
+            const cTailGrey = isDamaged ? '#ffa0a0' : '#475569';
+            const cTailBar = isDamaged ? '#880000' : '#0f172a';
+            const cTailEdge = isDamaged ? '#ffe0e0' : '#e2e8f0';
+
+            const cCereWhite = isDamaged ? '#ffcccc' : '#f8fafc';
+            const cBeakSlate = isDamaged ? '#333333' : '#1e293b';
+            const cBeakTip = isDamaged ? '#222222' : '#0f172a';
+
+            const cEyeOrange = isDamaged ? '#ff4444' : '#ea580c';
+            const cEyeRing = isDamaged ? '#ff8888' : '#64748b';
+
+            const cFootCoral = isDamaged ? '#ff4444' : '#f43f5e';
+            const cFootDark = isDamaged ? '#b91c1c' : '#9f1239';
+            const cClaw = isDamaged ? '#444444' : '#334155';
+
+            // Dynamic emerald and purple iridescence
+            const cIridGreen = isDamaged ? '#ff9999' : (shimmerVal > 0.4 ? '#10b981' : '#059669');
+            const cIridPurple = isDamaged ? '#ff7777' : (shimmerVal > 0.6 ? '#c084fc' : '#7c3aed');
+            const cIridGlint = isDamaged ? '#ffffff' : (shimmerVal > 0.5 ? '#34d399' : '#a855f7');
+
+            // Animations
+            const headBobX = isMoving ? Math.sin(walk) * 2.4 : (isFlying ? 1.2 : 0);
+            const peckBobY = (this.peckTimer > 0) ? Math.sin(this.peckTimer / 26 * Math.PI) * 4.5 : 0;
+            const headBobY = (isMoving ? Math.abs(Math.sin(walk)) * 1.3 : idle * 0.35) + peckBobY + (this.headTilt * 3);
 
             let wingAngle = 0;
             if (isFlying) {
                 wingAngle = Math.sin(this.flapTime) * 0.85;
-            } else if (this.panic) {
-                wingAngle = Math.sin(frameCount * 0.6) * 0.45;
-            }
-
-            if (isFlying) {
-                const flyTilt = Math.max(-0.4, Math.min(0.4, this.vy * 0.08));
+                const flyTilt = Math.max(-0.35, Math.min(0.35, this.vy * 0.08));
                 ctx.rotate(flyTilt);
+            } else if (this.panic) {
+                wingAngle = Math.sin(frameCount * 0.65) * 0.4;
             }
 
-            const leftLegSwing = isMoving ? Math.sin(walk) * 3 : 0;
-            const rightLegSwing = isMoving ? -Math.sin(walk) * 3 : 0;
-            const leftLegLift = (isMoving && Math.sin(walk) < 0) ? Math.abs(Math.sin(walk)) * 2 : 0;
-            const rightLegLift = (isMoving && -Math.sin(walk) < 0) ? Math.abs(Math.sin(walk)) * 2 : 0;
+            const walkSwing = isMoving ? Math.sin(walk) * 3.2 : 0;
+            const walkLiftFar = (isMoving && Math.sin(walk) < 0) ? Math.abs(Math.sin(walk)) * 2.2 : 0;
+            const walkLiftNear = (isMoving && -Math.sin(walk) < 0) ? Math.abs(Math.sin(walk)) * 2.2 : 0;
 
-            // 1. Far Leg
+            // 1. Far Leg & Claws (Behind Body)
             if (!isFlying) {
-                ctx.fillStyle = footDark;
-                ctx.fillRect(-w * 0.16 + leftLegSwing, h * 0.22 - leftLegLift, 2, h * 0.25);
-                ctx.fillRect(-w * 0.16 + leftLegSwing - 1, h * 0.47 - 1 - leftLegLift, 4, 1.8);
+                ctx.fillStyle = cFootDark;
+                // Shank
+                ctx.fillRect(-w * 0.12 + walkSwing, h * 0.20 - walkLiftFar, 2, h * 0.26);
+                // Back toe
+                ctx.fillRect(-w * 0.12 + walkSwing - 2, h * 0.46 - walkLiftFar - 1, 2, 1.5);
+                // Front toes with claws
+                ctx.fillRect(-w * 0.12 + walkSwing + 1, h * 0.46 - walkLiftFar - 1, 4, 1.5);
+                ctx.fillStyle = cClaw;
+                ctx.fillRect(-w * 0.12 + walkSwing + 4.5, h * 0.46 - walkLiftFar - 0.5, 1.5, 1);
             }
 
-            // 2. Tail Feathers
-            const tailBob = isFlying ? Math.sin(this.flapTime * 0.5) * 0.4 : (Math.sin(frameCount * 0.12) * 0.5);
-            ctx.fillStyle = wingBarDark;
-            ctx.fillRect(-w * 0.52, -h * 0.18 + tailBob, 4, 5);
-            ctx.fillStyle = bodyDark;
-            ctx.fillRect(-w * 0.48, -h * 0.25 + tailBob, 3, 4);
-            ctx.fillStyle = cereColor;
-            ctx.fillRect(-w * 0.52, -h * 0.18 + tailBob, 1.5, 4);
-
-            // 3. Plump Body & Breast
-            ctx.fillStyle = bodyBase;
-            ctx.fillRect(-w * 0.40, -h * 0.26, w * 0.65, h * 0.48);
-            ctx.fillStyle = bodyLight;
-            ctx.fillRect(-w * 0.20, -h * 0.22, w * 0.42, 2.5);
-            ctx.fillRect(w * 0.10, -h * 0.20, 2.5, h * 0.35);
-            ctx.fillStyle = bodyDark;
-            ctx.fillRect(-w * 0.38, h * 0.16, w * 0.60, 2.5);
-
-            // 4. Iridescent Neck Collar
-            const hx = w * 0.12 + headBobX;
-            const hy = -h * 0.50 + headBobY;
-            ctx.fillStyle = collarColor;
-            ctx.fillRect(hx - 2, hy + h * 0.22, w * 0.34, 3.5);
-            ctx.fillStyle = collarHighlight;
-            ctx.fillRect(hx, hy + h * 0.22, w * 0.22, 1.5);
-
-            // 5. Cute Pigeon Head
-            ctx.fillStyle = bodyBase;
-            ctx.fillRect(hx, hy, w * 0.32, h * 0.36);
-            ctx.fillStyle = bodyLight;
-            ctx.fillRect(hx + 1, hy, w * 0.28, 1.5);
-
-            // Rosy Cheek Blush
-            ctx.fillStyle = isDamaged ? '#ff9999' : '#fb7185';
-            ctx.fillRect(hx + 3, hy + h * 0.20, 2.5, 1.8);
-
-            // Eye
-            if (isBlinking) {
-                ctx.fillStyle = beakColor;
-                ctx.fillRect(hx + 3, hy + h * 0.08, 3, 1.2);
-            } else {
-                ctx.fillStyle = eyeRing;
-                ctx.fillRect(hx + 3, hy + h * 0.06, 3.5, 3.5);
-                ctx.fillStyle = '#0f172a';
-                ctx.fillRect(hx + 4, hy + h * 0.08, 2, 2);
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(hx + 4, hy + h * 0.06, 1, 1);
-            }
-
-            // Beak & Cere
-            ctx.fillStyle = cereColor;
-            ctx.fillRect(hx + w * 0.28, hy + h * 0.08, 2, 1.5);
-            ctx.fillStyle = beakColor;
-            ctx.fillRect(hx + w * 0.28, hy + h * 0.14, 4.2, 2.5);
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(hx + w * 0.28, hy + h * 0.20, 3.5, 1);
-
-            // 6. Wing
+            // 2. Tail & Rump
+            const tailFlutter = isFlying ? Math.sin(this.flapTime * 0.5) * 0.5 : Math.sin(frameCount * 0.12) * 0.4;
             ctx.save();
-            ctx.translate(-w * 0.05, -h * 0.10);
+            ctx.translate(-w * 0.42, -h * 0.05 + tailFlutter);
+            // Pale grey rump
+            ctx.fillStyle = cWingShield;
+            ctx.fillRect(0, -h * 0.14, 3, 3);
+            // Tail main body
+            ctx.fillStyle = cTailGrey;
+            ctx.fillRect(-w * 0.22, -h * 0.10, w * 0.24, 4.5);
+            // Dark terminal bar
+            ctx.fillStyle = cTailBar;
+            ctx.fillRect(-w * 0.22, -h * 0.10, 3.5, 4.5);
+            // White outer margin edge
+            ctx.fillStyle = cTailEdge;
+            ctx.fillRect(-w * 0.22, -h * 0.12, 1.5, 4.8);
+            ctx.restore();
+
+            // 3. Plump Breast & Belly Body
+            // Underbelly
+            ctx.fillStyle = cBellyDark;
+            ctx.fillRect(-w * 0.30, h * 0.14, w * 0.54, 3);
+            // Main breast / body mass
+            ctx.fillStyle = cBreastBase;
+            ctx.fillRect(-w * 0.32, -h * 0.22, w * 0.58, h * 0.40);
+            // Puffed breast curve
+            ctx.fillStyle = cBreastHigh;
+            ctx.fillRect(w * 0.10, -h * 0.18, 4, h * 0.30);
+            ctx.fillRect(-w * 0.15, -h * 0.20, w * 0.32, 2.5);
+            // Feather scallops on breast (curved plumage markings as in photo)
+            ctx.fillStyle = cBreastDark;
+            ctx.fillRect(-w * 0.08, -h * 0.08, 2.5, 2);
+            ctx.fillRect(w * 0.04, -h * 0.04, 2.5, 2);
+            ctx.fillRect(-w * 0.02, h * 0.06, 2.5, 2);
+            ctx.fillRect(w * 0.12, -h * 0.12, 2, 2);
+
+            // 4. Head, Throat & Neck
+            const hx = w * 0.16 + headBobX;
+            const hy = -h * 0.46 + headBobY;
+
+            // Neck connecting body to head
+            ctx.fillStyle = cHeadBase;
+            ctx.fillRect(hx - 3, hy + h * 0.16, w * 0.32, h * 0.28);
+            ctx.fillStyle = cHeadDark;
+            ctx.fillRect(hx - 4, hy + h * 0.22, 2, h * 0.22); // Throat/nape shadow
+
+            // Metallic Iridescent Neck Patch (Emerald Green + Purple Shimmer)
+            ctx.fillStyle = cIridGreen;
+            ctx.fillRect(hx - 1, hy + h * 0.18, 3.5, 3.5);
+            ctx.fillRect(hx + 3, hy + h * 0.24, 3, 3);
+            ctx.fillStyle = cIridPurple;
+            ctx.fillRect(hx - 2, hy + h * 0.26, 3, 3);
+            ctx.fillRect(hx + 2, hy + h * 0.18, 2.5, 2);
+            ctx.fillStyle = cIridGlint;
+            ctx.fillRect(hx, hy + h * 0.20, 1.5, 1.5);
+            ctx.fillRect(hx + 3, hy + h * 0.27, 1.5, 1.5);
+
+            // Sleek Rounded Head
+            ctx.fillStyle = cHeadBase;
+            ctx.fillRect(hx - 2, hy, w * 0.34, h * 0.32);
+            // Head crown highlight
+            ctx.fillStyle = cHeadTop;
+            ctx.fillRect(hx - 1, hy, w * 0.30, 2);
+            // Subtle throat shade
+            ctx.fillStyle = cHeadDark;
+            ctx.fillRect(hx + 3, hy + h * 0.26, 4, 2);
+
+            // Fiery Amber-Orange Eye
+            const eyeX = hx + 4;
+            const eyeY = hy + 3;
+            if (isBlinking) {
+                ctx.fillStyle = cHeadDark;
+                ctx.fillRect(eyeX - 1, eyeY + 1, 4, 1.5);
+            } else {
+                // Orbital skin ring
+                ctx.fillStyle = cEyeRing;
+                ctx.fillRect(eyeX - 0.5, eyeY - 0.5, 4.5, 4.5);
+                // Fiery orange iris
+                ctx.fillStyle = cEyeOrange;
+                ctx.fillRect(eyeX, eyeY, 3.5, 3.5);
+                // Black pupil
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(eyeX + 1, eyeY + 1, 2, 2);
+                // Crisp white catchlight gleam
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(eyeX + 1, eyeY, 1, 1);
+            }
+
+            // Beak & White Cere
+            const beakX = hx + w * 0.32;
+            const beakY = hy + 4;
+            // Prominent White / Ivory Cere (signature pigeon feature!)
+            ctx.fillStyle = cCereWhite;
+            ctx.fillRect(beakX - 1, beakY - 1, 2.5, 2);
+            // Slate bill
+            ctx.fillStyle = cBeakSlate;
+            ctx.fillRect(beakX + 1, beakY + 0.5, 4, 2.2);
+            // Curved dark tip
+            ctx.fillStyle = cBeakTip;
+            ctx.fillRect(beakX + 3.5, beakY + 1.8, 1.8, 1.4);
+
+            // 5. Wing (Checkered Wing Coverts + Two Black Wing Bars + Primaries)
+            ctx.save();
+            ctx.translate(-w * 0.04, -h * 0.08);
             ctx.rotate(wingAngle);
 
             if (isFlying) {
-                ctx.fillStyle = bodyBase;
-                ctx.fillRect(-w * 0.22, -h * 0.25, w * 0.48, h * 0.40);
-                ctx.fillStyle = wingBarDark;
-                ctx.fillRect(-w * 0.20, h * 0.10, w * 0.44, 2.5);
-                ctx.fillStyle = wingBarMid;
-                ctx.fillRect(-w * 0.15, 0, w * 0.36, 2);
+                // Expanded Aerodynamic Wing
+                // Wing coverts
+                ctx.fillStyle = cWingShield;
+                ctx.fillRect(-w * 0.24, -h * 0.28, w * 0.52, h * 0.46);
+                // Dual black wing bars
+                ctx.fillStyle = cWingBar;
+                ctx.fillRect(-w * 0.20, h * 0.02, w * 0.46, 2.5);
+                ctx.fillRect(-w * 0.16, -h * 0.10, w * 0.42, 2.5);
+                // Dark primaries with spread feather tips
+                ctx.fillStyle = cWingPrimaries;
+                ctx.fillRect(-w * 0.24, h * 0.12, w * 0.54, 3.5);
+                ctx.fillRect(-w * 0.20, h * 0.20, 3, 2.5);
+                ctx.fillRect(-w * 0.10, h * 0.22, 3, 2.5);
+                ctx.fillRect(0, h * 0.22, 3, 2.5);
+                ctx.fillRect(w * 0.10, h * 0.20, 3, 2.5);
+                // Inner wing lining highlight
+                ctx.fillStyle = cWingLight;
+                ctx.fillRect(-w * 0.18, -h * 0.24, w * 0.38, 2);
             } else {
-                ctx.fillStyle = bodyLight;
-                ctx.fillRect(-w * 0.20, -h * 0.14, w * 0.42, h * 0.32);
-                ctx.fillStyle = wingBarMid;
-                ctx.fillRect(-w * 0.16, -h * 0.02, w * 0.35, 1.8);
-                ctx.fillStyle = wingBarDark;
-                ctx.fillRect(-w * 0.12, h * 0.08, w * 0.28, 1.8);
+                // Folded Wing with Checker Marks and Two Bars
+                // Silvery lavender wing shield
+                ctx.fillStyle = cWingShield;
+                ctx.fillRect(-w * 0.24, -h * 0.14, w * 0.46, h * 0.34);
+                ctx.fillStyle = cWingLight;
+                ctx.fillRect(-w * 0.20, -h * 0.12, w * 0.38, 2.5);
+
+                // Checker feather spots on upper wing
+                ctx.fillStyle = cWingPrimaries;
+                ctx.fillRect(-w * 0.16, -h * 0.06, 2, 2);
+                ctx.fillRect(-w * 0.06, -h * 0.08, 2, 2);
+                ctx.fillRect(w * 0.04, -h * 0.04, 2, 2);
+                ctx.fillRect(-w * 0.10, 0, 2, 2);
+
+                // Two Iconic Black Wing Bars
+                ctx.fillStyle = cWingBar;
+                ctx.fillRect(-w * 0.20, h * 0.04, w * 0.38, 2.5); // First broad bar
+                ctx.fillRect(-w * 0.14, h * 0.12, w * 0.32, 2.5); // Second broad bar
+
+                // Folded Dark Primary Flight Feathers extending back
+                ctx.fillStyle = cWingPrimaries;
+                ctx.fillRect(-w * 0.32, h * 0.08, w * 0.22, 4);
+                ctx.fillStyle = cBeakTip;
+                ctx.fillRect(-w * 0.36, h * 0.10, 3, 3);
             }
             ctx.restore();
 
-            // 7. Near Leg
+            // 6. Near Leg & Claws (In Front)
             if (!isFlying) {
-                ctx.fillStyle = footPink;
-                ctx.fillRect(w * 0.04 + rightLegSwing, h * 0.22 - rightLegLift, 2, h * 0.25);
-                ctx.fillRect(w * 0.04 + rightLegSwing - 1, h * 0.47 - 1 - rightLegLift, 4, 1.8);
+                ctx.fillStyle = cFootCoral;
+                // Shank
+                ctx.fillRect(w * 0.06 - walkSwing, h * 0.20 - walkLiftNear, 2.2, h * 0.26);
+                // Back toe
+                ctx.fillRect(w * 0.06 - walkSwing - 2, h * 0.46 - walkLiftNear - 1, 2, 1.5);
+                // Front toes with claws
+                ctx.fillRect(w * 0.06 - walkSwing + 1, h * 0.46 - walkLiftNear - 1, 4.5, 1.5);
+                ctx.fillStyle = cClaw;
+                ctx.fillRect(w * 0.06 - walkSwing + 5.2, h * 0.46 - walkLiftNear - 0.5, 1.5, 1);
             } else {
-                ctx.fillStyle = footPink;
-                ctx.fillRect(-w * 0.10, h * 0.18, 3, 2);
-                ctx.fillRect(w * 0.02, h * 0.18, 3, 2);
+                // Tucked feet in flight
+                ctx.fillStyle = cFootCoral;
+                ctx.fillRect(-w * 0.10, h * 0.16, 3.5, 2);
+                ctx.fillRect(w * 0.04, h * 0.16, 3.5, 2);
+                ctx.fillStyle = cClaw;
+                ctx.fillRect(-w * 0.12, h * 0.17, 1.5, 1);
+                ctx.fillRect(w * 0.02, h * 0.17, 1.5, 1);
             }
 
             ctx.restore();
@@ -6838,57 +6970,97 @@ export const SKIN_H = 32;
             }
         }
 
-        // 1. Surface Lakes in Plains & Valleys (generated BEFORE trees)
+        // 1. Surface Lakes in Plains & Valleys (Natural sealed concave basins with level waterlines)
         const fillPool = (centerX, width, depth) => {
-            const startX = Math.max(4, centerX - Math.floor(width / 2));
-            const endX = Math.min(WORLD_WIDTH - 5, startX + width - 1);
-            let maxSurfaceY = 0;
-            for (let x = startX; x <= endX; x++) maxSurfaceY = Math.max(maxSurfaceY, surfaceHeights[x]);
-            const waterline = maxSurfaceY;
+            const halfW = Math.floor(width / 2);
+            const startX = Math.max(5, centerX - halfW);
+            const endX = Math.min(WORLD_WIDTH - 6, startX + width - 1);
+            if (endX <= startX + 2) return false;
+
+            const yLeftRim = surfaceHeights[startX - 1];
+            const yRightRim = surfaceHeights[endX + 1];
+            if (yLeftRim === undefined || yRightRim === undefined) return false;
+
+            // Waterline is set strictly below (larger Y) the lower rim so water is naturally contained
+            const waterline = Math.max(yLeftRim, yRightRim) + 1;
             let placed = 0;
+
             for (let x = startX; x <= endX; x++) {
-                const surfaceY = surfaceHeights[x];
-                const edgeDistance = Math.abs(x - (startX + endX) / 2) / Math.max(1, width / 2);
-                const targetFloorY = waterline + 1 + Math.floor(depth * Math.max(0, 1 - edgeDistance));
-                let floorY = Math.max(surfaceY + 1, targetFloorY);
-                if (floorY <= surfaceY) continue;
-                
-                for (let y = surfaceY; y < floorY; y++) {
+                const progress = (x - startX + 0.5) / (endX - startX + 1);
+                const bowlFactor = Math.sin(progress * Math.PI);
+                const bowlDepth = Math.max(1, Math.round(depth * bowlFactor));
+                const bedY = waterline + bowlDepth;
+
+                // 1. Clear open sky above the waterline
+                const originalSurface = surfaceHeights[x] || waterline;
+                for (let y = Math.min(originalSurface, waterline - 1); y < waterline; y++) {
+                    world[x][y] = IDS.AIR;
+                }
+
+                // 2. Fill concave basin with water source blocks
+                for (let y = waterline; y < bedY; y++) {
                     world[x][y] = IDS.AIR;
                     setFluid(x, y, { type: IDS.WATER, level: 0, source: true, falling: false });
                     placed++;
                 }
-                if (floorY < WORLD_HEIGHT && !isSolidWorldBlock(x, floorY, world[x][floorY])) {
-                    world[x][floorY] = IDS.SAND;
+
+                // 3. Line the lake bed with sand or clay and reinforce watertight base
+                const bedBlock = seededRandom() < 0.25 ? IDS.CLAY : IDS.SAND;
+                for (let by = bedY; by <= Math.min(WORLD_HEIGHT - 1, bedY + 2); by++) {
+                    if (!isSolidWorldBlock(x, by, world[x]?.[by])) {
+                        world[x][by] = (by === bedY) ? bedBlock : IDS.DIRT;
+                    }
+                }
+
+                // 4. Update surface height to waterline so vegetation and mobs don't generate inside water
+                surfaceHeights[x] = waterline;
+            }
+
+            // 5. Seal containment banks on left and right borders
+            for (let by = Math.min(yLeftRim, waterline); by <= waterline + depth + 1; by++) {
+                if (startX - 1 >= 0 && !isSolidWorldBlock(startX - 1, by, world[startX - 1]?.[by])) {
+                    world[startX - 1][by] = IDS.SAND;
+                }
+                if (endX + 1 < WORLD_WIDTH && !isSolidWorldBlock(endX + 1, by, world[endX + 1]?.[by])) {
+                    world[endX + 1][by] = IDS.SAND;
                 }
             }
+
             return placed > 0;
         };
 
         let poolsPlaced = 0;
-        for (let x = 12; x < WORLD_WIDTH - 12 && poolsPlaced < 6; x += 6) {
+        for (let x = 12; x < WORLD_WIDTH - 12 && poolsPlaced < 7; x += 6) {
             const localFloor = surfaceHeights[x];
             const leftRim = Math.min(surfaceHeights[x - 4], surfaceHeights[x - 2]);
             const rightRim = Math.min(surfaceHeights[x + 2], surfaceHeights[x + 4]);
-            const isValley = localFloor >= leftRim + 1 && localFloor >= rightRim + 1;
+            const isValley = localFloor >= leftRim + 2 && localFloor >= rightRim + 2;
             const biomeAllowsWater = biomes[x] !== 'desert' && biomes[x] !== 'snow';
-            if (isValley && biomeAllowsWater && seededRandom() < 0.65) {
-                const width = 4 + Math.floor(seededRandom() * 6);
+            if (isValley && biomeAllowsWater && seededRandom() < 0.70) {
+                const width = 5 + Math.floor(seededRandom() * 6);
                 const depth = 2 + Math.floor(seededRandom() * 3);
                 if (fillPool(x, width, depth)) poolsPlaced++;
             }
         }
 
-        // Mountain waterfall springs
+        // Mountain waterfall springs with open downhill cascade outlet
         let springsPlaced = 0;
         for (let x = 12; x < WORLD_WIDTH - 12 && springsPlaced < 4; x += 8) {
             if (biomes[x] === 'mountains' && seededRandom() < 0.45) {
                 const peakY = surfaceHeights[x];
                 if (peakY > 10 && peakY < WORLD_HEIGHT - 20) {
-                    world[x][peakY] = IDS.AIR;
-                    world[x - 1][peakY] = IDS.STONE;
-                    world[x + 1][peakY] = IDS.STONE;
+                    const leftSlopeY = surfaceHeights[x - 1] ?? peakY;
+                    const rightSlopeY = surfaceHeights[x + 1] ?? peakY;
+                    const flowRight = rightSlopeY >= leftSlopeY;
                     world[x][peakY + 1] = IDS.STONE;
+                    world[x][peakY] = IDS.AIR;
+                    if (flowRight) {
+                        world[x - 1][peakY] = IDS.STONE;
+                        world[x + 1][peakY] = IDS.AIR; // Downhill open outlet creates cliff waterfall
+                    } else {
+                        world[x + 1][peakY] = IDS.STONE;
+                        world[x - 1][peakY] = IDS.AIR; // Downhill open outlet
+                    }
                     setFluid(x, peakY, { type: IDS.WATER, level: 0, source: true, falling: false });
                     springsPlaced++;
                 }
@@ -7040,8 +7212,23 @@ export const SKIN_H = 32;
                 headBlock !== undefined && nonSolid.has(headBlock) && 
                 torsoBlock !== undefined && nonSolid.has(torsoBlock)) {
                 
-                let roll = Math.random();
-                let animalType = roll < 0.20 ? 'Sheep' : roll < 0.40 ? 'Pig' : roll < 0.60 ? 'Cow' : roll < 0.80 ? 'Chicken' : 'Pigeon';
+                let currentPigeons = entities.filter(e => e instanceof Pigeon).length;
+                let targetPigeons = Math.round(maxAnimals * 0.28); // 11 pigeons when maxAnimals is 40 (within 10-12 range)
+                let animalType;
+                if (currentPigeons < targetPigeons) {
+                    let roll = Math.random();
+                    if (roll < 0.35) animalType = 'Pigeon';
+                    else if (roll < 0.51) animalType = 'Sheep';
+                    else if (roll < 0.67) animalType = 'Pig';
+                    else if (roll < 0.83) animalType = 'Cow';
+                    else animalType = 'Chicken';
+                } else {
+                    let roll = Math.random();
+                    if (roll < 0.25) animalType = 'Sheep';
+                    else if (roll < 0.50) animalType = 'Pig';
+                    else if (roll < 0.75) animalType = 'Cow';
+                    else animalType = 'Chicken';
+                }
                 let spawnWorldY = (gy - 2) * TILE_SIZE;
                 
                 if (animalType === 'Sheep') entities.push(new Sheep(spawnX, spawnWorldY));
@@ -7052,7 +7239,7 @@ export const SKIN_H = 32;
                     const p1 = new Pigeon(spawnX, spawnWorldY);
                     entities.push(p1);
                     currentAnimals++;
-                    if (Math.random() < 0.50 && currentAnimals < maxAnimals) {
+                    if (Math.random() < 0.50 && currentAnimals < maxAnimals && (currentPigeons + 1) < 12) {
                         const p2 = new Pigeon(spawnX + 16, spawnWorldY);
                         p1.partner = p2;
                         p2.partner = p1;
@@ -7152,10 +7339,7 @@ export const SKIN_H = 32;
             return;
         }
 
-        const currentAnimalCount = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon).length;
-        if (!isNight && currentAnimalCount < getMaxAnimals() && Math.random() < 0.04) {
-            spawnAnimals(1, 0.30);
-        }
+        // Passive animals follow the daily respawn cycle and do not trickle-spawn during daytime
 
         // Hostile mobs (Zombies, Creepers, Scorpions) strictly do NOT spawn during daytime
         if (!isNight) return;
@@ -9359,45 +9543,136 @@ export const SKIN_H = 32;
             else if (fluid.type === IDS.LAVA) visibleLava.push(entry);
         });
 
-        // 1. RENDER WATER (Translucent, wavy surface, animated highlights & waterfalls)
+        // 1. RENDER WATER (Translucent, wavy connected surface, sloping quads, caustics & waterfalls)
         if (visibleWater.length > 0) {
             ctx.save();
-            ctx.fillStyle = 'rgba(28, 120, 218, 0.72)';
             for (let i = 0; i < visibleWater.length; i++) {
                 const { fluid, fluidX, fluidY, drawX, drawY } = visibleWater[i];
-                const hasFluidAbove = (fluidY > 0 && world[fluidX]?.[fluidY - 1] === IDS.WATER);
-                
-                let hRatio = 1.0;
-                if (!hasFluidAbove && !fluid.source && !fluid.falling) {
-                    hRatio = Math.max(0.22, 1.0 - (fluid.level / (WATER_FLOW_MAX + 1)) * 0.72);
-                }
-                const cellHeight = Math.floor(TILE_SIZE * hRatio);
-                const cellTopY = drawY + (TILE_SIZE - cellHeight);
+                const fluidAbove = getFluid(fluidX, fluidY - 1);
+                const hasFluidAbove = (fluidAbove && fluidAbove.type === IDS.WATER);
 
-                // Body fill
-                ctx.fillRect(drawX, cellTopY, TILE_SIZE, cellHeight);
+                const isSolidBelow = isSolidWorldBlock(fluidX, fluidY + 1, world[fluidX]?.[fluidY + 1]);
+                const isSolidLeft = isSolidWorldBlock(fluidX - 1, fluidY, world[fluidX - 1]?.[fluidY]);
+                const isSolidRight = isSolidWorldBlock(fluidX + 1, fluidY, world[fluidX + 1]?.[fluidY]);
 
-                // Waterfall stream streaks
-                if (fluid.falling) {
-                    ctx.fillStyle = 'rgba(180, 240, 255, 0.55)';
-                    const streakOffset = (animTick * 2 + fluidX * 7) % 12;
-                    ctx.fillRect(drawX + 8, drawY + streakOffset, 4, 16);
-                    ctx.fillRect(drawX + 22, drawY + ((streakOffset + 6) % 24), 3, 14);
+                if (hasFluidAbove) {
+                    // Submerged Water Block: Full height, underwater caustics, and boundary shading
+                    ctx.fillStyle = 'rgba(28, 120, 218, 0.76)';
+                    ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
+
+                    // Gentle animated caustics (light refraction ribbons)
+                    const causticsOffset = Math.sin(fluidX * 0.7 + fluidY * 0.9 + animTick * 0.05) * 4;
+                    ctx.fillStyle = 'rgba(110, 195, 255, 0.20)';
+                    ctx.fillRect(drawX + 4 + causticsOffset, drawY + 8, 14, 2);
+                    ctx.fillRect(drawX + 14 - causticsOffset, drawY + 22, 12, 2);
+
+                    // Solid contact shading (connected border against floor / walls)
+                    if (isSolidBelow) {
+                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillRect(drawX, drawY + TILE_SIZE - 2, TILE_SIZE, 2);
+                    }
+                    if (isSolidLeft) {
+                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillRect(drawX, drawY, 2, TILE_SIZE);
+                    }
+                    if (isSolidRight) {
+                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillRect(drawX + TILE_SIZE - 2, drawY, 2, TILE_SIZE);
+                    }
+                } else if (fluid.falling) {
+                    // Falling waterfall stream column
+                    ctx.fillStyle = 'rgba(28, 120, 218, 0.68)';
+                    ctx.fillRect(drawX + 2, drawY, TILE_SIZE - 4, TILE_SIZE);
+
+                    ctx.fillStyle = 'rgba(190, 242, 255, 0.70)';
+                    const streakOffset = (animTick * 3 + fluidX * 11) % TILE_SIZE;
+                    ctx.fillRect(drawX + 6, drawY + streakOffset, 3, 14);
+                    ctx.fillRect(drawX + 18, drawY + ((streakOffset + 12) % TILE_SIZE), 3, 12);
+
+                    // Falling waterfall splash & mist when hitting ground or pool
+                    const belowF = getFluid(fluidX, fluidY + 1);
+                    if (isSolidBelow || (belowF && !belowF.falling)) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+                        const mistW = 6 + Math.sin(animTick * 0.2 + fluidX) * 3;
+                        ctx.fillRect(drawX + 6, drawY + TILE_SIZE - 3, mistW, 3);
+                        ctx.fillRect(drawX + 18, drawY + TILE_SIZE - 4, mistW * 0.8, 3);
+                        if (advancedGraphics && Math.random() < 0.06) {
+                            spawnParticle(fluidX * TILE_SIZE + 8 + Math.random() * 16, (fluidY + 1) * TILE_SIZE - 2, '#d7f0ff');
+                        }
+                    }
+                } else {
+                    // Surface Water Block: Connected sloping surface quad with seamless wave highlights
+                    const hSelf = fluid.source ? 1.0 : Math.max(0.25, 1.0 - (fluid.level / (WATER_FLOW_MAX + 1)) * 0.72);
+
+                    const leftFluid = getFluid(fluidX - 1, fluidY);
+                    const rightFluid = getFluid(fluidX + 1, fluidY);
+
+                    const getNeighborHeight = (nbr, isSolid) => {
+                        if (isSolid) return hSelf;
+                        if (!nbr || nbr.type !== IDS.WATER) return hSelf * 0.65;
+                        if (nbr.falling) return 1.0;
+                        if (nbr.source) return 1.0;
+                        return Math.max(0.25, 1.0 - (nbr.level / (WATER_FLOW_MAX + 1)) * 0.72);
+                    };
+
+                    const hLeftN = getNeighborHeight(leftFluid, isSolidLeft);
+                    const hRightN = getNeighborHeight(rightFluid, isSolidRight);
+
+                    const hLeft = (hLeftN + hSelf) * 0.5;
+                    const hRight = (hRightN + hSelf) * 0.5;
+
+                    // Continuous wave offsets based on world pixel coordinates (guarantees zero boundary seams)
+                    const worldPixelL = fluidX * TILE_SIZE;
+                    const worldPixelR = (fluidX + 1) * TILE_SIZE;
+                    const waveL = Math.sin(worldPixelL * 0.06 + animTick * 0.08) * 1.5;
+                    const waveR = Math.sin(worldPixelR * 0.06 + animTick * 0.08) * 1.5;
+
+                    const topYL = Math.floor(drawY + TILE_SIZE * (1.0 - hLeft) + waveL);
+                    const topYR = Math.floor(drawY + TILE_SIZE * (1.0 - hRight) + waveR);
+                    const botY = drawY + TILE_SIZE;
+
+                    // Render smooth trapezoid fluid quad
                     ctx.fillStyle = 'rgba(28, 120, 218, 0.72)';
-                }
+                    ctx.beginPath();
+                    ctx.moveTo(drawX, topYL);
+                    ctx.lineTo(drawX + TILE_SIZE, topYR);
+                    ctx.lineTo(drawX + TILE_SIZE, botY);
+                    ctx.lineTo(drawX, botY);
+                    ctx.closePath();
+                    ctx.fill();
 
-                // Top wave surface highlight
-                if (!hasFluidAbove) {
-                    ctx.fillStyle = 'rgba(215, 245, 255, 0.88)';
-                    const wave = Math.sin(fluidX * 0.6 + animTick * 0.08) * 1.5;
-                    ctx.fillRect(drawX, Math.floor(cellTopY + wave), TILE_SIZE, 3);
-                    
-                    // Foam crest specks
+                    // Wave surface highlight strip
+                    ctx.strokeStyle = 'rgba(215, 245, 255, 0.88)';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(drawX, topYL);
+                    ctx.lineTo(drawX + TILE_SIZE, topYR);
+                    ctx.stroke();
+
+                    // Shoreline foam / meniscus where water touches solid terrain banks
+                    if (isSolidLeft) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                        const foamBob = Math.sin(animTick * 0.12 + fluidX) * 1.0;
+                        ctx.fillRect(drawX, Math.floor(topYL + foamBob - 1), 5, 3);
+                    }
+                    if (isSolidRight) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                        const foamBob = Math.sin(animTick * 0.12 + fluidX + 1) * 1.0;
+                        ctx.fillRect(drawX + TILE_SIZE - 5, Math.floor(topYR + foamBob - 1), 5, 3);
+                    }
+
+                    // Foam crest specks in wave centers
                     if ((fluidX + Math.floor(animTick / 8)) % 3 === 0) {
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                        ctx.fillRect(drawX + 10, Math.floor(cellTopY + wave - 1), 6, 2);
+                        const midTopY = (topYL + topYR) * 0.5;
+                        ctx.fillRect(drawX + 10, Math.floor(midTopY - 1), 6, 2);
                     }
-                    ctx.fillStyle = 'rgba(28, 120, 218, 0.72)';
+
+                    // Bottom and side boundary shading
+                    if (isSolidBelow) {
+                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillRect(drawX, botY - 2, TILE_SIZE, 2);
+                    }
                 }
             }
             ctx.restore();
@@ -9408,7 +9683,8 @@ export const SKIN_H = 32;
             ctx.save();
             for (let i = 0; i < visibleLava.length; i++) {
                 const { fluid, fluidX, fluidY, drawX, drawY } = visibleLava[i];
-                const hasFluidAbove = (fluidY > 0 && world[fluidX]?.[fluidY - 1] === IDS.LAVA);
+                const fluidAbove = getFluid(fluidX, fluidY - 1);
+                const hasFluidAbove = (fluidAbove && fluidAbove.type === IDS.LAVA);
 
                 let hRatio = 1.0;
                 if (!hasFluidAbove && !fluid.source && !fluid.falling) {

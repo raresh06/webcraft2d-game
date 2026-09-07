@@ -1150,13 +1150,24 @@ export function initJukeboxFileInput() {
         status.classList.remove('hidden');
     }
 
+    export function respawnDailyAnimals() {
+        const maxAnimals = getMaxAnimals();
+        const currentAnimals = entities.filter(e => 
+            e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon
+        ).length;
+        const deficit = Math.max(0, maxAnimals - currentAnimals);
+        if (deficit > 0) {
+            spawnAnimals(deficit, 0.40);
+        }
+    }
+
     export function completeSleepTransition() {
         if (!isMultiplayer) {
             setEngineTimeOfDay(0.2);
             setEngineDayCount(dayCount + 1);
             setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
-            spawnAnimals(2, 0.30);
+            respawnDailyAnimals();
             updateSleepStatus();
             return;
         }
@@ -1169,7 +1180,7 @@ export function initJukeboxFileInput() {
             setEngineDayCount(dayCount + 1);
             setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
-            spawnAnimals(2, 0.30);
+            respawnDailyAnimals();
             updateSleepStatus();
         }
     }
@@ -2281,7 +2292,7 @@ export function initJukeboxFileInput() {
         }
         if (dayCount !== previousDayCount && (!isMultiplayer || isMultiplayerAuthority())) {
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
-            spawnAnimals(2, 0.30);
+            respawnDailyAnimals();
         }
         if (!isMultiplayer || isMultiplayerAuthority()) {
             updateFluids();
@@ -3074,4 +3085,5 @@ try { if (typeof returnVinylToPlayer !== "undefined") window.returnVinylToPlayer
 try { if (typeof jukebox !== "undefined") window.jukebox = jukebox; } catch(e) {}
 try { if (typeof updateMusicPlayerHUD !== "undefined") window.updateMusicPlayerHUD = updateMusicPlayerHUD; } catch(e) {}
 try { if (typeof ejectActiveJukebox !== "undefined") window.ejectActiveJukebox = ejectActiveJukebox; } catch(e) {}
+try { if (typeof respawnDailyAnimals !== "undefined") window.respawnDailyAnimals = respawnDailyAnimals; } catch(e) {}
 

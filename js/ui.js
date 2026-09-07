@@ -4728,29 +4728,56 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             window.dayCount = 1;
             window.frameCount = 0;
         }
-        let initialAnimals = Math.min(getMaxAnimals(), Math.floor(getMaxAnimals() * 0.7));
+        const targetInitialAnimals = getMaxAnimals();
         const centerSpawnX = Math.floor(spawn.x / TILE_SIZE);
         const curSurfaces = (typeof window !== 'undefined' && window.surfaceHeights && window.surfaceHeights.length === WORLD_WIDTH) ? window.surfaceHeights : ((surfaceHeights && surfaceHeights.length === WORLD_WIDTH) ? surfaceHeights : []);
         const curWorld = (typeof window !== 'undefined' && window.world && window.world.length === WORLD_WIDTH) ? window.world : (world || []);
-        for (let i = 0; i < initialAnimals; i++) {
-            // Evenly segment the world to guarantee nice, widespread distribution
-            let segmentMin = Math.floor(15 + (i / initialAnimals) * (WORLD_WIDTH - 30));
-            let segmentMax = Math.floor(15 + ((i + 1) / initialAnimals) * (WORLD_WIDTH - 30));
-            let rx = Math.floor(segmentMin + Math.random() * Math.max(1, segmentMax - segmentMin));
-            // Ensure animal is at least 25 tiles away from the player's immediate spawn spot
-            if (Math.abs(rx - centerSpawnX) < 25) {
-                rx = (rx < centerSpawnX) ? Math.max(5, centerSpawnX - 28) : Math.min(WORLD_WIDTH - 6, centerSpawnX + 28);
+        
+        let pigeonCount = 0;
+        const targetPigeons = 11;
+        const nearCount = Math.round(targetInitialAnimals * 0.62); // ~25 near player
+        let spawnAttempts = 0;
+
+        while (entities.length < targetInitialAnimals && spawnAttempts < 450) {
+            spawnAttempts++;
+            const isNear = entities.length < nearCount;
+            let rx;
+            if (isNear) {
+                // Bigger chunk near the player (8 to 48 tiles away)
+                const dist = 8 + Math.floor(Math.random() * 41);
+                const side = Math.random() > 0.5 ? 1 : -1;
+                rx = centerSpawnX + side * dist;
+            } else {
+                // Rest distributed across the wider world
+                rx = Math.floor(15 + Math.random() * (WORLD_WIDTH - 30));
+                if (Math.abs(rx - centerSpawnX) < 20) continue;
             }
+            if (rx < 5 || rx >= WORLD_WIDTH - 5) continue;
+
             let ry = curSurfaces[rx] !== undefined ? curSurfaces[rx] : Math.floor(WORLD_HEIGHT / 2);
             if (ry < WORLD_HEIGHT && curWorld[rx] && (curWorld[rx][ry] === IDS.GRASS || curWorld[rx][ry] === IDS.SNOW || curWorld[rx][ry] === IDS.DIRT)) {
-                let roll = Math.random();
-                let animal;
-                if (roll < 0.20) animal = new Sheep(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
-                else if (roll < 0.40) animal = new Pig(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
-                else if (roll < 0.60) animal = new Cow(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
-                else if (roll < 0.80) animal = new Chicken(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
-                else animal = new Pigeon(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
-                entities.push(animal);
+                if (curWorld[rx][ry - 1] !== IDS.AIR || curWorld[rx][ry - 2] !== IDS.AIR) continue;
+
+                if (pigeonCount < targetPigeons && Math.random() < 0.35) {
+                    const p1 = new Pigeon(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    entities.push(p1);
+                    pigeonCount++;
+                    if (Math.random() < 0.45 && pigeonCount < 12 && entities.length < targetInitialAnimals) {
+                        const p2 = new Pigeon(rx * TILE_SIZE + 16, (ry - 2) * TILE_SIZE);
+                        p1.partner = p2;
+                        p2.partner = p1;
+                        entities.push(p2);
+                        pigeonCount++;
+                    }
+                } else {
+                    let roll = Math.random();
+                    let animal;
+                    if (roll < 0.25) animal = new Sheep(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    else if (roll < 0.50) animal = new Pig(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    else if (roll < 0.75) animal = new Cow(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    else animal = new Chicken(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    entities.push(animal);
+                }
             }
         }
         if (typeof setEngineEntities === 'function') setEngineEntities(entities);
