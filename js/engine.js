@@ -187,11 +187,14 @@ export let WORLD_WIDTH = 512;
 export let WORLD_HEIGHT = 256;
 export let currentWorldSize = 'small';
 
-export function setWorldDimensions(size) {
+export function setWorldDimensions(size, explicitWidth, explicitHeight) {
     currentWorldSize = size === 'big' ? 'big' : 'small';
-    if (currentWorldSize === 'big') {
-        WORLD_WIDTH = 1024;
-        WORLD_HEIGHT = 320;
+    if (explicitWidth && explicitHeight) {
+        WORLD_WIDTH = explicitWidth;
+        WORLD_HEIGHT = explicitHeight;
+    } else if (currentWorldSize === 'big') {
+        WORLD_WIDTH = 2048;
+        WORLD_HEIGHT = 512;
     } else {
         WORLD_WIDTH = 512;
         WORLD_HEIGHT = 256;
@@ -618,6 +621,9 @@ export function getMaxAnimals() {
         PLOWED_DIRT: 36, FARMLAND: 36,
         WHEAT_STAGE_1: 37, WHEAT_STAGE_2: 38, WHEAT_STAGE_3: 39, WHEAT_STAGE_4: 40,
         JUKEBOX: 41,
+        JUNGLE_WOOD: 42, JUNGLE_LEAVES: 43, JUNGLE_PLANKS: 44, JUNGLE_SAPLING: 45,
+        JUNGLE_DOOR: 46, JUNGLE_DOOR_TOP: 47, JUNGLE_DOOR_OPEN: 48, JUNGLE_DOOR_OPEN_TOP: 49,
+        VINES: 50, MELON: 51, FERN: 52, BAMBOO: 53, MELON_STEM: 54,
         STICK: 100, WOOD_PICKAXE: 101, STONE_PICKAXE: 102, 
         WOOD_SWORD: 103, STONE_SWORD: 104, WOOD_AXE: 105, 
         COAL: 106, GOLD_INGOT: 107,
@@ -635,7 +641,8 @@ export function getMaxAnimals() {
         WOOD_HOE: 152, STONE_HOE: 153, IRON_HOE: 154, GOLD_HOE: 155, DIAMOND_HOE: 156,
         WHEAT: 157, BREAD: 158,
         RAW_BEEF: 159, COOKED_BEEF: 160, LEATHER: 161,
-        EMPTY_VINYL: 162, VINYL_DISC: 162
+        EMPTY_VINYL: 162, VINYL_DISC: 162,
+        MELON_SLICE: 163, MELON_SEEDS: 164
     };
 
 
@@ -676,6 +683,19 @@ export function getMaxAnimals() {
     MINIMAP_COLOR_32[IDS.DOOR_OPEN] = 0xFF3D6B9E;
     MINIMAP_COLOR_32[IDS.DOOR_OPEN_TOP] = 0xFF3D6B9E;
     MINIMAP_COLOR_32[IDS.WOOL] = 0xFFF5F5F5;
+    MINIMAP_COLOR_32[IDS.JUNGLE_WOOD] = 0xFF33405C;
+    MINIMAP_COLOR_32[IDS.JUNGLE_LEAVES] = 0xFF347E1E;
+    MINIMAP_COLOR_32[IDS.JUNGLE_PLANKS] = 0xFF4F82B8;
+    MINIMAP_COLOR_32[IDS.JUNGLE_SAPLING] = 0xFF449E2E;
+    MINIMAP_COLOR_32[IDS.JUNGLE_DOOR] = 0xFF365D8D;
+    MINIMAP_COLOR_32[IDS.JUNGLE_DOOR_TOP] = 0xFF365D8D;
+    MINIMAP_COLOR_32[IDS.JUNGLE_DOOR_OPEN] = 0xFF365D8D;
+    MINIMAP_COLOR_32[IDS.JUNGLE_DOOR_OPEN_TOP] = 0xFF365D8D;
+    MINIMAP_COLOR_32[IDS.VINES] = 0xFF297A2D;
+    MINIMAP_COLOR_32[IDS.MELON] = 0xFF327D2E;
+    MINIMAP_COLOR_32[IDS.FERN] = 0xFF3C8E38;
+    MINIMAP_COLOR_32[IDS.BAMBOO] = 0xFF47A043;
+    MINIMAP_COLOR_32[IDS.MELON_STEM] = 0xFF42B37C;
 
     export const HARDNESS = {
         [IDS.DIRT]: 20, [IDS.PLOWED_DIRT]: 20, [IDS.GRASS]: 25, [IDS.STONE]: 150, [IDS.COBBLESTONE]: 150,
@@ -689,7 +709,10 @@ export function getMaxAnimals() {
         [IDS.DOOR]: 45, [IDS.DOOR_TOP]: 45, [IDS.DOOR_OPEN]: 45, [IDS.DOOR_OPEN_TOP]: 45, [IDS.CHEST]: 45,
         [IDS.LADDER]: 10, [IDS.WOODEN_STAIRS]: 60, [IDS.WOODEN_STAIRS_RIGHT]: 60,
         [IDS.COBBLESTONE_STAIRS]: 150, [IDS.COBBLESTONE_STAIRS_RIGHT]: 150,
-        [IDS.WATER]: 1, [IDS.LAVA]: 1
+        [IDS.WATER]: 1, [IDS.LAVA]: 1,
+        [IDS.JUNGLE_WOOD]: 60, [IDS.JUNGLE_LEAVES]: 5, [IDS.JUNGLE_PLANKS]: 60, [IDS.JUNGLE_SAPLING]: 5,
+        [IDS.JUNGLE_DOOR]: 45, [IDS.JUNGLE_DOOR_TOP]: 45, [IDS.JUNGLE_DOOR_OPEN]: 45, [IDS.JUNGLE_DOOR_OPEN_TOP]: 45,
+        [IDS.VINES]: 5, [IDS.MELON]: 30, [IDS.FERN]: 1, [IDS.BAMBOO]: 15, [IDS.MELON_STEM]: 1
     };
 
     export const ID_NAMES = Object.fromEntries(Object.entries(IDS).map(([k, v]) => [v, k.replace(/_/g, ' ')]));
@@ -735,6 +758,21 @@ export function getMaxAnimals() {
     ID_NAMES[IDS.LEGGINGS_IRON] = 'Iron Leggings';
     ID_NAMES[IDS.BOOTS_IRON] = 'Iron Boots';
     ID_NAMES[IDS.HELMET_GOLD] = 'Golden Helmet';
+    ID_NAMES[IDS.JUNGLE_WOOD] = 'Jungle Wood';
+    ID_NAMES[IDS.JUNGLE_LEAVES] = 'Jungle Leaves';
+    ID_NAMES[IDS.JUNGLE_PLANKS] = 'Jungle Planks';
+    ID_NAMES[IDS.JUNGLE_SAPLING] = 'Jungle Sapling';
+    ID_NAMES[IDS.JUNGLE_DOOR] = 'Jungle Door';
+    ID_NAMES[IDS.JUNGLE_DOOR_TOP] = 'Jungle Door';
+    ID_NAMES[IDS.JUNGLE_DOOR_OPEN] = 'Jungle Door';
+    ID_NAMES[IDS.JUNGLE_DOOR_OPEN_TOP] = 'Jungle Door';
+    ID_NAMES[IDS.VINES] = 'Vines';
+    ID_NAMES[IDS.MELON] = 'Melon';
+    ID_NAMES[IDS.FERN] = 'Fern';
+    ID_NAMES[IDS.BAMBOO] = 'Bamboo';
+    ID_NAMES[IDS.MELON_STEM] = 'Melon Stem';
+    ID_NAMES[IDS.MELON_SLICE] = 'Melon Slice';
+    ID_NAMES[IDS.MELON_SEEDS] = 'Melon Seeds';
     ID_NAMES[IDS.CHESTPLATE_GOLD] = 'Golden Chestplate';
     ID_NAMES[IDS.LEGGINGS_GOLD] = 'Golden Leggings';
     ID_NAMES[IDS.BOOTS_GOLD] = 'Golden Boots';
@@ -1064,7 +1102,8 @@ export function getMaxAnimals() {
     export const BACKGROUND_BUILDING_BLOCKS = new Set([
         IDS.DIRT, IDS.GRASS, IDS.STONE, IDS.COBBLESTONE, IDS.WOOD, IDS.PLANKS,
         IDS.SAND, IDS.SNOW, IDS.WOOL, IDS.WOODEN_STAIRS, IDS.COBBLESTONE_STAIRS,
-        IDS.WOODEN_STAIRS_RIGHT, IDS.COBBLESTONE_STAIRS_RIGHT
+        IDS.WOODEN_STAIRS_RIGHT, IDS.COBBLESTONE_STAIRS_RIGHT,
+        IDS.JUNGLE_WOOD, IDS.JUNGLE_PLANKS
     ]);
     export function isBackgroundBuildingBlock(id) {
         return BACKGROUND_BUILDING_BLOCKS.has(id);
@@ -1073,18 +1112,21 @@ export function getMaxAnimals() {
         return id === IDS.RAW_PORKCHOP || id === IDS.COOKED_PORKCHOP || id === IDS.APPLE ||
                id === IDS.RAW_CHICKEN || id === IDS.COOKED_CHICKEN || id === IDS.RAW_MUTTON ||
                id === IDS.COOKED_MUTTON || id === IDS.BREAD ||
-               id === IDS.RAW_BEEF || id === IDS.COOKED_BEEF;
+               id === IDS.RAW_BEEF || id === IDS.COOKED_BEEF || id === IDS.MELON_SLICE;
     }
     export let surfaceHeights = [];
     export let nonCollidableTreeWood = new Set();
     export function isWoodPartOfTree(wx, wy) {
-        if (!world || !world[wx] || world[wx][wy] !== IDS.WOOD) return false;
-        for (let dx = -3; dx <= 3; dx++) {
-            for (let dy = -8; dy <= 3; dy++) {
+        if (!world || !world[wx]) return false;
+        const b = world[wx][wy];
+        if (b !== IDS.WOOD && b !== IDS.JUNGLE_WOOD) return false;
+        for (let dx = -4; dx <= 4; dx++) {
+            for (let dy = -16; dy <= 4; dy++) {
                 const nx = wx + dx;
                 const ny = wy + dy;
                 if (nx >= 0 && nx < WORLD_WIDTH && ny >= 0 && ny < WORLD_HEIGHT) {
-                    if (world[nx]?.[ny] === IDS.LEAVES) return true;
+                    const leaf = world[nx]?.[ny];
+                    if (leaf === IDS.LEAVES || leaf === IDS.JUNGLE_LEAVES) return true;
                 }
             }
         }
@@ -1095,7 +1137,8 @@ export function getMaxAnimals() {
         for (let x = 0; x < WORLD_WIDTH; x++) {
             if (!world[x]) continue;
             for (let y = 0; y < WORLD_HEIGHT; y++) {
-                if (world[x][y] === IDS.WOOD && isWoodPartOfTree(x, y)) {
+                const b = world[x][y];
+                if ((b === IDS.WOOD || b === IDS.JUNGLE_WOOD) && isWoodPartOfTree(x, y)) {
                     nonCollidableTreeWood.add(`${x}_${y}`);
                 }
             }
@@ -2523,6 +2566,117 @@ export function getMaxAnimals() {
                         p(x, y, c);
                     }
                 }
+                else if (id === IDS.JUNGLE_WOOD) {
+                    let c = ['#564228', '#5e482c', '#4d3b24'][(x + Math.floor(y / 2)) % 3];
+                    if (y % 4 === 0 || (y % 4 === 2 && x % 4 === 0)) c = '#3c2e1c';
+                    else if ((x + y * 3) % 11 === 0) c = '#3d5228';
+                    p(x, y, c);
+                }
+                else if (id === IDS.JUNGLE_LEAVES) {
+                    if (Math.random() > 0.12) {
+                        p(x, y, randColor(['#1e7e34', '#28a745', '#155724', '#2d6a4f', '#38b000']));
+                    }
+                }
+                else if (id === IDS.JUNGLE_PLANKS) {
+                    let c = ['#b8824f', '#bf8956'][(x + Math.floor(y / 4)) % 2];
+                    if (y % 4 === 0 || (y % 4 === 2 && x % 8 === 0)) c = '#8a5c32';
+                    else if (y % 4 === 1 && x % 8 === 1) c = '#cca06e';
+                    p(x, y, c);
+                }
+                else if (id === IDS.JUNGLE_SAPLING) {
+                    if (x >= 7 && x <= 8 && y >= 6 && y <= 14) p(x, y, '#564228');
+                    if (x >= 4 && x <= 11 && y >= 3 && y <= 8 && (x + y) % 2 === 0) p(x, y, '#28a745');
+                    if (x >= 5 && x <= 10 && y >= 2 && y <= 7) p(x, y, '#38b000');
+                    if (x === 6 && y === 4) p(x, y, '#20c997');
+                }
+                else if (id === IDS.JUNGLE_DOOR_TOP || id === IDS.JUNGLE_DOOR) {
+                    let isEdge = (x === 0 || x === 15 || y === 0 || (id === IDS.JUNGLE_DOOR && y === 15));
+                    let c = isEdge ? '#633e1c' : ['#b8824f', '#bf8956'][x % 2];
+                    p(x, y, c);
+                    if (id === IDS.JUNGLE_DOOR_TOP) {
+                        let dx = x - 7.5, dy = y - 7.5;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 3.2) p(x, y, dist > 2.2 ? '#452a12' : '#38bdf8');
+                    }
+                    if (id === IDS.JUNGLE_DOOR && y === 2 && (x === 12 || x === 13)) p(x, y, '#facc15');
+                }
+                else if (id === IDS.JUNGLE_DOOR_OPEN_TOP || id === IDS.JUNGLE_DOOR_OPEN) {
+                    if (x <= 3) {
+                        let c = (x === 0 || x === 3) ? '#633e1c' : '#b8824f';
+                        p(x, y, c);
+                        if (id === IDS.JUNGLE_DOOR_OPEN_TOP && y >= 5 && y <= 10 && (x === 1 || x === 2)) p(x, y, '#38bdf8');
+                    }
+                }
+                else if (id === IDS.VINES) {
+                    const vineMask = (
+                        (x === 3 && y % 3 !== 0) || (x === 4 && (y >= 2 && y <= 14)) ||
+                        (x === 5 && (y === 4 || y === 8 || y === 12)) ||
+                        (x === 10 && (y >= 1 && y <= 15)) || (x === 11 && y % 4 !== 1) ||
+                        (x === 12 && (y === 3 || y === 7 || y === 11)) ||
+                        (x === 7 && (y >= 6 && y <= 13)) || (x === 8 && y % 2 === 0)
+                    );
+                    if (vineMask) {
+                        let c = (x + y) % 3 === 0 ? '#1b5e20' : ((x + y) % 2 === 0 ? '#2e7d32' : '#43a047');
+                        p(x, y, c);
+                    }
+                }
+                else if (id === IDS.MELON) {
+                    let stripe = Math.sin(x * 0.9 + Math.sin(y * 0.4) * 0.7);
+                    let c;
+                    if (stripe > 0.25) c = (x + y) % 4 === 0 ? '#4caf50' : '#388e3c';
+                    else if (stripe < -0.25) c = (x + y) % 4 === 0 ? '#1b5e20' : '#2e7d32';
+                    else c = '#28692c';
+                    if (x === 0 || x === 15 || y === 0 || y === 15) {
+                        if ((x + y) % 2 === 0) c = '#1b5e20';
+                    }
+                    p(x, y, c);
+                }
+                else if (id === IDS.MELON_SLICE) {
+                    if (y >= 3 && y <= 13 && x >= 2 && x <= 13) {
+                        let inWedge = (x + y >= 9 && x + y <= 21 && y - x <= 7 && x - y <= 7);
+                        if (inWedge) {
+                            let isRind = (x === 2 || y === 13 || (x + y === 9) || (x + y === 10));
+                            let isRindWhite = (x === 3 || y === 12 || x + y === 11);
+                            if (isRind) p(x, y, '#2e7d32');
+                            else if (isRindWhite) p(x, y, '#e8f5e9');
+                            else {
+                                let isSeed = (x === 7 && y === 8) || (x === 10 && y === 7) || (x === 8 && y === 10);
+                                p(x, y, isSeed ? '#1a1a1a' : ((x + y) % 3 === 0 ? '#d32f2f' : '#ef5350'));
+                            }
+                        }
+                    }
+                }
+                else if (id === IDS.MELON_SEEDS) {
+                    const mSeedDots = [
+                        [5, 9, '#262626'], [6, 8, '#404040'], [7, 7, '#d97706'], [7, 8, '#262626'],
+                        [9, 10, '#262626'], [10, 9, '#404040'], [11, 8, '#d97706'], [11, 9, '#262626'],
+                        [7, 12, '#262626'], [8, 11, '#404040'], [9, 11, '#262626']
+                    ];
+                    mSeedDots.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.FERN) {
+                    if (x >= 7 && x <= 8 && y >= 9 && y <= 15) p(x, y, '#2e7d32');
+                    if ((x >= 4 && x <= 11) && (y >= 4 && y <= 12)) {
+                        let isFrond = (Math.abs(x - 7.5) <= (14 - y) * 0.7);
+                        if (isFrond && (x + y) % 2 === 0) {
+                            p(x, y, (x + y) % 3 === 0 ? '#43a047' : '#2e7d32');
+                        }
+                    }
+                }
+                else if (id === IDS.BAMBOO) {
+                    if (x >= 6 && x <= 9) {
+                        let isNode = (y === 3 || y === 8 || y === 13);
+                        let c = isNode ? '#2e7d32' : ((x === 6) ? '#66bb6a' : (x === 9 ? '#388e3c' : '#4caf50'));
+                        p(x, y, c);
+                    }
+                    if ((y === 4 && (x === 5 || x === 10)) || (y === 3 && (x === 4 || x === 11))) p(x, y, '#81c784');
+                    if ((y === 9 && (x === 5 || x === 10)) || (y === 8 && (x === 4 || x === 11))) p(x, y, '#81c784');
+                }
+                else if (id === IDS.MELON_STEM) {
+                    if (x >= 7 && x <= 8 && y >= 11 && y <= 15) p(x, y, '#2e7d32');
+                    if (x >= 5 && x <= 10 && y >= 7 && y <= 10 && (x + y) % 2 === 0) p(x, y, '#66bb6a');
+                    if (x >= 3 && x <= 6 && y >= 5 && y <= 8) p(x, y, '#43a047');
+                }
             }
         }
         if (ORE_PALETTES[id]) {
@@ -2773,7 +2927,52 @@ export const SKIN_H = 32;
     }
 
     // Central drawing function for local & remote characters with limb segmentation and armor overlays
-    export function drawCharacter(ctx, skinCanvas, x, y, w, h, facingRight, walkAnim, isMoving, isDamage, headTargetX, headTargetY, isAttacking, heldItemId, isClimbing = false, armorList = null) {
+    export function drawShoulderParrot(ctx, parrot, px, py, sX, sY) {
+        if (!parrot) return;
+        ctx.save();
+        ctx.translate(px, py);
+
+        const v = parrot.variant || 0;
+        let cBody = '#dc2626', cWing = '#eab308', cFlight = '#2563eb', cBeak = '#1e293b', cCrest = null;
+        if (v === 1) { cBody = '#16a34a'; cWing = '#ef4444'; cFlight = '#0d9488'; cBeak = '#fef08a'; }
+        else if (v === 2) { cBody = '#0284c7'; cWing = '#38bdf8'; cFlight = '#1d4ed8'; cBeak = '#111827'; }
+        else if (v === 3) { cBody = '#64748b'; cWing = '#f8fafc'; cFlight = '#475569'; cBeak = '#d1d5db'; cCrest = '#fde047'; }
+
+        // Tail
+        ctx.fillStyle = cFlight;
+        ctx.fillRect(-1.5 * sX, 3.5 * sY, 2.5 * sX, 3.5 * sY);
+
+        // Body
+        ctx.fillStyle = cBody;
+        ctx.fillRect(-1 * sX, 0, 3.5 * sX, 4.5 * sY);
+
+        // Head
+        ctx.fillRect(0.5 * sX, -3 * sY, 3 * sX, 3 * sY);
+
+        // Crest if cockatiel
+        if (cCrest) {
+            ctx.fillStyle = cCrest;
+            ctx.fillRect(0.5 * sX, -4.8 * sY, 1.5 * sX, 2 * sY);
+        }
+
+        // Eye
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(1.8 * sX, -2.2 * sY, 1.2 * sX, 1.2 * sY);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(2.2 * sX, -2.2 * sY, 0.8 * sX, 1.2 * sY);
+
+        // Beak
+        ctx.fillStyle = cBeak;
+        ctx.fillRect(3.5 * sX, -1.8 * sY, 1.2 * sX, 1.2 * sY);
+
+        // Wing
+        ctx.fillStyle = cWing;
+        ctx.fillRect(-0.2 * sX, 0.8 * sY, 2.2 * sX, 2.6 * sY);
+
+        ctx.restore();
+    }
+
+    export function drawCharacter(ctx, skinCanvas, x, y, w, h, facingRight, walkAnim, isMoving, isDamage, headTargetX, headTargetY, isAttacking, heldItemId, isClimbing = false, armorList = null, shoulderParrots = null) {
         const activeArmor = (STATE === 'MENU') ? (armorList || [null, null, null, null]) : (armorList !== null ? armorList : equippedArmor);
         ctx.save();
         ctx.translate(x, y);
@@ -2806,6 +3005,11 @@ export const SKIN_H = 32;
         // 1. Back Arm (with shoulder sleeve armor)
         drawCharacterArm(ctx, skinCanvas, 12, 8, 6 * sX, 8 * sY, 2 * sX, 2 * sY, armSwing, sX, sY, chestPal, false, null);
         
+        // Back shoulder parrot (if any)
+        if (shoulderParrots && shoulderParrots.left) {
+            drawShoulderParrot(ctx, shoulderParrots.left, 2 * sX, 4 * sY, sX, sY);
+        }
+
         // 2. Back Leg (with back thigh armor and back boot moving with swinging foot)
         drawCharacterLeg(ctx, skinCanvas, 8, 20, 6 * sX, 20 * sY, 2 * sX, 2 * sY, -swing, sX, sY, legPal, bootPal);
         
@@ -2820,6 +3024,11 @@ export const SKIN_H = 32;
         
         // 6. Front Arm ON EXTERIOR (with shoulder sleeve armor, hands on the exterior, and held item)
         drawCharacterArm(ctx, skinCanvas, 0, 8, 6 * sX, 8 * sY, 2 * sX, 2 * sY, frontArmSwing, sX, sY, chestPal, true, heldItemId);
+
+        // Front shoulder parrot (if any)
+        if (shoulderParrots && shoulderParrots.right) {
+            drawShoulderParrot(ctx, shoulderParrots.right, 9 * sX, 4 * sY, sX, sY);
+        }
 
         ctx.restore();
     }
@@ -3105,15 +3314,26 @@ export const SKIN_H = 32;
         if (id === IDS.BED) return '#d83b3b';
         if (id === IDS.JUKEBOX) return '#5c3a21';
         if ([IDS.DOOR, IDS.DOOR_TOP, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP].includes(id)) return '#9e6b3d';
+        if ([IDS.JUNGLE_DOOR, IDS.JUNGLE_DOOR_TOP, IDS.JUNGLE_DOOR_OPEN, IDS.JUNGLE_DOOR_OPEN_TOP].includes(id)) return '#8d5d36';
         if (id === IDS.WOOL) return '#f5f5f5';
         return '#7d7d7d'; 
     }
 
+    export function isClimbableBlock(block) {
+        return block === IDS.LADDER || block === IDS.VINES;
+    }
+
     export function isSolidWorldBlock(x, y, block) {
-        if (block === IDS.AIR || block === IDS.TORCH || block === IDS.LEAVES || block === IDS.SAPLING || block === IDS.WATER || block === IDS.LAVA || block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || block === IDS.LADDER) return false;
+        if (block === IDS.AIR || block === IDS.TORCH || block === IDS.LEAVES || block === IDS.JUNGLE_LEAVES ||
+            block === IDS.SAPLING || block === IDS.JUNGLE_SAPLING || block === IDS.WATER || block === IDS.LAVA ||
+            block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW ||
+            block === IDS.LADDER || block === IDS.VINES || block === IDS.FERN || block === IDS.MELON_STEM) return false;
         if (block === IDS.WHEAT_STAGE_1 || block === IDS.WHEAT_STAGE_2 || block === IDS.WHEAT_STAGE_3 || block === IDS.WHEAT_STAGE_4) return false;
-        if (block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP) return false;
-        return block !== IDS.WOOD || !nonCollidableTreeWood.has(`${x}_${y}`);
+        if (block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP || block === IDS.JUNGLE_DOOR_OPEN || block === IDS.JUNGLE_DOOR_OPEN_TOP) return false;
+        if (block === IDS.WOOD || block === IDS.JUNGLE_WOOD) {
+            return !nonCollidableTreeWood.has(`${x}_${y}`);
+        }
+        return true;
     }
 
     export function getFluidKey(x, y) { return `${x}_${y}`; }
@@ -3381,15 +3601,25 @@ export const SKIN_H = 32;
     }
 
     export function isDoorBlock(block) {
-        return [IDS.DOOR, IDS.DOOR_TOP, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP].includes(block);
+        return [
+            IDS.DOOR, IDS.DOOR_TOP, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP,
+            IDS.JUNGLE_DOOR, IDS.JUNGLE_DOOR_TOP, IDS.JUNGLE_DOOR_OPEN, IDS.JUNGLE_DOOR_OPEN_TOP
+        ].includes(block);
     }
 
     export function isOpenDoorBlock(block) {
-        return block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP;
+        return block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP ||
+               block === IDS.JUNGLE_DOOR_OPEN || block === IDS.JUNGLE_DOOR_OPEN_TOP;
+    }
+
+    export function isJungleDoorBlock(block) {
+        return block === IDS.JUNGLE_DOOR || block === IDS.JUNGLE_DOOR_TOP ||
+               block === IDS.JUNGLE_DOOR_OPEN || block === IDS.JUNGLE_DOOR_OPEN_TOP;
     }
 
     export function getDoorBaseY(y, block) {
-        return block === IDS.DOOR_TOP || block === IDS.DOOR_OPEN_TOP ? y + 1 : y;
+        return (block === IDS.DOOR_TOP || block === IDS.DOOR_OPEN_TOP ||
+                block === IDS.JUNGLE_DOOR_TOP || block === IDS.JUNGLE_DOOR_OPEN_TOP) ? y + 1 : y;
     }
 
     export class Cloud {
@@ -3670,10 +3900,10 @@ export const SKIN_H = 32;
         const headGy = Math.floor(((p.y || 0) + 4) / TILE_SIZE);
         const belowGy = Math.floor(((p.y || 0) + (p.height || 48) + 2) / TILE_SIZE);
 
-        // 1. Ladder priority
+        // 1. Ladder / Vine priority
         for (let posX of xPositions) {
             const gx = Math.floor(posX / TILE_SIZE);
-            if (world[gx]?.[footGy] === IDS.LADDER || world[gx]?.[bodyGy] === IDS.LADDER || world[gx]?.[headGy] === IDS.LADDER) {
+            if (isClimbableBlock(world[gx]?.[footGy]) || isClimbableBlock(world[gx]?.[bodyGy]) || isClimbableBlock(world[gx]?.[headGy])) {
                 return 'ladder';
             }
         }
@@ -4097,6 +4327,8 @@ export const SKIN_H = 32;
             this.fallStartY = y;
             this.poisonTimer = 0;
             this.airborneTicks = 0;
+            this.leftShoulderParrot = null;
+            this.rightShoulderParrot = null;
         }
 
         update() {
@@ -4170,9 +4402,9 @@ export const SKIN_H = 32;
             const pFootGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
             const pBodyGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
             const pHeadGy = Math.floor((this.y + 4) / TILE_SIZE);
-            const onLadder = (world[pGx]?.[pFootGy] === IDS.LADDER) || 
-                             (world[pGx]?.[pBodyGy] === IDS.LADDER) || 
-                             (world[pGx]?.[pHeadGy] === IDS.LADDER);
+            const onLadder = isClimbableBlock(world[pGx]?.[pFootGy]) || 
+                             isClimbableBlock(world[pGx]?.[pBodyGy]) || 
+                             isClimbableBlock(world[pGx]?.[pHeadGy]);
 
             const footFluid = getFluid(pGx, pFootGy);
             const bodyFluid = getFluid(pGx, pBodyGy);
@@ -4303,14 +4535,17 @@ export const SKIN_H = 32;
                 if (sel && isFoodItem(sel.id) && this.hunger < 20) {
                     this.eatTimer++;
                     if (this.eatTimer > 20) {
-                        this.eatTimer = 0;
                         let val = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? 8 : (sel.id === IDS.COOKED_CHICKEN ? 6 : (sel.id === IDS.BREAD ? 5 : (sel.id === IDS.APPLE ? 4 : (sel.id === IDS.RAW_BEEF ? 3 : 2))));
                         this.hunger = Math.min(20, this.hunger + val);
+                        if (sel.id === IDS.MELON_SLICE && this.health < this.maxHealth) {
+                            this.health = Math.min(this.maxHealth, this.health + 1);
+                            updateHealthUI();
+                        }
                         sel.count--;
                         if (sel.count <= 0) inventory[selectedHotbarIndex] = null;
                         updateHungerUI(); updateUI();
                         playSound('eat');
-                        let pColor = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? '#8B4513' : (sel.id === IDS.RAW_BEEF ? '#991b1b' : (sel.id === IDS.COOKED_CHICKEN ? '#d98c53' : (sel.id === IDS.BREAD ? '#d2b48c' : (sel.id === IDS.APPLE ? '#ff3333' : '#ff99cc'))));
+                        let pColor = (sel.id === IDS.MELON_SLICE) ? '#ef4444' : ((sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? '#8B4513' : (sel.id === IDS.RAW_BEEF ? '#991b1b' : (sel.id === IDS.COOKED_CHICKEN ? '#d98c53' : (sel.id === IDS.BREAD ? '#d2b48c' : (sel.id === IDS.APPLE ? '#ff3333' : '#ff99cc')))));
                         for(let i=0; i<10; i++) particles.push(new Particle(this.x+this.width/2, this.y, pColor));
                     }
                 } else { this.eatTimer = 0; }
@@ -4381,6 +4616,16 @@ export const SKIN_H = 32;
 
             this.applyPhysics();
 
+            // Shoulder parrots dismount if player enters water or falls/jumps violently
+            if (this.leftShoulderParrot || this.rightShoulderParrot) {
+                const px = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+                const py = Math.floor((this.y + this.height - 2) / TILE_SIZE);
+                const inWater = isWater(px, py) || isWater(px, py - 1);
+                if (inWater || this.vy > 4.5 || this.vy < -5.5) {
+                    dismountAllShoulderParrots();
+                }
+            }
+
             if (!wasGrounded && this.isGrounded && prevVy > 0) {
                 const landingInWater = isWater(Math.floor((this.x + this.width / 2) / TILE_SIZE), Math.floor((this.y + this.height - 2) / TILE_SIZE)) || isWater(Math.floor((this.x + this.width / 2) / TILE_SIZE), Math.floor((this.y + this.height / 2) / TILE_SIZE));
                 if (!landingInWater && this.fallStartY !== undefined) {
@@ -4424,6 +4669,10 @@ export const SKIN_H = 32;
         takeDamage(amt) {
             if (this.damageCooldown > 0 || this.isDead) return;
             let diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
+
+            if (this.leftShoulderParrot || this.rightShoulderParrot) {
+                dismountAllShoulderParrots();
+            }
             
             // Armor damage reduction calculation
             let reductionRatio = getArmorDamageReductionRatio();
@@ -4536,14 +4785,43 @@ export const SKIN_H = 32;
             let isAttacking = attackAnimationTimer > 0;
             let activeItem = inventory[selectedHotbarIndex] ? inventory[selectedHotbarIndex].id : null;
             
-            // Advanced segmented rendering!
+            // Advanced segmented rendering with perched shoulder parrots!
             drawCharacter(
                 ctx, skinCanvasObj, drawX, drawY, this.width, this.height, 
                 this.facingRight, this.walkAnimTime, this.vx !== 0, this.damageCooldown > 0,
                 isInventoryOpen ? null : mouse.worldX - camX, 
                 isInventoryOpen ? null : mouse.worldY - camY, 
-                isAttacking, activeItem, this.isClimbing
+                isAttacking, activeItem, this.isClimbing, null,
+                { left: this.leftShoulderParrot, right: this.rightShoulderParrot }
             );
+        }
+    }
+
+    export function dismountParrot(p, shoulder) {
+        if (!p) return;
+        p.isMounted = false;
+        p.mountedShoulder = null;
+        if (player) {
+            p.x = player.x + (shoulder === 'left' ? -12 : 12);
+            p.y = player.y - 12;
+        }
+        p.state = 'flying';
+        p.vy = -3.2;
+        p.vx = (shoulder === 'left' ? -2.2 : 2.2);
+        p.flightTimer = 200;
+        playSound('parrot_chirp', { vol: 0.7 });
+    }
+
+    export function dismountAllShoulderParrots() {
+        const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+        if (!curPlayer) return;
+        if (curPlayer.leftShoulderParrot) {
+            dismountParrot(curPlayer.leftShoulderParrot, 'left');
+            curPlayer.leftShoulderParrot = null;
+        }
+        if (curPlayer.rightShoulderParrot) {
+            dismountParrot(curPlayer.rightShoulderParrot, 'right');
+            curPlayer.rightShoulderParrot = null;
         }
     }
 
@@ -5932,6 +6210,638 @@ export const SKIN_H = 32;
         }
     }
 
+    export class Parrot extends Animal {
+        constructor(x, y, variant = null) {
+            super(x, y, TILE_SIZE * 0.48, TILE_SIZE * 0.52, 6, MOVE_SPEED * 0.32);
+            this.state = 'ground'; // 'ground' | 'flying' | 'perching'
+            this.variant = (variant !== null && variant >= 0 && variant <= 3) ? variant : Math.floor(Math.random() * 4);
+            this.isTamed = false;
+            this.owner = null;
+            this.isSitting = false;
+            this.isMounted = false;
+            this.mountedShoulder = null;
+            this.peckTimer = 0;
+            this.perchTimer = 0;
+            this.flightTimer = 0;
+            this.flyTargetX = x;
+            this.flyTargetY = y;
+            this.flapTime = Math.random() * 100;
+            this.targetLeaf = null;
+            this.headTilt = 0;
+            this.headTiltTimer = 0;
+            this.temptAlertTimer = 0;
+            this.chirpTimer = Math.floor(Math.random() * 300 + 200);
+            this.hopTimer = 0;
+        }
+
+        isTemptedBy(itemId) {
+            return itemId === IDS.SEEDS || itemId === IDS.MELON_SEEDS;
+        }
+
+        startle(scareDir) {
+            if (this.isMounted || this.isSitting) return;
+            if (this.state === 'perching') this.targetLeaf = null;
+            this.state = 'flying';
+            this.panic = true;
+            this.panicTimer = 160;
+            this.dir = scareDir || (Math.random() > 0.5 ? 1 : -1);
+            this.vy = -4.5;
+            this.vx = this.dir * (3.5 + Math.random() * 1.5);
+            this.isGrounded = false;
+            this.flightTimer = 300 + Math.random() * 250;
+            this.flyTargetX = this.x + this.dir * (180 + Math.random() * 120);
+            this.flyTargetY = Math.max(2 * TILE_SIZE, this.y - (100 + Math.random() * 80));
+
+            for (let i = 0; i < 5; i++) {
+                const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, this.getFeatherParticleColor());
+                p.vx = (Math.random() - 0.5) * 3;
+                p.vy = (Math.random() - 0.5) * 3;
+                particles.push(p);
+            }
+        }
+
+        getFeatherParticleColor() {
+            switch (this.variant) {
+                case 0: return '#ef4444';
+                case 1: return '#22c55e';
+                case 2: return '#0ea5e9';
+                case 3: return '#eab308';
+                default: return '#ef4444';
+            }
+        }
+
+        findNearbyTreeLeaf(searchRadiusTiles = 16) {
+            const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const curGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+            const candidates = [];
+
+            const minX = Math.max(2, curGx - searchRadiusTiles);
+            const maxX = Math.min(WORLD_WIDTH - 3, curGx + searchRadiusTiles);
+            const minY = Math.max(2, curGy - 14);
+            const maxY = Math.min(WORLD_HEIGHT - 3, curGy + 14);
+
+            for (let x = minX; x <= maxX; x++) {
+                if (!world[x]) continue;
+                for (let y = minY; y <= maxY; y++) {
+                    const block = world[x][y];
+                    if (block === IDS.JUNGLE_LEAVES || block === IDS.LEAVES) {
+                        if (world[x][y - 1] === IDS.AIR) candidates.push({ x, y });
+                    }
+                }
+            }
+
+            if (candidates.length === 0) return null;
+            candidates.sort((a, b) => {
+                const distA = Math.hypot(a.x - curGx, a.y - curGy);
+                const distB = Math.hypot(b.x - curGx, b.y - curGy);
+                return distA - distB;
+            });
+            const pickIdx = Math.min(candidates.length - 1, Math.floor(Math.random() * Math.min(3, candidates.length)));
+            return candidates[pickIdx];
+        }
+
+        interact(curPlayer, inv, slotIdx) {
+            const held = inv ? inv[slotIdx] : null;
+            if (!this.isTamed) {
+                if (held && this.isTemptedBy(held.id) && held.count > 0) {
+                    held.count--;
+                    if (held.count <= 0) inv[slotIdx] = null;
+                    if (typeof updateUI === 'function') updateUI();
+
+                    if (Math.random() < 0.33) {
+                        this.isTamed = true;
+                        this.owner = 'player';
+                        this.isSitting = false;
+                        playSound('parrot_tame');
+                        for (let i = 0; i < 7; i++) {
+                            const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ef4444');
+                            p.vx = (Math.random() - 0.5) * 2.5;
+                            p.vy = -Math.random() * 2.5 - 0.5;
+                            particles.push(p);
+                        }
+                        if (typeof showToast === 'function') showToast('Parrot tamed!');
+                        if (typeof unlockAchievement === 'function') unlockAchievement('best_friends_forever');
+                    } else {
+                        playSound('pop');
+                        for (let i = 0; i < 4; i++) {
+                            const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, '#9ca3af');
+                            p.vx = (Math.random() - 0.5) * 2;
+                            p.vy = -Math.random() * 2;
+                            particles.push(p);
+                        }
+                    }
+                    if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
+                    return true;
+                }
+            } else {
+                if (this.isMounted) {
+                    if (curPlayer.leftShoulderParrot === this) curPlayer.leftShoulderParrot = null;
+                    if (curPlayer.rightShoulderParrot === this) curPlayer.rightShoulderParrot = null;
+                    this.isMounted = false;
+                    this.mountedShoulder = null;
+                    this.state = 'flying';
+                    this.vy = -3;
+                    this.flightTimer = 150;
+                    playSound('parrot_chirp', { vol: 0.6 });
+                    return true;
+                }
+
+                this.isSitting = !this.isSitting;
+                if (this.isSitting) {
+                    this.state = 'ground';
+                    this.vx = 0;
+                    this.vy = 0;
+                    if (typeof showToast === 'function') showToast('Parrot is sitting.');
+                } else {
+                    if (typeof showToast === 'function') showToast('Parrot is standing.');
+                }
+                playSound('parrot_chirp', { vol: 0.6 });
+                if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
+                return true;
+            }
+            return false;
+        }
+
+        update() {
+            if (this.isMounted) {
+                const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+                if (!curPlayer || curPlayer.isDead || curPlayer.health <= 0) {
+                    this.isMounted = false;
+                    this.mountedShoulder = null;
+                    this.state = 'flying';
+                    this.vy = -3;
+                    return;
+                }
+                this.x = curPlayer.x;
+                this.y = curPlayer.y;
+                this.vx = 0;
+                this.vy = 0;
+                return;
+            }
+
+            if (this.damageCooldown > 0) this.damageCooldown--;
+            if (this.panicTimer > 0) this.panicTimer--;
+            else this.panic = false;
+            if (this.peckTimer > 0) this.peckTimer--;
+            if (this.temptAlertTimer > 0) this.temptAlertTimer--;
+            if (this.hopTimer > 0) this.hopTimer--;
+
+            if (this.chirpTimer > 0) {
+                this.chirpTimer--;
+            } else {
+                this.chirpTimer = Math.floor(Math.random() * 450 + 350);
+                const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+                if (curPlayer && !curPlayer.isDead && Math.hypot(this.x - curPlayer.x, this.y - curPlayer.y) < 380) {
+                    playSound('parrot_chirp', { vol: 0.5 });
+                }
+            }
+
+            if (this.headTiltTimer > 0) {
+                this.headTiltTimer--;
+            } else if (Math.random() < 0.02) {
+                this.headTilt = (Math.random() - 0.5) * 0.4;
+                this.headTiltTimer = Math.floor(Math.random() * 40 + 20);
+            } else {
+                this.headTilt = 0;
+            }
+
+            const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+            let pDist = 9999;
+            let isHoldingSeeds = false;
+            if (curPlayer && !curPlayer.isDead) {
+                pDist = Math.hypot(
+                    (curPlayer.x + curPlayer.width / 2) - (this.x + this.width / 2),
+                    (curPlayer.y + curPlayer.height / 2) - (this.y + this.height / 2)
+                );
+                const held = inventory[selectedHotbarIndex];
+                isHoldingSeeds = (held && this.isTemptedBy(held.id));
+            }
+
+            if (!this.isTamed && !this.panic && curPlayer && !curPlayer.isDead && !isHoldingSeeds) {
+                if (pDist < 75 && Math.abs(curPlayer.vx) > 1.5) {
+                    const scareDir = (curPlayer.x < this.x) ? 1 : -1;
+                    this.startle(scareDir);
+                }
+            }
+
+            let isTemptedNow = false;
+            if (!this.isSitting && isHoldingSeeds && pDist < 350 && !this.panic) {
+                isTemptedNow = true;
+                this.isTempted = true;
+                if (frameCount % 60 === 0 && Math.random() < 0.4) {
+                    particles.push(new Particle(this.x + this.width / 2, this.y - 4, '#ff80bf'));
+                }
+            } else {
+                this.isTempted = false;
+            }
+
+            if (this.isTamed && !this.isSitting && curPlayer && !curPlayer.isDead) {
+                const px = Math.floor((curPlayer.x + curPlayer.width / 2) / TILE_SIZE);
+                const py = Math.floor((curPlayer.y + curPlayer.height - 2) / TILE_SIZE);
+                const isPlayerInWater = isWater(px, py) || isWater(px, py - 1);
+
+                if (!isPlayerInWater && Math.abs(curPlayer.vy) < 2 && pDist < 32) {
+                    if (!curPlayer.leftShoulderParrot) {
+                        curPlayer.leftShoulderParrot = this;
+                        this.isMounted = true;
+                        this.mountedShoulder = 'left';
+                        playSound('parrot_chirp', { vol: 0.6 });
+                        return;
+                    } else if (!curPlayer.rightShoulderParrot && curPlayer.leftShoulderParrot !== this) {
+                        curPlayer.rightShoulderParrot = this;
+                        this.isMounted = true;
+                        this.mountedShoulder = 'right';
+                        playSound('parrot_chirp', { vol: 0.6 });
+                        return;
+                    }
+                }
+
+                if (pDist > 48) {
+                    if (this.state !== 'flying') {
+                        this.state = 'flying';
+                        this.flightTimer = 300;
+                        this.vy = -3;
+                        this.isGrounded = false;
+                    }
+                    this.flyTargetX = curPlayer.x + (this.x < curPlayer.x ? -24 : 24);
+                    this.flyTargetY = curPlayer.y - 8;
+                }
+            }
+
+            if (this.isSitting) {
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = true;
+                this.applyPhysics();
+                return;
+            }
+
+            if (this.state === 'perching') {
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = true;
+
+                if (this.targetLeaf) {
+                    const block = world[this.targetLeaf.x]?.[this.targetLeaf.y];
+                    if (block !== IDS.LEAVES && block !== IDS.JUNGLE_LEAVES) {
+                        this.targetLeaf = null;
+                        this.state = 'flying';
+                        this.flightTimer = 300;
+                    }
+                }
+
+                this.perchTimer--;
+                if (Math.random() < 0.01) this.dir = -this.dir;
+
+                if (this.perchTimer <= 0) {
+                    this.state = 'flying';
+                    this.targetLeaf = null;
+                    this.flightTimer = 300 + Math.random() * 400;
+                    this.vy = -3;
+                    this.vx = this.dir * (1.5 + Math.random());
+                    this.isGrounded = false;
+                }
+            }
+            else if (this.state === 'ground') {
+                if (this.panic) {
+                    this.state = 'flying';
+                    this.vy = -4.5;
+                    this.flightTimer = 300;
+                } else if (isTemptedNow) {
+                    const dx = (curPlayer.x + curPlayer.width / 2) - (this.x + this.width / 2);
+                    this.dir = dx > 0 ? 1 : -1;
+                    if (pDist > 45) {
+                        this.vx = this.dir * this.baseSpeed * 1.2;
+                        if (this.isGrounded && this.hopTimer <= 0 && Math.random() < 0.08) {
+                            this.vy = -2.5;
+                            this.hopTimer = 25;
+                        }
+                    } else {
+                        this.vx = 0;
+                        if (Math.random() < 0.03 && this.peckTimer <= 0) this.peckTimer = 20;
+                    }
+                } else {
+                    this.timer--;
+                    if (this.timer <= 0) {
+                        const roll = Math.random();
+                        if (roll < 0.35) {
+                            this.dir = 0;
+                            this.peckTimer = 24;
+                            this.timer = Math.random() * 60 + 30;
+                        } else if (roll < 0.70) {
+                            this.dir = Math.random() > 0.5 ? 1 : -1;
+                            this.timer = Math.random() * 100 + 50;
+                            if (this.isGrounded && Math.random() < 0.5) {
+                                this.vy = -2.4;
+                            }
+                        } else {
+                            this.state = 'flying';
+                            this.flightTimer = 350 + Math.random() * 450;
+                            this.vy = -3.8;
+                            this.isGrounded = false;
+                        }
+                    }
+
+                    if (this.dir !== 0 && (this.hasHazardAhead(this.dir) || this.hasLethalDropAhead(this.dir))) {
+                        this.dir = -this.dir;
+                        this.timer = 50;
+                    }
+
+                    this.vx = this.dir * this.baseSpeed;
+                }
+
+                if (this.vx !== 0 && this.isGrounded) {
+                    const moveDir = this.vx > 0 ? 1 : -1;
+                    const checkX = Math.floor((this.x + this.width / 2 + moveDir * (this.width / 2 + 4)) / TILE_SIZE);
+                    const footY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
+                    const headY = Math.floor((this.y + 4) / TILE_SIZE);
+                    if (checkX >= 0 && checkX < WORLD_WIDTH) {
+                        const b = world[checkX]?.[footY];
+                        const upperB = world[checkX]?.[headY - 1];
+                        if (isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1)) {
+                            this.vy = JUMP_FORCE * 0.75;
+                            this.isGrounded = false;
+                        }
+                    }
+                }
+
+                if (this.vx !== 0) {
+                    this.walkAnimTime = (this.walkAnimTime || 0) + (Math.abs(this.vx) / this.baseSpeed) * 0.25;
+                } else {
+                    this.walkAnimTime = 0;
+                }
+
+                this.applyPhysics();
+
+                if (!this.isGrounded && this.vy > 3.0) {
+                    this.state = 'flying';
+                    this.flightTimer = 250;
+                }
+            }
+            else {
+                this.flightTimer--;
+                this.flapTime += (this.panic ? 0.7 : 0.42);
+
+                const curGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
+                const groundY = surfaceHeights[curGx] !== undefined ? surfaceHeights[curGx] : Math.floor(WORLD_HEIGHT / 2);
+                const cruiseAltitudeY = Math.max(2 * TILE_SIZE, (groundY - 8) * TILE_SIZE);
+
+                if (this.panic) {
+                    this.flyTargetY = Math.max(2 * TILE_SIZE, cruiseAltitudeY - 3 * TILE_SIZE);
+                    this.flyTargetX = this.x + this.dir * 120;
+                } else if (isTemptedNow && curPlayer && !curPlayer.isDead) {
+                    this.flyTargetX = curPlayer.x + (this.x < curPlayer.x ? -35 : 35);
+                    this.flyTargetY = curPlayer.y - 10;
+                    this.targetLeaf = null;
+                } else if (this.isTamed && !this.isSitting && curPlayer && !curPlayer.isDead) {
+                    this.flyTargetX = curPlayer.x + (this.x < curPlayer.x ? -20 : 20);
+                    this.flyTargetY = curPlayer.y - 12;
+                    this.targetLeaf = null;
+                } else if (this.targetLeaf) {
+                    this.flyTargetX = this.targetLeaf.x * TILE_SIZE + (TILE_SIZE - this.width) / 2;
+                    this.flyTargetY = (this.targetLeaf.y - 1) * TILE_SIZE + (TILE_SIZE - this.height);
+                } else {
+                    if (this.flightTimer % 100 === 0 || Math.abs(this.x - this.flyTargetX) < 30) {
+                        const roamDistance = (Math.random() - 0.5) * 220;
+                        this.flyTargetX = Math.max(50, Math.min(WORLD_WIDTH * TILE_SIZE - 50, this.x + roamDistance));
+                        this.flyTargetY = cruiseAltitudeY + (Math.random() - 0.5) * 40;
+
+                        if (this.flightTimer < 250 && Math.random() < 0.5) {
+                            const leafSpot = this.findNearbyTreeLeaf(16);
+                            if (leafSpot) this.targetLeaf = leafSpot;
+                        } else if (this.flightTimer < 100 && Math.random() < 0.4) {
+                            this.flyTargetY = (groundY - 1) * TILE_SIZE;
+                        }
+                    }
+                }
+
+                const dx = this.flyTargetX - this.x;
+                const dy = this.flyTargetY - this.y;
+                const maxFlightSpeed = this.panic ? 4.5 : 2.6;
+                const maxClimbSpeed = this.panic ? 3.5 : 2.0;
+
+                const desiredVx = Math.sign(dx) * Math.min(Math.abs(dx) * 0.05, maxFlightSpeed);
+                const desiredVy = Math.sign(dy) * Math.min(Math.abs(dy) * 0.05, maxClimbSpeed);
+
+                this.vx += (desiredVx - this.vx) * 0.08;
+                this.vy += (desiredVy - this.vy) * 0.08;
+                this.vy += Math.sin(this.flapTime) * 0.16;
+
+                if (Math.abs(this.vx) > 0.1) this.dir = this.vx > 0 ? 1 : -1;
+
+                this.x += this.vx;
+                this.handleCollisions(true);
+                this.y += this.vy;
+                this.handleCollisions(false);
+
+                if (this.targetLeaf) {
+                    const leafTargetX = this.targetLeaf.x * TILE_SIZE + (TILE_SIZE - this.width) / 2;
+                    const leafTargetY = (this.targetLeaf.y - 1) * TILE_SIZE + (TILE_SIZE - this.height);
+                    if (Math.hypot(this.x - leafTargetX, this.y - leafTargetY) < 8 && this.vy >= -0.5) {
+                        this.state = 'perching';
+                        this.x = leafTargetX;
+                        this.y = leafTargetY;
+                        this.vx = 0;
+                        this.vy = 0;
+                        this.isGrounded = true;
+                        this.perchTimer = 280 + Math.random() * 400;
+                    }
+                }
+
+                if (this.isGrounded && this.vy >= 0 && !this.targetLeaf) {
+                    this.state = 'ground';
+                    this.vx = 0;
+                    this.timer = 70 + Math.random() * 90;
+                }
+            }
+        }
+
+        takeDamage(amt, knockbackDir) {
+            if (this.damageCooldown > 0) return;
+            this.health -= amt;
+            this.damageCooldown = 20;
+
+            const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+            if (this.isMounted && curPlayer) {
+                if (curPlayer.leftShoulderParrot === this) curPlayer.leftShoulderParrot = null;
+                if (curPlayer.rightShoulderParrot === this) curPlayer.rightShoulderParrot = null;
+                this.isMounted = false;
+                this.mountedShoulder = null;
+            }
+
+            playSound('parrot_hurt', { vol: 0.8 });
+            const escapeDir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
+            this.startle(escapeDir);
+
+            for (let i = 0; i < 6; i++) {
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, this.getFeatherParticleColor()));
+            }
+            for (let i = 0; i < 3; i++) {
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ef4444'));
+            }
+            floatingTexts.push(new FloatingText(this.x + this.width / 2, this.y - 10, amt, "#ffcc00"));
+        }
+
+        draw(ctx, camX, camY) {
+            if (this.isMounted) return;
+
+            const drawX = this.x - camX;
+            const drawY = this.y - camY;
+            const w = this.width;
+            const h = this.height;
+
+            if (advancedGraphics && this.state !== 'flying') {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w * 0.45, drawY + h - 3, w * 0.9, 5);
+            }
+
+            ctx.save();
+            ctx.translate(drawX + w / 2, drawY + h / 2);
+            if (this.dir < 0) ctx.scale(-1, 1);
+
+            const isDamaged = this.damageCooldown > 0;
+            const isFlying = (this.state === 'flying');
+            const isGrounded = (this.state === 'ground' && this.isGrounded);
+            const isMoving = Math.abs(this.vx) > 0.05 && isGrounded;
+            const walk = this.walkAnimTime || 0;
+            const idle = Math.sin((frameCount + this.idleSeed) * 0.08);
+            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 180 < 6);
+
+            let cBody, cWingAccent, cWingFlight, cBeak, cEyeRing, cEyeIris, cTail, cCrest = null;
+            if (this.variant === 0) {
+                cBody = isDamaged ? '#ff6666' : '#dc2626';
+                cWingAccent = isDamaged ? '#ffcc00' : '#eab308';
+                cWingFlight = isDamaged ? '#60a5fa' : '#2563eb';
+                cBeak = isDamaged ? '#475569' : '#1e293b';
+                cEyeRing = '#ffffff';
+                cEyeIris = '#0f172a';
+                cTail = '#2563eb';
+            } else if (this.variant === 1) {
+                cBody = isDamaged ? '#86efac' : '#16a34a';
+                cWingAccent = isDamaged ? '#fca5a5' : '#ef4444';
+                cWingFlight = isDamaged ? '#5eead4' : '#0d9488';
+                cBeak = isDamaged ? '#fef08a' : '#fef08a';
+                cEyeRing = '#dcfce7';
+                cEyeIris = '#0f172a';
+                cTail = '#15803d';
+            } else if (this.variant === 2) {
+                cBody = isDamaged ? '#7dd3fc' : '#0284c7';
+                cWingAccent = isDamaged ? '#38bdf8' : '#0369a1';
+                cWingFlight = isDamaged ? '#93c5fd' : '#1d4ed8';
+                cBeak = isDamaged ? '#475569' : '#111827';
+                cEyeRing = '#facc15';
+                cEyeIris = '#0f172a';
+                cTail = '#1e40af';
+            } else {
+                cBody = isDamaged ? '#cbd5e1' : '#64748b';
+                cWingAccent = '#f8fafc';
+                cWingFlight = '#475569';
+                cBeak = '#d1d5db';
+                cEyeRing = '#fef08a';
+                cEyeIris = '#1e293b';
+                cTail = '#475569';
+                cCrest = '#fde047';
+            }
+
+            const cFeet = '#4b5563';
+
+            let wingAngle = 0;
+            if (isFlying) {
+                wingAngle = Math.sin(this.flapTime) * 0.9;
+                const flyTilt = Math.max(-0.35, Math.min(0.35, this.vy * 0.08));
+                ctx.rotate(flyTilt);
+            } else if (this.panic) {
+                wingAngle = Math.sin(frameCount * 0.65) * 0.4;
+            }
+
+            const headBobX = isMoving ? Math.sin(walk) * 2 : 0;
+            const peckBobY = (this.peckTimer > 0) ? Math.sin(this.peckTimer / 24 * Math.PI) * 3.5 : 0;
+            const headBobY = (isMoving ? Math.abs(Math.sin(walk)) * 1.2 : idle * 0.4) + peckBobY + (this.headTilt * 3);
+
+            // Tail
+            ctx.save();
+            ctx.translate(-w * 0.35, h * 0.1);
+            ctx.fillStyle = cTail;
+            ctx.fillRect(-w * 0.35, 0, w * 0.45, 3.5);
+            ctx.fillRect(-w * 0.25, 2, w * 0.3, 2.5);
+            ctx.restore();
+
+            // Feet
+            if (!isFlying && !this.isSitting) {
+                ctx.fillStyle = cFeet;
+                ctx.fillRect(-w * 0.12, h * 0.35, 2, h * 0.15);
+                ctx.fillRect(w * 0.08, h * 0.35, 2, h * 0.15);
+                ctx.fillRect(-w * 0.15, h * 0.48, 4, 1.5);
+                ctx.fillRect(w * 0.05, h * 0.48, 4, 1.5);
+            }
+
+            // Body
+            const bodyY = this.isSitting ? 2 : 0;
+            ctx.fillStyle = cBody;
+            ctx.fillRect(-w * 0.28, -h * 0.25 + bodyY, w * 0.55, h * 0.55);
+
+            // Head
+            const hx = w * 0.05 + headBobX;
+            const hy = -h * 0.48 + headBobY + bodyY;
+            ctx.fillStyle = cBody;
+            ctx.fillRect(hx, hy, w * 0.45, h * 0.42);
+
+            if (cCrest) {
+                ctx.fillStyle = cCrest;
+                ctx.fillRect(hx - 2, hy - 4, 3.5, 5);
+                ctx.fillRect(hx + 1, hy - 6, 2.5, 6);
+                ctx.fillStyle = '#f97316';
+                ctx.fillRect(hx + 2, hy + 5, 3, 3);
+            } else {
+                ctx.fillStyle = cWingAccent;
+                ctx.fillRect(hx - 1, hy - 2, 2.5, 3);
+            }
+
+            // Eye
+            const eyeX = hx + w * 0.22;
+            const eyeY = hy + 3;
+            if (isBlinking) {
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(eyeX, eyeY + 1, 3, 1);
+            } else {
+                ctx.fillStyle = cEyeRing;
+                ctx.fillRect(eyeX - 0.5, eyeY - 0.5, 4, 4);
+                ctx.fillStyle = cEyeIris;
+                ctx.fillRect(eyeX, eyeY, 2.5, 2.5);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(eyeX, eyeY, 1, 1);
+            }
+
+            // Beak
+            ctx.fillStyle = cBeak;
+            ctx.fillRect(hx + w * 0.42, hy + 3, 3.5, 3.5);
+            ctx.fillRect(hx + w * 0.42 + 1.5, hy + 5.5, 2, 2);
+
+            // Wing
+            ctx.save();
+            ctx.translate(-w * 0.05, -h * 0.12 + bodyY);
+            ctx.rotate(wingAngle);
+
+            if (isFlying) {
+                ctx.fillStyle = cBody;
+                ctx.fillRect(-w * 0.25, -h * 0.3, w * 0.55, h * 0.4);
+                ctx.fillStyle = cWingAccent;
+                ctx.fillRect(-w * 0.2, -h * 0.1, w * 0.5, 2.5);
+                ctx.fillStyle = cWingFlight;
+                ctx.fillRect(-w * 0.25, 0, w * 0.55, 3.5);
+            } else {
+                ctx.fillStyle = cBody;
+                ctx.fillRect(-w * 0.22, -h * 0.15, w * 0.44, h * 0.4);
+                ctx.fillStyle = cWingAccent;
+                ctx.fillRect(-w * 0.18, -h * 0.05, w * 0.36, 2.5);
+                ctx.fillStyle = cWingFlight;
+                ctx.fillRect(-w * 0.22, h * 0.05, w * 0.4, 3);
+            }
+            ctx.restore();
+
+            ctx.restore();
+        }
+    }
+
     export class Sheep extends Animal {
         constructor(x, y) {
             super(x, y, TILE_SIZE * 0.85, TILE_SIZE * 0.7, 8, MOVE_SPEED * 0.22);
@@ -6750,47 +7660,75 @@ export const SKIN_H = 32;
         
         const baseHeight = Math.floor(WORLD_HEIGHT / 2);
         const worldSeed = seededRandom() * 10000;
-        const biomeSeed = seededRandom() * 10000;
+        const tempSeed = seededRandom() * 10000;
+        const humidSeed = seededRandom() * 10000;
+        const mountainSeed = seededRandom() * 10000;
         const biomes = new Array(WORLD_WIDTH);
         const rawSurfaceHeights = new Array(WORLD_WIDTH);
         nonCollidableTreeWood = new Set();
         let lastTreeX = -10;
 
         for (let x = 0; x < WORLD_WIDTH; x++) {
-            let bx = x + biomeSeed;
-            // Rich multi-frequency biome noise
-            let biomeNoise = Math.sin(bx * 0.007) + Math.sin(bx * 0.016) * 0.6 + Math.sin(bx * 0.032) * 0.25;
-            
+            // Temperature field (-1 to 1) - slow gradual changes across the world
+            let tx = x + tempSeed;
+            let tempNoise = Math.sin(tx * 0.003) * 0.65 + Math.sin(tx * 0.008 + tempSeed * 0.5) * 0.35;
+
+            // Humidity field (-1 to 1) - independent moisture distribution
+            let hx = x + humidSeed;
+            let humidNoise = Math.sin(hx * 0.004) * 0.65 + Math.cos(hx * 0.01 + humidSeed * 0.3) * 0.35;
+
+            // Mountain elevation peak factor
+            let mx = x + mountainSeed;
+            let mountainNoise = Math.sin(mx * 0.006) * 0.70 + Math.sin(mx * 0.015 + mountainSeed * 0.4) * 0.30;
+
             let biome = "plains";
-            if (biomeNoise > 0.85) biome = "mountains";
-            else if (biomeNoise < -0.85) biome = "desert";
-            else if (biomeNoise > 0.35) biome = "forest";
-            else if (biomeNoise < -0.35) biome = "snow";
+            if (mountainNoise > 0.68 && tempNoise < 0.35) {
+                biome = "mountains";
+            } else if (tempNoise < -0.32) {
+                biome = "snow";
+            } else if (tempNoise > 0.20) {
+                if (humidNoise > 0.10) {
+                    biome = "jungle";
+                } else if (humidNoise < -0.15) {
+                    biome = "desert";
+                } else {
+                    biome = "plains";
+                }
+            } else { // Temperate
+                if (humidNoise > 0.12) {
+                    biome = "forest";
+                } else {
+                    biome = "plains";
+                }
+            }
             biomes[x] = biome;
 
-            let tx = x + worldSeed;
-            // Layered organic fractal terrain (continental landmasses + rolling topography + micro detail roughness)
-            let continental = Math.sin(tx * 0.005) * 26 + Math.cos(tx * 0.012 + worldSeed * 0.3) * 16;
-            let hills = Math.sin(tx * 0.024 + worldSeed * 0.5) * 9 + Math.sin(tx * 0.052) * 4.5;
-            let detail = Math.sin(tx * 0.11 + worldSeed * 0.8) * 1.6 + Math.cos(tx * 0.21) * 0.8;
-            
+            let wx = x + worldSeed;
+            // Layered organic fractal terrain (continental + hills + detail)
+            let continental = Math.sin(wx * 0.004) * 32 + Math.cos(wx * 0.01 + worldSeed * 0.3) * 20;
+            let hills = Math.sin(wx * 0.02 + worldSeed * 0.5) * 11 + Math.sin(wx * 0.045) * 5;
+            let detail = Math.sin(wx * 0.1 + worldSeed * 0.8) * 2 + Math.cos(wx * 0.18) * 0.9;
+
             let surfaceY = baseHeight + continental + hills + detail;
 
             if (biome === "mountains") {
-                let intensity = Math.min(1.0, (biomeNoise - 0.7) * 2.8);
-                let mountainSpikes = Math.abs(Math.sin(tx * 0.032 + worldSeed * 0.4) * 62 + Math.sin(tx * 0.075 + worldSeed * 0.6) * 24 + Math.sin(tx * 0.14) * 8);
+                let intensity = Math.min(1.0, (mountainNoise - 0.60) * 3.2);
+                let mountainSpikes = Math.abs(Math.sin(wx * 0.028 + worldSeed * 0.4) * 75 + Math.sin(wx * 0.065 + worldSeed * 0.6) * 30 + Math.sin(wx * 0.12) * 10);
                 surfaceY -= mountainSpikes * intensity;
             } else if (biome === "desert") {
-                let dunes = Math.sin(tx * 0.022 + worldSeed * 0.7) * 10 + Math.abs(Math.sin(tx * 0.048)) * 6;
-                surfaceY = baseHeight + (continental * 0.4) + dunes + detail;
+                let dunes = Math.sin(wx * 0.02 + worldSeed * 0.7) * 10 + Math.abs(Math.sin(wx * 0.045)) * 6;
+                surfaceY = baseHeight + (continental * 0.35) + dunes + detail;
+            } else if (biome === "jungle") {
+                let jungleHills = Math.sin(wx * 0.028 + worldSeed * 0.2) * 12 + Math.cos(wx * 0.055) * 6;
+                surfaceY += jungleHills;
             } else if (biome === "forest") {
-                surfaceY += Math.sin(tx * 0.038) * 7 - 3;
+                surfaceY += Math.sin(wx * 0.035) * 7 - 2;
             } else if (biome === "snow") {
-                surfaceY += Math.sin(tx * 0.042) * 8 + 2;
+                surfaceY += Math.sin(wx * 0.038) * 8 + 2;
             } else if (biome === "plains") {
-                surfaceY += Math.sin(tx * 0.028) * 5;
+                surfaceY += Math.sin(wx * 0.025) * 5;
             }
-            
+
             rawSurfaceHeights[x] = surfaceY;
         }
 
@@ -6819,14 +7757,14 @@ export const SKIN_H = 32;
                 else if (y === surfaceY) {
                     if (biome === "desert") world[x][y] = IDS.SAND;
                     else if (biome === "snow") world[x][y] = IDS.SNOW;
-                    else if (biome === "mountains" && y < baseHeight - 35) world[x][y] = IDS.SNOW;
-                    else if (biome === "mountains" && y >= baseHeight - 14) world[x][y] = IDS.GRASS;
+                    else if (biome === "mountains" && y < baseHeight - 45) world[x][y] = IDS.SNOW;
+                    else if (biome === "mountains" && y >= baseHeight - 18) world[x][y] = IDS.GRASS;
                     else if (biome === "mountains") world[x][y] = IDS.STONE;
                     else world[x][y] = IDS.GRASS;
                 }
                 else if (y > surfaceY && y < surfaceY + seededRandom() * 3 + 3) {
                     if (biome === "desert") world[x][y] = IDS.SAND;
-                    else if (biome === "snow" || biome === "plains" || biome === "forest" || (biome === "mountains" && surfaceY >= baseHeight - 14)) world[x][y] = IDS.DIRT;
+                    else if (biome === "snow" || biome === "plains" || biome === "forest" || biome === "jungle" || (biome === "mountains" && surfaceY >= baseHeight - 18)) world[x][y] = IDS.DIRT;
                     else world[x][y] = IDS.STONE;
                 }
                 else {
@@ -6970,6 +7908,98 @@ export const SKIN_H = 32;
             }
         }
 
+        function buildJungleTree(tx, sy, treeType = 'giant') {
+            const setTrunk = (bx, by) => {
+                if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
+                if (isWater(bx, by) || getFluid(bx, by)) return;
+                world[bx][by] = IDS.JUNGLE_WOOD;
+                nonCollidableTreeWood.add(`${bx}_${by}`);
+            };
+            const setLeaf = (bx, by) => {
+                if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
+                if (isWater(bx, by) || getFluid(bx, by)) return;
+                if (world[bx][by] === IDS.AIR) world[bx][by] = IDS.JUNGLE_LEAVES;
+            };
+            const setVine = (bx, by) => {
+                if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
+                if (isWater(bx, by) || getFluid(bx, by)) return;
+                if (world[bx][by] === IDS.AIR) world[bx][by] = IDS.VINES;
+            };
+
+            if (treeType === 'jungle_bush') {
+                setTrunk(tx, sy - 1);
+                for (let lx = -1; lx <= 1; lx++) {
+                    for (let ly = -2; ly <= -1; ly++) {
+                        setLeaf(tx + lx, sy + ly);
+                    }
+                }
+                setLeaf(tx, sy - 3);
+                return;
+            }
+
+            // Giant Jungle Tree: 12 to 20 blocks high
+            const th = Math.floor(seededRandom() * 9) + 12;
+            const is2x2 = seededRandom() < 0.65;
+            const trunkWidth = is2x2 ? 2 : 1;
+
+            // Grow main trunk
+            for (let i = 1; i <= th; i++) {
+                for (let tw = 0; tw < trunkWidth; tw++) {
+                    setTrunk(tx + tw, sy - i);
+                }
+            }
+
+            // Spreading branch arms midway up
+            const branchY1 = sy - Math.floor(th * 0.55);
+            setTrunk(tx - 1, branchY1);
+            setLeaf(tx - 2, branchY1);
+            setLeaf(tx - 2, branchY1 - 1);
+            setLeaf(tx - 1, branchY1 - 1);
+
+            const branchY2 = sy - Math.floor(th * 0.75);
+            setTrunk(tx + trunkWidth, branchY2);
+            setLeaf(tx + trunkWidth + 1, branchY2);
+            setLeaf(tx + trunkWidth + 1, branchY2 - 1);
+            setLeaf(tx + trunkWidth, branchY2 - 1);
+
+            // Broad canopy at top (radius 4 to 6)
+            const top = sy - th;
+            const canopyRadius = is2x2 ? 5 : 4;
+            for (let ly = -4; ly <= 2; ly++) {
+                const layerY = top + ly;
+                const r = canopyRadius - Math.abs(ly + 1);
+                for (let lx = -r; lx <= r + (is2x2 ? 1 : 0); lx++) {
+                    if (Math.abs(lx) === r && Math.abs(ly + 1) >= 2 && seededRandom() < 0.4) continue;
+                    setLeaf(tx + lx, layerY);
+                }
+            }
+
+            // Hanging Vines on trunk sides and under canopy
+            for (let side of [-1, trunkWidth]) {
+                const vineX = tx + side;
+                const startVineY = top + 2;
+                const vineLen = Math.floor(seededRandom() * 6) + 3;
+                for (let v = 0; v < vineLen; v++) {
+                    const vy = startVineY + v;
+                    if (vy < sy - 1) {
+                        setVine(vineX, vy);
+                    }
+                }
+            }
+            // Hanging vines under outer canopy edges
+            for (let offset of [-canopyRadius + 1, canopyRadius + (is2x2 ? 0 : -1)]) {
+                const vineX = tx + offset;
+                const startVineY = top + 3;
+                const vineLen = Math.floor(seededRandom() * 5) + 2;
+                for (let v = 0; v < vineLen; v++) {
+                    const vy = startVineY + v;
+                    if (vy < sy - 1) {
+                        setVine(vineX, vy);
+                    }
+                }
+            }
+        }
+
         // 1. Surface Lakes in Plains & Valleys (Natural sealed concave basins with level waterlines)
         const fillPool = (centerX, width, depth) => {
             const halfW = Math.floor(width / 2);
@@ -7107,7 +8137,12 @@ export const SKIN_H = 32;
             let topBlock = world[x][surfaceY];
             if (isNearWater(x)) continue;
 
-            if (biome === "forest" && topBlock === IDS.GRASS && x - lastTreeX >= 2 && seededRandom() < 0.52) {
+            if (biome === "jungle" && topBlock === IDS.GRASS && x - lastTreeX >= 3 && seededRandom() < 0.65) {
+                let roll = seededRandom();
+                let treeType = roll < 0.80 ? 'giant' : 'jungle_bush';
+                buildJungleTree(x, surfaceY, treeType);
+                lastTreeX = x + (treeType === 'giant' ? 3 : 1);
+            } else if (biome === "forest" && topBlock === IDS.GRASS && x - lastTreeX >= 2 && seededRandom() < 0.52) {
                 let roll = seededRandom();
                 let treeType = roll < 0.40 ? 'oak' : (roll < 0.70 ? 'tall_oak' : (roll < 0.88 ? 'fancy' : 'bush'));
                 buildTree(x, surfaceY, treeType);
@@ -7133,7 +8168,24 @@ export const SKIN_H = 32;
                 const flowerCluster = Math.sin(x * 0.22 + worldSeed * 1.7);
                 let vegRoll = seededRandom();
 
-                if (biome === "plains") {
+                if (biome === "jungle") {
+                    // Jungle floor: Bamboo clumps, Ferns, Melons, and tall foliage
+                    if (vegRoll < 0.25) {
+                        world[x][surfaceY - 1] = IDS.FERN;
+                    } else if (vegRoll < 0.45) {
+                        world[x][surfaceY - 1] = IDS.TALL_GRASS;
+                    } else if (vegRoll < 0.60) {
+                        world[x][surfaceY - 1] = IDS.SHORT_GRASS;
+                    } else if (vegRoll < 0.75) {
+                        // Bamboo shoot/stalk (2-5 blocks tall)
+                        let bambooHeight = Math.floor(seededRandom() * 4) + 2;
+                        for (let b = 1; b <= bambooHeight; b++) {
+                            if (surfaceY - b > 0 && world[x][surfaceY - b] === IDS.AIR) {
+                                world[x][surfaceY - b] = IDS.BAMBOO;
+                            }
+                        }
+                    }
+                } else if (biome === "plains") {
                     // Wildflower patches in plains
                     if (flowerCluster > 0.82 && vegRoll < 0.45) {
                         world[x][surfaceY - 1] = IDS.FLOWER_RED;
@@ -7168,13 +8220,33 @@ export const SKIN_H = 32;
                 }
             }
         }
+
+        // Natural Wild Melon Patches in Jungle clearings
+        for (let x = 10; x < WORLD_WIDTH - 10; x += 14) {
+            if (biomes[x] === 'jungle' && seededRandom() < 0.48) {
+                let sy = surfaceHeights[x];
+                if (sy && world[x][sy] === IDS.GRASS && world[x][sy - 1] === IDS.AIR && !isNearWater(x)) {
+                    let patchSize = Math.floor(seededRandom() * 4) + 2;
+                    for (let p = 0; p < patchSize; p++) {
+                        let mx = x + (p % 3) - 1;
+                        if (mx >= 5 && mx < WORLD_WIDTH - 5) {
+                            let my = surfaceHeights[mx];
+                            if (my && world[mx][my] === IDS.GRASS && world[mx][my - 1] === IDS.AIR) {
+                                world[mx][my - 1] = IDS.MELON;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         ensureTreeWoodNonCollidable();
         ensureDesertScorpions();
     }
 
     export function spawnAnimals(count = 1, nearPlayerBias = 0.35) {
         let maxAnimals = getMaxAnimals();
-        let currentAnimals = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon).length;
+        let currentAnimals = entities.filter(e => e instanceof Animal).length;
         if (currentAnimals >= maxAnimals) return;
 
         let activePlayers = [{ x: player.x, y: player.y }];
@@ -7184,7 +8256,7 @@ export const SKIN_H = 32;
             });
         }
 
-        const validGround = new Set([IDS.GRASS, IDS.SNOW, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.DIRT]);
+        const validGround = new Set([IDS.GRASS, IDS.SNOW, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.DIRT, IDS.JUNGLE_LEAVES, IDS.LEAVES]);
         const nonSolid = new Set([IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP]);
 
         for (let i = 0; i < count && currentAnimals < maxAnimals; i++) {
@@ -7212,10 +8284,13 @@ export const SKIN_H = 32;
                 headBlock !== undefined && nonSolid.has(headBlock) && 
                 torsoBlock !== undefined && nonSolid.has(torsoBlock)) {
                 
+                const isJungle = typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(gx) === 'jungle';
                 let currentPigeons = entities.filter(e => e instanceof Pigeon).length;
-                let targetPigeons = Math.round(maxAnimals * 0.28); // 11 pigeons when maxAnimals is 40 (within 10-12 range)
+                let targetPigeons = Math.round(maxAnimals * 0.28); // 11 pigeons when maxAnimals is 40
                 let animalType;
-                if (currentPigeons < targetPigeons) {
+                if (isJungle && Math.random() < 0.65) {
+                    animalType = 'Parrot';
+                } else if (currentPigeons < targetPigeons) {
                     let roll = Math.random();
                     if (roll < 0.35) animalType = 'Pigeon';
                     else if (roll < 0.51) animalType = 'Sheep';
@@ -7235,6 +8310,15 @@ export const SKIN_H = 32;
                 else if (animalType === 'Pig') entities.push(new Pig(spawnX, spawnWorldY));
                 else if (animalType === 'Cow') entities.push(new Cow(spawnX, spawnWorldY));
                 else if (animalType === 'Chicken') entities.push(new Chicken(spawnX, spawnWorldY));
+                else if (animalType === 'Parrot') {
+                    const parrot = new Parrot(spawnX, spawnWorldY);
+                    entities.push(parrot);
+                    currentAnimals++;
+                    if (Math.random() < 0.45 && currentAnimals < maxAnimals) {
+                        entities.push(new Parrot(spawnX + 16, spawnWorldY));
+                        currentAnimals++;
+                    }
+                }
                 else {
                     const p1 = new Pigeon(spawnX, spawnWorldY);
                     entities.push(p1);
@@ -7250,7 +8334,7 @@ export const SKIN_H = 32;
                 currentAnimals++;
 
                 // Subtle herd bonus: 15% chance to spawn a single companion slightly nearby
-                if (animalType !== 'Pigeon' && Math.random() < 0.15 && currentAnimals < maxAnimals) {
+                if (animalType !== 'Pigeon' && animalType !== 'Parrot' && Math.random() < 0.15 && currentAnimals < maxAnimals) {
                     let herdOffset = (Math.random() > 0.5 ? 2 : -2);
                     let hgx = gx + herdOffset;
                     if (hgx >= 2 && hgx < WORLD_WIDTH - 2) {
@@ -7268,6 +8352,7 @@ export const SKIN_H = 32;
                 }
             }
         }
+        return true;
     }
 
     export function isNearTorch(gx, gy, radius = 4) {
@@ -7298,7 +8383,7 @@ export const SKIN_H = 32;
     export function spawnMobs(forcePassive = false) {
         let diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
         if (diff.mobSpawn <= 0) {
-            entities = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow);
+            entities = entities.filter(e => e instanceof Animal);
             if (!forcePassive) return;
         }
 
@@ -7543,7 +8628,8 @@ export const SKIN_H = 32;
                 const nx = lx + dx;
                 const ny = ly + dy;
                 if (nx >= 0 && nx < WORLD_WIDTH && ny >= 0 && ny < WORLD_HEIGHT) {
-                    if (world[nx][ny] === IDS.WOOD && Math.abs(dx) <= 1 && Math.abs(dy) <= 1) return true;
+                    const blk = world[nx][ny];
+                    if ((blk === IDS.WOOD || blk === IDS.JUNGLE_WOOD) && Math.abs(dx) <= 1 && Math.abs(dy) <= 1) return true;
                 }
             }
         }
@@ -7554,7 +8640,8 @@ export const SKIN_H = 32;
         
         while (queue.length > 0) {
             const [cx, cy, dist] = queue.shift();
-            if (world[cx]?.[cy] === IDS.WOOD) return true;
+            const cur = world[cx]?.[cy];
+            if (cur === IDS.WOOD || cur === IDS.JUNGLE_WOOD) return true;
             if (dist < maxDistance) {
                 const neighbors = [
                     [cx + 1, cy], [cx - 1, cy],
@@ -7566,8 +8653,8 @@ export const SKIN_H = 32;
                     const key = `${nx}_${ny}`;
                     if (!visited.has(key) && nx >= 0 && nx < WORLD_WIDTH && ny >= 0 && ny < WORLD_HEIGHT) {
                         const block = world[nx][ny];
-                        if (block === IDS.WOOD) return true;
-                        if (block === IDS.LEAVES) {
+                        if (block === IDS.WOOD || block === IDS.JUNGLE_WOOD) return true;
+                        if (block === IDS.LEAVES || block === IDS.JUNGLE_LEAVES) {
                             visited.add(key);
                             queue.push([nx, ny, dist + 1]);
                         }
@@ -7579,9 +8666,10 @@ export const SKIN_H = 32;
     }
 
     export function scheduleTreeLeafDecay(trunkX) {
-        for (let x = Math.max(0, trunkX - 5); x <= Math.min(WORLD_WIDTH - 1, trunkX + 5); x++) {
+        for (let x = Math.max(0, trunkX - 6); x <= Math.min(WORLD_WIDTH - 1, trunkX + 6); x++) {
             for (let y = 0; y < WORLD_HEIGHT; y++) {
-                if (world[x][y] === IDS.LEAVES && !isLeafConnectedToWood(x, y, 4)) {
+                const blk = world[x][y];
+                if ((blk === IDS.LEAVES || blk === IDS.JUNGLE_LEAVES) && !isLeafConnectedToWood(x, y, 5)) {
                     leafDecayQueue.set(`${x}_${y}`, LEAF_DECAY_MIN_FRAMES + Math.floor(Math.random() * LEAF_DECAY_RANDOM_FRAMES));
                 }
             }
@@ -7592,26 +8680,41 @@ export const SKIN_H = 32;
     export function updateTreeLeafDecay() {
         for (let [key, delay] of leafDecayQueue) {
             let [x, y] = key.split('_').map(Number);
-            if (world[x]?.[y] !== IDS.LEAVES) { leafDecayQueue.delete(key); continue; }
+            const blk = world[x]?.[y];
+            if (blk !== IDS.LEAVES && blk !== IDS.JUNGLE_LEAVES) { leafDecayQueue.delete(key); continue; }
             delay--;
             if (delay > 0) { leafDecayQueue.set(key, delay); continue; }
-            if (isLeafConnectedToWood(x, y, 4)) { leafDecayQueue.delete(key); continue; }
+            if (isLeafConnectedToWood(x, y, 5)) { leafDecayQueue.delete(key); continue; }
             world[x][y] = IDS.AIR;
             syncBlock(x, y, IDS.AIR);
             let roll = Math.random();
-            if (roll < 0.15) spawnDroppedItem(IDS.SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-            else if (roll < 0.35) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-            else if (roll < 0.40) spawnDroppedItem(IDS.APPLE, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+            if (blk === IDS.JUNGLE_LEAVES) {
+                if (roll < 0.12) spawnDroppedItem(IDS.JUNGLE_SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                else if (roll < 0.25) spawnDroppedItem(IDS.MELON_SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                else if (roll < 0.40) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+            } else {
+                if (roll < 0.15) spawnDroppedItem(IDS.SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                else if (roll < 0.35) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                else if (roll < 0.40) spawnDroppedItem(IDS.APPLE, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+            }
             leafDecayQueue.delete(key);
         }
     }
 
     export function growSaplingAt(x, y) {
-        if (world[x]?.[y] !== IDS.SAPLING) return;
+        const sBlock = world[x]?.[y];
+        if (sBlock !== IDS.SAPLING && sBlock !== IDS.JUNGLE_SAPLING) return;
         if (!canSaplingGrowAt(x, y)) {
             return;
         }
         saplingBlockedWarnings.delete(`${x}_${y}`);
+        if (sBlock === IDS.JUNGLE_SAPLING) {
+            world[x][y] = IDS.AIR;
+            syncBlock(x, y, IDS.AIR);
+            buildJungleTree(x, y + 1, 'giant');
+            saplingGrowthQueue.delete(`${x}_${y}`);
+            return;
+        }
         const setTreeBlock = (blockX, blockY, blockId) => {
             if (blockX < 0 || blockX >= WORLD_WIDTH || blockY < 0 || blockY >= WORLD_HEIGHT) return;
             if (world[blockX][blockY] !== IDS.AIR && !(blockX === x && blockY === y)) return;
@@ -7650,7 +8753,14 @@ export const SKIN_H = 32;
     }
 
     export function canSaplingGrowAt(x, y) {
-        if (world[x]?.[y] !== IDS.SAPLING || ![IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[x]?.[y + 1])) return false;
+        const sBlock = world[x]?.[y];
+        if ((sBlock !== IDS.SAPLING && sBlock !== IDS.JUNGLE_SAPLING) || ![IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[x]?.[y + 1])) return false;
+        if (sBlock === IDS.JUNGLE_SAPLING) {
+            for (let dy = 1; dy <= 6; dy++) {
+                if (y - dy < 0 || world[x][y - dy] !== IDS.AIR) return false;
+            }
+            return true;
+        }
         const height = getSaplingGrowthHeight(x, y);
         const trunkCells = new Set();
         for (let trunkOffset = 0; trunkOffset <= height; trunkOffset++) trunkCells.add(`${x}_${y - trunkOffset}`);
@@ -7745,7 +8855,7 @@ export const SKIN_H = 32;
         for (let [key, info] of cropGrowthQueue) {
             const [x, y] = key.split('_').map(Number);
             const currentBlock = world[x]?.[y];
-            const isCrop = currentBlock === IDS.WHEAT_STAGE_1 || currentBlock === IDS.WHEAT_STAGE_2 || currentBlock === IDS.WHEAT_STAGE_3 || currentBlock === IDS.WHEAT_STAGE_4;
+            const isCrop = currentBlock === IDS.WHEAT_STAGE_1 || currentBlock === IDS.WHEAT_STAGE_2 || currentBlock === IDS.WHEAT_STAGE_3 || currentBlock === IDS.WHEAT_STAGE_4 || currentBlock === IDS.MELON_STEM;
             if (!isCrop) {
                 cropGrowthQueue.delete(key);
                 continue;
@@ -7753,7 +8863,9 @@ export const SKIN_H = 32;
 
             if (world[x]?.[y + 1] !== IDS.PLOWED_DIRT) {
                 cropGrowthQueue.delete(key);
-                if (currentBlock === IDS.WHEAT_STAGE_4) {
+                if (currentBlock === IDS.MELON_STEM) {
+                    spawnDroppedItem(IDS.MELON_SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                } else if (currentBlock === IDS.WHEAT_STAGE_4) {
                     spawnDroppedItem(IDS.WHEAT, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
                     spawnDroppedItem(IDS.SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 2);
                 } else if (currentBlock === IDS.WHEAT_STAGE_3) {
@@ -7763,6 +8875,26 @@ export const SKIN_H = 32;
                 }
                 world[x][y] = IDS.AIR;
                 syncBlock(x, y, IDS.AIR);
+                continue;
+            }
+
+            if (currentBlock === IDS.MELON_STEM) {
+                if (dayCount + timeOfDay >= info.nextStageAt) {
+                    const melonDirections = [-1, 1].sort(() => Math.random() - 0.5);
+                    for (let dx of melonDirections) {
+                        const mx = x + dx;
+                        if (mx >= 0 && mx < WORLD_WIDTH && world[mx]?.[y] === IDS.AIR && [IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[mx]?.[y + 1])) {
+                            world[mx][y] = IDS.MELON;
+                            syncBlock(mx, y, IDS.MELON);
+                            for (let p = 0; p < 4; p++) {
+                                particles.push(new Particle(mx * TILE_SIZE + Math.random() * TILE_SIZE, y * TILE_SIZE + Math.random() * TILE_SIZE, '#22c55e'));
+                            }
+                            break;
+                        }
+                    }
+                    const stageDuration = info.hasWater ? 1.5 : 2.5;
+                    info.nextStageAt = dayCount + timeOfDay + stageDuration;
+                }
                 continue;
             }
 
@@ -8783,6 +9915,7 @@ export const SKIN_H = 32;
         let snowCount = 0;
         let sandCount = 0;
         let woodCount = 0;
+        let jungleCount = 0;
         const checkRadius = 8;
         const startX = Math.max(0, gx - checkRadius);
         const endX = Math.min(WORLD_WIDTH - 1, gx + checkRadius);
@@ -8794,12 +9927,15 @@ export const SKIN_H = 32;
             if (surfY < WORLD_HEIGHT) {
                 let b0 = world[x]?.[surfY];
                 let b1 = world[x]?.[surfY + 1];
+                let bAbove = world[x]?.[surfY - 1];
                 if (b0 === IDS.SNOW || b0 === IDS.ICE || b1 === IDS.SNOW || b1 === IDS.ICE) snowCount++;
                 else if (b0 === IDS.SAND || b1 === IDS.SAND) sandCount++;
+                else if (b0 === IDS.JUNGLE_WOOD || b0 === IDS.JUNGLE_LEAVES || b0 === IDS.BAMBOO || b0 === IDS.FERN || b0 === IDS.MELON || b0 === IDS.VINES || b1 === IDS.JUNGLE_WOOD || b1 === IDS.JUNGLE_LEAVES || bAbove === IDS.BAMBOO || bAbove === IDS.FERN || bAbove === IDS.MELON) jungleCount++;
                 else if (b0 === IDS.WOOD || b0 === IDS.LEAVES || b1 === IDS.WOOD) woodCount++;
             }
         }
 
+        if (jungleCount >= 1) return 'jungle';
         if (totalChecked > 0 && snowCount / totalChecked > 0.30) return 'snow';
         if (totalChecked > 0 && sandCount / totalChecked > 0.30) return 'desert';
         if (woodCount >= 2) return 'forest';
@@ -10416,31 +11552,31 @@ export const SKIN_H = 32;
             offscreenMapCanvas.height = WORLD_HEIGHT;
         }
         
-        // Fill sky backdrop
-        offscreenMapCtx.fillStyle = '#101726';
-        offscreenMapCtx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-
         const curBgWorld = bgWorld || (typeof window !== 'undefined' && window.bgWorld);
+        const imgData = offscreenMapCtx.createImageData(WORLD_WIDTH, WORLD_HEIGHT);
+        const buf32 = new Uint32Array(imgData.data.buffer);
+        buf32.fill(0xFF261710); // #101726 sky background in ABGR
 
-        // Batch rasterize blocks and fluids
         for (let x = 0; x < WORLD_WIDTH; x++) {
+            const col = curWorld[x];
+            const bgCol = curBgWorld ? curBgWorld[x] : null;
+            if (!col) continue;
             for (let y = 0; y < WORLD_HEIGHT; y++) {
-                let block = curWorld[x]?.[y];
+                const block = col[y];
+                const idx = y * WORLD_WIDTH + x;
                 if (block !== undefined && block !== IDS.AIR && block !== IDS.TORCH) {
-                    offscreenMapCtx.fillStyle = getMapBlockColor(block);
-                    offscreenMapCtx.fillRect(x, y, 1, 1);
+                    buf32[idx] = MINIMAP_COLOR_32[block] || 0xFF7D7D7D;
                 } else {
-                    let fl = getFluid(x, y);
+                    const fl = getFluid(x, y);
                     if (fl) {
-                        offscreenMapCtx.fillStyle = fl.type === IDS.LAVA ? '#e85d04' : '#1e6bb8';
-                        offscreenMapCtx.fillRect(x, y, 1, 1);
-                    } else if (curBgWorld && curBgWorld[x]?.[y] !== undefined && curBgWorld[x][y] !== IDS.AIR) {
-                        offscreenMapCtx.fillStyle = '#1e2430';
-                        offscreenMapCtx.fillRect(x, y, 1, 1);
+                        buf32[idx] = fl.type === IDS.LAVA ? 0xFF045DE8 : 0xFFB86B1E;
+                    } else if (bgCol && bgCol[y] !== undefined && bgCol[y] !== IDS.AIR) {
+                        buf32[idx] = 0xFF30241E; // #1e2430 in ABGR
                     }
                 }
             }
         }
+        offscreenMapCtx.putImageData(imgData, 0, 0);
         isOffscreenMapDirty = false;
     }
 
@@ -11036,4 +12172,9 @@ try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropG
 try { if (typeof checkWaterNearCrop !== "undefined") window.checkWaterNearCrop = checkWaterNearCrop; } catch(e) {}
 try { if (typeof registerPlantedCrop !== "undefined") window.registerPlantedCrop = registerPlantedCrop; } catch(e) {}
 try { if (typeof updateCropGrowth !== "undefined") window.updateCropGrowth = updateCropGrowth; } catch(e) {}
-
+try { if (typeof isClimbableBlock !== "undefined") window.isClimbableBlock = isClimbableBlock; } catch(e) {}
+try { if (typeof isJungleDoorBlock !== "undefined") window.isJungleDoorBlock = isJungleDoorBlock; } catch(e) {}
+try { if (typeof Parrot !== "undefined") window.Parrot = Parrot; } catch(e) {}
+try { if (typeof drawShoulderParrot !== "undefined") window.drawShoulderParrot = drawShoulderParrot; } catch(e) {}
+try { if (typeof dismountParrot !== "undefined") window.dismountParrot = dismountParrot; } catch(e) {}
+try { if (typeof dismountAllShoulderParrots !== "undefined") window.dismountAllShoulderParrots = dismountAllShoulderParrots; } catch(e) {}

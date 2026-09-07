@@ -1,9 +1,9 @@
 import {
     IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT,
-    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon,
+    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
-    textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
+    textures, getPlayerCaveSkyOpacity, getWorldSurfaceY, getActiveBiomeAt,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
     setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineState,
@@ -2169,8 +2169,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         { output: { id: IDS.JUKEBOX, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 8 }, { id: IDS.DIAMOND, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.EMPTY_VINYL, count: 1 }, inputs: [{ id: IDS.COAL, count: 4 }, { id: IDS.IRON_INGOT, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.PLANKS, count: 4 }, inputs: [{ id: IDS.WOOD, count: 1 }], reqTable: false },
+        { output: { id: IDS.JUNGLE_PLANKS, count: 4 }, inputs: [{ id: IDS.JUNGLE_WOOD, count: 1 }], reqTable: false, category: 'blocks' },
         { output: { id: IDS.CHEST, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 8 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.CHEST, count: 1 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 8 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.PLANKS, count: 2 }], reqTable: false },
+        { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 2 }], reqTable: false },
+        { output: { id: IDS.JUNGLE_DOOR, count: 1 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.JUNGLE_SAPLING, count: 1 }, inputs: [{ id: IDS.JUNGLE_LEAVES, count: 2 }], reqTable: false, category: 'utility' },
+        { output: { id: IDS.MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
+        { output: { id: IDS.MELON, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.LADDER, count: 3 }, inputs: [{ id: IDS.STICK, count: 7 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.WOODEN_STAIRS, count: 4 }, inputs: [{ id: IDS.PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.COBBLESTONE_STAIRS, count: 4 }, inputs: [{ id: IDS.COBBLESTONE, count: 6 }], reqTable: true, category: 'blocks' },
@@ -2304,6 +2311,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             title: 'Wild Florist',
             description: 'Pick a red poppy or yellow dandelion in the wild.',
             iconItem: IDS.FLOWER_RED,
+            badge: 'Easy',
+            difficulty: 'Easy'
+        },
+        {
+            id: 'best_friends_forever',
+            title: 'Best Friends Forever',
+            description: 'Tame a colorful wild parrot with seeds in the jungle.',
+            iconItem: IDS.MELON_SEEDS,
             badge: 'Easy',
             difficulty: 'Easy'
         },
@@ -4758,7 +4773,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (ry < WORLD_HEIGHT && curWorld[rx] && (curWorld[rx][ry] === IDS.GRASS || curWorld[rx][ry] === IDS.SNOW || curWorld[rx][ry] === IDS.DIRT)) {
                 if (curWorld[rx][ry - 1] !== IDS.AIR || curWorld[rx][ry - 2] !== IDS.AIR) continue;
 
-                if (pigeonCount < targetPigeons && Math.random() < 0.35) {
+                const isJungle = typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(rx) === 'jungle';
+                if (isJungle && Math.random() < 0.70) {
+                    const parrot = new Parrot(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    entities.push(parrot);
+                } else if (pigeonCount < targetPigeons && Math.random() < 0.35) {
                     const p1 = new Pigeon(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
                     entities.push(p1);
                     pigeonCount++;
@@ -4851,7 +4870,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             dirtToGrassQueue: Object.fromEntries((typeof window !== 'undefined' && window.dirtToGrassQueue) ? window.dirtToGrassQueue : dirtToGrassQueue),
             snowRegrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.snowRegrowthQueue) ? window.snowRegrowthQueue : snowRegrowthQueue),
             treeWoodCells: [...nonCollidableTreeWood],
-            entities: liveEntities.map(e => ({ type: e.constructor.name, x: e.x, y: e.y, health: e.health, dir: e.dir || 1 }))
+            entities: liveEntities.map(e => ({
+                type: e.constructor.name,
+                x: e.x,
+                y: e.y,
+                health: e.health,
+                dir: e.dir || 1,
+                ...(e.variant !== undefined ? { variant: e.variant } : {}),
+                ...(e.isTamed !== undefined ? { isTamed: e.isTamed } : {}),
+                ...(e.isSitting !== undefined ? { isSitting: e.isSitting } : {})
+            }))
         };
         const serializedSaveData = JSON.stringify(saveData);
         try {
@@ -5045,12 +5073,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             
             // 1. Determine world dimensions first before decompression
             let targetSize = data.worldSize;
-            let targetWidth = data.worldWidth || (targetSize === 'big' ? 1024 : 512);
-            let targetHeight = data.worldHeight || (targetSize === 'big' ? 320 : 256);
+            let targetWidth = data.worldWidth || (targetSize === 'big' ? 2048 : 512);
+            let targetHeight = data.worldHeight || (targetSize === 'big' ? 512 : 256);
             if (!targetSize) {
                 targetSize = targetWidth > 700 ? 'big' : 'small';
             }
-            setWorldDimensions(targetSize);
+            setWorldDimensions(targetSize, targetWidth, targetHeight);
 
             // 2. Decompress world with explicit dimensions
             let restoredWorld = null;
@@ -5216,11 +5244,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 else if (e.type === 'Sheep') inst = new Sheep(e.x, e.y);
                 else if (e.type === 'Cow') inst = new Cow(e.x, e.y);
                 else if (e.type === 'Pigeon') inst = new Pigeon(e.x, e.y);
+                else if (e.type === 'Parrot') {
+                    inst = new Parrot(e.x, e.y, e.variant !== undefined ? e.variant : 0);
+                    if (e.isTamed !== undefined) inst.isTamed = !!e.isTamed;
+                    if (e.isSitting !== undefined) inst.isSitting = !!e.isSitting;
+                }
                 else if (e.type === 'Creeper') inst = new Creeper(e.x, e.y);
                 else if (e.type === 'Scorpion') inst = new Scorpion(e.x, e.y);
                 else inst = new Zombie(e.x, e.y);
                 inst.health = e.health;
-                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon) inst.dir = e.dir;
+                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon || inst instanceof Parrot) inst.dir = e.dir;
                 return inst;
             });
             ensureDesertScorpions();
@@ -8228,7 +8261,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             [IDS.CHEST]: '#8d6e63',
             [IDS.WOOD_HOE]: '#8d6e63',
             [IDS.IRON_SWORD]: '#cfd8dc',
-            [IDS.DIAMOND_PICKAXE]: '#00e5ff'
+            [IDS.DIAMOND_PICKAXE]: '#00e5ff',
+            [IDS.JUNGLE_WOOD]: '#564228',
+            [IDS.JUNGLE_LEAVES]: '#1e7e34',
+            [IDS.JUNGLE_PLANKS]: '#b8824f',
+            [IDS.JUNGLE_SAPLING]: '#28a745',
+            [IDS.JUNGLE_DOOR]: '#8d5d36',
+            [IDS.VINES]: '#2e7d32',
+            [IDS.MELON]: '#2e7d32',
+            [IDS.MELON_SLICE]: '#ef5350',
+            [IDS.MELON_SEEDS]: '#404040',
+            [IDS.FERN]: '#43a047',
+            [IDS.BAMBOO]: '#4caf50'
         };
         ctx.fillStyle = fallbackColors[id] || '#5c4033';
         ctx.fillRect(ix, iy, size, size);

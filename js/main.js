@@ -16,7 +16,7 @@ import {
     SAPLING_GROWTH_DAYS, SNOW_REGROWTH_DAYS, WATER_FLOW_INTERVAL, WATER_FLOW_MAX,
     canHarvestBlock, canSaplingGrowAt, checkSandFallAbove, currentWorldSize, getBedPairStart,
     getBlockColor, getChestGroup, getChestKey, getDayDifficultyMultiplier, getDayHungerDrainMultiplier,
-    getDoorBaseY, getMaxAnimals, getRequiredMiningTier, isBackgroundBuildingBlock, isDoorBlock,
+    getDoorBaseY, getMaxAnimals, getRequiredMiningTier, isBackgroundBuildingBlock, isDoorBlock, isJungleDoorBlock, isClimbableBlock,
     isFoodItem, isOpenDoorBlock, isSolidWorldBlock, isWorldMapOpen, notifyBlockedSaplings,
     scheduleDirtToGrass, scheduleSnowRegrowth, scheduleTreeLeafDecay, setWorldDimensions,
     showClouds, showDebug, autoJumpEnabled, graphicsMode, advancedGraphics,
@@ -24,10 +24,10 @@ import {
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
-    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon,
+    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon, Parrot,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
-    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
+    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable, dismountAllShoulderParrots,
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
@@ -545,6 +545,18 @@ export function initJukeboxFileInput() {
                 case 'eat':
                     playTone(ctx, 'sawtooth', 320 + Math.random() * 60, 120, 0.14 * effectiveVol, 0.05, null, now);
                     break;
+                case 'door':
+                    playTone(ctx, 'sine', 190, 110, 0.22 * effectiveVol, 0.09, null, now);
+                    break;
+                case 'parrot_chirp':
+                    playTone(ctx, 'sine', 1400 + Math.random() * 400, 900 + Math.random() * 300, 0.15 * effectiveVol, 0.08, null, now);
+                    break;
+                case 'parrot_tame':
+                    playTone(ctx, 'triangle', 600, 1200, 0.20 * effectiveVol, 0.25, null, now, false);
+                    break;
+                case 'parrot_hurt':
+                    playTone(ctx, 'sawtooth', 700, 250, 0.22 * effectiveVol, 0.12, null, now);
+                    break;
             }
         } catch(e) {}
     }
@@ -1049,7 +1061,7 @@ export function initJukeboxFileInput() {
                 continuousPlaceCooldown = 0;
                 lastPlacedCell.x = -1;
                 lastPlacedCell.y = -1;
-                if (!handleBlockInteraction()) {
+                if (!handleEntityInteraction() && !handleBlockInteraction()) {
                     const placed = handleRightClickPlace();
                     if (placed) {
                         playSound('place');
@@ -1186,6 +1198,33 @@ export function initJukeboxFileInput() {
     }
 
 
+    export function handleEntityInteraction() {
+        if (isInventoryOpen || STATE !== 'PLAYING') return false;
+        const curEntities = (typeof window !== 'undefined' && Array.isArray(window.entities)) ? window.entities : entities;
+        if (!curEntities || !curEntities.length) return false;
+
+        const mx = mouse.worldX;
+        const my = mouse.worldY;
+        const pCX = player.x + player.width / 2;
+        const pCY = player.y + player.height / 2;
+
+        for (let ent of curEntities) {
+            if (!ent || ent.isDead || ent.health <= 0) continue;
+            if (mx >= ent.x - 8 && mx <= ent.x + ent.width + 8 &&
+                my >= ent.y - 8 && my <= ent.y + ent.height + 8) {
+                
+                const entCX = ent.x + ent.width / 2;
+                const entCY = ent.y + ent.height / 2;
+                if (Math.hypot(pCX - entCX, pCY - entCY) / TILE_SIZE > REACH) return false;
+
+                if (ent instanceof Parrot) {
+                    return ent.interact(player, inventory, selectedHotbarIndex);
+                }
+            }
+        }
+        return false;
+    }
+
     export function handleBlockInteraction() {
         let gx = Math.floor(mouse.worldX / TILE_SIZE); let gy = Math.floor(mouse.worldY / TILE_SIZE);
         if (gx < 0 || gx >= WORLD_WIDTH || gy < 0 || gy >= WORLD_HEIGHT) return false;
@@ -1218,21 +1257,27 @@ export function initJukeboxFileInput() {
         if (isDoorBlock(world[gx][gy])) {
             const doorBaseY = getDoorBaseY(gy, world[gx][gy]);
             const doorIsOpen = isOpenDoorBlock(world[gx][gy]);
+            const isJungle = isJungleDoorBlock(world[gx][gy]);
             if (doorIsOpen) {
                 if (intersectsEntity(gx, doorBaseY) || intersectsEntity(gx, doorBaseY - 1)) {
                     showToast('The doorway is occupied.');
                     return true;
                 }
-                world[gx][doorBaseY] = IDS.DOOR;
-                world[gx][doorBaseY - 1] = IDS.DOOR_TOP;
-                syncBlock(gx, doorBaseY, IDS.DOOR);
-                syncBlock(gx, doorBaseY - 1, IDS.DOOR_TOP);
+                const bottomId = isJungle ? IDS.JUNGLE_DOOR : IDS.DOOR;
+                const topId = isJungle ? IDS.JUNGLE_DOOR_TOP : IDS.DOOR_TOP;
+                world[gx][doorBaseY] = bottomId;
+                world[gx][doorBaseY - 1] = topId;
+                syncBlock(gx, doorBaseY, bottomId);
+                syncBlock(gx, doorBaseY - 1, topId);
             } else {
-                world[gx][doorBaseY] = IDS.DOOR_OPEN;
-                world[gx][doorBaseY - 1] = IDS.DOOR_OPEN_TOP;
-                syncBlock(gx, doorBaseY, IDS.DOOR_OPEN);
-                syncBlock(gx, doorBaseY - 1, IDS.DOOR_OPEN_TOP);
+                const openBottomId = isJungle ? IDS.JUNGLE_DOOR_OPEN : IDS.DOOR_OPEN;
+                const openTopId = isJungle ? IDS.JUNGLE_DOOR_OPEN_TOP : IDS.DOOR_OPEN_TOP;
+                world[gx][doorBaseY] = openBottomId;
+                world[gx][doorBaseY - 1] = openTopId;
+                syncBlock(gx, doorBaseY, openBottomId);
+                syncBlock(gx, doorBaseY - 1, openTopId);
             }
+            playSound('door');
             return true;
         }
         if (world[gx][gy] === IDS.FURNACE) {
@@ -1642,7 +1687,9 @@ export function initJukeboxFileInput() {
                 giveItem(IDS.SEEDS, 2);
                 unlockAchievement('bumper_crop');
             }
-            if (isDoorBlock(blockId)) dropId = IDS.DOOR;
+            if (isDoorBlock(blockId)) {
+                dropId = isJungleDoorBlock(blockId) ? IDS.JUNGLE_DOOR : IDS.DOOR;
+            }
             if (blockId === IDS.STONE) dropId = IDS.COBBLESTONE;
             if (blockId === IDS.SNOW) {
                 const heldItem = inventory[selectedHotbarIndex];
@@ -1654,6 +1701,19 @@ export function initJukeboxFileInput() {
             if (blockId === IDS.IRON_ORE) dropId = IDS.IRON_ORE;
             if (blockId === IDS.DIAMOND_ORE) dropId = IDS.DIAMOND;
             if (blockId === IDS.LADDER) dropId = IDS.LADDER;
+            if (blockId === IDS.VINES) dropId = IDS.VINES;
+            if (blockId === IDS.BAMBOO) dropId = IDS.BAMBOO;
+            if (blockId === IDS.FERN) {
+                dropId = Math.random() < 0.20 ? IDS.SEEDS : null;
+            }
+            if (blockId === IDS.MELON_STEM) dropId = IDS.MELON_SEEDS;
+            if (blockId === IDS.MELON) {
+                dropId = null;
+                const slices = Math.floor(Math.random() * 5) + 3; // 3 to 7 slices
+                giveItem(IDS.MELON_SLICE, slices);
+            }
+            if (blockId === IDS.JUNGLE_WOOD) dropId = IDS.JUNGLE_WOOD;
+            if (blockId === IDS.JUNGLE_PLANKS) dropId = IDS.JUNGLE_PLANKS;
             if (blockId === IDS.WOODEN_STAIRS || blockId === IDS.WOODEN_STAIRS_LEFT || blockId === IDS.WOODEN_STAIRS_RIGHT) dropId = IDS.WOODEN_STAIRS;
             if (blockId === IDS.COBBLESTONE_STAIRS || blockId === IDS.COBBLESTONE_STAIRS_LEFT || blockId === IDS.COBBLESTONE_STAIRS_RIGHT) dropId = IDS.COBBLESTONE_STAIRS;
             if (blockId === IDS.SHORT_GRASS || blockId === IDS.TALL_GRASS) {
@@ -1669,6 +1729,14 @@ export function initJukeboxFileInput() {
                 else if (leafDropRoll < 0.35) dropId = IDS.STICK;
                 else dropId = null;
             }
+            if (blockId === IDS.JUNGLE_LEAVES) {
+                const leafDropRoll = Math.random();
+                if (leafDropRoll < 0.10) dropId = IDS.JUNGLE_SAPLING;
+                else if (leafDropRoll < 0.22) dropId = IDS.MELON_SEEDS;
+                else if (leafDropRoll < 0.40) dropId = IDS.STICK;
+                else dropId = null;
+            }
+            if (blockId === IDS.JUNGLE_SAPLING) dropId = IDS.JUNGLE_SAPLING;
             // Strict tool tier harvest enforcement: If the block requires a tool tier and the player lacks it, DROP NOTHING!
             if (!canHarvestBlock(blockId) && getRequiredMiningTier(blockId) > 0) {
                 dropId = null;
@@ -1676,15 +1744,23 @@ export function initJukeboxFileInput() {
             if (dropId) giveItem(dropId, 1);
             detachedTorchCells.forEach(() => giveItem(IDS.TORCH, 1));
             // Check if flower/grass/sapling/crop above was detached
-            const isDetachablePlant = id => [IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.SAPLING, IDS.WHEAT_STAGE_1, IDS.WHEAT_STAGE_2, IDS.WHEAT_STAGE_3, IDS.WHEAT_STAGE_4].includes(id);
+            const isDetachablePlant = id => [
+                IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW,
+                IDS.SAPLING, IDS.JUNGLE_SAPLING, IDS.FERN, IDS.MELON_STEM,
+                IDS.WHEAT_STAGE_1, IDS.WHEAT_STAGE_2, IDS.WHEAT_STAGE_3, IDS.WHEAT_STAGE_4
+            ].includes(id);
             if (gridY > 0 && isDetachablePlant(world[gridX]?.[gridY - 1])) {
                 let aboveId = world[gridX][gridY - 1];
                 world[gridX][gridY - 1] = IDS.AIR;
                 syncBlock(gridX, gridY - 1, IDS.AIR);
                 if (aboveId === IDS.SHORT_GRASS || aboveId === IDS.TALL_GRASS) {
                     if (Math.random() < 0.20) giveItem(IDS.SEEDS, 1);
-                } else if (aboveId === IDS.FLOWER_RED || aboveId === IDS.FLOWER_YELLOW || aboveId === IDS.SAPLING) {
+                } else if (aboveId === IDS.FLOWER_RED || aboveId === IDS.FLOWER_YELLOW || aboveId === IDS.SAPLING || aboveId === IDS.JUNGLE_SAPLING) {
                     giveItem(aboveId, 1);
+                } else if (aboveId === IDS.FERN) {
+                    if (Math.random() < 0.20) giveItem(IDS.SEEDS, 1);
+                } else if (aboveId === IDS.MELON_STEM) {
+                    giveItem(IDS.MELON_SEEDS, 1);
                 } else if (aboveId === IDS.WHEAT_STAGE_1 || aboveId === IDS.WHEAT_STAGE_2) {
                     giveItem(IDS.SEEDS, 1);
                 } else if (aboveId === IDS.WHEAT_STAGE_3) {
@@ -1693,11 +1769,11 @@ export function initJukeboxFileInput() {
                     giveItem(IDS.WHEAT, 1);
                     giveItem(IDS.SEEDS, 2);
                 }
-                if (aboveId === IDS.SAPLING) {
+                if (aboveId === IDS.SAPLING || aboveId === IDS.JUNGLE_SAPLING) {
                     saplingGrowthQueue.delete(`${gridX}_${gridY - 1}`);
                     saplingBlockedWarnings.delete(`${gridX}_${gridY - 1}`);
                 }
-                if (aboveId === IDS.WHEAT_STAGE_1 || aboveId === IDS.WHEAT_STAGE_2 || aboveId === IDS.WHEAT_STAGE_3 || aboveId === IDS.WHEAT_STAGE_4) {
+                if (aboveId === IDS.WHEAT_STAGE_1 || aboveId === IDS.WHEAT_STAGE_2 || aboveId === IDS.WHEAT_STAGE_3 || aboveId === IDS.WHEAT_STAGE_4 || aboveId === IDS.MELON_STEM) {
                     cropGrowthQueue.delete(`${gridX}_${gridY - 1}`);
                 }
                 checkSandFallAbove(gridX, gridY - 1);
@@ -1743,7 +1819,7 @@ export function initJukeboxFileInput() {
         let gy = Math.floor(mouse.worldY / TILE_SIZE);
 
         if ((gx !== lastPlacedCell.x || gy !== lastPlacedCell.y) && continuousPlaceCooldown === 0) {
-            if (!handleBlockInteraction()) {
+            if (!handleEntityInteraction() && !handleBlockInteraction()) {
                 const placed = handleRightClickPlace();
                 if (placed) {
                     playSound('place');
@@ -1941,14 +2017,17 @@ export function initJukeboxFileInput() {
 
         if (targetFluid && !HARDNESS[sel.id]) return false;
 
-        if (sel.id === IDS.DOOR) {
+        if (sel.id === IDS.DOOR || sel.id === IDS.JUNGLE_DOOR) {
             if (gy < 1 || gy >= WORLD_HEIGHT - 1 || !isSolidWorldBlock(gx, gy + 1, world[gx][gy + 1]) || world[gx][gy] !== IDS.AIR || world[gx][gy - 1] !== IDS.AIR || intersectsEntity(gx, gy) || intersectsEntity(gx, gy - 1)) return false;
-            world[gx][gy] = IDS.DOOR;
-            world[gx][gy - 1] = IDS.DOOR_TOP;
-            syncBlock(gx, gy, IDS.DOOR);
-            syncBlock(gx, gy - 1, IDS.DOOR_TOP);
+            const bottomId = (sel.id === IDS.JUNGLE_DOOR) ? IDS.JUNGLE_DOOR : IDS.DOOR;
+            const topId = (sel.id === IDS.JUNGLE_DOOR) ? IDS.JUNGLE_DOOR_TOP : IDS.DOOR_TOP;
+            world[gx][gy] = bottomId;
+            world[gx][gy - 1] = topId;
+            syncBlock(gx, gy, bottomId);
+            syncBlock(gx, gy - 1, topId);
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
+            playSound('door');
             updateUI();
             return true;
         }
@@ -1965,14 +2044,14 @@ export function initJukeboxFileInput() {
             return true;
         }
 
-        if (sel.id === IDS.SAPLING) {
+        if (sel.id === IDS.SAPLING || sel.id === IDS.JUNGLE_SAPLING) {
             if (gy >= WORLD_HEIGHT - 1 || world[gx][gy] !== IDS.AIR || ![IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[gx][gy + 1]) || intersectsEntity(gx, gy)) return false;
             const growthAt = dayCount + timeOfDay + SAPLING_GROWTH_DAYS;
-            world[gx][gy] = IDS.SAPLING;
+            world[gx][gy] = sel.id;
             const hasClearGrowthSpace = canSaplingGrowAt(gx, gy);
             saplingGrowthQueue.set(`${gx}_${gy}`, growthAt);
             if (typeof window !== 'undefined') window.saplingGrowthQueue = saplingGrowthQueue;
-            syncBlock(gx, gy, IDS.SAPLING, { growthAt });
+            syncBlock(gx, gy, sel.id, { growthAt });
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
             if (hasClearGrowthSpace) showToast('Sapling planted. It will grow in 2 days.');
@@ -1984,7 +2063,7 @@ export function initJukeboxFileInput() {
             return true;
         }
 
-        if (sel.id === IDS.FLOWER_RED || sel.id === IDS.FLOWER_YELLOW || sel.id === IDS.SHORT_GRASS || sel.id === IDS.TALL_GRASS) {
+        if (sel.id === IDS.FLOWER_RED || sel.id === IDS.FLOWER_YELLOW || sel.id === IDS.SHORT_GRASS || sel.id === IDS.TALL_GRASS || sel.id === IDS.FERN) {
             if (gy >= WORLD_HEIGHT - 1 || world[gx][gy] !== IDS.AIR || ![IDS.DIRT, IDS.GRASS].includes(world[gx][gy + 1]) || intersectsEntity(gx, gy)) return false;
             world[gx][gy] = sel.id;
             syncBlock(gx, gy, sel.id);
@@ -1994,7 +2073,7 @@ export function initJukeboxFileInput() {
             return true;
         }
 
-        if (sel.id === IDS.SEEDS) {
+        if (sel.id === IDS.SEEDS || sel.id === IDS.MELON_SEEDS) {
             const liveWorld = (typeof window !== 'undefined' && window.world) ? window.world : world;
             let plantX = gx;
             let plantY = gy;
@@ -2016,7 +2095,7 @@ export function initJukeboxFileInput() {
             if (liveWorld[plantX]?.[plantY + 1] !== IDS.PLOWED_DIRT) return false;
 
             const targetSpace = liveWorld[plantX]?.[plantY];
-            if (targetSpace !== IDS.AIR && targetSpace !== IDS.SHORT_GRASS && targetSpace !== IDS.TALL_GRASS && targetSpace !== IDS.FLOWER_RED && targetSpace !== IDS.FLOWER_YELLOW) {
+            if (targetSpace !== IDS.AIR && targetSpace !== IDS.SHORT_GRASS && targetSpace !== IDS.TALL_GRASS && targetSpace !== IDS.FLOWER_RED && targetSpace !== IDS.FLOWER_YELLOW && targetSpace !== IDS.FERN) {
                 return false;
             }
 
@@ -2025,8 +2104,9 @@ export function initJukeboxFileInput() {
                 syncBlock(plantX, plantY, IDS.AIR);
             }
 
-            liveWorld[plantX][plantY] = IDS.WHEAT_STAGE_1;
-            syncBlock(plantX, plantY, IDS.WHEAT_STAGE_1);
+            const plantedCropId = (sel.id === IDS.MELON_SEEDS) ? IDS.MELON_STEM : IDS.WHEAT_STAGE_1;
+            liveWorld[plantX][plantY] = plantedCropId;
+            syncBlock(plantX, plantY, plantedCropId);
             const hasWater = registerPlantedCrop(plantX, plantY);
             if (hasWater) {
                 showToast("Crops will grow faster near water! (3 days instead of 4)");
@@ -2054,6 +2134,24 @@ export function initJukeboxFileInput() {
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
             updateUI();
+            return true;
+        }
+
+        if (sel.id === IDS.VINES) {
+            if (world[gx][gy] !== IDS.AIR && world[gx][gy] !== IDS.SHORT_GRASS && world[gx][gy] !== IDS.TALL_GRASS) return false;
+            let hasSupport = (gx > 0 && isSolidWorldBlock(gx - 1, gy, world[gx - 1][gy])) ||
+                             (gx < WORLD_WIDTH - 1 && isSolidWorldBlock(gx + 1, gy, world[gx + 1][gy])) ||
+                             (gy > 0 && (isSolidWorldBlock(gx, gy - 1, world[gx][gy - 1]) || world[gx][gy - 1] === IDS.VINES || world[gx][gy - 1] === IDS.LEAVES || world[gx][gy - 1] === IDS.JUNGLE_LEAVES));
+            if (!hasSupport) return false;
+            removeFluid(gx, gy);
+            world[gx][gy] = IDS.VINES;
+            wakeFluidsAround(gx, gy);
+            syncBlock(gx, gy, IDS.VINES);
+            sel.count--;
+            if (sel.count <= 0) inventory[selectedIndex] = null;
+            playSound('step', { material: 'grass' });
+            updateUI();
+            if (!isMultiplayer) saveCurrentWorld();
             return true;
         }
 
@@ -2108,7 +2206,7 @@ export function initJukeboxFileInput() {
             if (world[gx + offset][gy] !== IDS.AIR || intersectsEntity(gx + offset, gy)) return false;
         }
 
-        const constructionBlocks = [IDS.DIRT, IDS.GRASS, IDS.STONE, IDS.COBBLESTONE, IDS.WOOD, IDS.LEAVES, IDS.PLANKS, IDS.SAND, IDS.SNOW];
+        const constructionBlocks = [IDS.DIRT, IDS.GRASS, IDS.STONE, IDS.COBBLESTONE, IDS.WOOD, IDS.LEAVES, IDS.PLANKS, IDS.SAND, IDS.SNOW, IDS.JUNGLE_WOOD, IDS.JUNGLE_PLANKS, IDS.JUNGLE_LEAVES, IDS.MELON, IDS.BAMBOO];
         const needsSupport = sel.id !== IDS.TORCH && !constructionBlocks.includes(sel.id);
         if (needsSupport) {
             if (gy >= WORLD_HEIGHT - 1) return false;
@@ -2157,7 +2255,7 @@ export function initJukeboxFileInput() {
         for (let x = 0; x < WORLD_WIDTH; x++) {
             if (!world[x]) continue;
             for (let y = 0; y < WORLD_HEIGHT; y++) {
-                if (world[x][y] === IDS.SAPLING) {
+                if (world[x][y] === IDS.SAPLING || world[x][y] === IDS.JUNGLE_SAPLING) {
                     const key = `${x}_${y}`;
                     if (!activeQueue.has(key)) {
                         const growthAt = dayCount + timeOfDay + SAPLING_GROWTH_DAYS;
@@ -3086,4 +3184,5 @@ try { if (typeof jukebox !== "undefined") window.jukebox = jukebox; } catch(e) {
 try { if (typeof updateMusicPlayerHUD !== "undefined") window.updateMusicPlayerHUD = updateMusicPlayerHUD; } catch(e) {}
 try { if (typeof ejectActiveJukebox !== "undefined") window.ejectActiveJukebox = ejectActiveJukebox; } catch(e) {}
 try { if (typeof respawnDailyAnimals !== "undefined") window.respawnDailyAnimals = respawnDailyAnimals; } catch(e) {}
+try { if (typeof handleEntityInteraction !== "undefined") window.handleEntityInteraction = handleEntityInteraction; } catch(e) {}
 
