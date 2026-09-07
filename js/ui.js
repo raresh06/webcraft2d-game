@@ -1,6 +1,7 @@
 import {
     IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT,
     Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow,
+    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
@@ -251,6 +252,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export const GAME_VERSION = '0.1.4';
     export const DISPLAY_VERSION = '0.1.4 Patch 1';
     export const GAME_BUILD = 'webcraft2d-beta-0.1.4';
+    export const GAME_VERSION = '0.1.5';
+    export const DISPLAY_VERSION = '0.1.5';
+    export const GAME_BUILD = 'webcraft2d-beta-0.1.5';
 
     export function updateVersionLabels() {
         const versionLabel = document.getElementById('game-version-label');
@@ -2520,6 +2524,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             iconItem: IDS.DIAMOND,
             badge: 'Master',
             difficulty: 'Master'
+        },
+        {
+            id: 'why_would_you_do_that',
+            title: 'Why Would You Do That?',
+            description: 'Defeated an innocent, sweet pigeon. They didn\'t even drop anything... was it worth it?',
+            iconItem: IDS.FEATHER,
+            badge: 'Master',
+            difficulty: 'Master'
         }
     ];
 
@@ -3301,12 +3313,33 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         // 1. Beta 0.1.4 Patch 1 (Latest Release)
         const vPatch1 = UPDATE_HISTORY_LOGS[0];
+        // 1. Beta 0.1.5 (Latest Release)
+        const v015 = UPDATE_HISTORY_LOGS[0];
+        if (v015) {
+            const art015 = document.createElement('article');
+            art015.className = 'news-entry is-newest';
+            art015.innerHTML = `
+                <div class="news-entry-header">
+                    <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${v015.title}</h3>
+                    <span class="news-badge" style="background: #16a34a; color: #fff;">0.1.5</span>
+                </div>
+                ${renderPatchNoteList(v015.items)}
+            `;
+            entriesRoot.appendChild(art015);
+        }
+
+        // 2. Beta 0.1.4 Patch 1
+        const vPatch1 = UPDATE_HISTORY_LOGS[1];
         if (vPatch1) {
             const artPatch1 = document.createElement('article');
             artPatch1.className = 'news-entry is-newest';
+            artPatch1.className = 'news-entry';
+            artPatch1.style.borderColor = '#0284c7';
+            artPatch1.style.boxShadow = 'inset 0 0 0 1px #080a0c, 0 0 0 1px rgba(2, 132, 199, 0.45)';
             artPatch1.innerHTML = `
                 <div class="news-entry-header">
                     <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${vPatch1.title}</h3>
+                    <h3 class="text-sky-400 font-bold text-2xl font-['VT323']">${vPatch1.title}</h3>
                     <span class="news-badge">PATCH 1</span>
                 </div>
                 ${renderPatchNoteList(vPatch1.items)}
@@ -3332,6 +3365,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
 
         // 3. Older Versions (Beta 0.1.3) inside clean collapsible summaries
+        // 3. Older Versions (Beta 0.1.4, Beta 0.1.3) inside clean collapsible summaries
         for (let i = 2; i < UPDATE_HISTORY_LOGS.length; i++) {
             const entry = UPDATE_HISTORY_LOGS[i];
             if (!entry) continue;
@@ -3840,6 +3874,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 const spStorage = (typeof getAchievementsStorage === 'function') ? getAchievementsStorage('sp') : {};
                 const unlockedCount = Object.keys(spStorage).length;
                 achEl.innerText = `${unlockedCount} / 32`;
+                achEl.innerText = `${unlockedCount} / ${ACHIEVEMENTS.length}`;
                 achEl.className = 'text-amber-300 font-bold text-2xl font-[\'VT323\'] leading-none';
             }
         }
@@ -4741,6 +4776,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 else if (roll < 0.50) animal = new Pig(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
                 else if (roll < 0.75) animal = new Cow(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
                 else animal = new Chicken(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                if (roll < 0.20) animal = new Sheep(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                else if (roll < 0.40) animal = new Pig(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                else if (roll < 0.60) animal = new Cow(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                else if (roll < 0.80) animal = new Chicken(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                else animal = new Pigeon(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
                 entities.push(animal);
             }
         }
@@ -5179,11 +5219,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 else if (e.type === 'Chicken') inst = new Chicken(e.x, e.y);
                 else if (e.type === 'Sheep') inst = new Sheep(e.x, e.y);
                 else if (e.type === 'Cow') inst = new Cow(e.x, e.y);
+                else if (e.type === 'Pigeon') inst = new Pigeon(e.x, e.y);
                 else if (e.type === 'Creeper') inst = new Creeper(e.x, e.y);
                 else if (e.type === 'Scorpion') inst = new Scorpion(e.x, e.y);
                 else inst = new Zombie(e.x, e.y);
                 inst.health = e.health;
                 if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow) inst.dir = e.dir;
+                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon) inst.dir = e.dir;
                 return inst;
             });
             ensureDesertScorpions();

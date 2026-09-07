@@ -25,6 +25,7 @@ import {
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
     Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile,
+    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
@@ -74,6 +75,7 @@ export {
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
     Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile,
+    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
@@ -1365,6 +1367,10 @@ export function initJukeboxFileInput() {
                             giveItem(IDS.RAW_BEEF, Math.floor(Math.random() * 2) + 1);
                             let leatherCount = Math.floor(Math.random() * 3);
                             if (leatherCount > 0) giveItem(IDS.LEATHER, leatherCount);
+                        }
+                        else if (z instanceof Pigeon) {
+                            // Innocent sweet bird drops nothing!
+                            unlockAchievement('why_would_you_do_that');
                         }
                         else if (z instanceof Zombie) {
                             if(Math.random() < 0.5) giveItem(IDS.RAW_PORKCHOP, 1);
@@ -2664,6 +2670,8 @@ export function initJukeboxFileInput() {
                 let sheep = entities.filter(e => e instanceof Sheep).length;
                 let cows = entities.filter(e => e instanceof Cow).length;
                 let hostiles = entities.length - pigs - chickens - sheep - cows;
+                let pigeons = entities.filter(e => e instanceof Pigeon).length;
+                let hostiles = entities.length - pigs - chickens - sheep - cows - pigeons;
                 
                 let debugGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(px)));
                 let surfaceY = typeof getWorldSurfaceY === 'function' ? getWorldSurfaceY(debugGridX) : 0;
@@ -2687,6 +2695,7 @@ export function initJukeboxFileInput() {
                         `Diff: ${currentDifficulty.toUpperCase()}\n` +
                         `Multiplayer: ${isMultiplayer ? currentMpRoom : 'Local'}\n` +
                         `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Bad:${hostiles})\n` +
+                        `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Pigeons:${pigeons}, Bad:${hostiles})\n` +
                         `Target: ${targetBlockName}\n` +
                         `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%) | Day Scale: ${typeof getDayDifficultyMultiplier === 'function' ? getDayDifficultyMultiplier().toFixed(2) : 1}x (Hunger: ${typeof getDayHungerDrainMultiplier === 'function' ? getDayHungerDrainMultiplier().toFixed(2) : 1}x)`;
                 }

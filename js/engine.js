@@ -478,6 +478,20 @@ export function getMaxAnimals() {
     export let lastHotbarItemId = null;
     export let sleepStartTime = 0;
     export let sleepTransitionMs = 3000;
+    export const PATCH_NOTES_0_1_5 = {
+        title: 'Beta 0.1.5 (Pigeon Wildlife, Flight Physics & Tree Perching)',
+        items: [
+            'Sweet Avian Wildlife (Pigeons): Populated biomes with sweet, innocent Pigeons featuring charming pixel art, shimmering emerald-violet neck collars, and expressive animations.',
+            'Aerodynamic Flight Physics: Pigeons possess genuine flight dynamics, flapping wings to soar effortlessly above tree canopies, smoothly banking into turns, and gliding gracefully.',
+            'Tree Foliage & Leaf Perching AI: Pigeons seek out tree canopies, landing softly on leaves to perch, look around with curious head tilts, and rest before taking flight again.',
+            'Ground Foraging & Pecking: Pigeons land on open fields to hunt for seeds, walking with realistic head bobs and rhythmically pecking the earth.',
+            'Skittish Startle Reflexes: Quick to startle—running close without seeds causes wild pigeons to scatter with fluttering wings and swiftly launch into the sky.',
+            'Seed Temptation & Flocking Calls: Holding seeds in your hand pacifies pigeons and tempts them to approach. An attracted pigeon signals companions within range, gathering a friendly flock.',
+            'Social Pairing: Pigeons often roam and fly in synchronized pairs, sticking close together across trees and meadows.',
+            'Bittersweet Master Achievement: Defeating an innocent pigeon unlocks the bittersweet Master achievement "Why Would You Do That?"... they drop no loot, and the world feels a little quieter.'
+        ]
+    };
+
     export const PATCH_NOTES_0_1_4_PATCH_1 = {
         title: 'Beta 0.1.4 (Patch 1 - Visuals, Combat & UI Polish)',
         items: [
@@ -553,6 +567,8 @@ export function getMaxAnimals() {
 
     export const LATEST_PATCH_NOTES = PATCH_NOTES_0_1_4_PATCH_1;
     export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_1_4_PATCH_1, PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3];
+    export const LATEST_PATCH_NOTES = PATCH_NOTES_0_1_5;
+    export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_1_5, PATCH_NOTES_0_1_4_PATCH_1, PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3];
 
     export let mapSeed = Math.floor(Math.random() * 1000000);
     export function seededRandom() {
@@ -5269,6 +5285,523 @@ export const SKIN_H = 32;
         }
     }
 
+    export class Pigeon extends Animal {
+        constructor(x, y) {
+            super(x, y, TILE_SIZE * 0.45, TILE_SIZE * 0.45, 20, MOVE_SPEED * 0.28);
+            this.state = 'ground'; // 'ground' | 'flying' | 'perching'
+            this.peckTimer = 0;
+            this.perchTimer = 0;
+            this.flightTimer = 0;
+            this.flyTargetX = x;
+            this.flyTargetY = y;
+            this.flapTime = Math.random() * 100;
+            this.targetLeaf = null;
+            this.partner = null;
+            this.headTilt = 0;
+            this.headTiltTimer = 0;
+            this.temptAlertTimer = 0;
+        }
+
+        isTemptedBy(itemId) {
+            return itemId === IDS.SEEDS;
+        }
+
+        startle(scareDir) {
+            if (this.state === 'perching') {
+                this.targetLeaf = null;
+            }
+            this.state = 'flying';
+            this.panic = true;
+            this.panicTimer = 180;
+            this.dir = scareDir || (Math.random() > 0.5 ? 1 : -1);
+            this.vy = -4.5;
+            this.vx = this.dir * (3.5 + Math.random() * 1.5);
+            this.isGrounded = false;
+            this.flightTimer = 350 + Math.random() * 300;
+            this.flyTargetX = this.x + this.dir * (200 + Math.random() * 150);
+            this.flyTargetY = Math.max(2 * TILE_SIZE, this.y - (120 + Math.random() * 100));
+
+            for (let i = 0; i < 5; i++) {
+                const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, '#94a3b8');
+                p.vx = (Math.random() - 0.5) * 3;
+                p.vy = (Math.random() - 0.5) * 3;
+                particles.push(p);
+            }
+
+            if (this.partner && !this.partner.panic && Math.hypot(this.partner.x - this.x, this.partner.y - this.y) < 300) {
+                this.partner.startle(this.dir);
+            }
+        }
+
+        alertTempted(playerX, playerY) {
+            this.temptAlertTimer = 80;
+            if (this.state === 'flying') {
+                this.flyTargetX = playerX + (this.x < playerX ? -50 : 50);
+                this.flyTargetY = playerY - 10;
+            } else if (this.state === 'perching') {
+                if (Math.random() < 0.05) {
+                    this.state = 'flying';
+                    this.targetLeaf = null;
+                    this.flightTimer = 200;
+                    this.flyTargetX = playerX + (this.x < playerX ? -50 : 50);
+                    this.flyTargetY = playerY - 10;
+                }
+            }
+        }
+
+        findNearbyTreeLeaf(searchRadiusTiles = 16) {
+            const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const curGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+            const candidates = [];
+
+            const minX = Math.max(2, curGx - searchRadiusTiles);
+            const maxX = Math.min(WORLD_WIDTH - 3, curGx + searchRadiusTiles);
+            const minY = Math.max(2, curGy - 14);
+            const maxY = Math.min(WORLD_HEIGHT - 3, curGy + 14);
+
+            for (let x = minX; x <= maxX; x++) {
+                if (!world[x]) continue;
+                for (let y = minY; y <= maxY; y++) {
+                    if (world[x][y] === IDS.LEAVES) {
+                        if (world[x][y - 1] === IDS.AIR) {
+                            candidates.push({ x, y });
+                        }
+                    }
+                }
+            }
+
+            if (candidates.length === 0) return null;
+            candidates.sort((a, b) => {
+                const distA = Math.hypot(a.x - curGx, a.y - curGy);
+                const distB = Math.hypot(b.x - curGx, b.y - curGy);
+                return distA - distB;
+            });
+            const pickIdx = Math.min(candidates.length - 1, Math.floor(Math.random() * Math.min(3, candidates.length)));
+            return candidates[pickIdx];
+        }
+
+        update() {
+            if (this.damageCooldown > 0) this.damageCooldown--;
+            if (this.panicTimer > 0) this.panicTimer--;
+            else this.panic = false;
+            if (this.peckTimer > 0) this.peckTimer--;
+            if (this.temptAlertTimer > 0) this.temptAlertTimer--;
+
+            if (this.headTiltTimer > 0) {
+                this.headTiltTimer--;
+            } else if (Math.random() < 0.02) {
+                this.headTilt = (Math.random() - 0.5) * 0.35;
+                this.headTiltTimer = Math.floor(Math.random() * 40 + 20);
+            } else {
+                this.headTilt = 0;
+            }
+
+            if (!this.partner || this.partner.health <= 0) {
+                this.partner = null;
+                if (Math.random() < 0.02) {
+                    const nearbyPigeons = entities.filter(e => e instanceof Pigeon && e !== this && !e.partner && Math.hypot(e.x - this.x, e.y - this.y) < 220);
+                    if (nearbyPigeons.length > 0) {
+                        const companion = nearbyPigeons[Math.floor(Math.random() * nearbyPigeons.length)];
+                        this.partner = companion;
+                        companion.partner = this;
+                    }
+                }
+            }
+
+            let pDist = 9999;
+            let isHoldingSeeds = false;
+            if (player && !player.isDead) {
+                pDist = Math.hypot(
+                    (player.x + player.width / 2) - (this.x + this.width / 2),
+                    (player.y + player.height / 2) - (this.y + this.height / 2)
+                );
+                const held = inventory[selectedHotbarIndex];
+                isHoldingSeeds = (held && this.isTemptedBy(held.id));
+            }
+
+            // 1. Skittish startle check
+            if (!this.panic && player && !player.isDead) {
+                if (!isHoldingSeeds && pDist < 95) {
+                    const scareDir = (player.x < this.x) ? 1 : -1;
+                    this.startle(scareDir);
+                } else if (isHoldingSeeds && pDist < 25) {
+                    const scareDir = (player.x < this.x) ? 1 : -1;
+                    this.startle(scareDir);
+                }
+            }
+
+            // 2. Seeds temptation & Flocking Call
+            let isTemptedNow = false;
+            if (isHoldingSeeds && pDist < 360 && !this.panic) {
+                isTemptedNow = true;
+                this.isTempted = true;
+
+                if (frameCount % 30 === 0) {
+                    const others = entities.filter(e => e instanceof Pigeon && e !== this && Math.hypot(e.x - this.x, e.y - this.y) < 280);
+                    others.forEach(p => p.alertTempted(player.x, player.y));
+                }
+
+                if (frameCount % 75 === 0 && Math.random() < 0.4) {
+                    particles.push(new Particle(this.x + this.width / 2, this.y - 4, '#ff80bf'));
+                }
+            } else {
+                this.isTempted = (this.temptAlertTimer > 0);
+            }
+
+            // 3. State Machine
+            if (this.state === 'perching') {
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = true;
+
+                if (this.targetLeaf) {
+                    const block = world[this.targetLeaf.x]?.[this.targetLeaf.y];
+                    if (block !== IDS.LEAVES) {
+                        this.targetLeaf = null;
+                        this.state = 'flying';
+                        this.flightTimer = 300;
+                    }
+                }
+
+                this.perchTimer--;
+                if (Math.random() < 0.01) this.dir = -this.dir;
+
+                if (this.perchTimer <= 0) {
+                    this.state = 'flying';
+                    this.targetLeaf = null;
+                    this.flightTimer = 350 + Math.random() * 450;
+                    this.vy = -3;
+                    this.vx = this.dir * (1.5 + Math.random());
+                    this.isGrounded = false;
+                }
+            }
+            else if (this.state === 'ground') {
+                if (this.panic) {
+                    this.state = 'flying';
+                    this.vy = -4.5;
+                    this.flightTimer = 350;
+                } else if (isTemptedNow) {
+                    const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+                    this.dir = dx > 0 ? 1 : -1;
+                    if (pDist > 55) {
+                        this.vx = this.dir * this.baseSpeed * 1.1;
+                    } else {
+                        this.vx = 0;
+                        if (Math.random() < 0.03 && this.peckTimer <= 0) this.peckTimer = 20;
+                    }
+                } else {
+                    this.timer--;
+                    if (this.timer <= 0) {
+                        const roll = Math.random();
+                        if (roll < 0.35) {
+                            this.dir = 0;
+                            this.peckTimer = 26;
+                            this.timer = Math.random() * 60 + 30;
+                        } else if (roll < 0.70) {
+                            let partnerDir = 0;
+                            if (this.partner && Math.hypot(this.partner.x - this.x, this.partner.y - this.y) > 40) {
+                                partnerDir = this.partner.x > this.x ? 1 : -1;
+                            }
+                            this.dir = partnerDir !== 0 ? partnerDir : (Math.random() > 0.5 ? 1 : -1);
+                            this.timer = Math.random() * 120 + 60;
+                        } else {
+                            this.state = 'flying';
+                            this.flightTimer = 400 + Math.random() * 500;
+                            this.vy = -3.8;
+                            this.isGrounded = false;
+                        }
+                    }
+
+                    if (this.dir !== 0 && (this.hasHazardAhead(this.dir) || this.hasLethalDropAhead(this.dir))) {
+                        this.dir = -this.dir;
+                        this.timer = 50;
+                    }
+
+                    this.vx = this.dir * this.baseSpeed;
+                }
+
+                if (this.vx !== 0 && this.isGrounded) {
+                    const moveDir = this.vx > 0 ? 1 : -1;
+                    const checkX = Math.floor((this.x + this.width / 2 + moveDir * (this.width / 2 + 4)) / TILE_SIZE);
+                    const footY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
+                    const headY = Math.floor((this.y + 4) / TILE_SIZE);
+                    if (checkX >= 0 && checkX < WORLD_WIDTH) {
+                        const b = world[checkX]?.[footY];
+                        const upperB = world[checkX]?.[headY - 1];
+                        if (isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1)) {
+                            this.vy = JUMP_FORCE * 0.75;
+                            this.isGrounded = false;
+                        }
+                    }
+                }
+
+                if (this.vx !== 0) {
+                    this.walkAnimTime = (this.walkAnimTime || 0) + (Math.abs(this.vx) / this.baseSpeed) * 0.25;
+                } else {
+                    this.walkAnimTime = 0;
+                }
+
+                this.applyPhysics();
+
+                if (!this.isGrounded && this.vy > 3.0) {
+                    this.state = 'flying';
+                    this.flightTimer = 300;
+                }
+            }
+            else {
+                this.flightTimer--;
+                this.flapTime += (this.panic ? 0.65 : 0.38);
+
+                const curGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
+                const groundY = surfaceHeights[curGx] !== undefined ? surfaceHeights[curGx] : Math.floor(WORLD_HEIGHT / 2);
+                const cruiseAltitudeY = Math.max(2 * TILE_SIZE, (groundY - 8) * TILE_SIZE);
+
+                if (this.panic) {
+                    this.flyTargetY = Math.max(2 * TILE_SIZE, cruiseAltitudeY - 3 * TILE_SIZE);
+                    this.flyTargetX = this.x + this.dir * 120;
+                } else if (isTemptedNow && player && !player.isDead) {
+                    this.flyTargetX = player.x + (this.x < player.x ? -45 : 45);
+                    this.flyTargetY = player.y - 12;
+                    this.targetLeaf = null;
+                } else if (this.targetLeaf) {
+                    this.flyTargetX = this.targetLeaf.x * TILE_SIZE + (TILE_SIZE - this.width) / 2;
+                    this.flyTargetY = (this.targetLeaf.y - 1) * TILE_SIZE + (TILE_SIZE - this.height);
+                } else {
+                    if (this.flightTimer % 120 === 0 || Math.abs(this.x - this.flyTargetX) < 30) {
+                        const roamDistance = (Math.random() - 0.5) * 250;
+                        this.flyTargetX = Math.max(50, Math.min(WORLD_WIDTH * TILE_SIZE - 50, this.x + roamDistance));
+                        this.flyTargetY = cruiseAltitudeY + (Math.random() - 0.5) * 50;
+
+                        if (this.flightTimer < 250 && Math.random() < 0.45) {
+                            const leafSpot = this.findNearbyTreeLeaf(18);
+                            if (leafSpot) {
+                                this.targetLeaf = leafSpot;
+                            }
+                        } else if (this.flightTimer < 100 && Math.random() < 0.4) {
+                            this.flyTargetY = (groundY - 1) * TILE_SIZE;
+                        }
+                    }
+                }
+
+                const dx = this.flyTargetX - this.x;
+                const dy = this.flyTargetY - this.y;
+                const maxFlightSpeed = this.panic ? 4.2 : 2.4;
+                const maxClimbSpeed = this.panic ? 3.2 : 1.8;
+
+                const desiredVx = Math.sign(dx) * Math.min(Math.abs(dx) * 0.05, maxFlightSpeed);
+                const desiredVy = Math.sign(dy) * Math.min(Math.abs(dy) * 0.05, maxClimbSpeed);
+
+                this.vx += (desiredVx - this.vx) * 0.07;
+                this.vy += (desiredVy - this.vy) * 0.07;
+                this.vy += Math.sin(this.flapTime) * 0.18;
+
+                if (Math.abs(this.vx) > 0.1) {
+                    this.dir = this.vx > 0 ? 1 : -1;
+                }
+
+                this.x += this.vx;
+                this.handleCollisions(true);
+
+                this.y += this.vy;
+                this.handleCollisions(false);
+
+                if (this.targetLeaf) {
+                    const leafTargetX = this.targetLeaf.x * TILE_SIZE + (TILE_SIZE - this.width) / 2;
+                    const leafTargetY = (this.targetLeaf.y - 1) * TILE_SIZE + (TILE_SIZE - this.height);
+                    if (Math.hypot(this.x - leafTargetX, this.y - leafTargetY) < 8 && this.vy >= -0.5) {
+                        this.state = 'perching';
+                        this.x = leafTargetX;
+                        this.y = leafTargetY;
+                        this.vx = 0;
+                        this.vy = 0;
+                        this.isGrounded = true;
+                        this.perchTimer = 300 + Math.random() * 450;
+                    }
+                }
+
+                if (this.isGrounded && this.vy >= 0 && !this.targetLeaf) {
+                    this.state = 'ground';
+                    this.vx = 0;
+                    this.timer = 80 + Math.random() * 100;
+                }
+            }
+        }
+
+        takeDamage(amt, knockbackDir) {
+            if (this.damageCooldown > 0) return;
+            this.health -= amt;
+            this.damageCooldown = 20;
+            const escapeDir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
+            this.startle(escapeDir);
+
+            for (let i = 0; i < 6; i++) {
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#64748b'));
+            }
+            for (let i = 0; i < 3; i++) {
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ef4444'));
+            }
+            floatingTexts.push(new FloatingText(this.x + this.width / 2, this.y - 10, amt, "#ffcc00"));
+        }
+
+        draw(ctx, camX, camY) {
+            const drawX = this.x - camX;
+            const drawY = this.y - camY;
+            const w = this.width;
+            const h = this.height;
+
+            if (advancedGraphics && this.state !== 'flying') {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 4, w * (2 / 2.2), 6);
+            }
+
+            ctx.save();
+            ctx.translate(drawX + w / 2, drawY + h / 2);
+            if (this.dir < 0) ctx.scale(-1, 1);
+
+            const isDamaged = this.damageCooldown > 0;
+            const isFlying = (this.state === 'flying');
+            const isGrounded = (this.state === 'ground' && this.isGrounded);
+            const isMoving = Math.abs(this.vx) > 0.05 && isGrounded;
+            const walk = this.walkAnimTime || 0;
+            const idle = Math.sin((frameCount + this.idleSeed) * 0.07);
+            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 180 < 7);
+
+            const shimmer = (Math.sin(frameCount * 0.12 + this.idleSeed) + 1) / 2;
+            const collarColor = isDamaged ? '#ff6666' : (shimmer > 0.5 ? '#059669' : '#7c3aed');
+            const collarHighlight = isDamaged ? '#ff9999' : (shimmer > 0.5 ? '#34d399' : '#a78bfa');
+
+            const bodyBase = isDamaged ? '#ff7f7f' : '#64748b';
+            const bodyLight = isDamaged ? '#ffa8a8' : '#94a3b8';
+            const bodyDark = isDamaged ? '#cc4444' : '#475569';
+            const wingBarDark = isDamaged ? '#990000' : '#1e293b';
+            const wingBarMid = isDamaged ? '#bb2222' : '#334155';
+            const beakColor = isDamaged ? '#333333' : '#1e293b';
+            const cereColor = isDamaged ? '#ffcccc' : '#f1f5f9';
+            const footPink = isDamaged ? '#ef4444' : '#f43f5e';
+            const footDark = isDamaged ? '#b91c1c' : '#be123c';
+            const eyeRing = isDamaged ? '#ef4444' : '#f97316';
+
+            const headBobX = isMoving ? Math.sin(walk) * 2.2 : (isFlying ? 1 : 0);
+            const peckBobY = (this.peckTimer > 0) ? Math.sin(this.peckTimer / 26 * Math.PI) * 4 : 0;
+            const headBobY = (isMoving ? Math.abs(Math.sin(walk)) * 1.2 : idle * 0.3) + peckBobY + (this.headTilt * 3);
+
+            let wingAngle = 0;
+            if (isFlying) {
+                wingAngle = Math.sin(this.flapTime) * 0.85;
+            } else if (this.panic) {
+                wingAngle = Math.sin(frameCount * 0.6) * 0.45;
+            }
+
+            if (isFlying) {
+                const flyTilt = Math.max(-0.4, Math.min(0.4, this.vy * 0.08));
+                ctx.rotate(flyTilt);
+            }
+
+            const leftLegSwing = isMoving ? Math.sin(walk) * 3 : 0;
+            const rightLegSwing = isMoving ? -Math.sin(walk) * 3 : 0;
+            const leftLegLift = (isMoving && Math.sin(walk) < 0) ? Math.abs(Math.sin(walk)) * 2 : 0;
+            const rightLegLift = (isMoving && -Math.sin(walk) < 0) ? Math.abs(Math.sin(walk)) * 2 : 0;
+
+            // 1. Far Leg
+            if (!isFlying) {
+                ctx.fillStyle = footDark;
+                ctx.fillRect(-w * 0.16 + leftLegSwing, h * 0.22 - leftLegLift, 2, h * 0.25);
+                ctx.fillRect(-w * 0.16 + leftLegSwing - 1, h * 0.47 - 1 - leftLegLift, 4, 1.8);
+            }
+
+            // 2. Tail Feathers
+            const tailBob = isFlying ? Math.sin(this.flapTime * 0.5) * 0.4 : (Math.sin(frameCount * 0.12) * 0.5);
+            ctx.fillStyle = wingBarDark;
+            ctx.fillRect(-w * 0.52, -h * 0.18 + tailBob, 4, 5);
+            ctx.fillStyle = bodyDark;
+            ctx.fillRect(-w * 0.48, -h * 0.25 + tailBob, 3, 4);
+            ctx.fillStyle = cereColor;
+            ctx.fillRect(-w * 0.52, -h * 0.18 + tailBob, 1.5, 4);
+
+            // 3. Plump Body & Breast
+            ctx.fillStyle = bodyBase;
+            ctx.fillRect(-w * 0.40, -h * 0.26, w * 0.65, h * 0.48);
+            ctx.fillStyle = bodyLight;
+            ctx.fillRect(-w * 0.20, -h * 0.22, w * 0.42, 2.5);
+            ctx.fillRect(w * 0.10, -h * 0.20, 2.5, h * 0.35);
+            ctx.fillStyle = bodyDark;
+            ctx.fillRect(-w * 0.38, h * 0.16, w * 0.60, 2.5);
+
+            // 4. Iridescent Neck Collar
+            const hx = w * 0.12 + headBobX;
+            const hy = -h * 0.50 + headBobY;
+            ctx.fillStyle = collarColor;
+            ctx.fillRect(hx - 2, hy + h * 0.22, w * 0.34, 3.5);
+            ctx.fillStyle = collarHighlight;
+            ctx.fillRect(hx, hy + h * 0.22, w * 0.22, 1.5);
+
+            // 5. Cute Pigeon Head
+            ctx.fillStyle = bodyBase;
+            ctx.fillRect(hx, hy, w * 0.32, h * 0.36);
+            ctx.fillStyle = bodyLight;
+            ctx.fillRect(hx + 1, hy, w * 0.28, 1.5);
+
+            // Rosy Cheek Blush
+            ctx.fillStyle = isDamaged ? '#ff9999' : '#fb7185';
+            ctx.fillRect(hx + 3, hy + h * 0.20, 2.5, 1.8);
+
+            // Eye
+            if (isBlinking) {
+                ctx.fillStyle = beakColor;
+                ctx.fillRect(hx + 3, hy + h * 0.08, 3, 1.2);
+            } else {
+                ctx.fillStyle = eyeRing;
+                ctx.fillRect(hx + 3, hy + h * 0.06, 3.5, 3.5);
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(hx + 4, hy + h * 0.08, 2, 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(hx + 4, hy + h * 0.06, 1, 1);
+            }
+
+            // Beak & Cere
+            ctx.fillStyle = cereColor;
+            ctx.fillRect(hx + w * 0.28, hy + h * 0.08, 2, 1.5);
+            ctx.fillStyle = beakColor;
+            ctx.fillRect(hx + w * 0.28, hy + h * 0.14, 4.2, 2.5);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(hx + w * 0.28, hy + h * 0.20, 3.5, 1);
+
+            // 6. Wing
+            ctx.save();
+            ctx.translate(-w * 0.05, -h * 0.10);
+            ctx.rotate(wingAngle);
+
+            if (isFlying) {
+                ctx.fillStyle = bodyBase;
+                ctx.fillRect(-w * 0.22, -h * 0.25, w * 0.48, h * 0.40);
+                ctx.fillStyle = wingBarDark;
+                ctx.fillRect(-w * 0.20, h * 0.10, w * 0.44, 2.5);
+                ctx.fillStyle = wingBarMid;
+                ctx.fillRect(-w * 0.15, 0, w * 0.36, 2);
+            } else {
+                ctx.fillStyle = bodyLight;
+                ctx.fillRect(-w * 0.20, -h * 0.14, w * 0.42, h * 0.32);
+                ctx.fillStyle = wingBarMid;
+                ctx.fillRect(-w * 0.16, -h * 0.02, w * 0.35, 1.8);
+                ctx.fillStyle = wingBarDark;
+                ctx.fillRect(-w * 0.12, h * 0.08, w * 0.28, 1.8);
+            }
+            ctx.restore();
+
+            // 7. Near Leg
+            if (!isFlying) {
+                ctx.fillStyle = footPink;
+                ctx.fillRect(w * 0.04 + rightLegSwing, h * 0.22 - rightLegLift, 2, h * 0.25);
+                ctx.fillRect(w * 0.04 + rightLegSwing - 1, h * 0.47 - 1 - rightLegLift, 4, 1.8);
+            } else {
+                ctx.fillStyle = footPink;
+                ctx.fillRect(-w * 0.10, h * 0.18, 3, 2);
+                ctx.fillRect(w * 0.02, h * 0.18, 3, 2);
+            }
+
+            ctx.restore();
+        }
+    }
+
     export class Sheep extends Animal {
         constructor(x, y) {
             super(x, y, TILE_SIZE * 0.85, TILE_SIZE * 0.7, 8, MOVE_SPEED * 0.22);
@@ -6472,6 +7005,7 @@ export const SKIN_H = 32;
     export function spawnAnimals(count = 1, nearPlayerBias = 0.35) {
         let maxAnimals = getMaxAnimals();
         let currentAnimals = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow).length;
+        let currentAnimals = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon).length;
         if (currentAnimals >= maxAnimals) return;
 
         let activePlayers = [{ x: player.x, y: player.y }];
@@ -6511,16 +7045,31 @@ export const SKIN_H = 32;
                 
                 let roll = Math.random();
                 let animalType = roll < 0.25 ? 'Sheep' : roll < 0.50 ? 'Pig' : roll < 0.75 ? 'Cow' : 'Chicken';
+                let animalType = roll < 0.20 ? 'Sheep' : roll < 0.40 ? 'Pig' : roll < 0.60 ? 'Cow' : roll < 0.80 ? 'Chicken' : 'Pigeon';
                 let spawnWorldY = (gy - 2) * TILE_SIZE;
                 
                 if (animalType === 'Sheep') entities.push(new Sheep(spawnX, spawnWorldY));
                 else if (animalType === 'Pig') entities.push(new Pig(spawnX, spawnWorldY));
                 else if (animalType === 'Cow') entities.push(new Cow(spawnX, spawnWorldY));
                 else entities.push(new Chicken(spawnX, spawnWorldY));
+                else if (animalType === 'Chicken') entities.push(new Chicken(spawnX, spawnWorldY));
+                else {
+                    const p1 = new Pigeon(spawnX, spawnWorldY);
+                    entities.push(p1);
+                    currentAnimals++;
+                    if (Math.random() < 0.50 && currentAnimals < maxAnimals) {
+                        const p2 = new Pigeon(spawnX + 16, spawnWorldY);
+                        p1.partner = p2;
+                        p2.partner = p1;
+                        entities.push(p2);
+                        currentAnimals++;
+                    }
+                }
                 currentAnimals++;
 
                 // Subtle herd bonus: 15% chance to spawn a single companion slightly nearby
                 if (Math.random() < 0.15 && currentAnimals < maxAnimals) {
+                if (animalType !== 'Pigeon' && Math.random() < 0.15 && currentAnimals < maxAnimals) {
                     let herdOffset = (Math.random() > 0.5 ? 2 : -2);
                     let hgx = gx + herdOffset;
                     if (hgx >= 2 && hgx < WORLD_WIDTH - 2) {
@@ -6610,6 +7159,7 @@ export const SKIN_H = 32;
         }
 
         const currentAnimalCount = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow).length;
+        const currentAnimalCount = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon).length;
         if (!isNight && currentAnimalCount < getMaxAnimals() && Math.random() < 0.04) {
             spawnAnimals(1, 0.30);
         }
@@ -7694,8 +8244,10 @@ export const SKIN_H = 32;
         // 3. Animals
         const animals = [];
         ['sheep', 'pig', 'chicken', 'cow', 'sheep', 'pig', 'chicken', 'cow'].forEach((type, index) => {
+        ['sheep', 'pig', 'chicken', 'cow', 'pigeon', 'sheep', 'pig', 'chicken', 'cow', 'pigeon'].forEach((type, index) => {
             const x = 12 + menuRandom() * (WORLD_WIDTH - 24);
             const entity = type === 'sheep' ? new Sheep(x * TILE_SIZE, 0) : type === 'pig' ? new Pig(x * TILE_SIZE, 0) : type === 'cow' ? new Cow(x * TILE_SIZE, 0) : new Chicken(x * TILE_SIZE, 0);
+            const entity = type === 'sheep' ? new Sheep(x * TILE_SIZE, 0) : type === 'pig' ? new Pig(x * TILE_SIZE, 0) : type === 'cow' ? new Cow(x * TILE_SIZE, 0) : type === 'pigeon' ? new Pigeon(x * TILE_SIZE, 0) : new Chicken(x * TILE_SIZE, 0);
             entity.dir = menuRandom() > 0.5 ? 1 : -1;
             entity.menuSpeed = 0.7 + menuRandom() * 0.4;
             entity.y = (terrain[Math.floor(x)] || baseH) * TILE_SIZE - entity.height;
@@ -9898,6 +10450,7 @@ try { if (typeof PHYSICS_TICK_RATE !== "undefined") window.PHYSICS_TICK_RATE = P
 try { if (typeof Particle !== "undefined") window.Particle = Particle; } catch(e) {}
 try { if (typeof PhysicsEntity !== "undefined") window.PhysicsEntity = PhysicsEntity; } catch(e) {}
 try { if (typeof Pig !== "undefined") window.Pig = Pig; } catch(e) {}
+try { if (typeof Pigeon !== "undefined") window.Pigeon = Pigeon; } catch(e) {}
 try { if (typeof Player !== "undefined") window.Player = Player; } catch(e) {}
 try { if (typeof SKIN_W !== "undefined") window.SKIN_W = SKIN_W; } catch(e) {}
 try { if (typeof SKY_STARS !== "undefined") window.SKY_STARS = SKY_STARS; } catch(e) {}
@@ -9991,6 +10544,8 @@ try { if (typeof getFluid !== "undefined") window.getFluid = getFluid; } catch(e
 try { if (typeof getFluidKey !== "undefined") window.getFluidKey = getFluidKey; } catch(e) {}
 try { if (typeof getFootstepMaterial !== "undefined") window.getFootstepMaterial = getFootstepMaterial; } catch(e) {}
 try { if (typeof getFpsCapText !== "undefined") window.getFpsCapText = getFpsCapText; } catch(e) {}
+try { if (typeof getInitialSpawnPoint !== "undefined") window.getInitialSpawnPoint = getInitialSpaw
+... [truncated for diff preview]
 try { if (typeof getInitialSpawnPoint !== "undefined") window.getInitialSpawnPoint = getInitialSpawnPoint; } catch(e) {}
 try { if (typeof getMapBlockColor !== "undefined") window.getMapBlockColor = getMapBlockColor; } catch(e) {}
 try { if (typeof getMobTarget !== "undefined") window.getMobTarget = getMobTarget; } catch(e) {}
@@ -10216,4 +10771,3 @@ try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropG
 try { if (typeof checkWaterNearCrop !== "undefined") window.checkWaterNearCrop = checkWaterNearCrop; } catch(e) {}
 try { if (typeof registerPlantedCrop !== "undefined") window.registerPlantedCrop = registerPlantedCrop; } catch(e) {}
 try { if (typeof updateCropGrowth !== "undefined") window.updateCropGrowth = updateCropGrowth; } catch(e) {}
-
