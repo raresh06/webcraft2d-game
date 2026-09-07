@@ -565,8 +565,6 @@ export function getMaxAnimals() {
         ]
     };
 
-    export const LATEST_PATCH_NOTES = PATCH_NOTES_0_1_4_PATCH_1;
-    export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_1_4_PATCH_1, PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3];
     export const LATEST_PATCH_NOTES = PATCH_NOTES_0_1_5;
     export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_1_5, PATCH_NOTES_0_1_4_PATCH_1, PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3];
 
@@ -7004,7 +7002,6 @@ export const SKIN_H = 32;
 
     export function spawnAnimals(count = 1, nearPlayerBias = 0.35) {
         let maxAnimals = getMaxAnimals();
-        let currentAnimals = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow).length;
         let currentAnimals = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon).length;
         if (currentAnimals >= maxAnimals) return;
 
@@ -7044,14 +7041,12 @@ export const SKIN_H = 32;
                 torsoBlock !== undefined && nonSolid.has(torsoBlock)) {
                 
                 let roll = Math.random();
-                let animalType = roll < 0.25 ? 'Sheep' : roll < 0.50 ? 'Pig' : roll < 0.75 ? 'Cow' : 'Chicken';
                 let animalType = roll < 0.20 ? 'Sheep' : roll < 0.40 ? 'Pig' : roll < 0.60 ? 'Cow' : roll < 0.80 ? 'Chicken' : 'Pigeon';
                 let spawnWorldY = (gy - 2) * TILE_SIZE;
                 
                 if (animalType === 'Sheep') entities.push(new Sheep(spawnX, spawnWorldY));
                 else if (animalType === 'Pig') entities.push(new Pig(spawnX, spawnWorldY));
                 else if (animalType === 'Cow') entities.push(new Cow(spawnX, spawnWorldY));
-                else entities.push(new Chicken(spawnX, spawnWorldY));
                 else if (animalType === 'Chicken') entities.push(new Chicken(spawnX, spawnWorldY));
                 else {
                     const p1 = new Pigeon(spawnX, spawnWorldY);
@@ -7068,7 +7063,6 @@ export const SKIN_H = 32;
                 currentAnimals++;
 
                 // Subtle herd bonus: 15% chance to spawn a single companion slightly nearby
-                if (Math.random() < 0.15 && currentAnimals < maxAnimals) {
                 if (animalType !== 'Pigeon' && Math.random() < 0.15 && currentAnimals < maxAnimals) {
                     let herdOffset = (Math.random() > 0.5 ? 2 : -2);
                     let hgx = gx + herdOffset;
@@ -7158,7 +7152,6 @@ export const SKIN_H = 32;
             return;
         }
 
-        const currentAnimalCount = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow).length;
         const currentAnimalCount = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon).length;
         if (!isNight && currentAnimalCount < getMaxAnimals() && Math.random() < 0.04) {
             spawnAnimals(1, 0.30);
@@ -8243,10 +8236,8 @@ export const SKIN_H = 32;
 
         // 3. Animals
         const animals = [];
-        ['sheep', 'pig', 'chicken', 'cow', 'sheep', 'pig', 'chicken', 'cow'].forEach((type, index) => {
         ['sheep', 'pig', 'chicken', 'cow', 'pigeon', 'sheep', 'pig', 'chicken', 'cow', 'pigeon'].forEach((type, index) => {
             const x = 12 + menuRandom() * (WORLD_WIDTH - 24);
-            const entity = type === 'sheep' ? new Sheep(x * TILE_SIZE, 0) : type === 'pig' ? new Pig(x * TILE_SIZE, 0) : type === 'cow' ? new Cow(x * TILE_SIZE, 0) : new Chicken(x * TILE_SIZE, 0);
             const entity = type === 'sheep' ? new Sheep(x * TILE_SIZE, 0) : type === 'pig' ? new Pig(x * TILE_SIZE, 0) : type === 'cow' ? new Cow(x * TILE_SIZE, 0) : type === 'pigeon' ? new Pigeon(x * TILE_SIZE, 0) : new Chicken(x * TILE_SIZE, 0);
             entity.dir = menuRandom() > 0.5 ? 1 : -1;
             entity.menuSpeed = 0.7 + menuRandom() * 0.4;
@@ -10544,8 +10535,6 @@ try { if (typeof getFluid !== "undefined") window.getFluid = getFluid; } catch(e
 try { if (typeof getFluidKey !== "undefined") window.getFluidKey = getFluidKey; } catch(e) {}
 try { if (typeof getFootstepMaterial !== "undefined") window.getFootstepMaterial = getFootstepMaterial; } catch(e) {}
 try { if (typeof getFpsCapText !== "undefined") window.getFpsCapText = getFpsCapText; } catch(e) {}
-try { if (typeof getInitialSpawnPoint !== "undefined") window.getInitialSpawnPoint = getInitialSpaw
-... [truncated for diff preview]
 try { if (typeof getInitialSpawnPoint !== "undefined") window.getInitialSpawnPoint = getInitialSpawnPoint; } catch(e) {}
 try { if (typeof getMapBlockColor !== "undefined") window.getMapBlockColor = getMapBlockColor; } catch(e) {}
 try { if (typeof getMobTarget !== "undefined") window.getMobTarget = getMobTarget; } catch(e) {}
@@ -10771,3 +10760,4 @@ try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropG
 try { if (typeof checkWaterNearCrop !== "undefined") window.checkWaterNearCrop = checkWaterNearCrop; } catch(e) {}
 try { if (typeof registerPlantedCrop !== "undefined") window.registerPlantedCrop = registerPlantedCrop; } catch(e) {}
 try { if (typeof updateCropGrowth !== "undefined") window.updateCropGrowth = updateCropGrowth; } catch(e) {}
+

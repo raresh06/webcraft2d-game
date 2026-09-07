@@ -23,10 +23,6 @@
 * **Progressive Crop Cultivation**: Plant Wheat Seeds and watch them evolve through multiple growth stages into golden wheat ready for harvest.
 * **Baking & Cooking**: Cook raw meats in a furnace or combine harvested wheat into fresh Bread to keep your hunger bar full and restore health.
 
-### 🐄 Livestock & Passive Mobs
-* **Animal Husbandry**: Encounter peaceful mobs including Cows, Pigs, Sheep, and Chickens roaming the surface biomes.
-* **Living Ecosystems**: Animals feature custom procedural walking animations, head bobbing, and idle behaviors.
-* **Resource Production**: Harvest animals for Raw Meats, Leather, and Wool, or use an empty bucket to milk cows for Milk Buckets.
 ### 🐄 Livestock, Wildlife & Passive Mobs
 * **Animal Husbandry & Wildlife**: Encounter peaceful animals including Cows, Pigs, Sheep, and Chickens roaming the surface biomes, alongside sweet wild **Pigeons** populating the skies and treetops.
 * **Living Ecosystems & Avian Flight**: Land animals feature procedural walking cycles and head bobbing; Pigeons boast aerodynamic flight physics, tree leaf perching, ground seed foraging, and flocking calls when tempted by seeds.

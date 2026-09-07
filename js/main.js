@@ -24,7 +24,6 @@ import {
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
-    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile,
     Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
@@ -74,7 +73,6 @@ export {
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
-    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile,
     Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
@@ -2669,7 +2667,6 @@ export function initJukeboxFileInput() {
                 let chickens = entities.filter(e => e instanceof Chicken).length;
                 let sheep = entities.filter(e => e instanceof Sheep).length;
                 let cows = entities.filter(e => e instanceof Cow).length;
-                let hostiles = entities.length - pigs - chickens - sheep - cows;
                 let pigeons = entities.filter(e => e instanceof Pigeon).length;
                 let hostiles = entities.length - pigs - chickens - sheep - cows - pigeons;
                 
@@ -2694,7 +2691,6 @@ export function initJukeboxFileInput() {
                         `Biome: ${biome}\n` +
                         `Diff: ${currentDifficulty.toUpperCase()}\n` +
                         `Multiplayer: ${isMultiplayer ? currentMpRoom : 'Local'}\n` +
-                        `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Bad:${hostiles})\n` +
                         `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Pigeons:${pigeons}, Bad:${hostiles})\n` +
                         `Target: ${targetBlockName}\n` +
                         `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%) | Day Scale: ${typeof getDayDifficultyMultiplier === 'function' ? getDayDifficultyMultiplier().toFixed(2) : 1}x (Hunger: ${typeof getDayHungerDrainMultiplier === 'function' ? getDayHungerDrainMultiplier().toFixed(2) : 1}x)`;
