@@ -276,55 +276,65 @@ export async function fetchClosedBetaConfig() {
             return defaultConfig;
         }
         const { doc, getDoc, setDoc } = window.fbModules;
-        const artifactConfigRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'system_config', 'closed_beta');
-        
-        let rootConfigRef = null;
-        try {
-            rootConfigRef = doc(window.fbDb, 'system_config', 'closed_beta');
-        } catch (e) {}
 
-        let snap = null;
-        try {
-            snap = await getDoc(artifactConfigRef);
-        } catch (e) {
-            console.warn("Could not read artifact system_config path:", e);
-        }
+        // Priority candidate paths in Cloud Firestore (Console-created root collections come FIRST)
+        const candidateRefs = [
+            doc(window.fbDb, 'system_config', 'closed_beta'),
+            doc(window.fbDb, 'closed_beta', 'config'),
+            doc(window.fbDb, 'closed_beta', 'closed_beta'),
+            doc(window.fbDb, 'config', 'closed_beta'),
+            doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'system_config', 'closed_beta')
+        ];
 
-        if (!snap || !snap.exists()) {
-            if (rootConfigRef) {
-                try {
-                    const rootSnap = await getDoc(rootConfigRef);
-                    if (rootSnap && rootSnap.exists()) {
-                        snap = rootSnap;
+        let foundConfig = null;
+        let anyDocExists = false;
+
+        for (const ref of candidateRefs) {
+            try {
+                const snap = await getDoc(ref);
+                if (snap && snap.exists()) {
+                    anyDocExists = true;
+                    const data = snap.data();
+                    if (data) {
+                        const isUnlocked = data.locked === false || data.locked === 'false' || data.isLocked === false || data.open === true;
+                        if (isUnlocked) {
+                            // If ANY document in Firestore has locked: false, admin intent is to open the game!
+                            return {
+                                locked: false,
+                                passwordHash: data.passwordHash || DEFAULT_BETA_PASSWORD_HASH,
+                                description: data.description || defaultConfig.description
+                            };
+                        }
+                        if (!foundConfig) {
+                            foundConfig = {
+                                locked: data.locked === true || data.locked === 'true',
+                                passwordHash: data.passwordHash || DEFAULT_BETA_PASSWORD_HASH,
+                                description: data.description || defaultConfig.description
+                            };
+                        }
                     }
-                } catch (e) {
-                    console.warn("Could not read root system_config path:", e);
                 }
+            } catch (err) {
+                // Ignore collection permissions/missing path errors
             }
         }
 
-        if (snap && snap.exists()) {
-            const data = snap.data();
-            return {
-                locked: typeof data.locked === 'boolean' ? data.locked : true,
-                passwordHash: data.passwordHash || DEFAULT_BETA_PASSWORD_HASH,
-                description: data.description || defaultConfig.description
-            };
+        if (foundConfig) {
+            return foundConfig;
         }
 
-        // Auto-seed document in Firestore so it's immediately accessible in Firebase Console
-        try {
-            const seedPayload = {
-                ...defaultConfig,
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-            };
-            await setDoc(artifactConfigRef, seedPayload, { merge: true });
-            if (rootConfigRef) {
-                try { await setDoc(rootConfigRef, seedPayload, { merge: true }); } catch (e) {}
+        // If no document exists in Firestore at all, auto-seed the root configuration
+        if (!anyDocExists) {
+            try {
+                const seedPayload = {
+                    ...defaultConfig,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+                await setDoc(doc(window.fbDb, 'system_config', 'closed_beta'), seedPayload, { merge: true });
+            } catch (seedErr) {
+                console.warn("Auto-seeding closed_beta config in Firebase failed:", seedErr);
             }
-        } catch (seedErr) {
-            console.warn("Auto-seeding closed_beta config in Firebase failed:", seedErr);
         }
 
         return defaultConfig;
@@ -1963,6 +1973,34 @@ if (typeof window !== 'undefined') {
                         }
                         break;
                     }
+
+                    case 'ATLAS_EXPLORER_ARRIVED': {
+                        if (typeof window !== 'undefined' && window.RiftExplorerSpawner && typeof window.RiftExplorerSpawner.handleRemoteArrival === 'function') {
+                            window.RiftExplorerSpawner.handleRemoteArrival(packet);
+                        }
+                        break;
+                    }
+
+                    case 'ATLAS_EXPLORER_DEPARTED': {
+                        if (typeof window !== 'undefined' && window.RiftExplorerSpawner && typeof window.RiftExplorerSpawner.handleRemoteDeparture === 'function') {
+                            window.RiftExplorerSpawner.handleRemoteDeparture(packet);
+                        }
+                        break;
+                    }
+
+                    case 'EXECUTE_ATLAS_TRADE_REQ': {
+                        if (typeof window !== 'undefined' && window.AtlasTradeManager && typeof window.AtlasTradeManager.handleTradeRequest === 'function') {
+                            window.AtlasTradeManager.handleTradeRequest(packet);
+                        }
+                        break;
+                    }
+
+                    case 'EXECUTE_ATLAS_TRADE_RES': {
+                        if (typeof window !== 'undefined' && window.AtlasTradeManager && typeof window.AtlasTradeManager.handleTradeResponse === 'function') {
+                            window.AtlasTradeManager.handleTradeResponse(packet);
+                        }
+                        break;
+                    }
                 }
             } catch(err) {
                 console.error("Error processing WebRTC data channel packet", err);
@@ -2034,8 +2072,12 @@ if (typeof window !== 'undefined') {
         await peerConnection.setLocalDescription(offer);
 
         // 4. Save Room Document with Offer to Firestore
+        const activeMpSizeBtn = document.querySelector('#mp-world-size-selector button.active');
+        const chosenMpSize = (activeMpSizeBtn?.dataset?.size === 'big' || (typeof window !== 'undefined' && window.selectedMpWorldSize === 'big') || (typeof selectedMpWorldSize !== 'undefined' && selectedMpWorldSize === 'big')) ? 'big' : 'small';
+        const chosenMpWidth = (chosenMpSize === 'big' ? 2048 : 512);
+        const chosenMpHeight = (chosenMpSize === 'big' ? 512 : 256);
         await setDoc(roomRef, {
-            worldName, gameMode, minigameType, difficulty: mpCreateDifficulty, worldSize: selectedMpWorldSize, starterItems, keepInventory: roomKeepInventory, achievementsEnabled: roomAchievementsEnabled, passwordHash, seed, timeOfDay: 0.2, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
+            worldName, gameMode, minigameType, difficulty: mpCreateDifficulty, worldSize: chosenMpSize, worldWidth: chosenMpWidth, worldHeight: chosenMpHeight, starterItems, keepInventory: roomKeepInventory, achievementsEnabled: roomAchievementsEnabled, passwordHash, seed, timeOfDay: 0.2, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
             createdAt: Date.now(), ownerId: window.user.uid, status: 'open',
             offer: { type: offer.type, sdp: offer.sdp }
         });
@@ -2260,7 +2302,7 @@ if (typeof window !== 'undefined') {
             currentWorldAchievementsEnabled = (roomData.starterItems !== true && roomData.keepInventory !== true && roomData.achievementsEnabled !== false);
             timeOfDay = roomData.timeOfDay ?? 0.2;
             let targetSize = roomData.worldSize || (roomData.worldWidth > 700 ? 'big' : 'small');
-            setWorldDimensions(targetSize);
+            setWorldDimensions(targetSize, roomData.worldWidth, roomData.worldHeight);
             document.getElementById('mp-room-display').innerText = currentMpWorldName;
             
             if (!preserveLocalHostState) {

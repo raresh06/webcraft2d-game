@@ -7,6 +7,8 @@ import * as Network from './network.js';
 import * as Engine from './engine.js';
 import * as UI from './ui.js';
 import * as Gamepad from './gamepad.js';
+import { RiftExplorerSpawner } from './RiftExplorerSpawner.js';
+import { AtlasTradeManager } from './AtlasTradeManager.js';
 
 // Expose exports to window for HTML inline event handlers (e.g. onclick)
 import {
@@ -557,6 +559,18 @@ export function initJukeboxFileInput() {
                 case 'parrot_hurt':
                     playTone(ctx, 'sawtooth', 700, 250, 0.22 * effectiveVol, 0.12, null, now);
                     break;
+                case 'portal_warp':
+                    playTone(ctx, 'sine', 180, 720, 0.25 * effectiveVol, 0.35, null, now, false);
+                    break;
+                case 'astral_exchange':
+                    playTone(ctx, 'triangle', 440, 880, 0.22 * effectiveVol, 0.28, null, now, false);
+                    break;
+                case 'infuser_forge':
+                    playTone(ctx, 'square', 130, 520, 0.30 * effectiveVol, 0.35, null, now, false);
+                    break;
+                case 'quest_complete':
+                    playTone(ctx, 'sine', 523.25, 1046.5, 0.22 * effectiveVol, 0.25, null, now, false);
+                    break;
             }
         } catch(e) {}
     }
@@ -570,22 +584,24 @@ export function initJukeboxFileInput() {
 
 
     export function selectWorldSize(size) {
-        selectedWorldSizeChoice = size;
+        selectedWorldSizeChoice = (size === 'big') ? 'big' : 'small';
+        if (typeof window !== 'undefined') window.selectedWorldSizeChoice = selectedWorldSizeChoice;
         document.querySelectorAll('#world-size-selector button').forEach(btn => {
-            if (btn.dataset.size === size) btn.classList.add('active');
+            if (btn.dataset.size === selectedWorldSizeChoice) btn.classList.add('active');
             else btn.classList.remove('active');
         });
     }
 
     export function selectMpWorldSize(size) {
-        selectedMpWorldSize = size;
+        selectedMpWorldSize = (size === 'big') ? 'big' : 'small';
+        if (typeof window !== 'undefined') window.selectedMpWorldSize = selectedMpWorldSize;
         document.querySelectorAll('#mp-world-size-selector button').forEach(btn => {
-            if (btn.dataset.size === size) btn.classList.add('active');
+            if (btn.dataset.size === selectedMpWorldSize) btn.classList.add('active');
             else btn.classList.remove('active');
         });
         const warningEl = document.getElementById('mp-world-size-warning');
         if (warningEl) {
-            if (size === 'big') warningEl.classList.remove('hidden');
+            if (selectedMpWorldSize === 'big') warningEl.classList.remove('hidden');
             else warningEl.classList.add('hidden');
         }
     }
@@ -712,6 +728,10 @@ export function initJukeboxFileInput() {
                 if (overlayId === 'worlds-menu') { callClose('closeWorldsMenu'); return true; }
                 if (overlayId === 'game-intro') { callClose('advanceIntro'); return true; }
                 if (overlayId === 'pause-menu') { callClose('resumeGame'); return true; }
+                if (overlayId === 'emerald-vault-modal') { callClose('closeCurrencyHubModal'); return true; }
+                if (overlayId === 'atlas-dialogue-modal') { callClose('closeAtlasDialogue'); return true; }
+                if (overlayId === 'atlas-market-modal') { callClose('closeAtlasMarket'); return true; }
+                if (overlayId === 'astral-infuser-modal') { callClose('closeAstralInfuser'); return true; }
 
                 // --- Universal Handler for ANY Future UI / Menu ---
                 // 1. Check for standard action attributes or class names:
@@ -855,6 +875,16 @@ export function initJukeboxFileInput() {
             if (isWorldMapOpen) {
                 if (k === 'c') {
                     centerMapOnPlayer();
+                }
+                return;
+            }
+            if (k === 'c' && !isInventoryOpen && !isWorldMapOpen) {
+                e.preventDefault();
+                const vaultModal = document.getElementById('emerald-vault-modal');
+                if (vaultModal && !vaultModal.classList.contains('hidden') && vaultModal.style.display !== 'none') {
+                    if (typeof UI !== 'undefined' && typeof UI.closeCurrencyHubModal === 'function') UI.closeCurrencyHubModal();
+                } else {
+                    if (typeof UI !== 'undefined' && typeof UI.openCurrencyHubModal === 'function') UI.openCurrencyHubModal();
                 }
                 return;
             }
@@ -1220,6 +1250,12 @@ export function initJukeboxFileInput() {
                 if (ent instanceof Parrot) {
                     return ent.interact(player, inventory, selectedHotbarIndex);
                 }
+                if (ent instanceof Engine.AtlasExplorer || (ent.constructor && ent.constructor.name === 'AtlasExplorer')) {
+                    if (typeof UI !== 'undefined' && typeof UI.openAtlasDialogue === 'function') {
+                        UI.openAtlasDialogue(ent);
+                    }
+                    return true;
+                }
             }
         }
         return false;
@@ -1232,6 +1268,13 @@ export function initJukeboxFileInput() {
         let pCX = player.x + player.width / 2; let pCY = player.y + player.height / 2;
         let bCX = gx * TILE_SIZE + TILE_SIZE / 2; let bCY = gy * TILE_SIZE + TILE_SIZE / 2;
         if (Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE > REACH) return false;
+
+        if (world[gx][gy] === IDS.ASTRAL_INFUSER) {
+            if (typeof UI !== 'undefined' && typeof UI.openAstralInfuser === 'function') {
+                UI.openAstralInfuser(gx, gy);
+            }
+            return true;
+        }
 
         if (world[gx][gy] === IDS.BED) {
             if (timeOfDay <= 0.5 || timeOfDay > 0.9) {
@@ -1402,11 +1445,23 @@ export function initJukeboxFileInput() {
             
             if (Math.hypot(pCX - zCX, pCY - zCY) < REACH * TILE_SIZE) {
                 if (mouse.worldX >= z.x && mouse.worldX <= z.x + z.width && mouse.worldY >= z.y && mouse.worldY <= z.y + z.height) {
+                    if (z instanceof Engine.AtlasExplorer || (z.constructor && z.constructor.name === 'AtlasExplorer')) {
+                        if (typeof UI !== 'undefined' && typeof UI.openAtlasDialogue === 'function') {
+                            UI.openAtlasDialogue(z);
+                        }
+                        return true;
+                    }
                     z.takeDamage(wDmg, pCX < zCX ? 1 : -1);
                     damageSelectedTool(1);
                     if (z instanceof Sheep && z.health > 0 && !z.isSheared) {
                         z.isSheared = true;
-                        giveItem(IDS.WOOL, 1);
+                        const heldTool = inventory[selectedHotbarIndex];
+                        const isKineticShears = heldTool && heldTool.id === IDS.KINETIC_SHEARS;
+                        const woolAmount = isKineticShears ? 3 : 1;
+                        giveItem(IDS.WOOL, woolAmount);
+                        if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                            UI.trackDailyQuestProgress('shear_sheep', { count: woolAmount });
+                        }
                     }
                     if (z.health <= 0) {
                         if (z instanceof Sheep) {
@@ -1429,6 +1484,9 @@ export function initJukeboxFileInput() {
                         else if (z instanceof Zombie) {
                             if(Math.random() < 0.5) giveItem(IDS.RAW_PORKCHOP, 1);
                             monstersKilledCount = (monstersKilledCount || 0) + 1;
+                            if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                                UI.trackDailyQuestProgress('slay_monster', { mobType: 'Zombie' });
+                            }
                             unlockAchievement('monster_hunter');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
                             if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
@@ -1436,6 +1494,9 @@ export function initJukeboxFileInput() {
                         else if (z instanceof Creeper) {
                             giveItem(IDS.COAL, Math.floor(Math.random() * 2) + 1);
                             monstersKilledCount = (monstersKilledCount || 0) + 1;
+                            if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                                UI.trackDailyQuestProgress('slay_monster', { mobType: 'Creeper' });
+                            }
                             unlockAchievement('monster_hunter');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
                             if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
@@ -1443,6 +1504,9 @@ export function initJukeboxFileInput() {
                         else if (z instanceof Scorpion) {
                             if (Math.random() < 0.6) giveItem(IDS.BONE, 1);
                             monstersKilledCount = (monstersKilledCount || 0) + 1;
+                            if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                                UI.trackDailyQuestProgress('slay_monster', { mobType: 'Scorpion' });
+                            }
                             unlockAchievement('monster_hunter');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
                             if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
@@ -1561,9 +1625,15 @@ export function initJukeboxFileInput() {
         }
 
         let reqHardness = HARDNESS[blockId] || 100;
+        if (heldTool && heldTool.id === IDS.KINETIC_SHEARS && [IDS.LEAVES, IDS.JUNGLE_LEAVES, IDS.VINES, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FERN].includes(blockId)) {
+            miningTarget.progress = reqHardness;
+        }
         
         if (miningTarget.progress >= reqHardness) {
             playSound('break');
+            if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                UI.trackDailyQuestProgress('mine_block', { blockId });
+            }
             if (typeof Gamepad !== 'undefined' && typeof Gamepad.triggerGamepadVibration === 'function') {
                 Gamepad.triggerGamepadVibration(90, 0.4, 0.6);
             }
@@ -1737,6 +1807,51 @@ export function initJukeboxFileInput() {
                 else dropId = null;
             }
             if (blockId === IDS.JUNGLE_SAPLING) dropId = IDS.JUNGLE_SAPLING;
+            if (blockId === IDS.EMERALD_ORE) {
+                if (!canHarvestBlock(blockId) && getRequiredMiningTier(blockId) > 0) {
+                    dropId = null;
+                } else {
+                    const profile = (typeof UI !== 'undefined' && UI.currentUserProfile) || (typeof window !== 'undefined' && window.currentUserProfile);
+                    const isGuest = !profile || profile.isGuest;
+                    if (isGuest) {
+                        dropId = IDS.EMERALD_ORE;
+                        showToast('Login to earn Emerald currency from mining!');
+                    } else {
+                        const minedToday = (typeof UI !== 'undefined' && typeof UI.getDailyMinedEmeralds === 'function') ? UI.getDailyMinedEmeralds() : 0;
+                        if (minedToday < 100) {
+                            if (typeof UI !== 'undefined') {
+                                if (typeof UI.recordDailyMinedEmerald === 'function') UI.recordDailyMinedEmerald();
+                                if (typeof UI.addPlayerEmeralds === 'function') UI.addPlayerEmeralds(1);
+                                if (typeof UI.unlockAchievement === 'function') UI.unlockAchievement('gem_prospector');
+                            }
+                            dropId = null;
+                            showToast('+1 Emerald! (' + (minedToday + 1) + '/100 today)');
+                        } else {
+                            dropId = IDS.EMERALD_ORE;
+                            showToast('Daily mining limit reached (100/100). Dropping block instead.');
+                        }
+                    }
+                }
+            }
+            if (blockId === IDS.VOID_BERRY_BUSH) {
+                dropId = null;
+                const berries = Math.floor(Math.random() * 2) + 2; // 2 to 3
+                giveItem(IDS.VOID_BERRY, berries);
+            }
+            if (blockId === IDS.SUNBURST_MELON) {
+                dropId = null;
+                const slices = Math.floor(Math.random() * 5) + 3; // 3 to 7
+                giveItem(IDS.SUNBURST_MELON_SLICE, slices);
+            }
+            if (blockId === IDS.ASTRAL_INFUSER) dropId = IDS.ASTRAL_INFUSER;
+            if (blockId === IDS.PRISM_GLASS) dropId = IDS.PRISM_GLASS;
+            if (blockId === IDS.VOID_STONE_BRICK) dropId = IDS.VOID_STONE_BRICK;
+            const heldItemForDrop = inventory[selectedHotbarIndex];
+            if (heldItemForDrop && (heldItemForDrop.id === IDS.SHEARS || heldItemForDrop.id === IDS.KINETIC_SHEARS)) {
+                if ([IDS.LEAVES, IDS.JUNGLE_LEAVES, IDS.VINES, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FERN].includes(blockId)) {
+                    dropId = blockId;
+                }
+            }
             // Strict tool tier harvest enforcement: If the block requires a tool tier and the player lacks it, DROP NOTHING!
             if (!canHarvestBlock(blockId) && getRequiredMiningTier(blockId) > 0) {
                 dropId = null;
@@ -2312,6 +2427,8 @@ export function initJukeboxFileInput() {
     export function pauseGame() {
         setGameState('PAUSED');
         document.getElementById('pause-menu').classList.remove('hidden');
+        if (typeof UI.updateEmeraldsUI === 'function') UI.updateEmeraldsUI();
+        if (typeof UI.syncCurrencyTextureImages === 'function') UI.syncCurrencyTextureImages();
         const mpBtn = document.getElementById('btn-pause-multiplayer');
         if (mpBtn) {
             if (isMultiplayer) mpBtn.classList.add('hidden');
@@ -2417,6 +2534,9 @@ export function initJukeboxFileInput() {
                     let resId = getSmeltResult(f.input.id);
                     f.input.count--; if (f.input.count <= 0) f.input = null;
                     if (f.output) f.output.count++; else f.output = { id: resId, count: 1 };
+                    if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                        UI.trackDailyQuestProgress('smelt_item', { itemId: resId, count: 1 });
+                    }
                     if (curOpenedFurnace === f && isInventoryOpen) updateUI();
                 }
             } else { f.progress = 0; }
@@ -2433,6 +2553,9 @@ export function initJukeboxFileInput() {
             curPlayer.update();
         }
         if (curPlayer && frameCount % 60 === 0) {
+            if (typeof window !== 'undefined' && window.RiftExplorerSpawner && typeof window.RiftExplorerSpawner.checkCycle === 'function') {
+                window.RiftExplorerSpawner.checkCycle(dayCount, timeOfDay, curPlayer);
+            }
             let px = Math.floor((curPlayer.x + (curPlayer.width || 24) / 2) / TILE_SIZE);
             let py = Math.floor((curPlayer.y + (curPlayer.height || 48)) / TILE_SIZE);
             if (px >= 0 && px < WORLD_WIDTH) {
@@ -2979,12 +3102,37 @@ export async function checkClosedBetaAccess() {
         isUnlockedLocally = localStorage.getItem(Network.CLOSED_BETA_LOCALSTORAGE_KEY) === 'true';
     } catch (e) {}
 
+    const isLocalHost = typeof window !== 'undefined' && (
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.protocol === 'file:'
+    );
+
     // 2. Fetch remote lock configuration from Firebase Firestore
     let config = null;
     try {
         config = await Network.fetchClosedBetaConfig();
     } catch (err) {
         console.warn("[Closed Beta] Remote config fetch failed, using fallback:", err);
+    }
+
+    // If Firebase explicitly indicates locked === false, authorize and unlock immediately
+    if (config && config.locked === false) {
+        isClosedBetaAuthorized = true;
+        try { localStorage.setItem(Network.CLOSED_BETA_LOCALSTORAGE_KEY, 'true'); } catch (e) {}
+        return { allowed: true, locked: false };
+    }
+
+    // If remotely locked, but this user has already entered the passkey previously
+    if (isUnlockedLocally) {
+        isClosedBetaAuthorized = true;
+        return { allowed: true, locked: config ? config.locked !== false : true };
+    }
+
+    // If running on local server (127.0.0.1/localhost) and no remote lock was enforced
+    if (isLocalHost && (!config || config.locked === false)) {
+        isClosedBetaAuthorized = true;
+        return { allowed: true, locked: false };
     }
 
     const isLockedRemotely = config ? (config.locked !== false) : true;
@@ -2994,12 +3142,6 @@ export async function checkClosedBetaAccess() {
     if (!isLockedRemotely) {
         isClosedBetaAuthorized = true;
         return { allowed: true, locked: false };
-    }
-
-    // If remotely locked, but this user has already entered the passkey previously
-    if (isUnlockedLocally) {
-        isClosedBetaAuthorized = true;
-        return { allowed: true, locked: true };
     }
 
     // Otherwise access is locked and requires entering the passkey
@@ -3124,7 +3266,15 @@ export function lockClosedBeta() {
 }
 
 export function proceedWithBoot() {
-    if (typeof startIntro === 'function') startIntro();
+    if (typeof UI !== 'undefined' && typeof UI.startIntro === 'function') {
+        UI.startIntro();
+    } else if (typeof startIntro === 'function') {
+        startIntro();
+    } else if (typeof UI !== 'undefined' && typeof UI.showMainMenu === 'function') {
+        UI.showMainMenu();
+    } else if (typeof showMainMenu === 'function') {
+        showMainMenu();
+    }
     if (!isGameLoopRunning) {
         isGameLoopRunning = true;
         if (typeof requestAnimationFrame === 'function') {

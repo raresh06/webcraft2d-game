@@ -4180,10 +4180,906 @@ input, textarea {
   line-height: 1;
   box-shadow: inset 0 0 4px rgba(78, 237, 153, 0.25);
 }
-.emerald-pixel-art {
+.emerald-pixel-art,
+.astral-emerald-pixel-art {
   image-rendering: pixelated;
   shape-rendering: crispEdges;
   flex-shrink: 0;
+}
+
+/* ==========================================================================
+   DUAL SPLIT-CURRENCY BADGES (Standard Emerald + Astral Emerald)
+   One unified box with two animated halves (Green Aura & Purple Haze)
+   ========================================================================== */
+.split-currency-badge {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 196px !important;
+  height: 38px !important;
+  padding: 3px 6px !important;
+  background: linear-gradient(135deg, #242b33 0%, #1a1e24 100%) !important;
+  border: 2px solid !important;
+  border-top-color: #7a8894 !important;
+  border-left-color: #7a8894 !important;
+  border-right-color: #080a0c !important;
+  border-bottom-color: #080a0c !important;
+  border-radius: 0 !important;
+  box-shadow: inset 0 0 0 1px #2a323c, 0 0 0 1px #080a0c, 4px 4px 0 rgba(0, 0, 0, 0.55) !important;
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  cursor: pointer;
+  z-index: 50;
+  user-select: none;
+  overflow: hidden;
+  box-sizing: border-box;
+  image-rendering: pixelated;
+  transition: transform 0.1s ease, background 0.1s ease, border-color 0.1s ease, box-shadow 0.15s ease;
+}
+
+.split-currency-badge:hover {
+  background: linear-gradient(135deg, #2b3540 0%, #1e242c 100%) !important;
+  border-top-color: #ffd34d !important;
+  border-left-color: #ffd34d !important;
+  border-right-color: #080a0c !important;
+  border-bottom-color: #080a0c !important;
+  transform: translateY(-2px);
+  box-shadow: inset 0 0 0 1px #3a4550, 0 0 0 1px #080a0c, 4px 6px 0 rgba(0, 0, 0, 0.65) !important;
+}
+
+.split-currency-badge:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 0 0 1px #080a0c, 2px 2px 0 rgba(0, 0, 0, 0.4) !important;
+}
+
+.pause-currency-badge {
+  position: absolute !important;
+  top: 14px !important;
+  left: 14px !important;
+  z-index: 60 !important;
+}
+
+.currency-half {
+  flex: 1 1 50%;
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 0 2px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+}
+
+/* Vertical Center Pixel-Art Divider Pillar */
+.currency-badge-divider {
+  width: 2px;
+  height: 24px;
+  align-self: center;
+  flex-shrink: 0;
+  background: #080a0c;
+  border-right: 1px solid #4a5665;
+  margin: 0 2px;
+  z-index: 3;
+}
+
+/* Content layout in each half */
+.currency-half-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  line-height: 1;
+  min-width: 0;
+}
+
+/* Pixel-Art Inset Sockets */
+.socket-emerald {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f1c14;
+  border: 1px solid #080a0c;
+  box-shadow: inset 1px 1px 0 #134426, inset -1px -1px 0 #040c07;
+}
+
+.socket-astral {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #140822;
+  border: 1px solid #080a0c;
+  box-shadow: inset 1px 1px 0 #3b1464, inset -1px -1px 0 #0a0412;
+  position: relative;
+  overflow: visible;
+}
+
+.socket-astral::after {
+  content: '✦';
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 10px;
+  color: #f3e8ff;
+  animation: astralStarTwinkle 1.8s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.emerald-count-text {
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  font-weight: bold;
+  color: #4eed99;
+  text-shadow: 1px 1px 0 #000000;
+  line-height: 0.9;
+}
+
+.emerald-label-text {
+  font-family: 'VT323', monospace;
+  font-size: 10px;
+  font-weight: bold;
+  color: #8fa1af;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  text-shadow: 1px 1px 0 #000000;
+}
+
+.astral-count-text {
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  font-weight: bold;
+  color: #c084fc;
+  text-shadow: 1px 1px 0 #000000;
+  line-height: 0.9;
+}
+
+.astral-label-text {
+  font-family: 'VT323', monospace;
+  font-size: 10px;
+  font-weight: bold;
+  color: #a855f7;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  text-shadow: 1px 1px 0 #000000;
+}
+
+@keyframes astralStarTwinkle {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.85);
+    filter: drop-shadow(0 0 2px #c084fc);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.35) rotate(15deg);
+    filter: drop-shadow(0 0 5px #ffffff);
+  }
+}
+
+/* ==========================================================================
+   EMERALD VAULT & CURRENCY HUB STYLES
+   ========================================================================== */
+.vault-panel {
+  background-color: #20252b !important;
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 5px) !important;
+  border: 4px solid !important;
+  border-top-color: #69737b !important;
+  border-left-color: #69737b !important;
+  border-bottom-color: #080a0c !important;
+  border-right-color: #080a0c !important;
+  box-shadow: inset 0 0 0 2px #2a3036, 8px 8px 0 rgba(0,0,0,0.55) !important;
+  color: #ffffff !important;
+}
+.vault-panel p,
+.vault-panel span,
+.vault-panel div,
+.vault-panel li,
+.vault-panel h1,
+.vault-panel h2,
+.vault-panel h3 {
+  color: #ffffff;
+  text-shadow: 1px 1px 0 #000;
+}
+.vault-stat-green { color: #4ade80 !important; text-shadow: 1px 1px 0 #000; }
+.vault-stat-purple { color: #c084fc !important; text-shadow: 1px 1px 0 #000; }
+.vault-stat-sub { color: #cbd5e1 !important; text-shadow: 1px 1px 0 #000; }
+.vault-badge-green { color: #86efac !important; text-shadow: 1px 1px 0 #000; }
+.vault-badge-purple { color: #d8b4fe !important; text-shadow: 1px 1px 0 #000; }
+
+.vault-header-icon-frame {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  background: #171b20;
+  border: 2px solid #333a41;
+  border-top-color: #46515a;
+  border-left-color: #46515a;
+  border-bottom-color: #080a0c;
+  border-right-color: #080a0c;
+  box-shadow: inset 0 0 0 1px #080a0c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vault-balance-card {
+  position: relative;
+  overflow: hidden;
+  background: #171b20;
+  border: 2px solid #333a41;
+  border-top-color: #46515a;
+  border-left-color: #46515a;
+  border-bottom-color: #080a0c;
+  border-right-color: #080a0c;
+  box-shadow: inset 0 0 0 1px #080a0c, 3px 3px 0 rgba(0,0,0,0.35);
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+.vault-balance-card.emerald-card:hover {
+  border-top-color: #10b981;
+  border-left-color: #10b981;
+}
+.vault-balance-card.astral-card:hover {
+  border-top-color: #a855f7;
+  border-left-color: #a855f7;
+}
+
+.atlas-dialogue-box,
+.atlas-market-panel,
+.astral-infuser-panel {
+  background-color: #20252b !important;
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 5px) !important;
+  border: 4px solid !important;
+  border-top-color: #69737b !important;
+  border-left-color: #69737b !important;
+  border-bottom-color: #080a0c !important;
+  border-right-color: #080a0c !important;
+  box-shadow: inset 0 0 0 2px #2a3036, 8px 8px 0 rgba(0,0,0,0.55) !important;
+}
+
+.atlas-dialogue-btn {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #2d3640 0%, #1f252c 100%);
+  border: 2px solid #10151a;
+  border-top-color: #556270;
+  border-left-color: #556270;
+  border-bottom-color: #10151a;
+  border-right-color: #10151a;
+  color: #e2e8f0;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 2px 2px 0 rgba(0,0,0,0.3);
+  transition: all 0.1s ease;
+}
+.atlas-dialogue-btn:hover {
+  background: linear-gradient(180deg, #3d4a58 0%, #2b343e 100%);
+  border-top-color: #ffd34d;
+  border-left-color: #ffd34d;
+  color: #ffd34d;
+  transform: translateX(4px);
+}
+
+.atlas-market-card {
+  background: #171b20;
+  border: 2px solid #333a41;
+  border-top-color: #46515a;
+  border-left-color: #46515a;
+  border-bottom-color: #080a0c;
+  border-right-color: #080a0c;
+  box-shadow: inset 0 0 0 1px #080a0c, 2px 2px 0 rgba(0,0,0,0.35);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  transition: all 0.12s ease;
+}
+.atlas-market-card:hover {
+  border-top-color: #a855f7;
+  border-left-color: #a855f7;
+  background: #1c2128;
+}
+
+.infuser-slot-box {
+  width: 58px;
+  height: 58px;
+  background: #11151b;
+  border: 2px solid;
+  border-top-color: #080a0c;
+  border-left-color: #080a0c;
+  border-bottom-color: #46515a;
+  border-right-color: #46515a;
+  box-shadow: inset 2px 2px 0 #080a0c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  position: relative;
+}
+.infuser-slot-box:hover, .infuser-slot-box.infuser-slot-active {
+  border-color: #a855f7;
+  box-shadow: inset 0 0 8px rgba(168, 85, 247, 0.4), 0 0 8px rgba(168, 85, 247, 0.3);
+}
+
+.eligible-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #151a21;
+  border: 2px solid #2a333d;
+  border-top-color: #3f4b59;
+  border-left-color: #3f4b59;
+  border-bottom-color: #0c0f14;
+  border-right-color: #0c0f14;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+.eligible-chip:hover {
+  border-color: #ffd34d;
+  background: #1e2530;
+}
+.eligible-chip.selected {
+  border-color: #a855f7;
+  border-top-color: #c084fc;
+  background: #251638;
+}
+.vault-balance-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255,255,255,0.06), transparent 70%);
+  pointer-events: none;
+}
+
+/* Vault 4-Column Tab Navigation */
+.vault-tab-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 640px) {
+  .vault-tab-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+}
+.vault-tab-btn {
+  width: 100%;
+  min-height: 42px;
+  background: linear-gradient(180deg, #37424e 0%, #262e37 100%);
+  border: 2px solid #10151a;
+  border-top-color: #606f7e;
+  border-left-color: #606f7e;
+  border-bottom-color: #151a20;
+  border-right-color: #151a20;
+  color: #c4d3df;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 2px 2px 0 rgba(0,0,0,0.4);
+  transition: background 0.1s ease, color 0.1s ease;
+  user-select: none;
+  box-sizing: border-box;
+  position: relative;
+  white-space: nowrap;
+}
+.vault-tab-btn:hover {
+  background: linear-gradient(180deg, #465565 0%, #323d49 100%);
+  border-top-color: #8397aa;
+  border-left-color: #8397aa;
+  color: #ffffff;
+}
+.vault-tab-btn.active {
+  background: linear-gradient(180deg, #27333d 0%, #171f26 100%);
+  border-color: #ffd34d;
+  border-top-color: #ffe066;
+  border-left-color: #ffe066;
+  border-bottom-color: #a87d13;
+  border-right-color: #a87d13;
+  color: #ffd34d;
+  font-weight: bold;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 0 8px rgba(255,211,77,0.25);
+  text-shadow: 2px 2px 0 #000;
+}
+.vault-tab-icon {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.7));
+}
+.vault-tab-title {
+  letter-spacing: 0.5px;
+}
+.vault-tab-badge {
+  background: #e11d48;
+  color: #fff;
+  font-size: 14px;
+  padding: 0 5px;
+  border-radius: 2px;
+  border: 1px solid #fda4af;
+  line-height: 1.1;
+}
+.vault-tab-ach-link {
+  border-color: #4f46e5;
+  border-top-color: #818cf8;
+  border-left-color: #818cf8;
+}
+.vault-tab-ach-link:hover {
+  border-color: #a5b4fc;
+}
+
+/* Mining Tracker & Quota Card UI */
+.vault-quota-card {
+  background: #171b20 !important;
+  border: 2px solid #333a41;
+  border-top-color: #46515a;
+  border-left-color: #46515a;
+  border-right-color: #080a0c;
+  border-bottom-color: #080a0c;
+  box-shadow: inset 0 0 0 1px #080a0c, 2px 2px 0 rgba(0,0,0,0.35);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #ffffff !important;
+  margin-bottom: 2px;
+}
+.vault-quota-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.vault-quota-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.vault-quota-title {
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1.1;
+  color: #4ade80 !important;
+  text-shadow: 1px 1px 0 #000;
+  display: block;
+}
+.vault-quota-subtitle {
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  color: #e2e8f0 !important;
+  text-shadow: 1px 1px 0 #000;
+  display: block;
+}
+.vault-quota-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #101316;
+  border: 1px solid #333a41;
+  padding: 4px 10px;
+}
+.vault-quota-badge-label {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: #e2e8f0 !important;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 0.5px;
+}
+.vault-quota-badge-value {
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  font-weight: bold;
+  color: #fbbf24 !important;
+  text-shadow: 1px 1px 0 #000;
+}
+.vault-quota-desc {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  line-height: 1.25;
+  color: #ffffff !important;
+  text-shadow: 1px 1px 0 #000;
+  margin: 0;
+}
+.vault-quota-desc strong {
+  color: #4ade80 !important;
+}
+.vault-overview-section-header {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #333a41;
+  text-shadow: 1px 1px 0 #000;
+}
+.vault-overview-section-header.green {
+  color: #4ade80 !important;
+  border-bottom-color: rgba(74, 222, 128, 0.35);
+}
+.vault-overview-section-header.purple {
+  color: #c084fc !important;
+  border-bottom-color: rgba(192, 132, 252, 0.35);
+}
+.vault-overview-section-header.gold {
+  color: #fbbf24 !important;
+  border-bottom-color: rgba(251, 191, 36, 0.35);
+}
+.vault-overview-section-header.cyan {
+  color: #67e8f9 !important;
+  border-bottom-color: rgba(103, 232, 249, 0.35);
+}
+.vault-quota-pill {
+  background: #0d1217;
+  border: 2px solid #283747;
+  padding: 2px 10px;
+  color: #4eed99;
+  font-family: 'VT323', monospace;
+  font-size: 19px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.7);
+}
+.vault-mining-track {
+  position: relative;
+  height: 24px;
+  background: #0a0e13;
+  border: 2px solid #2d3b4a;
+  border-top-color: #1a222c;
+  border-left-color: #1a222c;
+  border-bottom-color: #3b4d61;
+  border-right-color: #3b4d61;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.85);
+  overflow: hidden;
+}
+.vault-mining-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #059669 0%, #10b981 50%, #34d399 100%);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+  transition: width 0.35s ease-out;
+}
+.vault-track-milestone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.vault-track-milestone::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 1px;
+  width: 1px;
+  background: rgba(0, 0, 0, 0.5);
+}
+.vault-milestone-tag {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Daily Quest Card */
+.quest-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #141a22;
+  border: 2px solid #2a3644;
+  border-top-color: #415266;
+  border-left-color: #415266;
+  border-bottom-color: #10151b;
+  border-right-color: #10151b;
+  box-shadow: inset 0 0 0 1px #0e1318, 2px 2px 0 rgba(0,0,0,0.35);
+  transition: all 0.12s ease;
+}
+.quest-card:hover {
+  border-color: #4b5e75;
+  background: #18202b;
+}
+.quest-card.completed {
+  border-color: #10b981;
+  border-top-color: #34d399;
+  border-left-color: #34d399;
+  border-bottom-color: #064e3b;
+  border-right-color: #064e3b;
+  background: #0f2117;
+  box-shadow: inset 0 0 14px rgba(16, 185, 129, 0.2), 0 0 10px rgba(16, 185, 129, 0.25);
+}
+.quest-card.claimed {
+  opacity: 0.65;
+  background: #11161d;
+  border-color: #212a35;
+  box-shadow: none;
+}
+.quest-icon-frame {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  background: #0d1117;
+  border: 2px solid #2f3c4c;
+  border-top-color: #46576b;
+  border-left-color: #46576b;
+  border-bottom-color: #11161d;
+  border-right-color: #11161d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.7);
+}
+.quest-card.completed .quest-icon-frame {
+  background: #0d2618;
+  border-color: #10b981;
+  border-top-color: #34d399;
+  box-shadow: inset 0 0 8px rgba(16, 185, 129, 0.4);
+}
+.quest-badge-claimed {
+  padding: 4px 10px;
+  background: #0d1a13;
+  border: 2px solid #1b4b32;
+  color: #4eed99;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-shadow: 1px 1px 0 #000;
+  white-space: nowrap;
+}
+.quest-reward-pill {
+  padding: 4px 10px;
+  background: #171e28;
+  border: 2px solid #303e50;
+  color: #cbd5e1;
+  font-family: 'VT323', monospace;
+  font-size: 17px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.quest-claim-btn {
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border-top-color: #6ee7b7 !important;
+  border-left-color: #6ee7b7 !important;
+  border-bottom-color: #047857 !important;
+  border-right-color: #047857 !important;
+  font-size: 19px !important;
+  padding: 5px 14px !important;
+  width: auto !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  animation: questClaimPulse 1.8s infinite ease-in-out;
+  white-space: nowrap;
+}
+@keyframes questClaimPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(16, 185, 129, 0.6); }
+  50% { transform: scale(1.03); box-shadow: 0 0 18px rgba(16, 185, 129, 0.95); }
+}
+
+/* Astral Exchange Cards */
+.exchange-card {
+  background: linear-gradient(180deg, #191225 0%, #110d1a 100%);
+  border: 2px solid #4c1d95;
+  border-top-color: #7c3aed;
+  border-left-color: #7c3aed;
+  border-bottom-color: #2e1065;
+  border-right-color: #2e1065;
+  box-shadow: inset 0 0 0 1px #1a0b2e, 0 6px 18px rgba(0,0,0,0.6);
+  padding: 16px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: all 0.15s ease;
+}
+.exchange-card:hover {
+  transform: translateY(-2px);
+  border-color: #a855f7;
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.35), inset 0 0 16px rgba(168, 85, 247, 0.12);
+}
+.exchange-card.tier-2 {
+  border-color: #7c3aed;
+  border-top-color: #a855f7;
+  border-left-color: #a855f7;
+}
+.exchange-card.tier-3 {
+  border-color: #a21caf;
+  border-top-color: #e879f9;
+  border-left-color: #e879f9;
+  background: linear-gradient(180deg, #241334 0%, #150920 100%);
+}
+.exchange-bonus-ribbon {
+  position: absolute;
+  top: -11px;
+  padding: 1px 8px;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  white-space: nowrap;
+}
+.exchange-portal-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a855f7;
+  font-size: 20px;
+  animation: astralArrowPulse 1.6s infinite ease-in-out;
+}
+@keyframes astralArrowPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 6px #c084fc); }
+}
+.exchange-tier-btn {
+  transition: all 0.1s ease;
+}
+.exchange-tier-btn.affordable {
+  background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%) !important;
+  border-top-color: #c084fc !important;
+  border-left-color: #c084fc !important;
+  border-bottom-color: #3b0764 !important;
+  border-right-color: #3b0764 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.45), inset 0 1px 0 rgba(255,255,255,0.3) !important;
+}
+.exchange-tier-btn.affordable:hover {
+  background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%) !important;
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.75), inset 0 1px 0 rgba(255,255,255,0.5) !important;
+  transform: scale(1.02);
+}
+.exchange-tier-btn.unaffordable {
+  background: #25222d !important;
+  border: 2px solid #3c3648 !important;
+  border-top-color: #4b445a !important;
+  border-left-color: #4b445a !important;
+  border-bottom-color: #17151c !important;
+  border-right-color: #17151c !important;
+  color: #837d92 !important;
+  cursor: not-allowed !important;
+  opacity: 0.85 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* ==========================================================================
+   ATLAS DIALOGUE & MARKET STYLES
+   ========================================================================== */
+.atlas-dialogue-box {
+  background: linear-gradient(180deg, #171b24 0%, #0f131a 100%);
+  border: 4px solid #4a5a6e;
+  box-shadow: inset 0 0 0 2px #0a0d12, 0 12px 36px rgba(0,0,0,0.9);
+}
+.atlas-npc-portrait-frame {
+  box-shadow: inset 0 0 8px rgba(168, 85, 247, 0.4);
+}
+.atlas-speech-bubble {
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+}
+.atlas-dialogue-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #1b222c;
+  border: 2px solid #2f3c4c;
+  color: #e2e8f0;
+  font-family: 'VT323', monospace;
+  font-size: 19px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.1s ease;
+}
+.atlas-dialogue-option-btn:hover {
+  background: #273344;
+  border-color: #a855f7;
+  color: #f3e8ff;
+  transform: translateX(4px);
+}
+.atlas-dialogue-option-btn::before {
+  content: '▸';
+  color: #a855f7;
+  font-size: 18px;
+}
+
+/* Atlas Market Wares */
+.atlas-market-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  background: #131720;
+  border: 2px solid #2d3848;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.atlas-market-card:hover {
+  transform: translateY(-2px);
+  border-color: #818cf8;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.2);
+}
+.atlas-ware-badge {
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   ASTRAL INFUSER STYLES
+   ========================================================================== */
+.astral-infuser-panel {
+  background: linear-gradient(180deg, #181126 0%, #0e0918 100%);
+  border: 4px solid #6b21a8;
+  box-shadow: inset 0 0 0 2px #0a0512, 0 12px 36px rgba(107, 33, 168, 0.35);
+}
+.infuser-stage {
+  box-shadow: inset 0 0 16px rgba(0,0,0,0.8);
+}
+.infuser-slot-active {
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
+}
+.infuser-item-preview {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+}
+.eligible-chip {
+  cursor: pointer;
+  padding: 3px 6px;
+  background: #1f1433;
+  border: 1px solid #581c87;
+  transition: all 0.1s ease;
+}
+.eligible-chip:hover {
+  background: #3b1660;
+  border-color: #c084fc;
 }
 .skin-action {
   width: 36px;
@@ -8546,3 +9442,26 @@ html.closed-beta-pending #main-menu, html.closed-beta-pending #game-intro {
     }
   }
 }
+
+/* Explicit color definitions for custom hex classes to prevent browser default black text */
+.text-\[\#ffcc00\] { color: #ffcc00 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#c8d1dc\] { color: #c8d1dc !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#8e9aa8\] { color: #8e9aa8 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#aebac2\] { color: #aebac2 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#fde68a\] { color: #fde68a !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#4eed99\] { color: #4eed99 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#95a5b5\] { color: #95a5b5 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#8292a0\] { color: #8292a0 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#6fa386\] { color: #6fa386 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#c084fc\] { color: #c084fc !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#a855f7\] { color: #a855f7 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#cfd8dc\] { color: #cfd8dc !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#e2d5f8\] { color: #e2d5f8 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#d8b4fe\] { color: #d8b4fe !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#8c9da8\] { color: #8c9da8 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#a1b3c2\] { color: #a1b3c2 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#8a9ba8\] { color: #8a9ba8 !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#a0b0be\] { color: #a0b0be !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#8e9fae\] { color: #8e9fae !important; text-shadow: 1px 1px 0 #000; }
+.text-\[\#ffd34d\] { color: #ffd34d !important; text-shadow: 1px 1px 0 #000; }
+

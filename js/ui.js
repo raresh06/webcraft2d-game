@@ -1,5 +1,5 @@
 import {
-    IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT,
+    IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, currentWorldSize,
     Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
@@ -63,7 +63,7 @@ export let currentWorldId = null;
 export let selectedDiffChoice = 'normal';
 export let currentDifficulty = 'normal';
 export let settingsPreviousState = 'MENU';
-export let currentWorldSize = 'small';
+export { currentWorldSize };
 export let selectedWorldSizeChoice = 'small';
 export let selectedMpWorldSize = 'small';
 export let isMultiplayer = false;
@@ -847,9 +847,69 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
 
-    // --- Emerald Currency & Lifetime Achievement Rewards ---
+    // --- Emerald & Astral Emerald Currency System ---
     export function getPixelEmeraldSvg(size = 14) {
+        if (typeof textures !== 'undefined' && textures && textures[IDS?.EMERALD]?.src) {
+            return `<img src="${textures[IDS.EMERALD].src}" class="pixelated inline-block object-contain" width="${size}" height="${size}" alt="Emerald" style="vertical-align: middle;" />`;
+        }
         return `<svg class="emerald-pixel-art" viewBox="0 0 16 16" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/><rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/><rect x="11" y="5" width="3" height="6" fill="#136d33"/><rect x="5" y="13" width="6" height="1" fill="#136d33"/><rect x="10" y="11" width="3" height="2" fill="#136d33"/><rect x="8" y="12" width="3" height="1" fill="#0e5326"/><rect x="5" y="2" width="6" height="1" fill="#1b9549"/><rect x="4" y="4" width="8" height="1" fill="#46f381"/><rect x="3" y="5" width="8" height="6" fill="#17c858"/><rect x="3" y="11" width="7" height="1" fill="#17c858"/><rect x="4" y="12" width="4" height="1" fill="#136d33"/><rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/><rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/><rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/><rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/></svg>`;
+    }
+
+    export function getPixelAstralEmeraldSvg(size = 14) {
+        if (typeof textures !== 'undefined' && textures && textures[IDS?.ASTRAL_EMERALD]?.src) {
+            return `<img src="${textures[IDS.ASTRAL_EMERALD].src}" class="pixelated inline-block object-contain" width="${size}" height="${size}" alt="Astral Emerald" style="vertical-align: middle;" />`;
+        }
+        return `<svg class="astral-emerald-pixel-art" viewBox="0 0 16 16" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="5" y="1" width="6" height="1" fill="#1e0836"/><rect x="4" y="2" width="1" height="1" fill="#1e0836"/><rect x="11" y="2" width="1" height="1" fill="#1e0836"/><rect x="3" y="3" width="1" height="1" fill="#1e0836"/><rect x="12" y="3" width="1" height="1" fill="#1e0836"/><rect x="2" y="4" width="1" height="1" fill="#1e0836"/><rect x="13" y="4" width="1" height="1" fill="#1e0836"/><rect x="1" y="5" width="1" height="6" fill="#1e0836"/><rect x="14" y="5" width="1" height="6" fill="#1e0836"/><rect x="2" y="11" width="1" height="1" fill="#1e0836"/><rect x="13" y="11" width="1" height="1" fill="#1e0836"/><rect x="3" y="12" width="1" height="1" fill="#1e0836"/><rect x="12" y="12" width="1" height="1" fill="#1e0836"/><rect x="4" y="13" width="1" height="1" fill="#1e0836"/><rect x="11" y="13" width="1" height="1" fill="#1e0836"/><rect x="5" y="14" width="6" height="1" fill="#1e0836"/><rect x="11" y="5" width="3" height="6" fill="#4c1d95"/><rect x="5" y="13" width="6" height="1" fill="#4c1d95"/><rect x="10" y="11" width="3" height="2" fill="#4c1d95"/><rect x="8" y="12" width="3" height="1" fill="#3b0764"/><rect x="5" y="2" width="6" height="1" fill="#6d28d9"/><rect x="4" y="4" width="8" height="1" fill="#c084fc"/><rect x="3" y="5" width="8" height="6" fill="#9333ea"/><rect x="3" y="11" width="7" height="1" fill="#9333ea"/><rect x="4" y="12" width="4" height="1" fill="#4c1d95"/><rect x="5" y="2" width="5" height="1" fill="#e9d5ff"/><rect x="4" y="3" width="3" height="1" fill="#e9d5ff"/><rect x="3" y="4" width="2" height="1" fill="#e9d5ff"/><rect x="2" y="5" width="1" height="3" fill="#e9d5ff"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#e9d5ff"/></svg>`;
+    }
+
+    export function syncCurrencyTextureImages() {
+        if (typeof textures === 'undefined' || !textures) return;
+        const emeraldSrc = textures[IDS?.EMERALD]?.src || '';
+        const astralSrc = textures[IDS?.ASTRAL_EMERALD]?.src || '';
+        const oreSrc = textures[IDS?.EMERALD_ORE]?.src || '';
+        const shardSrc = textures[IDS?.ASTRAL_SHARD]?.src || '';
+
+        // Main Menu Top Corner Badge
+        const mmEmerald = document.getElementById('main-menu-emerald-img');
+        if (mmEmerald && emeraldSrc) mmEmerald.src = emeraldSrc;
+        const mmAstral = document.getElementById('main-menu-astral-img');
+        if (mmAstral && astralSrc) mmAstral.src = astralSrc;
+
+        // In-game Pause Menu Badge
+        const pauseEmerald = document.getElementById('pause-emerald-img');
+        if (pauseEmerald && emeraldSrc) pauseEmerald.src = emeraldSrc;
+        const pauseAstral = document.getElementById('pause-astral-img');
+        if (pauseAstral && astralSrc) pauseAstral.src = astralSrc;
+
+        // Currency Hub / Vault Modal Header & Balances
+        const vaultHeaderEmerald = document.getElementById('vault-header-emerald-img');
+        if (vaultHeaderEmerald && emeraldSrc) vaultHeaderEmerald.src = emeraldSrc;
+        const vaultEmerald = document.getElementById('vault-emerald-img');
+        if (vaultEmerald && emeraldSrc) vaultEmerald.src = emeraldSrc;
+        const vaultAstral = document.getElementById('vault-astral-img');
+        if (vaultAstral && astralSrc) vaultAstral.src = astralSrc;
+
+        // Mining Quota Standalone Card
+        const vaultOre = document.getElementById('vault-ore-img');
+        if (vaultOre && oreSrc) vaultOre.src = oreSrc;
+
+        // Overview Guide Grid Cards
+        const vaultOverviewOre = document.getElementById('vault-overview-ore-img');
+        if (vaultOverviewOre && oreSrc) vaultOverviewOre.src = oreSrc;
+        const vaultOverviewAstral = document.getElementById('vault-overview-astral-img');
+        if (vaultOverviewAstral && astralSrc) vaultOverviewAstral.src = astralSrc;
+
+        // Atlas Market
+        const marketGem = document.getElementById('atlas-market-gem-img');
+        if (marketGem && astralSrc) marketGem.src = astralSrc;
+
+        // Astral Infuser
+        const infuserHeaderGem = document.getElementById('infuser-header-gem-img');
+        if (infuserHeaderGem && shardSrc) infuserHeaderGem.src = shardSrc;
+    }
+
+    export function getPixelPadlockSvg(size = 12) {
+        return `<svg viewBox="0 0 12 12" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges; display: inline-block; vertical-align: middle;"><rect x="3" y="1" width="6" height="5" fill="#94a3b8"/><rect x="5" y="3" width="2" height="3" fill="#1e293b"/><rect x="2" y="5" width="8" height="6" fill="#f59e0b"/><rect x="5" y="7" width="2" height="2" fill="#78350f"/></svg>`;
     }
 
     export function getPlayerEmeralds() {
@@ -865,6 +925,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         try {
             const safeVal = Math.max(0, Math.floor(val));
             localStorage.setItem('swc_emeralds_v1', safeVal.toString());
+            if (currentUserProfile) {
+                currentUserProfile.emeralds = safeVal;
+                try { localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile)); } catch(e){}
+            }
             updateEmeraldsUI();
             return safeVal;
         } catch (e) {
@@ -875,6 +939,35 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function addPlayerEmeralds(amt) {
         const current = getPlayerEmeralds();
         return setPlayerEmeralds(current + amt);
+    }
+
+    export function getPlayerAstralEmeralds() {
+        try {
+            const val = parseInt(localStorage.getItem('swc_astral_emeralds_v1'), 10);
+            return isNaN(val) || val < 0 ? 0 : val;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    export function setPlayerAstralEmeralds(val) {
+        try {
+            const safeVal = Math.max(0, Math.floor(val));
+            localStorage.setItem('swc_astral_emeralds_v1', safeVal.toString());
+            if (currentUserProfile) {
+                currentUserProfile.astralEmeralds = safeVal;
+                try { localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile)); } catch(e){}
+            }
+            updateEmeraldsUI();
+            return safeVal;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    export function addPlayerAstralEmeralds(amt) {
+        const current = getPlayerAstralEmeralds();
+        return setPlayerAstralEmeralds(current + amt);
     }
 
     export function getClaimedAchievementRewards() {
@@ -900,6 +993,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function updateEmeraldsUI() {
         const emeralds = getPlayerEmeralds();
+        const astralEmeralds = getPlayerAstralEmeralds();
+
+        // Main Menu
         const mmEl = document.getElementById('main-menu-emeralds-count');
         if (mmEl) {
             mmEl.innerText = emeralds.toLocaleString();
@@ -907,6 +1003,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             void mmEl.offsetWidth;
             mmEl.classList.add('emerald-count-pulse');
         }
+        const mmAstralEl = document.getElementById('main-menu-astral-count');
+        if (mmAstralEl) {
+            mmAstralEl.innerText = astralEmeralds.toLocaleString();
+        }
+
+        // In-game Pause Menu Badge
+        const pauseEmeraldEl = document.getElementById('pause-emeralds-count');
+        if (pauseEmeraldEl) pauseEmeraldEl.innerText = emeralds.toLocaleString();
+        const pauseAstralEl = document.getElementById('pause-astral-count');
+        if (pauseAstralEl) pauseAstralEl.innerText = astralEmeralds.toLocaleString();
+
+        // Skins Shop
         const skinsEl = document.getElementById('skins-emeralds-count');
         if (skinsEl) {
             skinsEl.innerText = emeralds.toLocaleString();
@@ -914,6 +1022,930 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             void skinsEl.offsetWidth;
             skinsEl.classList.add('emerald-count-pulse');
         }
+
+        // Vault Modal
+        const vaultStdEl = document.getElementById('vault-standard-count');
+        if (vaultStdEl) vaultStdEl.innerText = emeralds.toLocaleString();
+        const vaultAstralEl = document.getElementById('vault-astral-count');
+        if (vaultAstralEl) vaultAstralEl.innerText = astralEmeralds.toLocaleString();
+
+        const exchangeAvailEl = document.getElementById('vault-exchange-avail-emeralds');
+        if (exchangeAvailEl) exchangeAvailEl.innerText = emeralds.toLocaleString();
+
+        // Atlas Market
+        const marketAstralEl = document.getElementById('atlas-market-astral-count');
+        if (marketAstralEl) marketAstralEl.innerText = astralEmeralds.toLocaleString();
+
+        // Sync texture images
+        syncCurrencyTextureImages();
+
+        // Dynamically update Astral Exchange tier affordability
+        if (typeof renderAstralExchangeUI === 'function') {
+            renderAstralExchangeUI();
+        }
+    }
+
+    // --- Mining Tracker ---
+    export function getDailyMinedEmeralds() {
+        try {
+            const todayUtc = new Date().toISOString().slice(0, 10);
+            const raw = localStorage.getItem('swc_daily_mined_v1');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.date === todayUtc) {
+                    return typeof parsed.count === 'number' ? parsed.count : 0;
+                }
+            }
+            return 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    export function recordDailyMinedEmerald() {
+        const todayUtc = new Date().toISOString().slice(0, 10);
+        const current = getDailyMinedEmeralds();
+        const next = current + 1;
+        try {
+            localStorage.setItem('swc_daily_mined_v1', JSON.stringify({ date: todayUtc, count: next }));
+            if (currentUserProfile) {
+                currentUserProfile.dailyMined = { date: todayUtc, count: next };
+                try { localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile)); } catch(e){}
+            }
+        } catch (e) {}
+        renderMiningTrackerUI();
+        return next;
+    }
+
+    export function renderMiningTrackerUI() {
+        const count = getDailyMinedEmeralds();
+        const fill = document.getElementById('vault-mining-progress-fill');
+        const label = document.getElementById('vault-mining-count-label');
+        if (fill) fill.style.width = Math.min(100, (count / 100) * 100) + '%';
+        if (label) label.innerText = `${count} / 100 Today`;
+
+        const guestNotice = document.getElementById('vault-guest-notice');
+        if (guestNotice) {
+            const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+            if (isGuest) guestNotice.classList.remove('hidden');
+            else guestNotice.classList.add('hidden');
+        }
+    }
+
+    // --- Daily Challenges System (Rotates every 24h UTC, <=150 Emerald cap) ---
+    export const DAILY_QUEST_POOL = [
+        { id: 'dq_mine_stone', title: 'Stone Mason', desc: 'Mine 25 Stone or Cobblestone blocks', target: 25, type: 'mine_block', blockIds: [IDS.STONE, IDS.COBBLESTONE], reward: 35 },
+        { id: 'dq_mine_coal', title: 'Fuel Gatherer', desc: 'Mine 10 Coal Ore veins', target: 10, type: 'mine_block', blockIds: [IDS.COAL_ORE], reward: 35 },
+        { id: 'dq_mine_iron', title: 'Iron Age', desc: 'Mine 8 Iron Ore blocks', target: 8, type: 'mine_block', blockIds: [IDS.IRON_ORE], reward: 40 },
+        { id: 'dq_mine_emerald', title: 'Gem Prospector', desc: 'Mine 2 Emerald Ore veins in crags or caverns', target: 2, type: 'mine_block', blockIds: [IDS.EMERALD_ORE], reward: 50 },
+        { id: 'dq_mine_diamond', title: 'Deep Brilliance', desc: 'Mine 1 Diamond Ore block in the depths', target: 1, type: 'mine_block', blockIds: [IDS.DIAMOND_ORE], reward: 50 },
+        { id: 'dq_chop_wood', title: 'Lumberjack', desc: 'Harvest 20 Wood Logs from trees', target: 20, type: 'mine_block', blockIds: [IDS.WOOD, IDS.JUNGLE_WOOD], reward: 35 },
+        { id: 'dq_craft_torches', title: 'Light in the Dark', desc: 'Craft 12 Torches to illuminate caves', target: 12, type: 'craft_item', itemIds: [IDS.TORCH], reward: 30 },
+        { id: 'dq_craft_table', title: 'Carpentry Basics', desc: 'Craft a Crafting Table', target: 1, type: 'craft_item', itemIds: [IDS.CRAFTING_TABLE], reward: 30 },
+        { id: 'dq_craft_chest', title: 'Safe Storage', desc: 'Craft 2 Wooden Chests', target: 2, type: 'craft_item', itemIds: [IDS.CHEST], reward: 35 },
+        { id: 'dq_craft_bread', title: 'Master Baker', desc: 'Bake 5 loaves of Bread', target: 5, type: 'craft_item', itemIds: [IDS.BREAD], reward: 40 },
+        { id: 'dq_craft_iron_pick', title: 'Heavy Duty', desc: 'Craft an Iron Pickaxe', target: 1, type: 'craft_item', itemIds: [IDS.IRON_PICKAXE], reward: 40 },
+        { id: 'dq_smelt_iron', title: 'Foundry Worker', desc: 'Smelt 6 Iron Ingots in a furnace', target: 6, type: 'smelt_item', itemIds: [IDS.IRON_INGOT], reward: 40 },
+        { id: 'dq_slay_monsters', title: 'Night Watchman', desc: 'Defeat 4 hostile monsters (Zombies or Creepers)', target: 4, type: 'slay_monster', mobTypes: ['Zombie', 'Creeper', 'Scorpion'], reward: 45 },
+        { id: 'dq_slay_creeper', title: 'Explosive Encounter', desc: 'Defeat 1 Creeper before it detonates', target: 1, type: 'slay_monster', mobTypes: ['Creeper'], reward: 45 },
+        { id: 'dq_slay_scorpion', title: 'Dune Purifier', desc: 'Defeat 2 Desert Scorpions', target: 2, type: 'slay_monster', mobTypes: ['Scorpion'], reward: 40 },
+        { id: 'dq_shear_sheep', title: 'Warm Wool', desc: 'Shear 3 sheep for soft wool', target: 3, type: 'shear_sheep', reward: 35 },
+        { id: 'dq_eat_food', title: 'Well Nourished', desc: 'Eat 4 food items to stay energized', target: 4, type: 'eat_food', reward: 30 },
+        { id: 'dq_plant_saplings', title: 'Reforestation', desc: 'Plant 4 tree saplings on fertile dirt', target: 4, type: 'plant_sapling', reward: 35 },
+        { id: 'dq_craft_bed', title: 'Sweet Dreams', desc: 'Craft a Bed using wool and planks', target: 1, type: 'craft_item', itemIds: [IDS.BED], reward: 35 },
+        { id: 'dq_harvest_melons', title: 'Jungle Delicacy', desc: 'Harvest 6 Melon Slices or blocks', target: 6, type: 'mine_block', blockIds: [IDS.MELON, IDS.SUNBURST_MELON], reward: 35 }
+    ];
+
+    export function getDailyQuestsState() {
+        const todayUtc = new Date().toISOString().slice(0, 10);
+        try {
+            const raw = localStorage.getItem('swc_daily_quests_v1');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.date === todayUtc && Array.isArray(parsed.quests)) {
+                    return parsed;
+                }
+            }
+        } catch (e) {}
+
+        // Deterministically generate 4 daily quests from today's date string
+        let seed = 0;
+        for (let i = 0; i < todayUtc.length; i++) {
+            seed = (seed * 31 + todayUtc.charCodeAt(i)) & 0xffffffff;
+        }
+
+        const seededRandom = () => {
+            seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+            return ((seed >>> 0) % 10000) / 10000;
+        };
+
+        const poolCopy = [...DAILY_QUEST_POOL];
+        for (let i = poolCopy.length - 1; i > 0; i--) {
+            const j = Math.floor(seededRandom() * (i + 1));
+            [poolCopy[i], poolCopy[j]] = [poolCopy[j], poolCopy[i]];
+        }
+
+        const selected = [];
+        let totalReward = 0;
+        for (const q of poolCopy) {
+            if (selected.length < 4 && (totalReward + q.reward <= 155 || selected.length < 3)) {
+                selected.push({
+                    id: q.id,
+                    title: q.title,
+                    desc: q.desc,
+                    target: q.target,
+                    type: q.type,
+                    blockIds: q.blockIds || null,
+                    itemIds: q.itemIds || null,
+                    mobTypes: q.mobTypes || null,
+                    reward: q.reward,
+                    progress: 0,
+                    completed: false,
+                    claimed: false
+                });
+                totalReward += q.reward;
+            }
+            if (selected.length >= 4) break;
+        }
+
+        const newState = { date: todayUtc, quests: selected };
+        try {
+            localStorage.setItem('swc_daily_quests_v1', JSON.stringify(newState));
+        } catch (e) {}
+        return newState;
+    }
+
+    export function saveDailyQuestsState(state) {
+        try {
+            localStorage.setItem('swc_daily_quests_v1', JSON.stringify(state));
+        } catch (e) {}
+    }
+
+    export function trackDailyQuestProgress(type, data = {}) {
+        const state = getDailyQuestsState();
+        if (!state || !Array.isArray(state.quests)) return;
+
+        let changed = false;
+        state.quests.forEach(q => {
+            if (q.completed) return;
+            if (q.type !== type) return;
+
+            let match = false;
+            if (type === 'mine_block') {
+                if (q.blockIds && q.blockIds.includes(data.blockId)) match = true;
+            } else if (type === 'craft_item' || type === 'smelt_item') {
+                if (q.itemIds && q.itemIds.includes(data.itemId)) match = true;
+            } else if (type === 'slay_monster') {
+                if (!q.mobTypes || q.mobTypes.includes(data.mobType)) match = true;
+            } else if (type === 'shear_sheep' || type === 'eat_food' || type === 'plant_sapling') {
+                match = true;
+            }
+
+            if (match) {
+                const addQty = data.count || 1;
+                q.progress = Math.min(q.target, q.progress + addQty);
+                if (q.progress >= q.target) {
+                    q.completed = true;
+                    showToast(`✦ Daily Challenge Complete: ${q.title}! ✦`);
+                    playSound('quest_complete');
+                }
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            saveDailyQuestsState(state);
+            renderDailyQuestsUI();
+        }
+    }
+
+    export function claimDailyQuestReward(questId) {
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        if (isGuest) {
+            showToast("✦ Sign in with a Webcraft account to claim Daily Challenge rewards! ✦");
+            return;
+        }
+
+        const state = getDailyQuestsState();
+        const quest = state.quests.find(q => q.id === questId);
+        if (!quest || !quest.completed || quest.claimed) return;
+
+        quest.claimed = true;
+        addPlayerEmeralds(quest.reward);
+        saveDailyQuestsState(state);
+        playSound('quest_complete');
+        showToast(`✦ Claimed +${quest.reward} Emeralds for "${quest.title}"! ✦`);
+        renderDailyQuestsUI();
+        updateEmeraldsUI();
+
+        // Check daily hustler achievement
+        const allClaimed = state.quests.every(q => q.claimed);
+        if (allClaimed) {
+            unlockAchievement('daily_hustler');
+            showToast("✦ Daily Hustler Unlocked! All daily quests finished! ✦");
+        }
+    }
+
+    export function getQuestCategorySvg(quest) {
+        if (!quest) return '';
+        const type = quest.type;
+        const qid = quest.id || '';
+
+        // If quest has explicit blockIds or itemIds with a loaded in-game texture, use it!
+        if (typeof textures !== 'undefined' && textures) {
+            if (quest.blockIds && quest.blockIds.length > 0 && textures[quest.blockIds[0]]?.src) {
+                return `<img src="${textures[quest.blockIds[0]].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            }
+            if (quest.itemIds && quest.itemIds.length > 0 && textures[quest.itemIds[0]]?.src) {
+                return `<img src="${textures[quest.itemIds[0]].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            }
+
+            // Categorical fallbacks using authentic in-game textures
+            if (type === 'mine_block') {
+                if (qid.includes('wood') || qid.includes('chop')) {
+                    if (textures[IDS?.DIAMOND_AXE]?.src) return `<img src="${textures[IDS.DIAMOND_AXE].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+                }
+                if (textures[IDS?.DIAMOND_PICKAXE]?.src) return `<img src="${textures[IDS.DIAMOND_PICKAXE].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'slay_monster') {
+                if (textures[IDS?.DIAMOND_SWORD]?.src) return `<img src="${textures[IDS.DIAMOND_SWORD].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'smelt_item') {
+                if (textures[IDS?.FURNACE]?.src) return `<img src="${textures[IDS.FURNACE].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'craft_item') {
+                if (textures[IDS?.CRAFTING_TABLE]?.src) return `<img src="${textures[IDS.CRAFTING_TABLE].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'eat_food') {
+                if (textures[IDS?.APPLE]?.src) return `<img src="${textures[IDS.APPLE].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'plant_sapling') {
+                if (textures[IDS?.SAPLING]?.src) return `<img src="${textures[IDS.SAPLING].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'shear_sheep') {
+                if (textures[IDS?.KINETIC_SHEARS]?.src) return `<img src="${textures[IDS.KINETIC_SHEARS].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+                if (textures[IDS?.WOOL]?.src) return `<img src="${textures[IDS.WOOL].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            }
+            if (textures[IDS?.EMERALD]?.src) {
+                return `<img src="${textures[IDS.EMERALD].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            }
+        }
+
+        // Default: Golden Star / Scroll SVG if textures not yet ready
+        return `<svg viewBox="0 0 16 16" width="26" height="26" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+            <rect x="3" y="2" width="10" height="12" fill="#fef3c7"/>
+            <rect x="4" y="3" width="8" height="10" fill="#fde68a"/>
+            <rect x="5" y="5" width="6" height="1" fill="#b45309"/>
+            <rect x="5" y="7" width="6" height="1" fill="#b45309"/>
+            <rect x="5" y="9" width="4" height="1" fill="#b45309"/>
+        </svg>`;
+    }
+
+    export function renderDailyQuestsUI() {
+        const container = document.getElementById('vault-quests-container');
+        if (!container) return;
+
+        const state = getDailyQuestsState();
+
+        // Update available unclaimed quest badge on tab
+        const unclaimedCount = state.quests.filter(q => q.completed && !q.claimed).length;
+        const badge = document.getElementById('vault-quests-available-badge');
+        if (badge) {
+            if (unclaimedCount > 0) {
+                badge.innerText = unclaimedCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        container.innerHTML = state.quests.map(q => {
+            const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
+            const isDone = q.completed;
+            const isClaimed = q.claimed;
+            const catSvg = getQuestCategorySvg(q);
+            const emeraldTextureSrc = (typeof textures !== 'undefined' && textures && textures[IDS?.EMERALD]?.src) || '';
+
+            let actionBtn = '';
+            if (isClaimed) {
+                actionBtn = `<span class="text-sm font-bold text-[#6fa386] font-['VT323'] bg-[#141d17] border border-[#1f402b] px-2.5 py-1">✓ CLAIMED</span>`;
+            } else if (isDone) {
+                actionBtn = `<button type="button" class="mc-btn !w-auto !px-3 !py-1 !text-xl !bg-[#10b981] hover:!bg-[#059669] !text-white flex items-center gap-1.5 shadow-md" onclick="claimDailyQuestReward('${q.id}')">${emeraldTextureSrc ? `<img src="${emeraldTextureSrc}" class="w-4 h-4 pixelated object-contain inline-block" alt="" />` : '✦'} CLAIM +${q.reward}</button>`;
+            } else {
+                actionBtn = `<span class="text-base font-bold text-[#4eed99] font-['VT323'] bg-[#101316] border border-[#2b3542] px-2.5 py-1 flex items-center gap-1.5">${emeraldTextureSrc ? `<img src="${emeraldTextureSrc}" class="w-4 h-4 pixelated object-contain inline-block" alt="" />` : ''} +${q.reward}</span>`;
+            }
+
+            return `
+                <div class="achievement-card flex items-center justify-between p-2.5 bg-[#171b20] border-2 border-[#333a41] shadow-sm ${isClaimed ? 'opacity-70' : ''}">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-11 h-11 bg-[#101316] border-2 border-[#2b3542] flex items-center justify-center p-1 flex-shrink-0 shadow-inner">
+                            ${catSvg}
+                        </div>
+                        <div class="flex-1 min-w-0 pr-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg sm:text-xl font-bold ${isDone ? 'text-[#4eed99]' : 'text-white'} font-['VT323'] leading-tight truncate">${q.title}</span>
+                            </div>
+                            <div class="text-sm text-[#95a5b5] font-['VT323'] leading-tight truncate">${q.desc}</div>
+                            <div class="flex items-center gap-2 mt-1.5">
+                                <div class="flex-1 bg-[#101316] h-3 border border-[#2b3542] relative overflow-hidden">
+                                    <div class="bg-[#10b981] h-full transition-all duration-300" style="width: ${pct}%;"></div>
+                                </div>
+                                <span class="text-xs text-[#cfd8dc] font-['VT323'] whitespace-nowrap font-mono min-w-[50px] text-right">${q.progress} / ${q.target}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        ${actionBtn}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // --- Astral Exchange (Altar) ---
+    export function renderAstralExchangeUI() {
+        const container = document.getElementById('vault-exchange-cards-container');
+        if (!container) return;
+
+        const emeralds = getPlayerEmeralds();
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+
+        const availEl = document.getElementById('vault-exchange-avail-emeralds');
+        if (availEl) availEl.innerText = emeralds.toLocaleString();
+
+        const tiers = [
+            {
+                cost: 20,
+                gain: 1,
+                title: 'Basic Infusion',
+                subtitle: 'Standard 20:1 conversion rate',
+                note: '20 ⬖ ➔ 1 ✦',
+                ribbon: null,
+                ribbonClass: '',
+                cardClass: 'tier-1'
+            },
+            {
+                cost: 50,
+                gain: 3,
+                title: 'Focused Infusion',
+                subtitle: '16.7 ⬖ per gem • Save 10 Emeralds',
+                note: '16% Planar Discount',
+                ribbon: '+0.5 BONUS',
+                ribbonClass: 'bg-[#7c3aed] text-purple-100 border border-[#a855f7]',
+                cardClass: 'tier-2'
+            },
+            {
+                cost: 100,
+                gain: 7,
+                title: 'Master Transmutation',
+                subtitle: '14.3 ⬖ per gem • 40 Emerald discount!',
+                note: 'Best Value Conversion',
+                ribbon: '★ BEST VALUE (+2.0 BONUS) ★',
+                ribbonClass: 'bg-gradient-to-r from-[#ec4899] to-[#9333ea] text-white border border-[#f472b6] shadow-md',
+                cardClass: 'tier-3'
+            }
+        ];
+
+        container.innerHTML = tiers.map(t => {
+            const canAfford = !isGuest && emeralds >= t.cost;
+            let btnHtml = '';
+            if (isGuest) {
+                btnHtml = `<button type="button" class="mc-btn exchange-tier-btn unaffordable !w-full !py-1 !text-lg !m-0" onclick="closeCurrencyHubModal(); openAuthProfileModal('credentials');">Sign In to Convert</button>`;
+            } else if (canAfford) {
+                btnHtml = `<button type="button" class="mc-btn exchange-tier-btn affordable !w-full !py-1 !text-xl !m-0" onclick="performAstralExchange(${t.cost}, ${t.gain})">Transmute +${t.gain} ✦</button>`;
+            } else {
+                const diff = t.cost - emeralds;
+                btnHtml = `<button type="button" class="mc-btn exchange-tier-btn unaffordable !w-full !py-1 !text-lg !m-0" disabled title="Need ${diff} more Emeralds">Need ${diff} more ⬖</button>`;
+            }
+
+            const ribbonHtml = t.ribbon ? `<div class="exchange-bonus-ribbon ${t.ribbonClass}">${t.ribbon}</div>` : '';
+
+            return `
+                <div class="exchange-card ${t.cardClass}">
+                    ${ribbonHtml}
+                    <div class="w-full">
+                        <div class="text-xl font-bold text-purple-200 font-['VT323'] leading-tight mb-0.5">${t.title}</div>
+                        <div class="text-xs text-purple-400 font-['VT323']">${t.note}</div>
+                    </div>
+
+                    <!-- Visual Conversion Row with Pixel Art -->
+                    <div class="my-3 py-2 px-3 w-full bg-[#0d0915] border border-[#3b1a64] flex items-center justify-around rounded-sm shadow-inner">
+                        <!-- Cost: Emerald -->
+                        <div class="flex flex-col items-center gap-0.5">
+                            <div class="p-1 bg-[#0b1710] border border-[#1b6b3e] rounded-sm flex items-center justify-center">
+                                ${getPixelEmeraldSvg(22)}
+                            </div>
+                            <span class="text-emerald-400 font-bold font-['VT323'] text-xl leading-none mt-1">${t.cost} ⬖</span>
+                        </div>
+
+                        <!-- Animated Portal Arrow -->
+                        <div class="exchange-portal-arrow px-1">➔</div>
+
+                        <!-- Gain: Astral Gem -->
+                        <div class="flex flex-col items-center gap-0.5">
+                            <div class="p-1 bg-[#190c2a] border border-[#6b21a8] rounded-sm flex items-center justify-center">
+                                ${getPixelAstralEmeraldSvg(22)}
+                            </div>
+                            <span class="text-purple-300 font-bold font-['VT323'] text-xl leading-none mt-1">+${t.gain} ✦</span>
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-purple-200/80 font-['VT323'] mb-3 leading-snug">${t.subtitle}</div>
+                    <div class="w-full mt-auto">${btnHtml}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    export function performAstralExchange(emeraldCost, astralGain) {
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        if (isGuest) {
+            showToast("✦ Registered account required for Astral Transmutation! ✦");
+            return;
+        }
+        const current = getPlayerEmeralds();
+        if (current < emeraldCost) {
+            showToast(`Not enough Emeralds! (${emeraldCost} needed, you have ${current})`);
+            return;
+        }
+        addPlayerEmeralds(-emeraldCost);
+        addPlayerAstralEmeralds(astralGain);
+        playSound('astral_exchange');
+        showToast(`✦ Transmuted ${emeraldCost} Emeralds into +${astralGain} Astral Emerald${astralGain > 1 ? 's' : ''}! ✦`);
+        unlockAchievement('astral_pioneer');
+        updateEmeraldsUI();
+        renderAstralExchangeUI();
+    }
+
+    // --- Live Daily UTC Reset Countdown Timer ---
+    let vaultCountdownTimer = null;
+
+    export function updateVaultResetCountdown() {
+        const el = document.getElementById('vault-reset-countdown');
+        if (!el) return;
+        const now = new Date();
+        const nextMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+        const diffMs = Math.max(0, nextMidnight.getTime() - now.getTime());
+        const totalSecs = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSecs / 3600).toString().padStart(2, '0');
+        const mins = Math.floor((totalSecs % 3600) / 60).toString().padStart(2, '0');
+        const secs = (totalSecs % 60).toString().padStart(2, '0');
+        el.innerText = `${hours}:${mins}:${secs}`;
+    }
+
+    // --- Currency Hub Modal Navigation ---
+    export function openCurrencyHubModal(tab = 'overview') {
+        const modal = document.getElementById('emerald-vault-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        switchVaultTab(tab);
+        updateEmeraldsUI();
+        renderMiningTrackerUI();
+        renderDailyQuestsUI();
+        renderAstralExchangeUI();
+
+        updateVaultResetCountdown();
+        if (vaultCountdownTimer) clearInterval(vaultCountdownTimer);
+        vaultCountdownTimer = setInterval(updateVaultResetCountdown, 1000);
+    }
+
+    export function closeCurrencyHubModal() {
+        const modal = document.getElementById('emerald-vault-modal');
+        if (modal) modal.classList.add('hidden');
+        if (vaultCountdownTimer) {
+            clearInterval(vaultCountdownTimer);
+            vaultCountdownTimer = null;
+        }
+    }
+
+    export function switchVaultTab(tab) {
+        ['overview', 'quests', 'exchange'].forEach(t => {
+            const btn = document.getElementById(`vault-tab-${t}-btn`);
+            const pane = document.getElementById(`vault-tab-${t}`);
+            if (btn) btn.classList.toggle('active', t === tab);
+            if (pane) pane.classList.toggle('hidden', t !== tab);
+        });
+        if (tab === 'quests') renderDailyQuestsUI();
+        if (tab === 'overview') renderMiningTrackerUI();
+        if (tab === 'exchange') renderAstralExchangeUI();
+    }
+
+    export function openAchievementsFromVault() {
+        closeCurrencyHubModal();
+        if (typeof openAchievements === 'function') openAchievements('sp');
+    }
+
+    // --- Kael The Atlas Explorer Dialogue System ---
+    let activeKaelEntity = null;
+    let currentKaelNode = 'start';
+
+    export const KAEL_DIALOGUES = {
+        start: {
+            speaker: "Kael, The Atlas Explorer",
+            subtitle: "Planar Cartographer & Rift Walker",
+            text: "Greetings, traveler of the mortal surface. I am Kael, The Atlas Explorer.\n\nThe world fabric fractures where the stars bleed... Have you felt the cosmic ripples across this realm?",
+            options: [
+                { label: "Who are you and what are you doing here?", next: "who_are_you" },
+                { label: "What are these planar rifts you speak of?", next: "lore_rifts" },
+                { label: "What are Astral Emeralds and how do I get them?", next: "astral_emeralds" },
+                { label: "Show me your wares. [Open Astral Market]", action: "open_market" },
+                { label: "Farewell, traveler.", action: "close" }
+            ]
+        },
+        who_are_you: {
+            speaker: "Kael, The Atlas Explorer",
+            subtitle: "Planar Cartographer & Rift Walker",
+            text: "I walk the corridors between dimensions, mapping forgotten realms and cosmic singularities.\n\nMy planar astrolabes require Astral Emeralds to pierce the void and chart the endless unknown.",
+            options: [
+                { label: "Tell me more about the rifts.", next: "lore_rifts" },
+                { label: "How do I acquire Astral Emeralds?", next: "astral_emeralds" },
+                { label: "Show me your wares. [Open Astral Market]", action: "open_market" },
+                { label: "Farewell.", action: "close" }
+            ]
+        },
+        lore_rifts: {
+            speaker: "Kael, The Atlas Explorer",
+            subtitle: "Planar Cartographer & Rift Walker",
+            text: "A rift is a fracture where dimensional planes collide. They open every few planetary cycles, anchoring near mortal campfires and shelters.\n\nWhen the tear collapses, I must step back through the void to other horizons.",
+            options: [
+                { label: "Who are you again?", next: "who_are_you" },
+                { label: "What wares have you brought from beyond?", action: "open_market" },
+                { label: "Safe travels through the rift.", action: "close" }
+            ]
+        },
+        astral_emeralds: {
+            speaker: "Kael, The Atlas Explorer",
+            subtitle: "Planar Cartographer & Rift Walker",
+            text: "Astral Emeralds are pure crystallized cosmic energy. You can transmute standard emeralds into astral gems at your Currency Hub Altar, or gather them from otherworldly encounters.\n\nI accept only Astral Emeralds for my catalog.",
+            options: [
+                { label: "Show me what you offer. [Open Astral Market]", action: "open_market" },
+                { label: "I will gather more gems. Farewell.", action: "close" }
+            ]
+        }
+    };
+
+    export function drawKaelPortrait() {
+        const canvas = document.getElementById('atlas-portrait-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, 64, 64);
+
+        // Nomadic cowl
+        ctx.fillStyle = '#1e0836';
+        ctx.fillRect(8, 4, 48, 56);
+        ctx.fillStyle = '#3b0764';
+        ctx.fillRect(12, 8, 40, 48);
+
+        // Shadowed interior
+        ctx.fillStyle = '#0f051d';
+        ctx.fillRect(18, 16, 28, 28);
+
+        // Glowing cyan eyes
+        ctx.fillStyle = '#06b6d4';
+        ctx.fillRect(22, 26, 6, 4);
+        ctx.fillRect(36, 26, 6, 4);
+        ctx.fillStyle = '#a5f3fc';
+        ctx.fillRect(24, 27, 2, 2);
+        ctx.fillRect(38, 27, 2, 2);
+
+        // Astral scarf
+        ctx.fillStyle = '#7c3aed';
+        ctx.fillRect(14, 40, 36, 16);
+        ctx.fillStyle = '#c084fc';
+        ctx.fillRect(16, 44, 32, 4);
+
+        // Shimmer sparkles
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(16, 12, 2, 2);
+        ctx.fillRect(46, 14, 2, 2);
+        ctx.fillRect(48, 48, 2, 2);
+    }
+
+    export function openAtlasDialogue(explorerEntity) {
+        activeKaelEntity = explorerEntity;
+        currentKaelNode = 'start';
+        const modal = document.getElementById('atlas-dialogue-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        drawKaelPortrait();
+        renderKaelNode('start');
+        unlockAchievement('first_contact');
+    }
+
+    export function closeAtlasDialogue() {
+        const modal = document.getElementById('atlas-dialogue-modal');
+        if (modal) modal.classList.add('hidden');
+        activeKaelEntity = null;
+    }
+
+    export function renderKaelNode(nodeKey) {
+        const node = KAEL_DIALOGUES[nodeKey] || KAEL_DIALOGUES.start;
+        currentKaelNode = nodeKey;
+
+        const textEl = document.getElementById('atlas-speech-text');
+        if (textEl) textEl.innerText = node.text;
+
+        const optsContainer = document.getElementById('atlas-dialogue-options');
+        if (optsContainer) {
+            optsContainer.innerHTML = node.options.map((opt, idx) => `
+                <button type="button" class="atlas-dialogue-option-btn" onclick="handleAtlasDialogueChoice(${idx})">
+                    ${opt.label}
+                </button>
+            `).join('');
+        }
+    }
+
+    export function handleAtlasDialogueChoice(choiceIndex) {
+        const node = KAEL_DIALOGUES[currentKaelNode] || KAEL_DIALOGUES.start;
+        const opt = node.options[choiceIndex];
+        if (!opt) return;
+
+        playSound('click');
+        if (opt.action === 'open_market') {
+            closeAtlasDialogue();
+            openAtlasMarket(activeKaelEntity);
+        } else if (opt.action === 'close') {
+            closeAtlasDialogue();
+        } else if (opt.next) {
+            renderKaelNode(opt.next);
+        }
+    }
+
+    // --- Atlas Market Controller ---
+    export function openAtlasMarket(explorerEntity) {
+        const modal = document.getElementById('atlas-market-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        updateEmeraldsUI();
+        renderAtlasMarketWares();
+    }
+
+    export function closeAtlasMarket() {
+        const modal = document.getElementById('atlas-market-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    export function renderAtlasMarketWares() {
+        const grid = document.getElementById('atlas-market-grid');
+        if (!grid) return;
+
+        const catalog = window.ATLAS_CATALOG || (typeof ATLAS_CATALOG !== 'undefined' ? ATLAS_CATALOG : []);
+        const balance = getPlayerAstralEmeralds();
+
+        grid.innerHTML = catalog.map(item => {
+            const stock = window.AtlasTradeManager ? window.AtlasTradeManager.getStock(item.id) : item.baseStock;
+            const canAfford = balance >= item.cost;
+            const inStock = stock > 0;
+            const isBuyable = canAfford && inStock;
+            const itemSrc = (typeof textures !== 'undefined' && textures && textures[item.itemId]?.src) || '';
+            const astralSrc = (typeof textures !== 'undefined' && textures && textures[IDS?.ASTRAL_EMERALD]?.src) || '';
+
+            let categoryColor = '#818cf8';
+            if (item.category === 'flora') categoryColor = '#34d399';
+            if (item.category === 'relic') categoryColor = '#f472b6';
+            if (item.category === 'gear') categoryColor = '#fbbf24';
+
+            return `
+                <div class="atlas-market-card flex flex-col justify-between p-3 bg-[#171b20] border-2 border-[#333a41] shadow-sm">
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="atlas-ware-badge" style="background: ${categoryColor}22; color: ${categoryColor}; border: 1px solid ${categoryColor}55;">
+                                ${item.category}
+                            </span>
+                            <span class="text-xs font-['VT323'] ${inStock ? 'text-cyan-300' : 'text-red-400'}">
+                                Stock: ${stock} / ${item.baseStock}
+                            </span>
+                        </div>
+                        <div class="flex items-start gap-2.5 mb-2">
+                            <div class="w-11 h-11 bg-[#101316] border-2 border-[#2b3542] flex items-center justify-center p-1 flex-shrink-0 shadow-inner">
+                                ${itemSrc ? `<img src="${itemSrc}" class="pixelated w-8 h-8 object-contain" alt="${item.name}" />` : ''}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate">${item.name}</div>
+                                <p class="text-xs text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-0.5">${item.description}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-[#2b3542] mt-auto">
+                        <div class="flex items-center gap-1.5">
+                            ${astralSrc ? `<img src="${astralSrc}" class="pixelated w-5 h-5 object-contain" alt="Astral" />` : ''}
+                            <span class="text-xl font-bold text-[#c084fc] font-['VT323'] leading-none">${item.cost}</span>
+                        </div>
+                        <button class="mc-btn !w-auto !px-3 !py-0.5 !text-lg !bg-[#6d28d9] hover:!bg-[#7c3aed] !text-white disabled:opacity-40 disabled:cursor-not-allowed" 
+                                onclick="window.AtlasTradeManager.buyItem('${item.id}')" ${isBuyable ? '' : 'disabled'}>
+                            ${!inStock ? 'Sold Out' : (canAfford ? 'Trade' : 'Need Astral')}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // --- Astral Infuser Station Controller ---
+    let infuserSlottedGear = null;
+    let infuserSlottedShard = null;
+
+    export const DIAMOND_TO_ASTRAL_MAP = {
+        [IDS.DIAMOND_SWORD]: IDS.ASTRAL_SWORD,
+        [IDS.DIAMOND_PICKAXE]: IDS.ASTRAL_PICKAXE,
+        [IDS.DIAMOND_AXE]: IDS.ASTRAL_AXE,
+        [IDS.DIAMOND_SHOVEL]: IDS.ASTRAL_SHOVEL,
+        [IDS.HELMET_DIAMOND]: IDS.ASTRAL_HELMET,
+        [IDS.CHESTPLATE_DIAMOND]: IDS.ASTRAL_CHESTPLATE,
+        [IDS.LEGGINGS_DIAMOND]: IDS.ASTRAL_LEGGINGS,
+        [IDS.BOOTS_DIAMOND]: IDS.ASTRAL_BOOTS
+    };
+
+    export function openAstralInfuser(x, y) {
+        infuserSlottedGear = null;
+        infuserSlottedShard = null;
+        const modal = document.getElementById('astral-infuser-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        renderInfuserUI();
+    }
+
+    export function closeAstralInfuser() {
+        const modal = document.getElementById('astral-infuser-modal');
+        if (modal) modal.classList.add('hidden');
+        infuserSlottedGear = null;
+        infuserSlottedShard = null;
+    }
+
+    export function renderInfuserUI() {
+        const gearSlot = document.getElementById('infuser-slot-gear');
+        const shardSlot = document.getElementById('infuser-slot-shard');
+        const outputSlot = document.getElementById('infuser-slot-output');
+        const statusText = document.getElementById('infuser-status-text');
+        const infuseBtn = document.getElementById('btn-astral-infuse');
+        const eligibleTray = document.getElementById('infuser-eligible-items');
+
+        if (gearSlot) {
+            if (infuserSlottedGear) {
+                const name = ID_NAMES[infuserSlottedGear.id] || 'Diamond Gear';
+                const gearSrc = (typeof textures !== 'undefined' && textures && textures[infuserSlottedGear.id]?.src) || '';
+                gearSlot.innerHTML = `
+                    <div class="flex flex-col items-center gap-0.5 p-1">
+                        ${gearSrc ? `<img src="${gearSrc}" class="w-8 h-8 pixelated object-contain" alt="${name}" />` : ''}
+                        <span class="text-[11px] text-cyan-300 font-['VT323'] text-center leading-none truncate max-w-[56px] font-bold">${name}</span>
+                    </div>
+                `;
+                gearSlot.classList.add('infuser-slot-active');
+            } else {
+                gearSlot.innerHTML = `<span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Empty Slot</span>`;
+                gearSlot.classList.remove('infuser-slot-active');
+            }
+        }
+
+        if (shardSlot) {
+            if (infuserSlottedShard) {
+                const shardSrc = (typeof textures !== 'undefined' && textures && textures[IDS.ASTRAL_SHARD]?.src) || '';
+                shardSlot.innerHTML = `
+                    <div class="flex flex-col items-center gap-0.5 p-1">
+                        ${shardSrc ? `<img src="${shardSrc}" class="w-8 h-8 pixelated object-contain" alt="Astral Shard" />` : ''}
+                        <span class="text-[11px] text-purple-300 font-['VT323'] text-center leading-none font-bold">Shard x1</span>
+                    </div>
+                `;
+                shardSlot.classList.add('infuser-slot-active');
+            } else {
+                shardSlot.innerHTML = `<span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Empty Slot</span>`;
+                shardSlot.classList.remove('infuser-slot-active');
+            }
+        }
+
+        let targetAstralId = null;
+        if (infuserSlottedGear && DIAMOND_TO_ASTRAL_MAP[infuserSlottedGear.id]) {
+            targetAstralId = DIAMOND_TO_ASTRAL_MAP[infuserSlottedGear.id];
+        }
+
+        if (outputSlot) {
+            if (targetAstralId && infuserSlottedShard) {
+                const outName = ID_NAMES[targetAstralId] || 'Astral Gear';
+                const outSrc = (typeof textures !== 'undefined' && textures && textures[targetAstralId]?.src) || '';
+                outputSlot.innerHTML = `
+                    <div class="flex flex-col items-center gap-0.5 p-1">
+                        ${outSrc ? `<img src="${outSrc}" class="w-8 h-8 pixelated object-contain" alt="${outName}" />` : ''}
+                        <span class="text-[11px] text-amber-300 font-['VT323'] text-center leading-none truncate max-w-[56px] font-bold">${outName}</span>
+                    </div>
+                `;
+            } else {
+                outputSlot.innerHTML = `<span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Output</span>`;
+            }
+        }
+
+        const ready = infuserSlottedGear && infuserSlottedShard && targetAstralId;
+        if (infuseBtn) infuseBtn.disabled = !ready;
+
+        if (statusText) {
+            if (ready) {
+                statusText.innerHTML = `<span class="text-emerald-400 font-bold">✦ Ready to forge ${ID_NAMES[targetAstralId]}! (750 Durability, Astral Glint) ✦</span>`;
+            } else if (!infuserSlottedGear) {
+                statusText.innerText = "Select Diamond equipment from your backpack below.";
+            } else if (!infuserSlottedShard) {
+                statusText.innerText = "Select 1 Astral Shard to initiate planar infusion.";
+            }
+        }
+
+        if (eligibleTray) {
+            const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+            const eligible = [];
+            liveInv.forEach((slot, idx) => {
+                if (!slot) return;
+                if (DIAMOND_TO_ASTRAL_MAP[slot.id]) {
+                    eligible.push({ slotIndex: idx, item: slot, type: 'gear' });
+                } else if (slot.id === IDS.ASTRAL_SHARD) {
+                    eligible.push({ slotIndex: idx, item: slot, type: 'shard' });
+                }
+            });
+
+            if (eligible.length === 0) {
+                eligibleTray.innerHTML = `<span class="text-xs text-[#8292a0] font-['VT323']">No Diamond gear or Astral Shards found in backpack.</span>`;
+            } else {
+                eligibleTray.innerHTML = eligible.map(el => {
+                    const isSelected = (el.type === 'gear' && infuserSlottedGear?.slotIndex === el.slotIndex) ||
+                                       (el.type === 'shard' && infuserSlottedShard?.slotIndex === el.slotIndex);
+                    const name = ID_NAMES[el.item.id] || 'Item';
+                    const elSrc = (typeof textures !== 'undefined' && textures && textures[el.item.id]?.src) || '';
+                    return `
+                        <button type="button" class="eligible-chip ${isSelected ? 'border-amber-400 bg-[#251f33]' : ''} flex items-center gap-1.5" 
+                                onclick="handleEligibleItemClick(${el.slotIndex}, '${el.type}')">
+                            ${elSrc ? `<img src="${elSrc}" class="w-5 h-5 pixelated object-contain flex-shrink-0" alt="" />` : ''}
+                            <span class="text-xs ${el.type === 'gear' ? 'text-cyan-300' : 'text-purple-300'} font-['VT323']">
+                                ${name} ${el.item.count > 1 ? `(${el.item.count})` : ''}
+                            </span>
+                        </button>
+                    `;
+                }).join('');
+            }
+        }
+    }
+
+    export function handleEligibleItemClick(slotIndex, type) {
+        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+        const item = liveInv[slotIndex];
+        if (!item) return;
+
+        if (type === 'gear') {
+            if (DIAMOND_TO_ASTRAL_MAP[item.id]) {
+                infuserSlottedGear = { slotIndex, id: item.id, count: item.count, durability: item.durability };
+                playSound('click');
+            }
+        } else if (type === 'shard') {
+            if (item.id === IDS.ASTRAL_SHARD) {
+                infuserSlottedShard = { slotIndex, id: item.id, count: item.count };
+                playSound('click');
+            }
+        }
+        renderInfuserUI();
+    }
+
+    export function handleInfuserSlotClick(slotType) {
+        if (slotType === 'gear' && infuserSlottedGear) {
+            infuserSlottedGear = null;
+            playSound('click');
+            renderInfuserUI();
+        } else if (slotType === 'shard' && infuserSlottedShard) {
+            infuserSlottedShard = null;
+            playSound('click');
+            renderInfuserUI();
+        }
+    }
+
+    export function performAstralInfusion() {
+        if (!infuserSlottedGear || !infuserSlottedShard) return;
+        const targetAstralId = DIAMOND_TO_ASTRAL_MAP[infuserSlottedGear.id];
+        if (!targetAstralId) return;
+
+        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+
+        const gearSlot = liveInv[infuserSlottedGear.slotIndex];
+        const shardSlot = liveInv[infuserSlottedShard.slotIndex];
+
+        if (!gearSlot || gearSlot.id !== infuserSlottedGear.id) {
+            showToast("Diamond gear was moved or is missing!");
+            infuserSlottedGear = null;
+            renderInfuserUI();
+            return;
+        }
+
+        if (!shardSlot || shardSlot.id !== IDS.ASTRAL_SHARD) {
+            showToast("Astral Shard was moved or is missing!");
+            infuserSlottedShard = null;
+            renderInfuserUI();
+            return;
+        }
+
+        gearSlot.count--;
+        if (gearSlot.count <= 0) liveInv[infuserSlottedGear.slotIndex] = null;
+
+        shardSlot.count--;
+        if (shardSlot.count <= 0) liveInv[infuserSlottedShard.slotIndex] = null;
+
+        giveItem(targetAstralId, 1);
+
+        playSound('infuser_forge');
+        showToast(`✦ Successfully infused ${ID_NAMES[targetAstralId]}! (750 Durability) ✦`);
+        unlockAchievement('void_technician');
+
+        infuserSlottedGear = null;
+        infuserSlottedShard = null;
+        renderInfuserUI();
+        if (typeof updateUI === 'function') updateUI();
     }
 
     export function initEmeraldSystem() {
@@ -1178,7 +2210,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             guestBtn.type = 'button';
             guestBtn.title = 'Guests cannot get skins from Skins Shop. Create an account or log in!';
             guestBtn.setAttribute('aria-label', 'Create account or log in to get skin');
-            guestBtn.innerHTML = `🔒 Login`;
+            guestBtn.innerHTML = `${getPixelPadlockSvg(12)} Login`;
             guestBtn.onclick = (e) => {
                 e.stopPropagation();
                 buyAndEquipGallerySkin(skin);
@@ -2229,7 +3261,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         { output: { id: IDS.HELMET_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 5 }], reqTable: true, category: 'armor' },
         { output: { id: IDS.CHESTPLATE_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 8 }], reqTable: true, category: 'armor' },
         { output: { id: IDS.LEGGINGS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 7 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.BOOTS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 4 }], reqTable: true, category: 'armor' }
+        { output: { id: IDS.BOOTS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 4 }], reqTable: true, category: 'armor' },
+        { output: { id: IDS.ASTRAL_INFUSER, count: 1 }, inputs: [{ id: IDS.OBSIDIAN, count: 4 }, { id: IDS.DIAMOND, count: 2 }, { id: IDS.CRAFTING_TABLE, count: 1 }], reqTable: true, category: 'utility' },
+        { output: { id: IDS.SUNBURST_MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
+        { output: { id: IDS.SUNBURST_MELON, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' }
     ];
 
     export const ACHIEVEMENTS = [
@@ -2543,6 +3578,78 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             iconItem: IDS.FEATHER,
             badge: 'Master',
             difficulty: 'Master'
+        },
+        {
+            id: 'first_contact',
+            title: 'First Contact',
+            description: 'Speak with Kael, The Atlas Explorer upon his planar rift arrival.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 10
+        },
+        {
+            id: 'astral_pioneer',
+            title: 'Astral Pioneer',
+            description: 'Acquire or transmute your very first Astral Emerald.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'gem_prospector',
+            title: 'Gem Prospector',
+            description: 'Discover and mine a natural Emerald Ore vein in the mountains or cavern depths.',
+            iconItem: IDS.EMERALD_ORE,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 25
+        },
+        {
+            id: 'void_technician',
+            title: 'Void Technician',
+            description: 'Infuse Diamond equipment with an Astral Shard at the Astral Infuser station.',
+            iconItem: IDS.ASTRAL_PICKAXE,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 35
+        },
+        {
+            id: 'daily_hustler',
+            title: 'Planar Hustler',
+            description: 'Complete and claim all Daily Challenges in a single day.',
+            iconItem: IDS.CHEST,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 40
+        },
+        {
+            id: 'jungle_explorer',
+            title: 'Deep Jungle Explorer',
+            description: 'Traverse the wild Jungle biome and harvest lush jungle wood or melons.',
+            iconItem: IDS.JUNGLE_WOOD,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'bamboo_forester',
+            title: 'Bamboo Forester',
+            description: 'Plant and cultivate a towering bamboo thicket.',
+            iconItem: IDS.BAMBOO,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'bird_whisperer',
+            title: 'Bird Whisperer',
+            description: 'Tame a wild jungle parrot with seeds to perch on your shoulder.',
+            iconItem: IDS.SEEDS,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 25
         }
     ];
 
@@ -2886,7 +3993,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 statusRow.innerHTML = `<span class="text-green-400 font-bold">✓ Unlocked:</span> <span class="text-gray-300">${formatAchievementDate(unlockedAt)}</span> ${isClaimed ? `<span class="text-[#4eed99] font-bold ml-1 font-['VT323'] text-sm inline-flex items-center gap-0.5">[+${rewardAmt} ${getPixelEmeraldSvg(12)} Claimed]</span>` : ''}`;
             } else {
                 const guestNotice = isGuest ? ` <span class="text-amber-400 font-bold ml-1">(Guest - Log in to earn)</span>` : '';
-                statusRow.innerHTML = `<span class="text-gray-500 font-bold">🔒 Locked</span> <span class="text-gray-600">(${currentAchievementsTab === 'mp' ? 'Multiplayer' : 'Singleplayer'})</span>${guestNotice}`;
+                statusRow.innerHTML = `<span class="text-gray-500 font-bold inline-flex items-center gap-1">${getPixelPadlockSvg(12)} Locked</span> <span class="text-gray-600">(${currentAchievementsTab === 'mp' ? 'Multiplayer' : 'Singleplayer'})</span>${guestNotice}`;
             }
             info.appendChild(statusRow);
 
@@ -3236,6 +4343,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             } else {
                 giveItem(recipe.output.id, recipe.output.count);
             }
+            trackDailyQuestProgress('craft_item', { itemId: recipe.output.id, count: recipe.output.count });
             craftedItemsCount = (craftedItemsCount || 0) + 1;
             if (craftedItemsCount >= 20) unlockAchievement('master_crafter');
 
@@ -3274,6 +4382,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         keepInventoryLabel.style.opacity = diffKey === 'hardcore' ? '0.55' : '1';
         if (diffKey === 'hardcore') keepInventoryInput.checked = false;
         updateNewWorldAchievementWarning();
+    }
+
+    export function selectWorldSize(size) {
+        selectedWorldSizeChoice = (size === 'big') ? 'big' : 'small';
+        if (typeof window !== 'undefined') {
+            window.selectedWorldSizeChoice = selectedWorldSizeChoice;
+        }
+        document.querySelectorAll('#world-size-selector button').forEach(btn => {
+            if (btn.dataset.size === selectedWorldSizeChoice) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
     }
 
     export function openWhatsNewOnce() {
@@ -4446,6 +5565,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         compileSkinCanvas();
         if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
         updateMainMenuProfileBadge();
+        updateEmeraldsUI();
+        syncCurrencyTextureImages();
         checkProfileOnStartup();
         openWhatsNewOnce();
     }
@@ -4696,6 +5817,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function confirmCreateWorld() {
         let name = document.getElementById('new-world-name').value.trim() || "New World";
+
+        let chosenSize = 'small';
+        const activeSizeBtn = document.querySelector('#world-size-selector button.active');
+        if (activeSizeBtn && activeSizeBtn.dataset && activeSizeBtn.dataset.size) {
+            chosenSize = activeSizeBtn.dataset.size === 'big' ? 'big' : 'small';
+        } else if (typeof window !== 'undefined' && window.selectedWorldSizeChoice) {
+            chosenSize = window.selectedWorldSizeChoice === 'big' ? 'big' : 'small';
+        } else if (selectedWorldSizeChoice) {
+            chosenSize = selectedWorldSizeChoice === 'big' ? 'big' : 'small';
+        }
+        selectedWorldSizeChoice = chosenSize;
+        if (typeof window !== 'undefined') window.selectedWorldSizeChoice = chosenSize;
+
         closeNewWorldModal();
         
         isMultiplayer = false;
@@ -4704,7 +5838,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         currentDifficulty = selectedDiffChoice;
         if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(currentDifficulty);
         if (typeof window !== 'undefined') window.currentDifficulty = currentDifficulty;
-        setWorldDimensions(selectedWorldSizeChoice);
+        setWorldDimensions(chosenSize);
         let starterItems = document.getElementById('new-world-starter-items').checked;
         keepInventory = currentDifficulty !== 'hardcore' && document.getElementById('new-world-keep-inventory').checked;
         currentWorldAchievementsEnabled = (!starterItems && !keepInventory);
@@ -9280,6 +10414,9 @@ try { if (typeof saveSkin !== "undefined") window.saveSkin = saveSkin; } catch(e
 try { if (typeof saveWorldsList !== "undefined") window.saveWorldsList = saveWorldsList; } catch(e) {}
 try { if (typeof scrollSensitivity !== "undefined") window.scrollSensitivity = scrollSensitivity; } catch(e) {}
 try { if (typeof selectDifficulty !== "undefined") window.selectDifficulty = selectDifficulty; } catch(e) {}
+try { if (typeof selectWorldSize !== "undefined") window.selectWorldSize = selectWorldSize; } catch(e) {}
+try { if (typeof selectedWorldSizeChoice !== "undefined") window.selectedWorldSizeChoice = selectedWorldSizeChoice; } catch(e) {}
+try { if (typeof currentWorldSize !== "undefined") window.currentWorldSize = currentWorldSize; } catch(e) {}
 try { if (typeof selectSkin !== "undefined") window.selectSkin = selectSkin; } catch(e) {}
 try { if (typeof selectSkinColor !== "undefined") window.selectSkinColor = selectSkinColor; } catch(e) {}
 try { if (typeof selectSkinTool !== "undefined") window.selectSkinTool = selectSkinTool; } catch(e) {}
@@ -9510,4 +10647,47 @@ try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropG
             }
         }, true);
     }
+
+// Atlas Merchant & Currency Hub Window Exports
+try { if (typeof getPixelEmeraldSvg !== "undefined") window.getPixelEmeraldSvg = getPixelEmeraldSvg; } catch(e) {}
+try { if (typeof getPixelAstralEmeraldSvg !== "undefined") window.getPixelAstralEmeraldSvg = getPixelAstralEmeraldSvg; } catch(e) {}
+try { if (typeof syncCurrencyTextureImages !== "undefined") window.syncCurrencyTextureImages = syncCurrencyTextureImages; } catch(e) {}
+try { if (typeof getPlayerAstralEmeralds !== "undefined") window.getPlayerAstralEmeralds = getPlayerAstralEmeralds; } catch(e) {}
+try { if (typeof setPlayerAstralEmeralds !== "undefined") window.setPlayerAstralEmeralds = setPlayerAstralEmeralds; } catch(e) {}
+try { if (typeof addPlayerAstralEmeralds !== "undefined") window.addPlayerAstralEmeralds = addPlayerAstralEmeralds; } catch(e) {}
+try { if (typeof getDailyMinedEmeralds !== "undefined") window.getDailyMinedEmeralds = getDailyMinedEmeralds; } catch(e) {}
+try { if (typeof recordDailyMinedEmerald !== "undefined") window.recordDailyMinedEmerald = recordDailyMinedEmerald; } catch(e) {}
+try { if (typeof renderMiningTrackerUI !== "undefined") window.renderMiningTrackerUI = renderMiningTrackerUI; } catch(e) {}
+try { if (typeof DAILY_QUEST_POOL !== "undefined") window.DAILY_QUEST_POOL = DAILY_QUEST_POOL; } catch(e) {}
+try { if (typeof getDailyQuestsState !== "undefined") window.getDailyQuestsState = getDailyQuestsState; } catch(e) {}
+try { if (typeof saveDailyQuestsState !== "undefined") window.saveDailyQuestsState = saveDailyQuestsState; } catch(e) {}
+try { if (typeof trackDailyQuestProgress !== "undefined") window.trackDailyQuestProgress = trackDailyQuestProgress; } catch(e) {}
+try { if (typeof claimDailyQuestReward !== "undefined") window.claimDailyQuestReward = claimDailyQuestReward; } catch(e) {}
+try { if (typeof renderDailyQuestsUI !== "undefined") window.renderDailyQuestsUI = renderDailyQuestsUI; } catch(e) {}
+try { if (typeof performAstralExchange !== "undefined") window.performAstralExchange = performAstralExchange; } catch(e) {}
+try { if (typeof openCurrencyHubModal !== "undefined") window.openCurrencyHubModal = openCurrencyHubModal; } catch(e) {}
+try { if (typeof closeCurrencyHubModal !== "undefined") window.closeCurrencyHubModal = closeCurrencyHubModal; } catch(e) {}
+try { if (typeof switchVaultTab !== "undefined") window.switchVaultTab = switchVaultTab; } catch(e) {}
+try { if (typeof openAchievementsFromVault !== "undefined") window.openAchievementsFromVault = openAchievementsFromVault; } catch(e) {}
+try { if (typeof KAEL_DIALOGUES !== "undefined") window.KAEL_DIALOGUES = KAEL_DIALOGUES; } catch(e) {}
+try { if (typeof drawKaelPortrait !== "undefined") window.drawKaelPortrait = drawKaelPortrait; } catch(e) {}
+try { if (typeof openAtlasDialogue !== "undefined") window.openAtlasDialogue = openAtlasDialogue; } catch(e) {}
+try { if (typeof closeAtlasDialogue !== "undefined") window.closeAtlasDialogue = closeAtlasDialogue; } catch(e) {}
+try { if (typeof renderKaelNode !== "undefined") window.renderKaelNode = renderKaelNode; } catch(e) {}
+try { if (typeof handleAtlasDialogueChoice !== "undefined") window.handleAtlasDialogueChoice = handleAtlasDialogueChoice; } catch(e) {}
+try { if (typeof openAtlasMarket !== "undefined") window.openAtlasMarket = openAtlasMarket; } catch(e) {}
+try { if (typeof closeAtlasMarket !== "undefined") window.closeAtlasMarket = closeAtlasMarket; } catch(e) {}
+try { if (typeof renderAtlasMarketWares !== "undefined") window.renderAtlasMarketWares = renderAtlasMarketWares; } catch(e) {}
+try { if (typeof DIAMOND_TO_ASTRAL_MAP !== "undefined") window.DIAMOND_TO_ASTRAL_MAP = DIAMOND_TO_ASTRAL_MAP; } catch(e) {}
+try { if (typeof openAstralInfuser !== "undefined") window.openAstralInfuser = openAstralInfuser; } catch(e) {}
+try { if (typeof closeAstralInfuser !== "undefined") window.closeAstralInfuser = closeAstralInfuser; } catch(e) {}
+try { if (typeof renderInfuserUI !== "undefined") window.renderInfuserUI = renderInfuserUI; } catch(e) {}
+try { if (typeof handleEligibleItemClick !== "undefined") window.handleEligibleItemClick = handleEligibleItemClick; } catch(e) {}
+try { if (typeof handleInfuserSlotClick !== "undefined") window.handleInfuserSlotClick = handleInfuserSlotClick; } catch(e) {}
+try { if (typeof performAstralInfusion !== "undefined") window.performAstralInfusion = performAstralInfusion; } catch(e) {}
+try { if (typeof getQuestCategorySvg !== "undefined") window.getQuestCategorySvg = getQuestCategorySvg; } catch(e) {}
+try { if (typeof renderAstralExchangeUI !== "undefined") window.renderAstralExchangeUI = renderAstralExchangeUI; } catch(e) {}
+try { if (typeof updateVaultResetCountdown !== "undefined") window.updateVaultResetCountdown = updateVaultResetCountdown; } catch(e) {}
+try { if (typeof getPixelPadlockSvg !== "undefined") window.getPixelPadlockSvg = getPixelPadlockSvg; } catch(e) {}
+
 

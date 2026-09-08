@@ -65,11 +65,12 @@ export function ensureToolDurability(item) { if (typeof window !== 'undefined' &
 export function isTool(id) {
     if (typeof window !== 'undefined' && typeof window.isTool === 'function' && window.isTool !== isTool) return window.isTool(id);
     return [
-        IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE,
-        IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD,
-        IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE,
-        IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL,
-        IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE
+        IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE, IDS.ASTRAL_PICKAXE,
+        IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD, IDS.ASTRAL_SWORD,
+        IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE, IDS.ASTRAL_AXE,
+        IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL, IDS.ASTRAL_SHOVEL,
+        IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE,
+        IDS.KINETIC_SHEARS
     ].includes(id);
 }
 export function updateArmorUI() { if (typeof window !== 'undefined' && typeof window.updateArmorUI === 'function' && window.updateArmorUI !== updateArmorUI) return window.updateArmorUI(); }
@@ -188,7 +189,7 @@ export let WORLD_HEIGHT = 256;
 export let currentWorldSize = 'small';
 
 export function setWorldDimensions(size, explicitWidth, explicitHeight) {
-    currentWorldSize = size === 'big' ? 'big' : 'small';
+    currentWorldSize = (size === 'big' || (explicitWidth && explicitWidth > 700)) ? 'big' : 'small';
     if (explicitWidth && explicitHeight) {
         WORLD_WIDTH = explicitWidth;
         WORLD_HEIGHT = explicitHeight;
@@ -203,6 +204,7 @@ export function setWorldDimensions(size, explicitWidth, explicitHeight) {
         window.currentWorldSize = currentWorldSize;
         window.WORLD_WIDTH = WORLD_WIDTH;
         window.WORLD_HEIGHT = WORLD_HEIGHT;
+        if (typeof window.isOffscreenMapDirty !== 'undefined') window.isOffscreenMapDirty = true;
     }
 }
 
@@ -624,6 +626,7 @@ export function getMaxAnimals() {
         JUNGLE_WOOD: 42, JUNGLE_LEAVES: 43, JUNGLE_PLANKS: 44, JUNGLE_SAPLING: 45,
         JUNGLE_DOOR: 46, JUNGLE_DOOR_TOP: 47, JUNGLE_DOOR_OPEN: 48, JUNGLE_DOOR_OPEN_TOP: 49,
         VINES: 50, MELON: 51, FERN: 52, BAMBOO: 53, MELON_STEM: 54,
+        EMERALD_ORE: 55, PRISM_GLASS: 56, VOID_STONE_BRICK: 57, ASTRAL_INFUSER: 58, VOID_BERRY_BUSH: 59, SUNBURST_MELON: 60,
         STICK: 100, WOOD_PICKAXE: 101, STONE_PICKAXE: 102, 
         WOOD_SWORD: 103, STONE_SWORD: 104, WOOD_AXE: 105, 
         COAL: 106, GOLD_INGOT: 107,
@@ -642,7 +645,15 @@ export function getMaxAnimals() {
         WHEAT: 157, BREAD: 158,
         RAW_BEEF: 159, COOKED_BEEF: 160, LEATHER: 161,
         EMPTY_VINYL: 162, VINYL_DISC: 162,
-        MELON_SLICE: 163, MELON_SEEDS: 164
+        MELON_SLICE: 163, MELON_SEEDS: 164,
+        ASTRAL_EMERALD: 165, ASTRAL_SHARD: 166,
+        VOID_BERRY_SPORES: 167, VOID_BERRY: 168,
+        SUNBURST_MELON_SEEDS: 169, SUNBURST_MELON_SLICE: 170,
+        MUSIC_DISC_SYNTHWAVE: 171, MUSIC_DISC_AMBIENT: 172,
+        KINETIC_SHEARS: 173, STRIDER_BOOTS: 174,
+        ASTRAL_SWORD: 175, ASTRAL_PICKAXE: 176, ASTRAL_AXE: 177, ASTRAL_SHOVEL: 178,
+        ASTRAL_HELMET: 179, ASTRAL_CHESTPLATE: 180, ASTRAL_LEGGINGS: 181, ASTRAL_BOOTS: 182,
+        EMERALD: 183
     };
 
 
@@ -696,6 +707,12 @@ export function getMaxAnimals() {
     MINIMAP_COLOR_32[IDS.FERN] = 0xFF3C8E38;
     MINIMAP_COLOR_32[IDS.BAMBOO] = 0xFF47A043;
     MINIMAP_COLOR_32[IDS.MELON_STEM] = 0xFF42B37C;
+    MINIMAP_COLOR_32[IDS.EMERALD_ORE] = 0xFF50D050;
+    MINIMAP_COLOR_32[IDS.PRISM_GLASS] = 0xFFF0E0D0;
+    MINIMAP_COLOR_32[IDS.VOID_STONE_BRICK] = 0xFF4A1838;
+    MINIMAP_COLOR_32[IDS.ASTRAL_INFUSER] = 0xFF8A3070;
+    MINIMAP_COLOR_32[IDS.VOID_BERRY_BUSH] = 0xFFB04090;
+    MINIMAP_COLOR_32[IDS.SUNBURST_MELON] = 0xFF20A0F0;
 
     export const HARDNESS = {
         [IDS.DIRT]: 20, [IDS.PLOWED_DIRT]: 20, [IDS.GRASS]: 25, [IDS.STONE]: 150, [IDS.COBBLESTONE]: 150,
@@ -712,7 +729,9 @@ export function getMaxAnimals() {
         [IDS.WATER]: 1, [IDS.LAVA]: 1,
         [IDS.JUNGLE_WOOD]: 60, [IDS.JUNGLE_LEAVES]: 5, [IDS.JUNGLE_PLANKS]: 60, [IDS.JUNGLE_SAPLING]: 5,
         [IDS.JUNGLE_DOOR]: 45, [IDS.JUNGLE_DOOR_TOP]: 45, [IDS.JUNGLE_DOOR_OPEN]: 45, [IDS.JUNGLE_DOOR_OPEN_TOP]: 45,
-        [IDS.VINES]: 5, [IDS.MELON]: 30, [IDS.FERN]: 1, [IDS.BAMBOO]: 15, [IDS.MELON_STEM]: 1
+        [IDS.VINES]: 5, [IDS.MELON]: 30, [IDS.FERN]: 1, [IDS.BAMBOO]: 15, [IDS.MELON_STEM]: 1,
+        [IDS.EMERALD_ORE]: 240, [IDS.PRISM_GLASS]: 15, [IDS.VOID_STONE_BRICK]: 200,
+        [IDS.ASTRAL_INFUSER]: 250, [IDS.VOID_BERRY_BUSH]: 10, [IDS.SUNBURST_MELON]: 30
     };
 
     export const ID_NAMES = Object.fromEntries(Object.entries(IDS).map(([k, v]) => [v, k.replace(/_/g, ' ')]));
@@ -780,6 +799,31 @@ export function getMaxAnimals() {
     ID_NAMES[IDS.CHESTPLATE_DIAMOND] = 'Diamond Chestplate';
     ID_NAMES[IDS.LEGGINGS_DIAMOND] = 'Diamond Leggings';
     ID_NAMES[IDS.BOOTS_DIAMOND] = 'Diamond Boots';
+    ID_NAMES[IDS.EMERALD_ORE] = 'Emerald Ore';
+    ID_NAMES[IDS.PRISM_GLASS] = 'Prism Glass';
+    ID_NAMES[IDS.VOID_STONE_BRICK] = 'Void Stone Brick';
+    ID_NAMES[IDS.ASTRAL_INFUSER] = 'Astral Infuser';
+    ID_NAMES[IDS.VOID_BERRY_BUSH] = 'Void Berry Bush';
+    ID_NAMES[IDS.SUNBURST_MELON] = 'Sunburst Melon';
+    ID_NAMES[IDS.ASTRAL_EMERALD] = 'Astral Emerald';
+    ID_NAMES[IDS.ASTRAL_SHARD] = 'Astral Shard';
+    ID_NAMES[IDS.VOID_BERRY_SPORES] = 'Void Berry Spores';
+    ID_NAMES[IDS.VOID_BERRY] = 'Void Berry';
+    ID_NAMES[IDS.SUNBURST_MELON_SEEDS] = 'Sunburst Melon Seeds';
+    ID_NAMES[IDS.SUNBURST_MELON_SLICE] = 'Sunburst Melon Slice';
+    ID_NAMES[IDS.MUSIC_DISC_SYNTHWAVE] = 'Audio Relic - Neon Horizon';
+    ID_NAMES[IDS.MUSIC_DISC_AMBIENT] = 'Audio Relic - Echoes of the Void';
+    ID_NAMES[IDS.KINETIC_SHEARS] = 'Kinetic Shears';
+    ID_NAMES[IDS.STRIDER_BOOTS] = 'Strider Boots';
+    ID_NAMES[IDS.ASTRAL_SWORD] = 'Astral Sword';
+    ID_NAMES[IDS.ASTRAL_PICKAXE] = 'Astral Pickaxe';
+    ID_NAMES[IDS.ASTRAL_AXE] = 'Astral Axe';
+    ID_NAMES[IDS.ASTRAL_SHOVEL] = 'Astral Shovel';
+    ID_NAMES[IDS.ASTRAL_HELMET] = 'Astral Helmet';
+    ID_NAMES[IDS.ASTRAL_CHESTPLATE] = 'Astral Chestplate';
+    ID_NAMES[IDS.ASTRAL_LEGGINGS] = 'Astral Leggings';
+    ID_NAMES[IDS.ASTRAL_BOOTS] = 'Astral Boots';
+    ID_NAMES[IDS.EMERALD] = 'Emerald';
 
     export const TOOL_DURABILITY = {
         [IDS.WOOD_PICKAXE]: 60, [IDS.WOOD_AXE]: 60, [IDS.WOOD_SWORD]: 60,
@@ -791,26 +835,33 @@ export function getMaxAnimals() {
         [IDS.GOLD_PICKAXE]: 180, [IDS.GOLD_AXE]: 180, [IDS.GOLD_SWORD]: 180,
         [IDS.GOLD_SHOVEL]: 180, [IDS.GOLD_HOE]: 180,
         [IDS.DIAMOND_PICKAXE]: 480, [IDS.DIAMOND_AXE]: 480, [IDS.DIAMOND_SWORD]: 480,
-        [IDS.DIAMOND_SHOVEL]: 480, [IDS.DIAMOND_HOE]: 480
+        [IDS.DIAMOND_SHOVEL]: 480, [IDS.DIAMOND_HOE]: 480,
+        [IDS.ASTRAL_PICKAXE]: 750, [IDS.ASTRAL_AXE]: 750, [IDS.ASTRAL_SWORD]: 750,
+        [IDS.ASTRAL_SHOVEL]: 750, [IDS.KINETIC_SHEARS]: 500
     };
 
     export const ARMOR_DURABILITY = {
         [IDS.HELMET_IRON]: 165, [IDS.CHESTPLATE_IRON]: 240, [IDS.LEGGINGS_IRON]: 225, [IDS.BOOTS_IRON]: 195,
         [IDS.HELMET_GOLD]: 77, [IDS.CHESTPLATE_GOLD]: 112, [IDS.LEGGINGS_GOLD]: 105, [IDS.BOOTS_GOLD]: 91,
-        [IDS.HELMET_DIAMOND]: 363, [IDS.CHESTPLATE_DIAMOND]: 528, [IDS.LEGGINGS_DIAMOND]: 495, [IDS.BOOTS_DIAMOND]: 429
+        [IDS.HELMET_DIAMOND]: 363, [IDS.CHESTPLATE_DIAMOND]: 528, [IDS.LEGGINGS_DIAMOND]: 495, [IDS.BOOTS_DIAMOND]: 429,
+        [IDS.ASTRAL_HELMET]: 520, [IDS.ASTRAL_CHESTPLATE]: 650, [IDS.ASTRAL_LEGGINGS]: 600, [IDS.ASTRAL_BOOTS]: 540,
+        [IDS.STRIDER_BOOTS]: 500
     };
 
     export const ARMOR_DEFENSE = {
         [IDS.HELMET_IRON]: 2, [IDS.CHESTPLATE_IRON]: 6, [IDS.LEGGINGS_IRON]: 5, [IDS.BOOTS_IRON]: 2,
         [IDS.HELMET_GOLD]: 2, [IDS.CHESTPLATE_GOLD]: 5, [IDS.LEGGINGS_GOLD]: 3, [IDS.BOOTS_GOLD]: 1,
-        [IDS.HELMET_DIAMOND]: 3, [IDS.CHESTPLATE_DIAMOND]: 8, [IDS.LEGGINGS_DIAMOND]: 6, [IDS.BOOTS_DIAMOND]: 3
+        [IDS.HELMET_DIAMOND]: 3, [IDS.CHESTPLATE_DIAMOND]: 8, [IDS.LEGGINGS_DIAMOND]: 6, [IDS.BOOTS_DIAMOND]: 3,
+        [IDS.ASTRAL_HELMET]: 4, [IDS.ASTRAL_CHESTPLATE]: 9, [IDS.ASTRAL_LEGGINGS]: 7, [IDS.ASTRAL_BOOTS]: 4,
+        [IDS.STRIDER_BOOTS]: 2
     };
 
     export const ARMOR_SLOT_TYPE = {
-        [IDS.HELMET_IRON]: 0, [IDS.HELMET_GOLD]: 0, [IDS.HELMET_DIAMOND]: 0,
-        [IDS.CHESTPLATE_IRON]: 1, [IDS.CHESTPLATE_GOLD]: 1, [IDS.CHESTPLATE_DIAMOND]: 1,
-        [IDS.LEGGINGS_IRON]: 2, [IDS.LEGGINGS_GOLD]: 2, [IDS.LEGGINGS_DIAMOND]: 2,
-        [IDS.BOOTS_IRON]: 3, [IDS.BOOTS_GOLD]: 3, [IDS.BOOTS_DIAMOND]: 3
+        [IDS.HELMET_IRON]: 0, [IDS.HELMET_GOLD]: 0, [IDS.HELMET_DIAMOND]: 0, [IDS.ASTRAL_HELMET]: 0,
+        [IDS.CHESTPLATE_IRON]: 1, [IDS.CHESTPLATE_GOLD]: 1, [IDS.CHESTPLATE_DIAMOND]: 1, [IDS.ASTRAL_CHESTPLATE]: 1,
+        [IDS.LEGGINGS_IRON]: 2, [IDS.LEGGINGS_GOLD]: 2, [IDS.LEGGINGS_DIAMOND]: 2, [IDS.ASTRAL_LEGGINGS]: 2,
+        [IDS.BOOTS_IRON]: 3, [IDS.BOOTS_GOLD]: 3, [IDS.BOOTS_DIAMOND]: 3, [IDS.ASTRAL_BOOTS]: 3,
+        [IDS.STRIDER_BOOTS]: 3
     };
 
 
@@ -850,13 +901,14 @@ export function getMaxAnimals() {
         [IDS.STONE_PICKAXE]: 2,
         [IDS.IRON_PICKAXE]: 3,
         [IDS.GOLD_PICKAXE]: 4,
-        [IDS.DIAMOND_PICKAXE]: 5
+        [IDS.DIAMOND_PICKAXE]: 5,
+        [IDS.ASTRAL_PICKAXE]: 6
     };
 
     export function getRequiredMiningTier(blockId) {
         if (blockId === IDS.STONE || blockId === IDS.COAL_ORE || blockId === IDS.COBBLESTONE || blockId === IDS.FURNACE || blockId === IDS.COBBLESTONE_STAIRS || blockId === IDS.COBBLESTONE_STAIRS_LEFT || blockId === IDS.COBBLESTONE_STAIRS_RIGHT) return 1;
-        if (blockId === IDS.IRON_ORE) return 2;
-        if (blockId === IDS.GOLD_ORE || blockId === IDS.DIAMOND_ORE) return 3;
+        if (blockId === IDS.IRON_ORE || blockId === IDS.VOID_STONE_BRICK) return 2;
+        if (blockId === IDS.GOLD_ORE || blockId === IDS.DIAMOND_ORE || blockId === IDS.EMERALD_ORE || blockId === IDS.ASTRAL_INFUSER) return 3;
         return 0;
     }
 
@@ -1103,7 +1155,8 @@ export function getMaxAnimals() {
         IDS.DIRT, IDS.GRASS, IDS.STONE, IDS.COBBLESTONE, IDS.WOOD, IDS.PLANKS,
         IDS.SAND, IDS.SNOW, IDS.WOOL, IDS.WOODEN_STAIRS, IDS.COBBLESTONE_STAIRS,
         IDS.WOODEN_STAIRS_RIGHT, IDS.COBBLESTONE_STAIRS_RIGHT,
-        IDS.JUNGLE_WOOD, IDS.JUNGLE_PLANKS
+        IDS.JUNGLE_WOOD, IDS.JUNGLE_PLANKS,
+        IDS.VOID_STONE_BRICK, IDS.PRISM_GLASS
     ]);
     export function isBackgroundBuildingBlock(id) {
         return BACKGROUND_BUILDING_BLOCKS.has(id);
@@ -1112,7 +1165,8 @@ export function getMaxAnimals() {
         return id === IDS.RAW_PORKCHOP || id === IDS.COOKED_PORKCHOP || id === IDS.APPLE ||
                id === IDS.RAW_CHICKEN || id === IDS.COOKED_CHICKEN || id === IDS.RAW_MUTTON ||
                id === IDS.COOKED_MUTTON || id === IDS.BREAD ||
-               id === IDS.RAW_BEEF || id === IDS.COOKED_BEEF || id === IDS.MELON_SLICE;
+               id === IDS.RAW_BEEF || id === IDS.COOKED_BEEF || id === IDS.MELON_SLICE ||
+               id === IDS.VOID_BERRY || id === IDS.SUNBURST_MELON_SLICE;
     }
     export let surfaceHeights = [];
     export let nonCollidableTreeWood = new Set();
@@ -1218,7 +1272,8 @@ export function getMaxAnimals() {
             [IDS.COAL_ORE]: { 1: '#3e3e3e', 2: '#222222', 3: '#111111' },
             [IDS.IRON_ORE]: { 1: '#f4d7c5', 2: '#d8af93', 3: '#8a6249' },
             [IDS.GOLD_ORE]: { 1: '#fff99a', 2: '#fcee4b', 3: '#b88d18' },
-            [IDS.DIAMOND_ORE]: { 1: '#c8ffff', 2: '#5decf2', 3: '#198c94' }
+            [IDS.DIAMOND_ORE]: { 1: '#c8ffff', 2: '#5decf2', 3: '#198c94' },
+            [IDS.EMERALD_ORE]: { 1: '#a7f3d0', 2: '#10b981', 3: '#047857' }
         };
         
         function getOakWoodPixel(px, py) {
@@ -1673,7 +1728,7 @@ export function getMaxAnimals() {
                     p(x, y, getPlowedDirtPixel(x, y));
                 }
                 else if (id === IDS.GRASS) p(x, y, getGrassBlockPixel(x, y));
-                else if (id === IDS.STONE || id === IDS.COAL_ORE || id === IDS.IRON_ORE || id === IDS.GOLD_ORE || id === IDS.DIAMOND_ORE) {
+                else if (id === IDS.STONE || id === IDS.COAL_ORE || id === IDS.IRON_ORE || id === IDS.GOLD_ORE || id === IDS.DIAMOND_ORE || id === IDS.EMERALD_ORE) {
                     p(x, y, getStonePixel(x, y));
                 }
                 else if (id === IDS.COBBLESTONE) {
@@ -1874,11 +1929,12 @@ export function getMaxAnimals() {
                     if (x === y + 1 && x >= 4 && x <= 13) p(x, y, '#4a3017');
                     if ((x === 7 && y === 7) || (x === 11 && y === 11)) p(x, y, '#3b2410');
                 }
-                else if ([IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE].includes(id)) {
+                else if ([IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE, IDS.ASTRAL_PICKAXE].includes(id)) {
                     const pal = id === IDS.WOOD_PICKAXE ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
                               : id === IDS.STONE_PICKAXE ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
                               : id === IDS.IRON_PICKAXE ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
                               : id === IDS.GOLD_PICKAXE ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : id === IDS.ASTRAL_PICKAXE ? { base: '#a855f7', light: '#f3e8ff', dark: '#6b21a8', border: '#3b0764' }
                               : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
                     // Handle
                     if (x === y && x >= 5 && x <= 13) p(x, y, '#855a30');
@@ -1894,11 +1950,12 @@ export function getMaxAnimals() {
                     if ((x === 2 && y === 8) || (x === 3 && y === 7) || (x === 7 && y === 3) || (x === 8 && y === 2)) p(x, y, pal.border);
                     if (x === 5 && y === 5) p(x, y, pal.dark);
                 }
-                else if ([IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD].includes(id)) {
+                else if ([IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD, IDS.ASTRAL_SWORD].includes(id)) {
                     const pal = id === IDS.WOOD_SWORD ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
                               : id === IDS.STONE_SWORD ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
                               : id === IDS.IRON_SWORD ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
                               : id === IDS.GOLD_SWORD ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : id === IDS.ASTRAL_SWORD ? { base: '#a855f7', light: '#f3e8ff', dark: '#6b21a8', border: '#3b0764' }
                               : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
                     // Pommel & Grip
                     if (x === 14 && y === 14) p(x, y, pal.dark);
@@ -1918,11 +1975,12 @@ export function getMaxAnimals() {
                     if ((x === 2 && y === 4) || (x === 3 && y === 5) || (x === 4 && y === 6) || (x === 5 && y === 7) || (x === 6 && y === 8)) p(x, y, pal.border);
                     if ((x === 4 && y === 2) || (x === 5 && y === 3) || (x === 6 && y === 4) || (x === 7 && y === 5) || (x === 8 && y === 6)) p(x, y, pal.border);
                 }
-                else if ([IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE].includes(id)) {
+                else if ([IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE, IDS.ASTRAL_AXE].includes(id)) {
                     const pal = id === IDS.WOOD_AXE ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
                               : id === IDS.STONE_AXE ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
                               : id === IDS.IRON_AXE ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
                               : id === IDS.GOLD_AXE ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : id === IDS.ASTRAL_AXE ? { base: '#a855f7', light: '#f3e8ff', dark: '#6b21a8', border: '#3b0764' }
                               : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
                     // Handle
                     if (x === y && x >= 4 && x <= 13) p(x, y, '#855a30');
@@ -1941,11 +1999,12 @@ export function getMaxAnimals() {
                     if (x === 4 && y === 4) p(x, y, pal.dark);
                     if (x === 5 && y === 4) p(x, y, pal.border);
                 }
-                else if ([IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL].includes(id)) {
+                else if ([IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL, IDS.ASTRAL_SHOVEL].includes(id)) {
                     const pal = id === IDS.WOOD_SHOVEL ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
                               : id === IDS.STONE_SHOVEL ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
                               : id === IDS.IRON_SHOVEL ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
                               : id === IDS.GOLD_SHOVEL ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : id === IDS.ASTRAL_SHOVEL ? { base: '#a855f7', light: '#f3e8ff', dark: '#6b21a8', border: '#3b0764' }
                               : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
                     // Handle
                     if (x === y && x >= 6 && x <= 13) p(x, y, '#855a30');
@@ -2514,10 +2573,10 @@ export function getMaxAnimals() {
                     if ((x === 3 && (y === 11 || y === 13)) || (x === 4 && y === 12) || (x === 2 && y === 12)) p(x, y, '#d0d0d0');
                     if ((x === 12 && (y === 2 || y === 4)) || (x === 13 && y === 3) || (x === 11 && y === 3)) p(x, y, '#ffffff');
                 }
-                else if ([IDS.HELMET_IRON, IDS.HELMET_GOLD, IDS.HELMET_DIAMOND].includes(id)) {
-                    let base = id === IDS.HELMET_IRON ? '#d0d0d0' : id === IDS.HELMET_GOLD ? '#ffcf33' : '#55e6e6';
-                    let highlight = id === IDS.HELMET_IRON ? '#ffffff' : id === IDS.HELMET_GOLD ? '#fff3a8' : '#b8ffff';
-                    let shadow = id === IDS.HELMET_IRON ? '#888888' : id === IDS.HELMET_GOLD ? '#b38600' : '#1d8f99';
+                else if ([IDS.HELMET_IRON, IDS.HELMET_GOLD, IDS.HELMET_DIAMOND, IDS.ASTRAL_HELMET].includes(id)) {
+                    let base = id === IDS.HELMET_IRON ? '#d0d0d0' : id === IDS.HELMET_GOLD ? '#ffcf33' : id === IDS.ASTRAL_HELMET ? '#9333ea' : '#55e6e6';
+                    let highlight = id === IDS.HELMET_IRON ? '#ffffff' : id === IDS.HELMET_GOLD ? '#fff3a8' : id === IDS.ASTRAL_HELMET ? '#f3e8ff' : '#b8ffff';
+                    let shadow = id === IDS.HELMET_IRON ? '#888888' : id === IDS.HELMET_GOLD ? '#b38600' : id === IDS.ASTRAL_HELMET ? '#3b0764' : '#1d8f99';
                     if (y >= 3 && y <= 12 && x >= 3 && x <= 12) {
                         if (y <= 8 || x <= 5 || x >= 10 || (y === 9 && (x === 6 || x === 9))) {
                             let c = base;
@@ -2526,11 +2585,12 @@ export function getMaxAnimals() {
                             p(x, y, c);
                         }
                     }
+                    if (id === IDS.ASTRAL_HELMET && ((x === 7 || x === 8) && y === 4)) p(x, y, '#c084fc');
                 }
-                else if ([IDS.CHESTPLATE_IRON, IDS.CHESTPLATE_GOLD, IDS.CHESTPLATE_DIAMOND].includes(id)) {
-                    let base = id === IDS.CHESTPLATE_IRON ? '#d0d0d0' : id === IDS.CHESTPLATE_GOLD ? '#ffcf33' : '#55e6e6';
-                    let highlight = id === IDS.CHESTPLATE_IRON ? '#ffffff' : id === IDS.CHESTPLATE_GOLD ? '#fff3a8' : '#b8ffff';
-                    let shadow = id === IDS.CHESTPLATE_IRON ? '#888888' : id === IDS.CHESTPLATE_GOLD ? '#b38600' : '#1d8f99';
+                else if ([IDS.CHESTPLATE_IRON, IDS.CHESTPLATE_GOLD, IDS.CHESTPLATE_DIAMOND, IDS.ASTRAL_CHESTPLATE].includes(id)) {
+                    let base = id === IDS.CHESTPLATE_IRON ? '#d0d0d0' : id === IDS.CHESTPLATE_GOLD ? '#ffcf33' : id === IDS.ASTRAL_CHESTPLATE ? '#9333ea' : '#55e6e6';
+                    let highlight = id === IDS.CHESTPLATE_IRON ? '#ffffff' : id === IDS.CHESTPLATE_GOLD ? '#fff3a8' : id === IDS.ASTRAL_CHESTPLATE ? '#f3e8ff' : '#b8ffff';
+                    let shadow = id === IDS.CHESTPLATE_IRON ? '#888888' : id === IDS.CHESTPLATE_GOLD ? '#b38600' : id === IDS.ASTRAL_CHESTPLATE ? '#3b0764' : '#1d8f99';
                     if (y >= 2 && y <= 13 && x >= 2 && x <= 13) {
                         if (y <= 5 || (x >= 4 && x <= 11) || (y <= 8 && (x <= 3 || x >= 12))) {
                             if (!(y <= 4 && x >= 6 && x <= 9)) {
@@ -2541,11 +2601,12 @@ export function getMaxAnimals() {
                             }
                         }
                     }
+                    if (id === IDS.ASTRAL_CHESTPLATE && ((x === 7 || x === 8) && (y === 7 || y === 8))) p(x, y, '#c084fc');
                 }
-                else if ([IDS.LEGGINGS_IRON, IDS.LEGGINGS_GOLD, IDS.LEGGINGS_DIAMOND].includes(id)) {
-                    let base = id === IDS.LEGGINGS_IRON ? '#d0d0d0' : id === IDS.LEGGINGS_GOLD ? '#ffcf33' : '#55e6e6';
-                    let highlight = id === IDS.LEGGINGS_IRON ? '#ffffff' : id === IDS.LEGGINGS_GOLD ? '#fff3a8' : '#b8ffff';
-                    let shadow = id === IDS.LEGGINGS_IRON ? '#888888' : id === IDS.LEGGINGS_GOLD ? '#b38600' : '#1d8f99';
+                else if ([IDS.LEGGINGS_IRON, IDS.LEGGINGS_GOLD, IDS.LEGGINGS_DIAMOND, IDS.ASTRAL_LEGGINGS].includes(id)) {
+                    let base = id === IDS.LEGGINGS_IRON ? '#d0d0d0' : id === IDS.LEGGINGS_GOLD ? '#ffcf33' : id === IDS.ASTRAL_LEGGINGS ? '#9333ea' : '#55e6e6';
+                    let highlight = id === IDS.LEGGINGS_IRON ? '#ffffff' : id === IDS.LEGGINGS_GOLD ? '#fff3a8' : id === IDS.ASTRAL_LEGGINGS ? '#f3e8ff' : '#b8ffff';
+                    let shadow = id === IDS.LEGGINGS_IRON ? '#888888' : id === IDS.LEGGINGS_GOLD ? '#b38600' : id === IDS.ASTRAL_LEGGINGS ? '#3b0764' : '#1d8f99';
                     if (y >= 2 && y <= 13 && x >= 3 && x <= 12) {
                         if (y <= 5 || x <= 6 || x >= 9) {
                             let c = base;
@@ -2554,16 +2615,24 @@ export function getMaxAnimals() {
                             p(x, y, c);
                         }
                     }
+                    if (id === IDS.ASTRAL_LEGGINGS && ((x === 5 || x === 10) && y === 8)) p(x, y, '#c084fc');
                 }
-                else if ([IDS.BOOTS_IRON, IDS.BOOTS_GOLD, IDS.BOOTS_DIAMOND].includes(id)) {
-                    let base = id === IDS.BOOTS_IRON ? '#d0d0d0' : id === IDS.BOOTS_GOLD ? '#ffcf33' : '#55e6e6';
-                    let highlight = id === IDS.BOOTS_IRON ? '#ffffff' : id === IDS.BOOTS_GOLD ? '#fff3a8' : '#b8ffff';
-                    let shadow = id === IDS.BOOTS_IRON ? '#888888' : id === IDS.BOOTS_GOLD ? '#b38600' : '#1d8f99';
+                else if ([IDS.BOOTS_IRON, IDS.BOOTS_GOLD, IDS.BOOTS_DIAMOND, IDS.ASTRAL_BOOTS, IDS.STRIDER_BOOTS].includes(id)) {
+                    let base = id === IDS.BOOTS_IRON ? '#d0d0d0' : id === IDS.BOOTS_GOLD ? '#ffcf33' : id === IDS.ASTRAL_BOOTS ? '#9333ea' : id === IDS.STRIDER_BOOTS ? '#059669' : '#55e6e6';
+                    let highlight = id === IDS.BOOTS_IRON ? '#ffffff' : id === IDS.BOOTS_GOLD ? '#fff3a8' : id === IDS.ASTRAL_BOOTS ? '#f3e8ff' : id === IDS.STRIDER_BOOTS ? '#6ee7b7' : '#b8ffff';
+                    let shadow = id === IDS.BOOTS_IRON ? '#888888' : id === IDS.BOOTS_GOLD ? '#b38600' : id === IDS.ASTRAL_BOOTS ? '#3b0764' : id === IDS.STRIDER_BOOTS ? '#064e3b' : '#1d8f99';
                     if (y >= 7 && y <= 13 && ((x >= 3 && x <= 6) || (x >= 9 && x <= 12))) {
                         let c = base;
                         if (x === 3 || x === 9 || y === 7) c = highlight;
                         else if (x === 6 || x === 12 || y === 13) c = shadow;
                         p(x, y, c);
+                    }
+                    if (id === IDS.STRIDER_BOOTS) {
+                        // Winged heels
+                        if ((x === 1 && y === 9) || (x === 2 && (y === 8 || y === 9))) p(x, y, '#e0f2fe');
+                        if ((x === 14 && y === 9) || (x === 13 && (y === 8 || y === 9))) p(x, y, '#e0f2fe');
+                        if (x === 2 && y === 10) p(x, y, '#38bdf8');
+                        if (x === 13 && y === 10) p(x, y, '#38bdf8');
                     }
                 }
                 else if (id === IDS.JUNGLE_WOOD) {
@@ -2676,6 +2745,289 @@ export function getMaxAnimals() {
                     if (x >= 7 && x <= 8 && y >= 11 && y <= 15) p(x, y, '#2e7d32');
                     if (x >= 5 && x <= 10 && y >= 7 && y <= 10 && (x + y) % 2 === 0) p(x, y, '#66bb6a');
                     if (x >= 3 && x <= 6 && y >= 5 && y <= 8) p(x, y, '#43a047');
+                }
+                else if (id === IDS.PRISM_GLASS) {
+                    const isBorder = (x === 0 || x === 15 || y === 0 || y === 15);
+                    const isInnerBorder = (x === 1 || x === 14 || y === 1 || y === 14);
+                    if (isBorder) {
+                        p(x, y, (x <= 1 || y <= 1) ? '#ffffff' : ((x >= 14 || y >= 14) ? '#6366f1' : '#c084fc'));
+                    } else if (isInnerBorder) {
+                        p(x, y, '#e0e7ff');
+                    } else {
+                        // Refractive translucent glass lattice
+                        let isGlint1 = (x + y === 7 || x + y === 8) && (x >= 2 && x <= 6);
+                        let isGlint2 = (x + y === 19 || x + y === 20) && (x >= 8 && x <= 13);
+                        let isSpark = (x === 4 && y === 4) || (x === 11 && y === 11);
+                        if (isSpark) p(x, y, '#ffffff');
+                        else if (isGlint1 || isGlint2) p(x, y, '#c7d2fe');
+                        else if ((x + y) % 5 === 0) p(x, y, '#a5b4fc');
+                        else if ((x * 3 + y * 7) % 11 === 0) p(x, y, '#fbcfe8');
+                    }
+                }
+                else if (id === IDS.VOID_STONE_BRICK) {
+                    const isMortarH = (y === 3 || y === 7 || y === 11 || y === 15);
+                    const isMortarV = ((y < 3 && x === 8) || (y > 3 && y < 7 && (x === 4 || x === 12)) ||
+                                       (y > 7 && y < 11 && x === 8) || (y > 11 && y < 15 && (x === 4 || x === 12)));
+                    if (isMortarH || isMortarV) {
+                        p(x, y, ((x + y) % 3 === 0) ? '#8b5cf6' : '#581c87');
+                    } else {
+                        const brickNoise = (x * 7 + y * 13) % 7;
+                        if (brickNoise === 0) p(x, y, '#3b0764');
+                        else if (brickNoise === 1) p(x, y, '#4c1d95');
+                        else if (brickNoise === 2) p(x, y, '#2e1065');
+                        else if (brickNoise === 3) p(x, y, '#1e102d');
+                        else if (brickNoise === 4) p(x, y, '#6b21a8');
+                        else p(x, y, '#241038');
+                    }
+                }
+                else if (id === IDS.ASTRAL_INFUSER) {
+                    // Heavy obsidian station with gold brackets and floating celestial core
+                    if (y >= 8) {
+                        // Obsidian Base
+                        let isCornerGold = (x <= 2 || x >= 13) && (y >= 13);
+                        let isRune = (y === 11 && (x === 5 || x === 7 || x === 10)) || (y === 10 && x === 8);
+                        if (isCornerGold) p(x, y, (x + y) % 2 === 0 ? '#fbbf24' : '#d97706');
+                        else if (isRune) p(x, y, '#c084fc');
+                        else p(x, y, (x + y) % 3 === 0 ? '#1e102d' : ((x + y) % 2 === 0 ? '#2e1065' : '#0f0919'));
+                    } else if (y >= 6) {
+                        // Altar Rim
+                        p(x, y, (x === 0 || x === 15) ? '#fbbf24' : ((x >= 5 && x <= 10) ? '#581c87' : '#3b0764'));
+                    } else {
+                        // Floating Astral Singularity Gem
+                        let dx = Math.abs(x - 7.5);
+                        let dy = Math.abs(y - 2.5);
+                        if (dx + dy <= 3) {
+                            if (dx + dy <= 1) p(x, y, '#ffffff');
+                            else if (dx <= 1 && dy <= 1) p(x, y, '#f3e8ff');
+                            else p(x, y, (x + y) % 2 === 0 ? '#c084fc' : '#38bdf8');
+                        }
+                    }
+                }
+                else if (id === IDS.VOID_BERRY_BUSH) {
+                    const bushMask = (
+                        (x >= 2 && x <= 13 && y >= 3 && y <= 15) &&
+                        !((x <= 3 || x >= 12) && y <= 4)
+                    );
+                    if (bushMask) {
+                        // Twilight leaf base
+                        let leafCol = (x + y) % 3 === 0 ? '#1e1b4b' : ((x + y) % 2 === 0 ? '#312e81' : '#172554');
+                        p(x, y, leafCol);
+                    }
+                    // Glowing violet berries
+                    const berryDots = [
+                        [4, 6, '#c084fc', '#ffffff'], [5, 6, '#a855f7', '#f3e8ff'], [4, 7, '#7c3aed', '#c084fc'],
+                        [10, 5, '#c084fc', '#ffffff'], [11, 5, '#a855f7', '#f3e8ff'], [11, 6, '#7c3aed', '#c084fc'],
+                        [7, 9, '#c084fc', '#ffffff'], [8, 9, '#a855f7', '#f3e8ff'], [8, 10, '#7c3aed', '#c084fc'],
+                        [5, 12, '#a855f7', '#c084fc'], [10, 11, '#c084fc', '#f3e8ff']
+                    ];
+                    berryDots.forEach(([bx, by, b1, b2]) => {
+                        p(bx, by, b1);
+                        if (bx > 0 && by > 0 && Math.random() < 0.3) p(bx, by, b2);
+                    });
+                }
+                else if (id === IDS.SUNBURST_MELON) {
+                    let stripe = Math.sin(x * 0.9 + Math.sin(y * 0.4) * 0.7);
+                    let c;
+                    if (stripe > 0.25) c = (x + y) % 4 === 0 ? '#fef08a' : '#fde047';
+                    else if (stripe < -0.25) c = (x + y) % 4 === 0 ? '#b45309' : '#d97706';
+                    else c = '#f59e0b';
+                    if (x === 0 || x === 15 || y === 0 || y === 15) {
+                        if ((x + y) % 2 === 0) c = '#78350f';
+                    }
+                    p(x, y, c);
+                }
+                else if (id === IDS.ASTRAL_EMERALD) {
+                    // Authentic Minecraft diamond-cut gem in celestial Astral Violet
+                    // 1. Dark Void Outline
+                    const outline = [
+                        [5,1],[6,1],[7,1],[8,1],[9,1],[10,1],
+                        [4,2],[11,2],[3,3],[12,3],[2,4],[13,4],
+                        [1,5],[1,6],[1,7],[1,8],[1,9],[1,10],
+                        [14,5],[14,6],[14,7],[14,8],[14,9],[14,10],
+                        [2,11],[13,11],[3,12],[12,12],[4,13],[11,13],
+                        [5,14],[6,14],[7,14],[8,14],[9,14],[10,14]
+                    ];
+                    outline.forEach(([gx, gy]) => p(gx, gy, '#140528'));
+
+                    // 2. Exact interior facet fills strictly bounded by outline
+                    const astralPalette = {
+                        W: '#ffffff', // Starlight glint
+                        H: '#f3e8ff', // Celestial highlight
+                        L: '#d8b4fe', // Light lavender
+                        V: '#c084fc', // Bright violet
+                        P: '#a855f7', // Astral purple
+                        M: '#9333ea', // Core purple
+                        D: '#7e22ce', // Deep purple
+                        S: '#581c87', // Shaded void
+                        Z: '#3b0764', // Dark void facet
+                        B: '#1e0836'  // Deepest void base
+                    };
+
+                    const astralRows = [
+                        { y: 2,  startX: 5, cols: ['V','V','V','V','V','M'] },
+                        { y: 3,  startX: 4, cols: ['W','W','W','H','H','P','M','M'] },
+                        { y: 4,  startX: 3, cols: ['W','W','W','H','V','V','P','P','D','D'] },
+                        { y: 5,  startX: 2, cols: ['H','V','V','P','P','P','P','M','M','D','D','D'] },
+                        { y: 6,  startX: 2, cols: ['H','V','V','P','P','P','P','M','M','S','S','S'] },
+                        { y: 7,  startX: 2, cols: ['V','P','P','M','M','M','M','D','D','S','S','S'] },
+                        { y: 8,  startX: 2, cols: ['V','P','P','M','M','M','M','D','D','Z','Z','Z'] },
+                        { y: 9,  startX: 2, cols: ['P','M','M','D','D','D','S','S','S','Z','Z','Z'] },
+                        { y: 10, startX: 2, cols: ['P','M','M','D','D','D','S','S','S','Z','Z','Z'] },
+                        { y: 11, startX: 3, cols: ['M','M','D','D','D','S','S','Z','Z','Z'] },
+                        { y: 12, startX: 4, cols: ['D','D','S','S','S','Z','Z','Z'] },
+                        { y: 13, startX: 5, cols: ['S','S','S','B','B','B'] }
+                    ];
+
+                    astralRows.forEach(row => {
+                        row.cols.forEach((code, idx) => {
+                            p(row.startX + idx, row.y, astralPalette[code]);
+                        });
+                    });
+                }
+                else if (id === IDS.EMERALD) {
+                    // Authentic Minecraft diamond-cut gem in radiant Emerald Green
+                    // 1. Dark Jade Outline
+                    const outline = [
+                        [5,1],[6,1],[7,1],[8,1],[9,1],[10,1],
+                        [4,2],[11,2],[3,3],[12,3],[2,4],[13,4],
+                        [1,5],[1,6],[1,7],[1,8],[1,9],[1,10],
+                        [14,5],[14,6],[14,7],[14,8],[14,9],[14,10],
+                        [2,11],[13,11],[3,12],[12,12],[4,13],[11,13],
+                        [5,14],[6,14],[7,14],[8,14],[9,14],[10,14]
+                    ];
+                    outline.forEach(([gx, gy]) => p(gx, gy, '#0a2e16'));
+
+                    // 2. Exact interior facet fills strictly bounded by outline
+                    const emeraldPalette = {
+                        W: '#ffffff', // Pure glint shine
+                        H: '#86efac', // Mint highlight
+                        L: '#4ade80', // Light emerald
+                        E: '#22c55e', // Vivid pure emerald
+                        M: '#16a34a', // Rich emerald body
+                        D: '#15803d', // Mid jade body
+                        S: '#166534', // Deep jade shadow
+                        Z: '#0f4a24', // Dark shadow facet
+                        B: '#0a2e16'  // Deepest base facet
+                    };
+
+                    const emeraldRows = [
+                        { y: 2,  startX: 5, cols: ['L','L','L','L','L','M'] },
+                        { y: 3,  startX: 4, cols: ['W','W','W','H','H','E','M','M'] },
+                        { y: 4,  startX: 3, cols: ['W','W','W','H','L','L','E','E','D','D'] },
+                        { y: 5,  startX: 2, cols: ['H','L','L','E','E','E','E','M','M','D','D','D'] },
+                        { y: 6,  startX: 2, cols: ['H','L','L','E','E','E','E','M','M','S','S','S'] },
+                        { y: 7,  startX: 2, cols: ['L','E','E','M','M','M','M','D','D','S','S','S'] },
+                        { y: 8,  startX: 2, cols: ['L','E','E','M','M','M','M','D','D','Z','Z','Z'] },
+                        { y: 9,  startX: 2, cols: ['E','M','M','D','D','D','S','S','S','Z','Z','Z'] },
+                        { y: 10, startX: 2, cols: ['E','M','M','D','D','D','S','S','S','Z','Z','Z'] },
+                        { y: 11, startX: 3, cols: ['M','M','D','D','D','S','S','Z','Z','Z'] },
+                        { y: 12, startX: 4, cols: ['D','D','S','S','S','Z','Z','Z'] },
+                        { y: 13, startX: 5, cols: ['S','S','S','B','B','B'] }
+                    ];
+
+                    emeraldRows.forEach(row => {
+                        row.cols.forEach((code, idx) => {
+                            p(row.startX + idx, row.y, emeraldPalette[code]);
+                        });
+                    });
+                }
+                else if (id === IDS.ASTRAL_SHARD) {
+                    const shardPixels = [
+                        [11, 2, '#ffffff'], [12, 2, '#ffffff'], [10, 3, '#f3e8ff'], [11, 3, '#c084fc'], [12, 3, '#38bdf8'],
+                        [9, 4, '#e9d5ff'], [10, 4, '#a855f7'], [11, 4, '#7c3aed'], [12, 4, '#38bdf8'],
+                        [8, 5, '#c084fc'], [9, 5, '#9333ea'], [10, 5, '#6b21a8'], [11, 5, '#0284c7'],
+                        [7, 6, '#a855f7'], [8, 6, '#7c3aed'], [9, 6, '#581c87'], [10, 6, '#0369a1'],
+                        [6, 7, '#c084fc'], [7, 7, '#9333ea'], [8, 7, '#6b21a8'], [9, 7, '#075985'],
+                        [6, 8, '#a855f7'], [7, 8, '#7c3aed'], [8, 8, '#581c87'], [9, 8, '#0c4a6e'],
+                        [5, 9, '#9333ea'], [6, 9, '#7c3aed'], [7, 9, '#3b0764'],
+                        [4, 10, '#7c3aed'], [5, 10, '#581c87'], [6, 10, '#2e1065'],
+                        [4, 11, '#6b21a8'], [5, 11, '#3b0764'],
+                        [3, 12, '#581c87'], [4, 12, '#2e1065'],
+                        [3, 13, '#3b0764']
+                    ];
+                    shardPixels.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.VOID_BERRY_SPORES) {
+                    const sporeDots = [
+                        [7, 8, '#ffffff'], [8, 8, '#c084fc'], [7, 9, '#a855f7'], [8, 9, '#581c87'],
+                        [5, 10, '#ffffff'], [6, 10, '#c084fc'], [5, 11, '#a855f7'], [6, 11, '#581c87'],
+                        [10, 9, '#ffffff'], [11, 9, '#c084fc'], [10, 10, '#a855f7'], [11, 10, '#581c87'],
+                        [4, 7, '#38bdf8'], [12, 7, '#c084fc'], [8, 5, '#e9d5ff'], [9, 13, '#38bdf8']
+                    ];
+                    sporeDots.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.VOID_BERRY) {
+                    // Small stem
+                    p(7, 4, '#06b6d4'); p(8, 3, '#0891b2'); p(9, 4, '#06b6d4');
+                    // Berries
+                    const berries = [
+                        [5, 7, '#c084fc'], [6, 6, '#ffffff'], [7, 6, '#e9d5ff'], [6, 7, '#a855f7'], [7, 7, '#7c3aed'], [6, 8, '#581c87'], [7, 8, '#3b0764'],
+                        [9, 6, '#c084fc'], [10, 6, '#ffffff'], [9, 7, '#a855f7'], [10, 7, '#7c3aed'], [10, 8, '#581c87'],
+                        [7, 9, '#c084fc'], [8, 9, '#ffffff'], [7, 10, '#a855f7'], [8, 10, '#7c3aed'], [8, 11, '#3b0764']
+                    ];
+                    berries.forEach(([bx, by, bcol]) => p(bx, by, bcol));
+                }
+                else if (id === IDS.SUNBURST_MELON_SEEDS) {
+                    const smSeedDots = [
+                        [5, 9, '#78350f'], [6, 8, '#b45309'], [7, 7, '#fef08a'], [7, 8, '#d97706'],
+                        [9, 10, '#78350f'], [10, 9, '#b45309'], [11, 8, '#fef08a'], [11, 9, '#d97706'],
+                        [7, 12, '#78350f'], [8, 11, '#b45309'], [9, 11, '#f59e0b']
+                    ];
+                    smSeedDots.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.SUNBURST_MELON_SLICE) {
+                    if (y >= 3 && y <= 13 && x >= 2 && x <= 13) {
+                        let inWedge = (x + y >= 9 && x + y <= 21 && y - x <= 7 && x - y <= 7);
+                        if (inWedge) {
+                            let isRind = (x === 2 || y === 13 || (x + y === 9) || (x + y === 10));
+                            let isRindWhite = (x === 3 || y === 12 || x + y === 11);
+                            if (isRind) p(x, y, '#78350f');
+                            else if (isRindWhite) p(x, y, '#fef08a');
+                            else {
+                                let isSeed = (x === 7 && y === 8) || (x === 10 && y === 7) || (x === 8 && y === 10);
+                                p(x, y, isSeed ? '#262626' : ((x + y) % 3 === 0 ? '#f59e0b' : '#fbbf24'));
+                            }
+                        }
+                    }
+                }
+                else if (id === IDS.MUSIC_DISC_SYNTHWAVE || id === IDS.MUSIC_DISC_AMBIENT) {
+                    const isSynth = (id === IDS.MUSIC_DISC_SYNTHWAVE);
+                    // Vinyl circular outline & grooves
+                    for (let vy = 1; vy <= 14; vy++) {
+                        for (let vx = 1; vx <= 14; vx++) {
+                            let dist = Math.hypot(vx - 7.5, vy - 7.5);
+                            if (dist <= 6.8) {
+                                if (dist <= 2.2) {
+                                    // Center label
+                                    if (dist <= 0.8) p(vx, vy, '#ffffff'); // Center hole
+                                    else p(vx, vy, isSynth ? '#ec4899' : '#06b6d4');
+                                } else if (dist <= 2.8) {
+                                    p(vx, vy, isSynth ? '#06b6d4' : '#6366f1');
+                                } else if (dist <= 6.2) {
+                                    // Vinyl groove lines
+                                    let isGroove = (Math.floor(dist * 2) % 2 === 0);
+                                    p(vx, vy, isGroove ? '#27272a' : '#18181b');
+                                } else {
+                                    p(vx, vy, '#09090b');
+                                }
+                            }
+                        }
+                    }
+                    // Vinyl sheen reflection
+                    p(4, 3, '#52525b'); p(5, 3, '#71717a'); p(10, 12, '#52525b'); p(11, 12, '#71717a');
+                }
+                else if (id === IDS.KINETIC_SHEARS) {
+                    // Brass pivot bolt
+                    p(7, 8, '#f59e0b'); p(8, 8, '#fbbf24');
+                    // Handles
+                    p(4, 11, '#3b0764'); p(5, 10, '#3b0764'); p(4, 12, '#581c87'); p(5, 12, '#581c87');
+                    p(11, 11, '#3b0764'); p(10, 10, '#3b0764'); p(11, 12, '#581c87'); p(10, 12, '#581c87');
+                    // Left blade
+                    p(6, 7, '#7c3aed'); p(5, 6, '#9333ea'); p(5, 5, '#a855f7'); p(4, 4, '#c084fc'); p(4, 3, '#ffffff');
+                    p(7, 6, '#581c87'); p(6, 5, '#7c3aed'); p(5, 4, '#9333ea');
+                    // Right blade
+                    p(9, 7, '#7c3aed'); p(10, 6, '#9333ea'); p(10, 5, '#a855f7'); p(11, 4, '#c084fc'); p(11, 3, '#ffffff');
+                    p(8, 6, '#581c87'); p(9, 5, '#7c3aed'); p(10, 4, '#9333ea');
                 }
             }
         }
@@ -2813,6 +3165,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX + 1 * sX, -pivotY, 2 * sX, 1 * sY);
             ctx.fillStyle = chestPal.trim;
             ctx.fillRect(-pivotX, -pivotY + 5 * sY, 4 * sX, 1 * sY);
+
+            if (chestPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY, 4 * sX, 6 * sY);
+            }
         }
 
         // 3. Draw Held Item
@@ -2840,6 +3198,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX + 1 * sX, -pivotY + 1 * sY, 2 * sX, 4 * sY);
             ctx.fillStyle = legPal.trim;
             ctx.fillRect(-pivotX, -pivotY + 5 * sY, 4 * sX, 1 * sY);
+
+            if (legPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220 + 1) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY, 4 * sX, 6 * sY);
+            }
         }
 
         // 3. Draw Boot Armor (Attached directly to each individual swinging foot)
@@ -2852,6 +3216,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX, -pivotY + 7 * sY, 4 * sX, 1 * sY);
             ctx.fillStyle = bootPal.dark;
             ctx.fillRect(-pivotX, -pivotY + 11 * sY, 4 * sX, 1 * sY); // Boot sole
+
+            if (bootPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220 + 2) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY + 7 * sY, 4 * sX, 5 * sY);
+            }
         }
 
         ctx.restore();
@@ -2875,6 +3245,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX, -pivotY + 9 * sY, 8 * sX, 1 * sY);
             ctx.fillStyle = chestPal.dark;
             ctx.fillRect(-pivotX + 3 * sX, -pivotY + 3 * sY, 2 * sX, 6 * sY);
+
+            if (chestPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220 + 0.5) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY, 8 * sX, 10 * sY);
+            }
         }
 
         // 3. Draw Leggings Pelvis / Waistband on Lower Torso
@@ -2883,6 +3259,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX, -pivotY + 10 * sY, 8 * sX, 2 * sY);
             ctx.fillStyle = legPal.trim;
             ctx.fillRect(-pivotX, -pivotY + 10 * sY, 8 * sX, 1 * sY);
+
+            if (legPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220 + 1.5) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY + 10 * sY, 8 * sX, 2 * sY);
+            }
         }
 
         ctx.restore();
@@ -2906,6 +3288,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX + 1 * sX, -pivotY, 6 * sX, 1 * sY); // Brow highlight
             ctx.fillStyle = helmetPal.dark;
             ctx.fillRect(-pivotX + 3 * sX, -pivotY + 3 * sY, 2 * sX, 3 * sY); // Nose guard
+
+            if (helmetPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY, 8 * sX, 6 * sY);
+            }
         }
 
         ctx.restore();
@@ -2922,6 +3310,12 @@ export const SKIN_H = 32;
         }
         if (id === IDS.HELMET_DIAMOND || id === IDS.CHESTPLATE_DIAMOND || id === IDS.LEGGINGS_DIAMOND || id === IDS.BOOTS_DIAMOND) {
             return { base: '#22d3ee', trim: '#0891b2', highlight: '#cffafe', dark: '#164e63' };
+        }
+        if (id === IDS.ASTRAL_HELMET || id === IDS.ASTRAL_CHESTPLATE || id === IDS.ASTRAL_LEGGINGS || id === IDS.ASTRAL_BOOTS) {
+            return { base: '#7c3aed', trim: '#5b21b6', highlight: '#e9d5ff', dark: '#2e1065', isAstral: true };
+        }
+        if (id === IDS.STRIDER_BOOTS) {
+            return { base: '#059669', trim: '#047857', highlight: '#6ee7b7', dark: '#064e3b', isAstral: true };
         }
         return null;
     }
@@ -3327,7 +3721,8 @@ export const SKIN_H = 32;
         if (block === IDS.AIR || block === IDS.TORCH || block === IDS.LEAVES || block === IDS.JUNGLE_LEAVES ||
             block === IDS.SAPLING || block === IDS.JUNGLE_SAPLING || block === IDS.WATER || block === IDS.LAVA ||
             block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW ||
-            block === IDS.LADDER || block === IDS.VINES || block === IDS.FERN || block === IDS.MELON_STEM) return false;
+            block === IDS.LADDER || block === IDS.VINES || block === IDS.FERN || block === IDS.MELON_STEM ||
+            block === IDS.VOID_BERRY_BUSH) return false;
         if (block === IDS.WHEAT_STAGE_1 || block === IDS.WHEAT_STAGE_2 || block === IDS.WHEAT_STAGE_3 || block === IDS.WHEAT_STAGE_4) return false;
         if (block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP || block === IDS.JUNGLE_DOOR_OPEN || block === IDS.JUNGLE_DOOR_OPEN_TOP) return false;
         if (block === IDS.WOOD || block === IDS.JUNGLE_WOOD) {
@@ -4376,7 +4771,12 @@ export const SKIN_H = 32;
             }
 
             if (moveDir !== 0) {
-                let targetVx = moveDir * MOVE_SPEED;
+                let speedMult = 1.0;
+                const boots = (typeof equippedArmor !== 'undefined' && Array.isArray(equippedArmor)) ? equippedArmor[3] : (this.equippedArmor ? this.equippedArmor[3] : null);
+                if (boots && (boots.id === IDS.STRIDER_BOOTS || boots.id === IDS.ASTRAL_BOOTS)) {
+                    speedMult = 1.25;
+                }
+                let targetVx = moveDir * MOVE_SPEED * speedMult;
                 if (this.isGrounded) {
                     this.vx += (targetVx - this.vx) * 0.45;
                 } else {
@@ -4535,17 +4935,26 @@ export const SKIN_H = 32;
                 if (sel && isFoodItem(sel.id) && this.hunger < 20) {
                     this.eatTimer++;
                     if (this.eatTimer > 20) {
-                        let val = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? 8 : (sel.id === IDS.COOKED_CHICKEN ? 6 : (sel.id === IDS.BREAD ? 5 : (sel.id === IDS.APPLE ? 4 : (sel.id === IDS.RAW_BEEF ? 3 : 2))));
+                        let val = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? 8 : 
+                                  (sel.id === IDS.COOKED_CHICKEN || sel.id === IDS.SUNBURST_MELON_SLICE ? 6 : 
+                                  (sel.id === IDS.BREAD ? 5 : 
+                                  (sel.id === IDS.APPLE || sel.id === IDS.VOID_BERRY ? 4 : 
+                                  (sel.id === IDS.RAW_BEEF ? 3 : 2))));
                         this.hunger = Math.min(20, this.hunger + val);
-                        if (sel.id === IDS.MELON_SLICE && this.health < this.maxHealth) {
-                            this.health = Math.min(this.maxHealth, this.health + 1);
+                        if ((sel.id === IDS.MELON_SLICE || sel.id === IDS.SUNBURST_MELON_SLICE || sel.id === IDS.VOID_BERRY) && this.health < this.maxHealth) {
+                            const healAmt = (sel.id === IDS.SUNBURST_MELON_SLICE || sel.id === IDS.VOID_BERRY) ? 2 : 1;
+                            this.health = Math.min(this.maxHealth, this.health + healAmt);
                             updateHealthUI();
                         }
+                        const eatenId = sel.id;
                         sel.count--;
                         if (sel.count <= 0) inventory[selectedHotbarIndex] = null;
                         updateHungerUI(); updateUI();
                         playSound('eat');
-                        let pColor = (sel.id === IDS.MELON_SLICE) ? '#ef4444' : ((sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? '#8B4513' : (sel.id === IDS.RAW_BEEF ? '#991b1b' : (sel.id === IDS.COOKED_CHICKEN ? '#d98c53' : (sel.id === IDS.BREAD ? '#d2b48c' : (sel.id === IDS.APPLE ? '#ff3333' : '#ff99cc')))));
+                        if (typeof window !== 'undefined' && typeof window.trackDailyQuestProgress === 'function') {
+                            window.trackDailyQuestProgress('eat_food', { itemId: eatenId });
+                        }
+                        let pColor = (eatenId === IDS.VOID_BERRY) ? '#c084fc' : ((eatenId === IDS.SUNBURST_MELON_SLICE) ? '#f59e0b' : ((eatenId === IDS.MELON_SLICE) ? '#ef4444' : ((eatenId === IDS.COOKED_PORKCHOP || eatenId === IDS.COOKED_MUTTON || eatenId === IDS.COOKED_BEEF) ? '#8B4513' : (eatenId === IDS.RAW_BEEF ? '#991b1b' : (eatenId === IDS.COOKED_CHICKEN ? '#d98c53' : (eatenId === IDS.BREAD ? '#d2b48c' : (eatenId === IDS.APPLE ? '#ff3333' : '#ff99cc')))))));
                         for(let i=0; i<10; i++) particles.push(new Particle(this.x+this.width/2, this.y, pColor));
                     }
                 } else { this.eatTimer = 0; }
@@ -7589,7 +7998,347 @@ export const SKIN_H = 32;
         }
     }
 
+    export class AtlasExplorer extends PhysicsEntity {
+        constructor(x, y) {
+            super(x, y, TILE_SIZE * 0.75, TILE_SIZE * 1.8);
+            this.health = 9999;
+            this.name = 'Kael, The Atlas Explorer';
+            this.title = 'Planar Cartographer';
+            this.warpState = 'warping_in'; // 'warping_in', 'active', 'warping_out'
+            this.warpProgress = 0.05;
+            this.stayTimer = 0;
+            this.maxStayDuration = 7200; // ~2 minutes of active stay
+            this.isDeparted = false;
+            this.facingRight = true;
+            this.tetherX = x;
+            this.paceTimer = 180;
+            this.isPacing = false;
+            this.mapReadingTimer = 120;
+            this.walkAnimTime = 0;
+            this.damageCooldown = 0;
+        }
 
+        takeDamage(amt, knockbackDir) {
+            // Invincible planar explorer: absorbs all physical attacks with cosmic ripple
+            this.spawnPlanarRipple();
+            return false;
+        }
+
+        spawnPlanarRipple() {
+            const cx = this.x + this.width / 2;
+            const cy = this.y + this.height / 2;
+            for (let i = 0; i < 8; i++) {
+                const p = new Particle(cx, cy, (i % 2 === 0) ? '#c084fc' : '#38bdf8');
+                p.vx = (Math.random() - 0.5) * 4;
+                p.vy = (Math.random() - 0.5) * 4;
+                particles.push(p);
+            }
+        }
+
+        interact(interactor) {
+            if (typeof window !== 'undefined' && typeof window.openAtlasDialogue === 'function') {
+                window.openAtlasDialogue(this);
+                return true;
+            }
+            return false;
+        }
+
+        update() {
+            if (this.isDeparted) return;
+
+            if (this.warpState === 'warping_in') {
+                this.warpProgress += 0.025;
+                if (frameCount % 4 === 0) {
+                    const cx = this.x + this.width / 2 + (Math.random() - 0.5) * 20;
+                    const cy = this.y + this.height / 2 + (Math.random() - 0.5) * 35;
+                    particles.push(new Particle(cx, cy, (Math.random() > 0.5) ? '#a855f7' : '#fbbf24'));
+                }
+                if (this.warpProgress >= 1) {
+                    this.warpProgress = 1;
+                    this.warpState = 'active';
+                }
+                return;
+            }
+
+            if (this.warpState === 'warping_out') {
+                this.warpProgress -= 0.025;
+                if (frameCount % 4 === 0) {
+                    const cx = this.x + this.width / 2 + (Math.random() - 0.5) * 20;
+                    const cy = this.y + this.height / 2 + (Math.random() - 0.5) * 35;
+                    particles.push(new Particle(cx, cy, '#38bdf8'));
+                }
+                if (this.warpProgress <= 0) {
+                    this.warpProgress = 0;
+                    this.isDeparted = true;
+                }
+                return;
+            }
+
+            // Active state
+            this.stayTimer++;
+            if (this.stayTimer >= this.maxStayDuration) {
+                this.warpState = 'warping_out';
+                if (typeof playSound === 'function') playSound('portal_warp');
+                if (isMultiplayer && isMultiplayerAuthority() && typeof broadcastDataPacket === 'function') {
+                    broadcastDataPacket({ type: 'ATLAS_EXPLORER_DEPARTED' });
+                }
+                return;
+            }
+
+            // Ambient planar stardust
+            if (frameCount % 24 === 0) {
+                const cx = this.x + this.width / 2 + (Math.random() - 0.5) * 16;
+                const cy = this.y + this.height - 4;
+                const p = new Particle(cx, cy, (Math.random() > 0.4) ? '#c084fc' : '#38bdf8');
+                p.vy = -0.8 - Math.random() * 0.6;
+                p.vx = (Math.random() - 0.5) * 0.5;
+                particles.push(p);
+            }
+
+            const curPlayer = (typeof player !== 'undefined') ? player : window.player;
+            if (curPlayer) {
+                const dx = (curPlayer.x + curPlayer.width / 2) - (this.x + this.width / 2);
+                const dy = (curPlayer.y + curPlayer.height / 2) - (this.y + this.height / 2);
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < TILE_SIZE * 7) {
+                    // Smart gaze & posture towards player
+                    this.facingRight = (dx >= 0);
+                    this.vx = 0;
+                    this.isPacing = false;
+                    this.mapReadingTimer = Math.max(0, this.mapReadingTimer - 1);
+                } else {
+                    // Pacing and map reading
+                    this.paceTimer--;
+                    if (this.paceTimer <= 0) {
+                        if (this.isPacing) {
+                            this.isPacing = false;
+                            this.vx = 0;
+                            this.mapReadingTimer = 160 + Math.floor(Math.random() * 80);
+                            this.paceTimer = 220 + Math.floor(Math.random() * 100);
+                        } else {
+                            this.isPacing = true;
+                            // Check distance from tether
+                            const distFromTether = this.x - this.tetherX;
+                            if (distFromTether > TILE_SIZE * 3) this.facingRight = false;
+                            else if (distFromTether < -TILE_SIZE * 3) this.facingRight = true;
+                            else this.facingRight = (Math.random() > 0.5);
+
+                            this.vx = this.facingRight ? (MOVE_SPEED * 0.28) : (-MOVE_SPEED * 0.28);
+                            this.paceTimer = 100 + Math.floor(Math.random() * 80);
+                        }
+                    }
+
+                    if (this.isPacing) {
+                        this.walkAnimTime += 0.18;
+                        this.checkObstacleJump();
+                    } else {
+                        this.vx = 0;
+                        if (this.mapReadingTimer > 0) this.mapReadingTimer--;
+                    }
+                }
+            }
+
+            this.applyPhysics();
+        }
+
+        draw(ctx, camX, camY) {
+            if (this.isDeparted) return;
+            const drawX = Math.round(this.x - camX);
+            const drawY = Math.round(this.y - camY);
+            const w = this.width;
+            const h = this.height;
+
+            ctx.save();
+
+            // 1. Draw Planar Rift Vortex Behind Kael (when warping in or out, or subtle backdrop)
+            if (this.warpProgress < 1 || this.warpState !== 'active') {
+                const cx = drawX + w / 2;
+                const cy = drawY + h / 2;
+                const scale = Math.max(0.01, this.warpProgress);
+                const rot = Date.now() * 0.003;
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.scale(scale, scale);
+                ctx.rotate(rot);
+
+                // Outer aura
+                const grad = ctx.createRadialGradient(0, 0, 8, 0, 0, 36);
+                grad.addColorStop(0, 'rgba(192, 132, 252, 0.85)');
+                grad.addColorStop(0.5, 'rgba(88, 28, 135, 0.6)');
+                grad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(0, 0, 36, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Rift spiral arms
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let a = 0; a < Math.PI * 2; a += 0.4) {
+                    const r = 12 + a * 3;
+                    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+                }
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            ctx.globalAlpha = Math.min(1.0, Math.max(0.0, this.warpProgress));
+
+            if (advancedGraphics) {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - 14, drawY + h - 5, 28, 7);
+            }
+
+            // Flip character horizontally if facing left
+            ctx.save();
+            ctx.translate(drawX + w / 2, drawY);
+            if (!this.facingRight) ctx.scale(-1, 1);
+            ctx.translate(-w / 2, 0);
+
+            // Sprite rendering (16x32 grid mapped to w x h)
+            const sx = w / 16;
+            const sy = h / 32;
+            const p = (px, py, col) => {
+                ctx.fillStyle = col;
+                ctx.fillRect(px * sx, py * sy, sx, sy);
+            };
+
+            const swing = this.isPacing ? Math.sin(this.walkAnimTime) * 3 : 0;
+
+            // --- LEGS & TRAVEL BOOTS ---
+            // Left leg
+            ctx.fillStyle = '#1e1b4b'; // Deep indigo travel pants
+            ctx.fillRect(4 * sx, (20 - swing) * sy, 3 * sx, 7 * sy);
+            ctx.fillStyle = '#451a03'; // Sturdy leather boots
+            ctx.fillRect(3.5 * sx, (27 - swing) * sy, 4 * sx, 5 * sy);
+            ctx.fillStyle = '#fbbf24'; // Brass boot buckle
+            ctx.fillRect(4 * sx, (27 - swing) * sy, 2 * sx, 1.5 * sy);
+
+            // Right leg
+            ctx.fillStyle = '#1e1b4b';
+            ctx.fillRect(9 * sx, (20 + swing) * sy, 3 * sx, 7 * sy);
+            ctx.fillStyle = '#451a03';
+            ctx.fillRect(8.5 * sx, (27 + swing) * sy, 4 * sx, 5 * sy);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(9 * sx, (27 + swing) * sy, 2 * sx, 1.5 * sy);
+
+            // --- TRAVELER'S CLOAK & TUNIC ---
+            // Cloak body
+            ctx.fillStyle = '#0f172a'; // Midnight dark navy
+            ctx.fillRect(3 * sx, 9 * sy, 10 * sx, 12 * sy);
+            ctx.fillStyle = '#1e1b4b'; // Inner tunic folds
+            ctx.fillRect(5 * sx, 10 * sy, 6 * sx, 10 * sy);
+            // Brass constellation trim on cloak hem
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(3 * sx, 20 * sy, 10 * sx, 1 * sy);
+            p(5, 19, '#fef08a'); p(8, 18, '#fef08a'); p(11, 19, '#fef08a');
+
+            // Leather shoulder sash / map strap
+            ctx.fillStyle = '#78350f';
+            p(4, 9, '#78350f'); p(5, 10, '#78350f'); p(6, 11, '#78350f'); p(7, 12, '#78350f');
+            p(8, 13, '#78350f'); p(9, 14, '#78350f'); p(10, 15, '#78350f');
+            // Rolled celestial star map strapped to back
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(11 * sx, 10 * sy, 2.5 * sx, 8 * sy);
+            p(11, 12, '#0284c7'); p(12, 15, '#0284c7'); // Blue coordinate ink marks
+
+            // Brass astrolabe / planar sextant on belt
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(3 * sx, 17 * sy, 3 * sx, 3 * sy);
+            ctx.fillStyle = '#38bdf8'; // Glowing celestial lens center
+            p(4, 18, '#38bdf8');
+
+            // --- HOOD & CELESTIAL GAZE FACE ---
+            // Outer cowl
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(3 * sx, 1 * sy, 10 * sx, 8 * sy);
+            ctx.fillRect(2 * sx, 3 * sy, 12 * sx, 6 * sy);
+            // Cowl brim highlight
+            ctx.fillStyle = '#312e81';
+            ctx.fillRect(4 * sx, 1 * sy, 8 * sx, 1 * sy);
+            ctx.fillRect(2 * sx, 8 * sy, 12 * sx, 1.5 * sy);
+
+            // Shrouded face cavity
+            ctx.fillStyle = '#09090b';
+            ctx.fillRect(4 * sx, 3 * sy, 8 * sx, 5 * sy);
+
+            // Glowing celestial cyan eyes
+            ctx.fillStyle = '#38bdf8';
+            p(6, 5, '#38bdf8'); p(9, 5, '#38bdf8');
+            ctx.fillStyle = '#ffffff';
+            p(6.5, 5, '#ffffff'); p(9.5, 5, '#ffffff');
+
+            // --- ARMS / HELD MAP ---
+            if (this.mapReadingTimer > 0) {
+                // Holding open star map parchment
+                ctx.fillStyle = '#fef08a'; // Parchment
+                ctx.fillRect(6 * sx, 13 * sy, 8 * sx, 6 * sy);
+                ctx.fillStyle = '#0284c7'; // Planar lines
+                p(7, 14, '#0284c7'); p(8, 14, '#0284c7'); p(10, 15, '#a855f7'); p(11, 16, '#0284c7');
+                // Hands holding parchment
+                ctx.fillStyle = '#451a03'; // Leather gloves
+                ctx.fillRect(5 * sx, 15 * sy, 2 * sx, 2 * sy);
+                ctx.fillRect(13 * sx, 15 * sy, 2 * sx, 2 * sy);
+            } else {
+                // Arm resting at side
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(2 * sx, 10 * sy, 2.5 * sx, 7 * sy);
+                ctx.fillStyle = '#451a03'; // Glove
+                ctx.fillRect(2 * sx, 17 * sy, 2.5 * sx, 2 * sy);
+            }
+
+            ctx.restore(); // Restore facing flip
+
+            // --- OVERHEAD NAMEPLATE & TITLE ---
+            if (this.warpState === 'active') {
+                const nameY = drawY - 20;
+                const nameCX = drawX + w / 2;
+
+                ctx.font = 'bold 15px "VT323", monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const titleStr = '✦ Kael, The Atlas Explorer ✦';
+                const subStr = '[Planar Cartographer]';
+                const titleWidth = ctx.measureText(titleStr).width;
+                const bgW = Math.max(titleWidth + 16, 140);
+                const bgH = 26;
+
+                // Nameplate background pill
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+                ctx.strokeStyle = '#c084fc';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.roundRect(nameCX - bgW / 2, nameY - bgH / 2, bgW, bgH, 4);
+                ctx.fill();
+                ctx.stroke();
+
+                // Title & Subtitle text
+                ctx.fillStyle = '#f3e8ff';
+                ctx.fillText(titleStr, nameCX, nameY - 4);
+                ctx.font = '11px "VT323", monospace';
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillText(subStr, nameCX, nameY + 7);
+
+                // Interaction indicator if player is near
+                const curP = (typeof player !== 'undefined') ? player : window.player;
+                if (curP) {
+                    const dToP = Math.hypot((curP.x + curP.width / 2) - (this.x + this.width / 2), (curP.y + curP.height / 2) - (this.y + this.height / 2));
+                    if (dToP < TILE_SIZE * 3.5) {
+                        ctx.font = 'bold 13px "VT323", monospace';
+                        const pulseAlpha = 0.7 + Math.sin(Date.now() * 0.008) * 0.3;
+                        ctx.fillStyle = `rgba(251, 191, 36, ${pulseAlpha})`;
+                        ctx.fillText('▼ [Left-Click to Speak] ▼', nameCX, nameY + 22);
+                    }
+                }
+            }
+
+            ctx.restore();
+        }
+    }
 
     export function getInitialSpawnPoint() {
         const centerCol = Math.floor(WORLD_WIDTH / 2);
@@ -7811,6 +8560,7 @@ export const SKIN_H = 32;
                         else if (oreRoll < 0.065) world[x][y] = IDS.IRON_ORE;
                         else if (y > baseHeight + 35 && oreRoll < 0.088) world[x][y] = IDS.GOLD_ORE;
                         else if (y > baseHeight + 70 && oreRoll < 0.100) world[x][y] = IDS.DIAMOND_ORE;
+                        else if ((biome === "mountains" || y > baseHeight + 60) && oreRoll < 0.108) world[x][y] = IDS.EMERALD_ORE;
                     }
                 }
             }
@@ -8383,7 +9133,7 @@ export const SKIN_H = 32;
     export function spawnMobs(forcePassive = false) {
         let diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
         if (diff.mobSpawn <= 0) {
-            entities = entities.filter(e => e instanceof Animal);
+            entities = entities.filter(e => (e instanceof Animal) || (e instanceof AtlasExplorer));
             if (!forcePassive) return;
         }
 
@@ -8399,6 +9149,7 @@ export const SKIN_H = 32;
 
         // 1. Despawn burning mobs in daytime and distant hostile mobs so the mob cap dynamically refreshes around active players
         entities = entities.filter(e => {
+            if (e instanceof AtlasExplorer) return !e.isDeparted;
             if (e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion) {
                 if (isDay && e instanceof Zombie) {
                     let headGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((e.x + e.width / 2) / TILE_SIZE)));
@@ -9492,6 +10243,7 @@ export const SKIN_H = 32;
                 else if (r < 0.09) col[y] = IDS.IRON_ORE;
                 else if (y > h + 10 && r < 0.115) col[y] = IDS.GOLD_ORE;
                 else if (y > h + 14 && r < 0.13) col[y] = IDS.DIAMOND_ORE;
+                else if (y > h + 12 && r < 0.14) col[y] = IDS.EMERALD_ORE;
                 else col[y] = IDS.STONE;
             }
 
@@ -12178,3 +12930,4 @@ try { if (typeof Parrot !== "undefined") window.Parrot = Parrot; } catch(e) {}
 try { if (typeof drawShoulderParrot !== "undefined") window.drawShoulderParrot = drawShoulderParrot; } catch(e) {}
 try { if (typeof dismountParrot !== "undefined") window.dismountParrot = dismountParrot; } catch(e) {}
 try { if (typeof dismountAllShoulderParrots !== "undefined") window.dismountAllShoulderParrots = dismountAllShoulderParrots; } catch(e) {}
+try { if (typeof AtlasExplorer !== "undefined") window.AtlasExplorer = AtlasExplorer; } catch(e) {}
