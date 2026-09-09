@@ -99,6 +99,16 @@ export const ATLAS_CATALOG = [
         name: 'Astral Shard',
         category: 'material',
         description: 'A pure crystallised fragment of the Astral Void used to forge Astral equipment in the Astral Infuser.'
+    },
+    {
+        id: 'trade_astral_infuser',
+        itemId: IDS.ASTRAL_INFUSER,
+        amount: 1,
+        cost: 7,
+        baseStock: 1,
+        name: 'Astral Infuser',
+        category: 'tiles',
+        description: 'Celestial crafting station forged from rift matter. Infuses diamond tools and armor with Astral Shards.'
     }
 ];
 
@@ -123,6 +133,10 @@ class AtlasTradeManagerClass {
         const trade = ATLAS_CATALOG.find(t => t.id === tradeId);
         if (!trade) return false;
         return getPlayerAstralEmeralds() >= trade.cost;
+    }
+
+    buyItem(tradeId) {
+        return this.executeTrade(tradeId);
     }
 
     executeTrade(tradeId) {
@@ -185,9 +199,10 @@ class AtlasTradeManagerClass {
             });
         }
 
-        // Refresh Market UI if open
-        if (typeof window !== 'undefined' && typeof window.renderAtlasMarketWares === 'function') {
-            window.renderAtlasMarketWares();
+        // Refresh Market UI & currency counters if open
+        if (typeof window !== 'undefined') {
+            if (typeof window.updateEmeraldsUI === 'function') window.updateEmeraldsUI();
+            if (typeof window.renderAtlasMarketWares === 'function') window.renderAtlasMarketWares();
         }
 
         return true;
@@ -241,8 +256,9 @@ class AtlasTradeManagerClass {
             playSound('astral_exchange');
             showToast(`✦ Acquired ${trade.name}! (-${trade.cost} Astral Emeralds)`);
             unlockAchievement('astral_pioneer');
-            if (typeof window !== 'undefined' && typeof window.renderAtlasMarketWares === 'function') {
-                window.renderAtlasMarketWares();
+            if (typeof window !== 'undefined') {
+                if (typeof window.updateEmeraldsUI === 'function') window.updateEmeraldsUI();
+                if (typeof window.renderAtlasMarketWares === 'function') window.renderAtlasMarketWares();
             }
         }
     }

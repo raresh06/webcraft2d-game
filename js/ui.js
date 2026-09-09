@@ -862,6 +862,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         return `<svg class="astral-emerald-pixel-art" viewBox="0 0 16 16" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="5" y="1" width="6" height="1" fill="#1e0836"/><rect x="4" y="2" width="1" height="1" fill="#1e0836"/><rect x="11" y="2" width="1" height="1" fill="#1e0836"/><rect x="3" y="3" width="1" height="1" fill="#1e0836"/><rect x="12" y="3" width="1" height="1" fill="#1e0836"/><rect x="2" y="4" width="1" height="1" fill="#1e0836"/><rect x="13" y="4" width="1" height="1" fill="#1e0836"/><rect x="1" y="5" width="1" height="6" fill="#1e0836"/><rect x="14" y="5" width="1" height="6" fill="#1e0836"/><rect x="2" y="11" width="1" height="1" fill="#1e0836"/><rect x="13" y="11" width="1" height="1" fill="#1e0836"/><rect x="3" y="12" width="1" height="1" fill="#1e0836"/><rect x="12" y="12" width="1" height="1" fill="#1e0836"/><rect x="4" y="13" width="1" height="1" fill="#1e0836"/><rect x="11" y="13" width="1" height="1" fill="#1e0836"/><rect x="5" y="14" width="6" height="1" fill="#1e0836"/><rect x="11" y="5" width="3" height="6" fill="#4c1d95"/><rect x="5" y="13" width="6" height="1" fill="#4c1d95"/><rect x="10" y="11" width="3" height="2" fill="#4c1d95"/><rect x="8" y="12" width="3" height="1" fill="#3b0764"/><rect x="5" y="2" width="6" height="1" fill="#6d28d9"/><rect x="4" y="4" width="8" height="1" fill="#c084fc"/><rect x="3" y="5" width="8" height="6" fill="#9333ea"/><rect x="3" y="11" width="7" height="1" fill="#9333ea"/><rect x="4" y="12" width="4" height="1" fill="#4c1d95"/><rect x="5" y="2" width="5" height="1" fill="#e9d5ff"/><rect x="4" y="3" width="3" height="1" fill="#e9d5ff"/><rect x="3" y="4" width="2" height="1" fill="#e9d5ff"/><rect x="2" y="5" width="1" height="3" fill="#e9d5ff"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#e9d5ff"/></svg>`;
     }
 
+    export function getMiniPixelEmeraldHtml(size = 12) {
+        return `<svg class="inline-block align-middle pixelated" viewBox="0 0 10 10" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges; vertical-align: -1px;"><rect x="3" y="0" width="4" height="1" fill="#047857"/><rect x="1" y="1" width="2" height="1" fill="#047857"/><rect x="7" y="1" width="2" height="1" fill="#047857"/><rect x="0" y="2" width="1" height="6" fill="#047857"/><rect x="9" y="2" width="1" height="6" fill="#047857"/><rect x="1" y="8" width="2" height="1" fill="#047857"/><rect x="7" y="8" width="2" height="1" fill="#047857"/><rect x="3" y="9" width="4" height="1" fill="#047857"/><rect x="3" y="1" width="4" height="1" fill="#6ee7b7"/><rect x="2" y="2" width="2" height="2" fill="#ffffff"/><rect x="4" y="2" width="4" height="2" fill="#34d399"/><rect x="1" y="3" width="8" height="4" fill="#10b981"/><rect x="2" y="7" width="6" height="1" fill="#059669"/><rect x="3" y="8" width="4" height="1" fill="#047857"/></svg>`;
+    }
+
+    export function getMiniPixelAstralStarHtml(size = 12) {
+        return `<svg class="inline-block align-middle pixelated" viewBox="0 0 10 10" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges; vertical-align: -1px;"><rect x="4" y="0" width="2" height="10" fill="#c084fc"/><rect x="0" y="4" width="10" height="2" fill="#c084fc"/><rect x="3" y="3" width="4" height="4" fill="#a855f7"/><rect x="4" y="4" width="2" height="2" fill="#ffffff"/><rect x="2" y="2" width="1" height="1" fill="#f3e8ff"/><rect x="7" y="2" width="1" height="1" fill="#f3e8ff"/><rect x="2" y="7" width="1" height="1" fill="#f3e8ff"/><rect x="7" y="7" width="1" height="1" fill="#f3e8ff"/></svg>`;
+    }
+
     export function syncCurrencyTextureImages() {
         if (typeof textures === 'undefined' || !textures) return;
         const emeraldSrc = textures[IDS?.EMERALD]?.src || '';
@@ -902,6 +910,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         // Atlas Market
         const marketGem = document.getElementById('atlas-market-gem-img');
         if (marketGem && astralSrc) marketGem.src = astralSrc;
+        const headerGem = document.getElementById('atlas-header-gem-img');
+        if (headerGem && astralSrc) headerGem.src = astralSrc;
+        const bottomGem = document.getElementById('atlas-bottom-astral-img');
+        if (bottomGem && astralSrc) bottomGem.src = astralSrc;
 
         // Astral Infuser
         const infuserHeaderGem = document.getElementById('infuser-header-gem-img');
@@ -1035,6 +1047,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         // Atlas Market
         const marketAstralEl = document.getElementById('atlas-market-astral-count');
         if (marketAstralEl) marketAstralEl.innerText = astralEmeralds.toLocaleString();
+        const bottomAstralEl = document.getElementById('atlas-bottom-astral-count');
+        if (bottomAstralEl) bottomAstralEl.innerText = astralEmeralds.toLocaleString();
 
         // Sync texture images
         syncCurrencyTextureImages();
@@ -1356,7 +1370,107 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }).join('');
     }
 
-    // --- Astral Exchange (Altar) ---
+    // --- Astral Emerald Exchange Illustrations ---
+    export function getTier1AstralIllustration() {
+        return `<svg class="pixelated inline-block" viewBox="0 0 24 20" width="48" height="40" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+            <!-- Glow halo -->
+            <rect x="10" y="2" width="4" height="1" fill="#7e22ce" opacity="0.6"/>
+            <rect x="8" y="3" width="8" height="1" fill="#7e22ce" opacity="0.6"/>
+            <rect x="6" y="4" width="12" height="12" fill="#581c87" opacity="0.3"/>
+            <rect x="4" y="6" width="16" height="8" fill="#581c87" opacity="0.2"/>
+            <!-- Astral Gem Body -->
+            <rect x="11" y="3" width="2" height="1" fill="#e9d5ff"/>
+            <rect x="10" y="4" width="4" height="1" fill="#d8b4fe"/>
+            <rect x="9" y="5" width="6" height="2" fill="#c084fc"/>
+            <rect x="8" y="7" width="8" height="6" fill="#9333ea"/>
+            <rect x="9" y="13" width="6" height="2" fill="#7e22ce"/>
+            <rect x="10" y="15" width="4" height="1" fill="#6b21a8"/>
+            <rect x="11" y="16" width="2" height="1" fill="#4c1d95"/>
+            <!-- Inner facets & specular shine -->
+            <rect x="10" y="6" width="2" height="2" fill="#ffffff"/>
+            <rect x="12" y="7" width="2" height="3" fill="#e9d5ff"/>
+            <rect x="10" y="9" width="3" height="3" fill="#a855f7"/>
+            <rect x="13" y="11" width="2" height="2" fill="#6b21a8"/>
+            <rect x="9" y="11" width="2" height="2" fill="#581c87"/>
+            <!-- Sparkle 1 -->
+            <rect x="4" y="4" width="1" height="3" fill="#38bdf8"/>
+            <rect x="3" y="5" width="3" height="1" fill="#38bdf8"/>
+            <rect x="4" y="5" width="1" height="1" fill="#ffffff"/>
+            <!-- Sparkle 2 -->
+            <rect x="19" y="12" width="1" height="3" fill="#fbbf24"/>
+            <rect x="18" y="13" width="3" height="1" fill="#fbbf24"/>
+            <rect x="19" y="13" width="1" height="1" fill="#ffffff"/>
+        </svg>`;
+    }
+
+    export function getTier2AstralIllustration() {
+        return `<svg class="pixelated inline-block" viewBox="0 0 28 20" width="56" height="40" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+            <!-- Aura -->
+            <rect x="4" y="3" width="20" height="14" fill="#581c87" opacity="0.3"/>
+            <!-- Left Main Gem -->
+            <rect x="8" y="2" width="2" height="1" fill="#e9d5ff"/>
+            <rect x="7" y="3" width="4" height="2" fill="#c084fc"/>
+            <rect x="6" y="5" width="6" height="7" fill="#9333ea"/>
+            <rect x="7" y="12" width="4" height="2" fill="#6b21a8"/>
+            <rect x="8" y="14" width="2" height="1" fill="#4c1d95"/>
+            <rect x="7" y="5" width="2" height="2" fill="#ffffff"/>
+            <rect x="8" y="7" width="2" height="3" fill="#d8b4fe"/>
+            <!-- Right Smaller Twin Gem -->
+            <rect x="17" y="5" width="2" height="1" fill="#e9d5ff"/>
+            <rect x="16" y="6" width="4" height="2" fill="#c084fc"/>
+            <rect x="15" y="8" width="6" height="6" fill="#9333ea"/>
+            <rect x="16" y="14" width="4" height="2" fill="#6b21a8"/>
+            <rect x="17" y="16" width="2" height="1" fill="#4c1d95"/>
+            <rect x="16" y="8" width="2" height="2" fill="#ffffff"/>
+            <rect x="17" y="10" width="2" height="2" fill="#d8b4fe"/>
+            <!-- Resonance Energy Arc connecting crystals -->
+            <rect x="12" y="7" width="3" height="1" fill="#38bdf8"/>
+            <rect x="13" y="8" width="2" height="1" fill="#67e8f9"/>
+            <rect x="11" y="9" width="4" height="1" fill="#a5f3fc"/>
+            <rect x="12" y="10" width="3" height="1" fill="#38bdf8"/>
+            <!-- Cosmic Sparks -->
+            <rect x="2" y="8" width="1" height="2" fill="#fbbf24"/>
+            <rect x="1" y="8" width="3" height="1" fill="#fbbf24"/>
+            <rect x="24" y="4" width="1" height="3" fill="#38bdf8"/>
+            <rect x="23" y="5" width="3" height="1" fill="#38bdf8"/>
+            <rect x="24" y="5" width="1" height="1" fill="#ffffff"/>
+            <rect x="14" y="15" width="1" height="2" fill="#e9d5ff"/>
+        </svg>`;
+    }
+
+    export function getTier3AstralIllustration() {
+        return `<svg class="pixelated inline-block" viewBox="0 0 30 20" width="60" height="40" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+            <!-- Outer Cosmic Ring -->
+            <rect x="10" y="1" width="10" height="1" fill="#7e22ce"/>
+            <rect x="6" y="2" width="18" height="1" fill="#9333ea"/>
+            <rect x="4" y="3" width="22" height="2" fill="#a855f7"/>
+            <rect x="3" y="5" width="24" height="10" fill="#6b21a8"/>
+            <rect x="4" y="15" width="22" height="2" fill="#a855f7"/>
+            <rect x="6" y="17" width="18" height="1" fill="#9333ea"/>
+            <rect x="10" y="18" width="10" height="1" fill="#7e22ce"/>
+            <!-- Swirling Event Horizon Disc -->
+            <rect x="8" y="4" width="14" height="12" fill="#3b0764"/>
+            <rect x="7" y="6" width="16" height="8" fill="#1e1035"/>
+            <rect x="9" y="5" width="12" height="10" fill="#2e1065"/>
+            <rect x="11" y="6" width="8" height="8" fill="#4c1d95"/>
+            <!-- Planar Core Vortex -->
+            <rect x="12" y="7" width="6" height="6" fill="#c084fc"/>
+            <rect x="13" y="8" width="4" height="4" fill="#e9d5ff"/>
+            <rect x="14" y="9" width="2" height="2" fill="#ffffff"/>
+            <!-- Radial Dimensional Rift Flares -->
+            <rect x="14" y="0" width="2" height="3" fill="#38bdf8"/>
+            <rect x="14" y="17" width="2" height="3" fill="#38bdf8"/>
+            <rect x="1" y="9" width="3" height="2" fill="#fbbf24"/>
+            <rect x="26" y="9" width="3" height="2" fill="#fbbf24"/>
+            <!-- Celestial Orbiting Debris -->
+            <rect x="5" y="4" width="2" height="2" fill="#67e8f9"/>
+            <rect x="23" y="4" width="2" height="2" fill="#f472b6"/>
+            <rect x="5" y="14" width="2" height="2" fill="#fde047"/>
+            <rect x="23" y="14" width="2" height="2" fill="#38bdf8"/>
+        </svg>`;
+    }
+
+    // --- Astral Emerald Exchange ---
     export function renderAstralExchangeUI() {
         const container = document.getElementById('vault-exchange-cards-container');
         if (!container) return;
@@ -1367,13 +1481,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const availEl = document.getElementById('vault-exchange-avail-emeralds');
         if (availEl) availEl.innerText = emeralds.toLocaleString();
 
+        const miniEmerald = getMiniPixelEmeraldHtml(12);
+        const miniAstral = getMiniPixelAstralStarHtml(12);
+        const starBadge = getMiniPixelAstralStarHtml(10);
+
         const tiers = [
             {
                 cost: 20,
                 gain: 1,
-                title: 'Basic Infusion',
+                title: 'Starter Exchange',
                 subtitle: 'Standard 20:1 conversion rate',
-                note: '20 ⬖ ➔ 1 ✦',
+                note: 'Standard Trade',
+                illustration: getTier1AstralIllustration(),
                 ribbon: null,
                 ribbonClass: '',
                 cardClass: 'tier-1'
@@ -1381,21 +1500,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             {
                 cost: 50,
                 gain: 3,
-                title: 'Focused Infusion',
-                subtitle: '16.7 ⬖ per gem • Save 10 Emeralds',
-                note: '16% Planar Discount',
-                ribbon: '+0.5 BONUS',
-                ribbonClass: 'bg-[#7c3aed] text-purple-100 border border-[#a855f7]',
+                title: 'Bulk Exchange',
+                subtitle: `16.7 ${miniEmerald} each • Save 10 Emeralds`,
+                note: '16% Emerald Discount',
+                illustration: getTier2AstralIllustration(),
                 cardClass: 'tier-2'
             },
             {
                 cost: 100,
                 gain: 7,
-                title: 'Master Transmutation',
-                subtitle: '14.3 ⬖ per gem • 40 Emerald discount!',
-                note: 'Best Value Conversion',
-                ribbon: '★ BEST VALUE (+2.0 BONUS) ★',
-                ribbonClass: 'bg-gradient-to-r from-[#ec4899] to-[#9333ea] text-white border border-[#f472b6] shadow-md',
+                title: 'Mega Exchange',
+                subtitle: `14.3 ${miniEmerald} each • Save 40 Emeralds!`,
+                note: 'Best Value Deal',
+                illustration: getTier3AstralIllustration(),
                 cardClass: 'tier-3'
             }
         ];
@@ -1404,48 +1521,48 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const canAfford = !isGuest && emeralds >= t.cost;
             let btnHtml = '';
             if (isGuest) {
-                btnHtml = `<button type="button" class="mc-btn exchange-tier-btn unaffordable !w-full !py-1 !text-lg !m-0" onclick="closeCurrencyHubModal(); openAuthProfileModal('credentials');">Sign In to Convert</button>`;
+                btnHtml = `<button type="button" class="exchange-card-action-btn unaffordable" onclick="closeCurrencyHubModal(); openAuthProfileModal('credentials');">Sign In to Exchange</button>`;
             } else if (canAfford) {
-                btnHtml = `<button type="button" class="mc-btn exchange-tier-btn affordable !w-full !py-1 !text-xl !m-0" onclick="performAstralExchange(${t.cost}, ${t.gain})">Transmute +${t.gain} ✦</button>`;
+                btnHtml = `<button type="button" class="exchange-card-action-btn affordable" onclick="performAstralExchange(${t.cost}, ${t.gain})">Exchange for +${t.gain} ${miniAstral}</button>`;
             } else {
                 const diff = t.cost - emeralds;
-                btnHtml = `<button type="button" class="mc-btn exchange-tier-btn unaffordable !w-full !py-1 !text-lg !m-0" disabled title="Need ${diff} more Emeralds">Need ${diff} more ⬖</button>`;
+                btnHtml = `<button type="button" class="exchange-card-action-btn unaffordable" disabled title="Need ${diff} more Emeralds">Need ${diff} more ${miniEmerald}</button>`;
             }
-
-            const ribbonHtml = t.ribbon ? `<div class="exchange-bonus-ribbon ${t.ribbonClass}">${t.ribbon}</div>` : '';
 
             return `
                 <div class="exchange-card ${t.cardClass}">
-                    ${ribbonHtml}
-                    <div class="w-full">
-                        <div class="text-xl font-bold text-purple-200 font-['VT323'] leading-tight mb-0.5">${t.title}</div>
-                        <div class="text-xs text-purple-400 font-['VT323']">${t.note}</div>
+
+                    <!-- Top: Card Header -->
+                    <div class="exchange-card-header flex-shrink-0">
+                        <div class="text-2xl font-bold text-purple-200 font-['VT323'] leading-tight mb-0.5">${t.title}</div>
+                        <div class="text-xs text-purple-400 font-['VT323'] uppercase tracking-wider">${t.note}</div>
                     </div>
 
-                    <!-- Visual Conversion Row with Pixel Art -->
-                    <div class="my-3 py-2 px-3 w-full bg-[#0d0915] border border-[#3b1a64] flex items-center justify-around rounded-sm shadow-inner">
-                        <!-- Cost: Emerald -->
-                        <div class="flex flex-col items-center gap-0.5">
-                            <div class="p-1 bg-[#0b1710] border border-[#1b6b3e] rounded-sm flex items-center justify-center">
-                                ${getPixelEmeraldSvg(22)}
-                            </div>
-                            <span class="text-emerald-400 font-bold font-['VT323'] text-xl leading-none mt-1">${t.cost} ⬖</span>
+                    <!-- Center Body: Illustration + Centered Preview Box + Rate Subtitle -->
+                    <div class="exchange-card-center-body">
+                        <div class="exchange-card-illustration" title="${t.title}">
+                            ${t.illustration}
                         </div>
 
-                        <!-- Animated Portal Arrow -->
-                        <div class="exchange-portal-arrow px-1">➔</div>
-
-                        <!-- Gain: Astral Gem -->
-                        <div class="flex flex-col items-center gap-0.5">
-                            <div class="p-1 bg-[#190c2a] border border-[#6b21a8] rounded-sm flex items-center justify-center">
-                                ${getPixelAstralEmeraldSvg(22)}
+                        <div class="exchange-preview-box">
+                            <div class="flex items-center gap-1">
+                                <span class="text-emerald-400 font-bold font-['VT323'] text-2xl leading-none">${t.cost}</span>
+                                <span class="inline-flex items-center">${getPixelEmeraldSvg(16)}</span>
                             </div>
-                            <span class="text-purple-300 font-bold font-['VT323'] text-xl leading-none mt-1">+${t.gain} ✦</span>
+                            <span class="text-purple-400 font-bold text-sm px-1">➔</span>
+                            <div class="flex items-center gap-1">
+                                <span class="text-purple-300 font-bold font-['VT323'] text-2xl leading-none">+${t.gain}</span>
+                                <span class="inline-flex items-center">${getPixelAstralEmeraldSvg(16)}</span>
+                            </div>
                         </div>
+
+                        <div class="text-xs text-purple-200/80 font-['VT323'] leading-tight text-center px-1">${t.subtitle}</div>
                     </div>
 
-                    <div class="text-xs text-purple-200/80 font-['VT323'] mb-3 leading-snug">${t.subtitle}</div>
-                    <div class="w-full mt-auto">${btnHtml}</div>
+                    <!-- Bottom: Cleanly Placed Button Inside Card -->
+                    <div class="exchange-card-btn-wrap">
+                        ${btnHtml}
+                    </div>
                 </div>
             `;
         }).join('');
@@ -1454,7 +1571,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function performAstralExchange(emeraldCost, astralGain) {
         const isGuest = !currentUserProfile || currentUserProfile.isGuest;
         if (isGuest) {
-            showToast("✦ Registered account required for Astral Transmutation! ✦");
+            showToast("Registered account required for Astral Emerald Exchange!");
             return;
         }
         const current = getPlayerEmeralds();
@@ -1465,7 +1582,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         addPlayerEmeralds(-emeraldCost);
         addPlayerAstralEmeralds(astralGain);
         playSound('astral_exchange');
-        showToast(`✦ Transmuted ${emeraldCost} Emeralds into +${astralGain} Astral Emerald${astralGain > 1 ? 's' : ''}! ✦`);
+        showToast(`Exchanged ${emeraldCost} Emeralds for +${astralGain} Astral Emerald${astralGain > 1 ? 's' : ''}!`);
         unlockAchievement('astral_pioneer');
         updateEmeraldsUI();
         renderAstralExchangeUI();
@@ -1532,10 +1649,25 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     // --- Kael The Atlas Explorer Dialogue System ---
     let activeKaelEntity = null;
     let currentKaelNode = 'start';
+    let hasTalkedToKael = false;
+    try {
+        hasTalkedToKael = localStorage.getItem('webcraft_kael_talked') === 'true';
+    } catch (e) {}
+
+    export function hasPlayerTalkedToKael() {
+        return hasTalkedToKael;
+    }
+
+    export function setPlayerTalkedToKael(val = true) {
+        hasTalkedToKael = !!val;
+        try {
+            localStorage.setItem('webcraft_kael_talked', hasTalkedToKael ? 'true' : 'false');
+        } catch (e) {}
+    }
 
     export const KAEL_DIALOGUES = {
         start: {
-            speaker: "Kael, The Atlas Explorer",
+            speaker: "Kael:",
             subtitle: "Planar Cartographer & Rift Walker",
             text: "Greetings, traveler of the mortal surface. I am Kael, The Atlas Explorer.\n\nThe world fabric fractures where the stars bleed... Have you felt the cosmic ripples across this realm?",
             options: [
@@ -1547,7 +1679,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             ]
         },
         who_are_you: {
-            speaker: "Kael, The Atlas Explorer",
+            speaker: "Kael:",
             subtitle: "Planar Cartographer & Rift Walker",
             text: "I walk the corridors between dimensions, mapping forgotten realms and cosmic singularities.\n\nMy planar astrolabes require Astral Emeralds to pierce the void and chart the endless unknown.",
             options: [
@@ -1558,7 +1690,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             ]
         },
         lore_rifts: {
-            speaker: "Kael, The Atlas Explorer",
+            speaker: "Kael:",
             subtitle: "Planar Cartographer & Rift Walker",
             text: "A rift is a fracture where dimensional planes collide. They open every few planetary cycles, anchoring near mortal campfires and shelters.\n\nWhen the tear collapses, I must step back through the void to other horizons.",
             options: [
@@ -1568,9 +1700,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             ]
         },
         astral_emeralds: {
-            speaker: "Kael, The Atlas Explorer",
+            speaker: "Kael:",
             subtitle: "Planar Cartographer & Rift Walker",
-            text: "Astral Emeralds are pure crystallized cosmic energy. You can transmute standard emeralds into astral gems at your Currency Hub Altar, or gather them from otherworldly encounters.\n\nI accept only Astral Emeralds for my catalog.",
+            text: "Astral Emeralds are pure crystallized cosmic energy. You can trade standard emeralds for astral gems at the Astral Emerald Exchange in your Currency Hub, or gather them from otherworldly encounters.\n\nI accept only Astral Emeralds for my catalog.",
             options: [
                 { label: "Show me what you offer. [Open Astral Market]", action: "open_market" },
                 { label: "I will gather more gems. Farewell.", action: "close" }
@@ -1585,35 +1717,134 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         ctx.imageSmoothingEnabled = false;
         ctx.clearRect(0, 0, 64, 64);
 
-        // Nomadic cowl
-        ctx.fillStyle = '#1e0836';
-        ctx.fillRect(8, 4, 48, 56);
-        ctx.fillStyle = '#3b0764';
-        ctx.fillRect(12, 8, 40, 48);
+        // 1. Subtle deep cosmic slate backdrop
+        ctx.fillStyle = '#141829';
+        ctx.fillRect(0, 0, 64, 64);
 
-        // Shadowed interior
-        ctx.fillStyle = '#0f051d';
-        ctx.fillRect(18, 16, 28, 28);
+        // Backdrop planar stars / motes
+        ctx.fillStyle = 'rgba(192, 132, 252, 0.4)';
+        ctx.fillRect(6, 8, 2, 2);
+        ctx.fillRect(54, 12, 2, 2);
+        ctx.fillRect(8, 48, 2, 2);
+        ctx.fillRect(56, 44, 2, 2);
 
-        // Glowing cyan eyes
-        ctx.fillStyle = '#06b6d4';
-        ctx.fillRect(22, 26, 6, 4);
-        ctx.fillRect(36, 26, 6, 4);
-        ctx.fillStyle = '#a5f3fc';
-        ctx.fillRect(24, 27, 2, 2);
-        ctx.fillRect(38, 27, 2, 2);
+        // 2. Leather adventurer coat collar & shoulders
+        ctx.fillStyle = '#381c08'; // Deep shadowed leather
+        ctx.fillRect(6, 46, 52, 18);
+        ctx.fillStyle = '#5c2e0f'; // Warm tanned leather mantle
+        ctx.fillRect(10, 48, 44, 16);
+        ctx.fillStyle = '#7a3e15'; // Shoulder pads highlight
+        ctx.fillRect(8, 52, 10, 12);
+        ctx.fillRect(46, 52, 10, 12);
 
-        // Astral scarf
-        ctx.fillStyle = '#7c3aed';
-        ctx.fillRect(14, 40, 36, 16);
-        ctx.fillStyle = '#c084fc';
-        ctx.fillRect(16, 44, 32, 4);
-
-        // Shimmer sparkles
+        // 3. Indigo traveler tunic & celestial scarf
+        ctx.fillStyle = '#1e1b4b'; // Deep navy tunic
+        ctx.fillRect(22, 48, 20, 16);
+        ctx.fillStyle = '#312e81'; // Celestial scarf folds
+        ctx.fillRect(20, 50, 24, 6);
+        ctx.fillStyle = '#4338ca';
+        ctx.fillRect(24, 52, 16, 4);
+        // Golden compass / star pin on scarf
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(30, 51, 4, 4);
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(16, 12, 2, 2);
-        ctx.fillRect(46, 14, 2, 2);
-        ctx.fillRect(48, 48, 2, 2);
+        ctx.fillRect(31, 52, 2, 2);
+
+        // 4. Human neck
+        ctx.fillStyle = '#c68b59'; // Neck shadow
+        ctx.fillRect(26, 40, 12, 10);
+        ctx.fillStyle = '#dba075'; // Neck base
+        ctx.fillRect(28, 42, 8, 8);
+
+        // 5. Human face / head shape (matching player proportions)
+        ctx.fillStyle = '#c68b59'; // Chin / jawline outline
+        ctx.fillRect(18, 18, 28, 26);
+        ctx.fillStyle = '#e8b188'; // Human skin base tone
+        ctx.fillRect(20, 18, 24, 24);
+        ctx.fillStyle = '#f3c49e'; // Cheek and forehead highlight
+        ctx.fillRect(22, 20, 20, 12);
+        ctx.fillRect(24, 32, 16, 8);
+
+        // Human ears
+        ctx.fillStyle = '#dba075';
+        ctx.fillRect(16, 26, 4, 8);
+        ctx.fillRect(44, 26, 4, 8);
+        ctx.fillStyle = '#fbbf24'; // Small brass ear stud on left
+        ctx.fillRect(16, 31, 2, 2);
+
+        // 6. Windswept dark chestnut hair
+        ctx.fillStyle = '#26150a'; // Hair deep shadow
+        ctx.fillRect(16, 12, 32, 12);
+        ctx.fillRect(14, 18, 6, 14);
+        ctx.fillRect(44, 18, 6, 14);
+        ctx.fillStyle = '#4a2e1b'; // Hair main body
+        ctx.fillRect(18, 10, 28, 10);
+        ctx.fillRect(16, 14, 32, 6);
+        // Swept bangs across forehead
+        ctx.fillRect(20, 18, 12, 4);
+        ctx.fillRect(22, 22, 6, 3);
+        ctx.fillStyle = '#6e4428'; // Hair top highlight
+        ctx.fillRect(22, 9, 20, 4);
+
+        // 7. Brass explorer goggles pushed up on forehead
+        ctx.fillStyle = '#381c08'; // Leather goggle strap
+        ctx.fillRect(16, 16, 32, 3);
+        // Left brass goggle
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(22, 13, 8, 8);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(23, 14, 6, 6);
+        ctx.fillStyle = '#0284c7'; // Cyan lens
+        ctx.fillRect(24, 15, 4, 4);
+        ctx.fillStyle = '#ffffff'; // Glint
+        ctx.fillRect(24, 15, 2, 2);
+        // Right brass goggle
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(34, 13, 8, 8);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(35, 14, 6, 6);
+        ctx.fillStyle = '#0284c7'; // Cyan lens
+        ctx.fillRect(36, 15, 4, 4);
+        ctx.fillStyle = '#ffffff'; // Glint
+        ctx.fillRect(36, 15, 2, 2);
+
+        // 8. Human facial features
+        // Eyebrows
+        ctx.fillStyle = '#362012';
+        ctx.fillRect(23, 26, 6, 2);
+        ctx.fillRect(35, 26, 6, 2);
+
+        // Human Eyes (white sclera, dark pupil, celestial cyan/hazel iris)
+        // Left eye
+        ctx.fillStyle = '#ffffff'; // Sclera
+        ctx.fillRect(23, 29, 6, 4);
+        ctx.fillStyle = '#0284c7'; // Celestial cyan iris
+        ctx.fillRect(25, 29, 3, 4);
+        ctx.fillStyle = '#0f172a'; // Pupil
+        ctx.fillRect(26, 30, 2, 2);
+        ctx.fillStyle = '#ffffff'; // Eye specular reflection
+        ctx.fillRect(25, 29, 1, 1);
+
+        // Right eye
+        ctx.fillStyle = '#ffffff'; // Sclera
+        ctx.fillRect(35, 29, 6, 4);
+        ctx.fillStyle = '#0284c7'; // Celestial cyan iris
+        ctx.fillRect(36, 29, 3, 4);
+        ctx.fillStyle = '#0f172a'; // Pupil
+        ctx.fillRect(37, 30, 2, 2);
+        ctx.fillStyle = '#ffffff'; // Eye specular reflection
+        ctx.fillRect(36, 29, 1, 1);
+
+        // Nose
+        ctx.fillStyle = '#c68a5f';
+        ctx.fillRect(31, 31, 2, 5);
+        ctx.fillRect(29, 35, 6, 2);
+
+        // Warm traveler's smile
+        ctx.fillStyle = '#995832';
+        ctx.fillRect(29, 39, 6, 2);
+        ctx.fillStyle = '#c68a5f';
+        ctx.fillRect(30, 40, 4, 1);
     }
 
     export function openAtlasDialogue(explorerEntity) {
@@ -1628,6 +1859,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function closeAtlasDialogue() {
+        setPlayerTalkedToKael(true);
         const modal = document.getElementById('atlas-dialogue-modal');
         if (modal) modal.classList.add('hidden');
         activeKaelEntity = null;
@@ -1637,28 +1869,34 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const node = KAEL_DIALOGUES[nodeKey] || KAEL_DIALOGUES.start;
         currentKaelNode = nodeKey;
 
+        const speakerEl = document.getElementById('atlas-dialogue-speaker');
+        if (speakerEl) speakerEl.innerText = node.speaker || 'Kael:';
+
         const textEl = document.getElementById('atlas-speech-text');
         if (textEl) textEl.innerText = node.text;
 
         const optsContainer = document.getElementById('atlas-dialogue-options');
         if (optsContainer) {
             optsContainer.innerHTML = node.options.map((opt, idx) => `
-                <button type="button" class="atlas-dialogue-option-btn" onclick="handleAtlasDialogueChoice(${idx})">
-                    ${opt.label}
+                <button type="button" class="atlas-floating-option-btn" onclick="handleAtlasDialogueChoice(${idx})">
+                    <span class="atlas-option-bullet">▶</span>
+                    <span class="atlas-option-label">${opt.label}</span>
                 </button>
             `).join('');
         }
     }
 
     export function handleAtlasDialogueChoice(choiceIndex) {
+        setPlayerTalkedToKael(true);
         const node = KAEL_DIALOGUES[currentKaelNode] || KAEL_DIALOGUES.start;
         const opt = node.options[choiceIndex];
         if (!opt) return;
 
         playSound('click');
         if (opt.action === 'open_market') {
+            const targetKael = activeKaelEntity;
             closeAtlasDialogue();
-            openAtlasMarket(activeKaelEntity);
+            openAtlasMarket(targetKael);
         } else if (opt.action === 'close') {
             closeAtlasDialogue();
         } else if (opt.next) {
@@ -1667,73 +1905,182 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     // --- Atlas Market Controller ---
+    export let currentAtlasCategory = 'all';
+
+    export function switchAtlasCategory(category) {
+        currentAtlasCategory = category;
+        playSound('click', { isUI: true, vol: 0.8 });
+        const tabs = ['all', 'flora', 'relic', 'gear', 'planar'];
+        tabs.forEach(t => {
+            const btn = document.getElementById(`atlas-tab-${t}-btn`);
+            if (btn) {
+                if (t === category) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
+        });
+        renderAtlasMarketWares();
+    }
+
     export function openAtlasMarket(explorerEntity) {
         const modal = document.getElementById('atlas-market-modal');
         if (!modal) return;
         modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        currentAtlasCategory = 'all';
+        const tabs = ['all', 'flora', 'relic', 'gear', 'planar'];
+        tabs.forEach(t => {
+            const btn = document.getElementById(`atlas-tab-${t}-btn`);
+            if (btn) {
+                if (t === 'all') btn.classList.add('active');
+                else btn.classList.remove('active');
+            }
+        });
         updateEmeraldsUI();
         renderAtlasMarketWares();
     }
 
     export function closeAtlasMarket() {
         const modal = document.getElementById('atlas-market-modal');
-        if (modal) modal.classList.add('hidden');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = '';
+        }
     }
 
     export function renderAtlasMarketWares() {
-        const grid = document.getElementById('atlas-market-grid');
-        if (!grid) return;
+        try {
+            const grid = document.getElementById('atlas-market-grid');
+            if (!grid) return;
 
-        const catalog = window.ATLAS_CATALOG || (typeof ATLAS_CATALOG !== 'undefined' ? ATLAS_CATALOG : []);
-        const balance = getPlayerAstralEmeralds();
+            const catalog = (typeof window !== 'undefined' && window.ATLAS_CATALOG) ? window.ATLAS_CATALOG : (typeof ATLAS_CATALOG !== 'undefined' ? ATLAS_CATALOG : []);
+            const balance = getPlayerAstralEmeralds();
 
-        grid.innerHTML = catalog.map(item => {
-            const stock = window.AtlasTradeManager ? window.AtlasTradeManager.getStock(item.id) : item.baseStock;
-            const canAfford = balance >= item.cost;
-            const inStock = stock > 0;
-            const isBuyable = canAfford && inStock;
-            const itemSrc = (typeof textures !== 'undefined' && textures && textures[item.itemId]?.src) || '';
+            // Update tab count badges dynamically
+            const elAll = document.getElementById('atlas-tab-all-count');
+            if (elAll) elAll.innerText = catalog.length;
+            const elFlora = document.getElementById('atlas-tab-flora-count');
+            if (elFlora) elFlora.innerText = catalog.filter(i => i.category === 'flora').length;
+            const elRelic = document.getElementById('atlas-tab-relic-count');
+            if (elRelic) elRelic.innerText = catalog.filter(i => i.category === 'relic').length;
+            const elGear = document.getElementById('atlas-tab-gear-count');
+            if (elGear) elGear.innerText = catalog.filter(i => i.category === 'gear').length;
+            const elPlanar = document.getElementById('atlas-tab-planar-count');
+            if (elPlanar) elPlanar.innerText = catalog.filter(i => i.category === 'tiles' || i.category === 'material').length;
+
+            const filteredItems = catalog.filter(item => {
+                if (currentAtlasCategory === 'all') return true;
+                if (currentAtlasCategory === 'flora') return item.category === 'flora';
+                if (currentAtlasCategory === 'relic') return item.category === 'relic';
+                if (currentAtlasCategory === 'gear') return item.category === 'gear';
+                if (currentAtlasCategory === 'planar') return item.category === 'tiles' || item.category === 'material';
+                return true;
+            });
+
+            if (filteredItems.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center p-8 text-center text-[#8292a0] font-['VT323']">
+                        <span class="text-3xl mb-1 text-purple-300">No Wares In Category</span>
+                        <span class="text-base text-[#94a3b8]">Kael has no items in this planar category at the moment.</span>
+                    </div>
+                `;
+                return;
+            }
+
             const astralSrc = (typeof textures !== 'undefined' && textures && textures[IDS?.ASTRAL_EMERALD]?.src) || '';
 
-            let categoryColor = '#818cf8';
-            if (item.category === 'flora') categoryColor = '#34d399';
-            if (item.category === 'relic') categoryColor = '#f472b6';
-            if (item.category === 'gear') categoryColor = '#fbbf24';
+            grid.innerHTML = filteredItems.map(item => {
+                const stock = (typeof window !== 'undefined' && window.AtlasTradeManager) ? window.AtlasTradeManager.getStock(item.id) : item.baseStock;
+                const canAfford = balance >= item.cost;
+                const inStock = stock > 0;
+                const isBuyable = canAfford && inStock;
+                const itemSrc = (typeof textures !== 'undefined' && textures && textures[item.itemId]?.src) || '';
 
-            return `
-                <div class="atlas-market-card flex flex-col justify-between p-3 bg-[#171b20] border-2 border-[#333a41] shadow-sm">
-                    <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <span class="atlas-ware-badge" style="background: ${categoryColor}22; color: ${categoryColor}; border: 1px solid ${categoryColor}55;">
-                                ${item.category}
-                            </span>
-                            <span class="text-xs font-['VT323'] ${inStock ? 'text-cyan-300' : 'text-red-400'}">
-                                Stock: ${stock} / ${item.baseStock}
-                            </span>
+                let categoryName = 'Relic';
+                let categoryColor = '#c084fc';
+                if (item.category === 'flora') {
+                    categoryName = 'Exotic Flora';
+                    categoryColor = '#34d399';
+                } else if (item.category === 'relic') {
+                    categoryName = 'Audio Relic';
+                    categoryColor = '#f472b6';
+                } else if (item.category === 'gear') {
+                    categoryName = 'Cosmic Gear';
+                    categoryColor = '#fbbf24';
+                } else if (item.category === 'tiles') {
+                    categoryName = 'Planar Block';
+                    categoryColor = '#38bdf8';
+                } else if (item.category === 'material') {
+                    categoryName = 'Stellar Shard';
+                    categoryColor = '#a855f7';
+                }
+
+                let buttonLabel = 'Trade';
+                let buttonDisabledAttr = '';
+                let buttonStyleClass = '!bg-[#6d28d9] hover:!bg-[#7c3aed] !text-white';
+                if (!inStock) {
+                    buttonLabel = 'Sold Out';
+                    buttonDisabledAttr = 'disabled';
+                    buttonStyleClass = '!bg-[#2d353e] !text-[#64748b] opacity-60 cursor-not-allowed';
+                } else if (!canAfford) {
+                    const diff = item.cost - balance;
+                    buttonLabel = `Need ${diff} Astral`;
+                    buttonDisabledAttr = 'disabled';
+                    buttonStyleClass = '!bg-[#382645] !text-[#d8b4fe] opacity-80 cursor-not-allowed border-purple-800';
+                }
+
+                return `
+                    <div class="atlas-market-card flex flex-col justify-between">
+                        <div>
+                            <!-- Category Badge + Stock Indicator -->
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="atlas-ware-badge" style="background: ${categoryColor}18; color: ${categoryColor}; border: 1px solid ${categoryColor}66;">
+                                    ${categoryName}
+                                </span>
+                                ${inStock ? `
+                                    <span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-600/50 flex items-center gap-1 shadow-inner">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        <span>STOCK: ${stock}/${item.baseStock}</span>
+                                    </span>
+                                ` : `
+                                    <span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-red-400 bg-red-950/60 border border-red-600/50 shadow-inner">
+                                        SOLD OUT
+                                    </span>
+                                `}
+                            </div>
+
+                            <!-- Item Icon + Name + Description -->
+                            <div class="flex items-start gap-3 mb-2">
+                                <div class="atlas-item-icon-frame flex-shrink-0">
+                                    ${itemSrc ? `<img src="${itemSrc}" class="pixelated w-8 h-8 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" alt="${item.name}" />` : ''}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-lg sm:text-xl font-bold text-purple-200 font-['VT323'] leading-tight truncate drop-shadow-[1px_1px_0_#000]">${item.name}</div>
+                                    <p class="text-xs sm:text-sm text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-0.5 drop-shadow-[1px_1px_0_#000]">${item.description}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex items-start gap-2.5 mb-2">
-                            <div class="w-11 h-11 bg-[#101316] border-2 border-[#2b3542] flex items-center justify-center p-1 flex-shrink-0 shadow-inner">
-                                ${itemSrc ? `<img src="${itemSrc}" class="pixelated w-8 h-8 object-contain" alt="${item.name}" />` : ''}
+
+                        <!-- Footer: Astral Price + Action Button -->
+                        <div class="flex items-center justify-between pt-2 border-t border-[#2b3542] mt-auto">
+                            <div class="flex items-center gap-1.5 bg-[#12161b] px-2.5 py-1 border border-[#2b3542] shadow-inner">
+                                ${astralSrc ? `<img src="${astralSrc}" class="pixelated w-5 h-5 object-contain" alt="Astral Emerald" />` : ''}
+                                <span class="text-xl sm:text-2xl font-bold text-[#c084fc] font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000]">${item.cost}</span>
+                                <span class="text-[11px] text-purple-300 font-['VT323'] uppercase tracking-wider">ASTRAL</span>
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate">${item.name}</div>
-                                <p class="text-xs text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-0.5">${item.description}</p>
-                            </div>
+                            <button class="mc-btn ${buttonStyleClass} !w-auto !min-w-[90px] !px-3 !py-1 !text-lg !font-['VT323']" 
+                                    onclick="window.AtlasTradeManager ? window.AtlasTradeManager.buyItem('${item.id}') : null" ${buttonDisabledAttr}>
+                                ${buttonLabel}
+                            </button>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-[#2b3542] mt-auto">
-                        <div class="flex items-center gap-1.5">
-                            ${astralSrc ? `<img src="${astralSrc}" class="pixelated w-5 h-5 object-contain" alt="Astral" />` : ''}
-                            <span class="text-xl font-bold text-[#c084fc] font-['VT323'] leading-none">${item.cost}</span>
-                        </div>
-                        <button class="mc-btn !w-auto !px-3 !py-0.5 !text-lg !bg-[#6d28d9] hover:!bg-[#7c3aed] !text-white disabled:opacity-40 disabled:cursor-not-allowed" 
-                                onclick="window.AtlasTradeManager.buyItem('${item.id}')" ${isBuyable ? '' : 'disabled'}>
-                            ${!inStock ? 'Sold Out' : (canAfford ? 'Trade' : 'Need Astral')}
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
+                `;
+            }).join('');
+        } catch (err) {
+            console.error('Error rendering Atlas Market wares:', err);
+        }
     }
 
     // --- Astral Infuser Station Controller ---
@@ -3195,8 +3542,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
 
     export const RECIPES = [
-        { output: { id: IDS.SAPLING, count: 1 }, inputs: [{ id: IDS.SEEDS, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: false, category: 'utility' },
-        { output: { id: IDS.SAPLING, count: 1 }, inputs: [{ id: IDS.LEAVES, count: 2 }], reqTable: false, category: 'utility' },
         { output: { id: IDS.BUCKET, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 3 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.JUKEBOX, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 8 }, { id: IDS.DIAMOND, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.EMPTY_VINYL, count: 1 }, inputs: [{ id: IDS.COAL, count: 4 }, { id: IDS.IRON_INGOT, count: 1 }], reqTable: true, category: 'utility' },
@@ -3207,7 +3552,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.PLANKS, count: 2 }], reqTable: false },
         { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 2 }], reqTable: false },
         { output: { id: IDS.JUNGLE_DOOR, count: 1 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.JUNGLE_SAPLING, count: 1 }, inputs: [{ id: IDS.JUNGLE_LEAVES, count: 2 }], reqTable: false, category: 'utility' },
         { output: { id: IDS.MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
         { output: { id: IDS.MELON, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.LADDER, count: 3 }, inputs: [{ id: IDS.STICK, count: 7 }], reqTable: true, category: 'blocks' },
@@ -3262,7 +3606,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         { output: { id: IDS.CHESTPLATE_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 8 }], reqTable: true, category: 'armor' },
         { output: { id: IDS.LEGGINGS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 7 }], reqTable: true, category: 'armor' },
         { output: { id: IDS.BOOTS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 4 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.ASTRAL_INFUSER, count: 1 }, inputs: [{ id: IDS.OBSIDIAN, count: 4 }, { id: IDS.DIAMOND, count: 2 }, { id: IDS.CRAFTING_TABLE, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.SUNBURST_MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
         { output: { id: IDS.SUNBURST_MELON, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' }
     ];
@@ -3356,6 +3699,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             iconItem: IDS.MELON_SEEDS,
             badge: 'Easy',
             difficulty: 'Easy'
+        },
+        {
+            id: 'first_contact',
+            title: 'First Contact',
+            description: 'Speak with Kael, The Atlas Explorer upon his planar rift arrival.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 10
         },
 
         // --- MEDIUM TIER ---
@@ -3455,6 +3807,51 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             badge: 'Medium',
             difficulty: 'Medium'
         },
+        {
+            id: 'astral_pioneer',
+            title: 'Astral Pioneer',
+            description: 'Acquire or exchange your very first Astral Emerald.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'gem_prospector',
+            title: 'Gem Prospector',
+            description: 'Discover and mine a natural Emerald Ore vein in the mountains or cavern depths.',
+            iconItem: IDS.EMERALD_ORE,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 25
+        },
+        {
+            id: 'jungle_explorer',
+            title: 'Deep Jungle Explorer',
+            description: 'Traverse the wild Jungle biome and harvest lush jungle wood or melons.',
+            iconItem: IDS.JUNGLE_WOOD,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'bamboo_forester',
+            title: 'Bamboo Forester',
+            description: 'Plant and cultivate a towering bamboo thicket.',
+            iconItem: IDS.BAMBOO,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'bird_whisperer',
+            title: 'Bird Whisperer',
+            description: 'Tame a wild jungle parrot with seeds to perch on your shoulder.',
+            iconItem: IDS.SEEDS,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 25
+        },
 
         // --- HARD TIER ---
         {
@@ -3521,6 +3918,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             badge: 'Hard',
             difficulty: 'Hard'
         },
+        {
+            id: 'void_technician',
+            title: 'Void Technician',
+            description: 'Infuse Diamond equipment with an Astral Shard at the Astral Infuser station.',
+            iconItem: IDS.ASTRAL_PICKAXE,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 35
+        },
+        {
+            id: 'daily_hustler',
+            title: 'Daily Hustler',
+            description: 'Complete and claim all Daily Challenges in a single day.',
+            iconItem: IDS.CHEST,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 40
+        },
 
         // --- MASTER TIER ---
         {
@@ -3578,78 +3993,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             iconItem: IDS.FEATHER,
             badge: 'Master',
             difficulty: 'Master'
-        },
-        {
-            id: 'first_contact',
-            title: 'First Contact',
-            description: 'Speak with Kael, The Atlas Explorer upon his planar rift arrival.',
-            iconItem: IDS.ASTRAL_EMERALD,
-            badge: 'Easy',
-            difficulty: 'Easy',
-            emeraldReward: 10
-        },
-        {
-            id: 'astral_pioneer',
-            title: 'Astral Pioneer',
-            description: 'Acquire or transmute your very first Astral Emerald.',
-            iconItem: IDS.ASTRAL_EMERALD,
-            badge: 'Medium',
-            difficulty: 'Medium',
-            emeraldReward: 20
-        },
-        {
-            id: 'gem_prospector',
-            title: 'Gem Prospector',
-            description: 'Discover and mine a natural Emerald Ore vein in the mountains or cavern depths.',
-            iconItem: IDS.EMERALD_ORE,
-            badge: 'Medium',
-            difficulty: 'Medium',
-            emeraldReward: 25
-        },
-        {
-            id: 'void_technician',
-            title: 'Void Technician',
-            description: 'Infuse Diamond equipment with an Astral Shard at the Astral Infuser station.',
-            iconItem: IDS.ASTRAL_PICKAXE,
-            badge: 'Hard',
-            difficulty: 'Hard',
-            emeraldReward: 35
-        },
-        {
-            id: 'daily_hustler',
-            title: 'Planar Hustler',
-            description: 'Complete and claim all Daily Challenges in a single day.',
-            iconItem: IDS.CHEST,
-            badge: 'Hard',
-            difficulty: 'Hard',
-            emeraldReward: 40
-        },
-        {
-            id: 'jungle_explorer',
-            title: 'Deep Jungle Explorer',
-            description: 'Traverse the wild Jungle biome and harvest lush jungle wood or melons.',
-            iconItem: IDS.JUNGLE_WOOD,
-            badge: 'Medium',
-            difficulty: 'Medium',
-            emeraldReward: 20
-        },
-        {
-            id: 'bamboo_forester',
-            title: 'Bamboo Forester',
-            description: 'Plant and cultivate a towering bamboo thicket.',
-            iconItem: IDS.BAMBOO,
-            badge: 'Medium',
-            difficulty: 'Medium',
-            emeraldReward: 20
-        },
-        {
-            id: 'bird_whisperer',
-            title: 'Bird Whisperer',
-            description: 'Tame a wild jungle parrot with seeds to perch on your shoulder.',
-            iconItem: IDS.SEEDS,
-            badge: 'Medium',
-            difficulty: 'Medium',
-            emeraldReward: 25
         }
     ];
 
@@ -3926,9 +4269,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (badge) badge.innerText = `${activeCount} / ${total} (${percent}%)`;
 
         const frag = document.createDocumentFragment();
-        const filteredList = selectedAchDifficultyFilter === 'all' 
+        const DIFFICULTY_ORDER = { 'Easy': 1, 'Medium': 2, 'Hard': 3, 'Master': 4 };
+        const rawList = selectedAchDifficultyFilter === 'all' 
             ? ACHIEVEMENTS 
             : ACHIEVEMENTS.filter(a => a.difficulty === selectedAchDifficultyFilter);
+
+        // Organize on difficulties: Easy -> Medium -> Hard -> Master
+        const filteredList = [...rawList].sort((a, b) => {
+            const orderA = DIFFICULTY_ORDER[a.difficulty] || 99;
+            const orderB = DIFFICULTY_ORDER[b.difficulty] || 99;
+            return orderA - orderB;
+        });
 
         filteredList.forEach(ach => {
             const unlockedAt = activeData[ach.id];
@@ -6207,10 +6558,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             
             // 1. Determine world dimensions first before decompression
             let targetSize = data.worldSize;
-            let targetWidth = data.worldWidth || (targetSize === 'big' ? 2048 : 512);
-            let targetHeight = data.worldHeight || (targetSize === 'big' ? 512 : 256);
+            let targetWidth = data.worldWidth || (targetSize === 'big' ? 2048 : 1024);
+            let targetHeight = data.worldHeight || (targetSize === 'big' ? 512 : 320);
             if (!targetSize) {
-                targetSize = targetWidth > 700 ? 'big' : 'small';
+                targetSize = targetWidth > 1200 ? 'big' : 'small';
             }
             setWorldDimensions(targetSize, targetWidth, targetHeight);
 
@@ -10671,6 +11022,8 @@ try { if (typeof switchVaultTab !== "undefined") window.switchVaultTab = switchV
 try { if (typeof openAchievementsFromVault !== "undefined") window.openAchievementsFromVault = openAchievementsFromVault; } catch(e) {}
 try { if (typeof KAEL_DIALOGUES !== "undefined") window.KAEL_DIALOGUES = KAEL_DIALOGUES; } catch(e) {}
 try { if (typeof drawKaelPortrait !== "undefined") window.drawKaelPortrait = drawKaelPortrait; } catch(e) {}
+try { if (typeof hasPlayerTalkedToKael !== "undefined") window.hasPlayerTalkedToKael = hasPlayerTalkedToKael; } catch(e) {}
+try { if (typeof setPlayerTalkedToKael !== "undefined") window.setPlayerTalkedToKael = setPlayerTalkedToKael; } catch(e) {}
 try { if (typeof openAtlasDialogue !== "undefined") window.openAtlasDialogue = openAtlasDialogue; } catch(e) {}
 try { if (typeof closeAtlasDialogue !== "undefined") window.closeAtlasDialogue = closeAtlasDialogue; } catch(e) {}
 try { if (typeof renderKaelNode !== "undefined") window.renderKaelNode = renderKaelNode; } catch(e) {}
@@ -10678,6 +11031,8 @@ try { if (typeof handleAtlasDialogueChoice !== "undefined") window.handleAtlasDi
 try { if (typeof openAtlasMarket !== "undefined") window.openAtlasMarket = openAtlasMarket; } catch(e) {}
 try { if (typeof closeAtlasMarket !== "undefined") window.closeAtlasMarket = closeAtlasMarket; } catch(e) {}
 try { if (typeof renderAtlasMarketWares !== "undefined") window.renderAtlasMarketWares = renderAtlasMarketWares; } catch(e) {}
+try { if (typeof switchAtlasCategory !== "undefined") window.switchAtlasCategory = switchAtlasCategory; } catch(e) {}
+try { if (typeof currentAtlasCategory !== "undefined") window.currentAtlasCategory = currentAtlasCategory; } catch(e) {}
 try { if (typeof DIAMOND_TO_ASTRAL_MAP !== "undefined") window.DIAMOND_TO_ASTRAL_MAP = DIAMOND_TO_ASTRAL_MAP; } catch(e) {}
 try { if (typeof openAstralInfuser !== "undefined") window.openAstralInfuser = openAstralInfuser; } catch(e) {}
 try { if (typeof closeAstralInfuser !== "undefined") window.closeAstralInfuser = closeAstralInfuser; } catch(e) {}
@@ -10689,5 +11044,6 @@ try { if (typeof getQuestCategorySvg !== "undefined") window.getQuestCategorySvg
 try { if (typeof renderAstralExchangeUI !== "undefined") window.renderAstralExchangeUI = renderAstralExchangeUI; } catch(e) {}
 try { if (typeof updateVaultResetCountdown !== "undefined") window.updateVaultResetCountdown = updateVaultResetCountdown; } catch(e) {}
 try { if (typeof getPixelPadlockSvg !== "undefined") window.getPixelPadlockSvg = getPixelPadlockSvg; } catch(e) {}
-
-
+try { if (typeof getTier1AstralIllustration !== "undefined") window.getTier1AstralIllustration = getTier1AstralIllustration; } catch(e) {}
+try { if (typeof getTier2AstralIllustration !== "undefined") window.getTier2AstralIllustration = getTier2AstralIllustration; } catch(e) {}
+try { if (typeof getTier3AstralIllustration !== "undefined") window.getTier3AstralIllustration = getTier3AstralIllustration; } catch(e) {}

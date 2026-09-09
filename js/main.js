@@ -49,7 +49,7 @@ import {
     world, bgWorld, player, inventory, equippedArmor, entities, mobs, activeProjectiles, fallingBlocks,
     particles, noteParticles, spawnNoteParticle, floatingTexts, clouds, fluids, fluidTick, furnaces, jukeboxes, chests,
     mouse, keys, camera, isMultiplayer, currentMpRoom, currentMpWorldName, remotePlayers, isSleeping,
-    sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue,
+    sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue, treeDecayClusters,
     saplingGrowthQueue, saplingBlockedWarnings, cropGrowthQueue, dirtToGrassQueue, snowRegrowthQueue,
     hotbarWheelLockUntil,
     surfaceHeights, droppedItems, timeOfDay, dayCount, frameCount, STATE,
@@ -98,7 +98,7 @@ export {
     world, bgWorld, player, inventory, equippedArmor, entities, mobs, activeProjectiles, fallingBlocks,
     particles, noteParticles, spawnNoteParticle, floatingTexts, clouds, fluids, fluidTick, furnaces, jukeboxes, chests,
     mouse, keys, camera, isMultiplayer, currentMpRoom, currentMpWorldName, remotePlayers, isSleeping,
-    sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue,
+    sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue, treeDecayClusters,
     saplingGrowthQueue, saplingBlockedWarnings, cropGrowthQueue, dirtToGrassQueue, snowRegrowthQueue,
     hotbarWheelLockUntil,
     surfaceHeights, droppedItems, timeOfDay, dayCount, frameCount, STATE,
@@ -1251,8 +1251,12 @@ export function initJukeboxFileInput() {
                     return ent.interact(player, inventory, selectedHotbarIndex);
                 }
                 if (ent instanceof Engine.AtlasExplorer || (ent.constructor && ent.constructor.name === 'AtlasExplorer')) {
-                    if (typeof UI !== 'undefined' && typeof UI.openAtlasDialogue === 'function') {
-                        UI.openAtlasDialogue(ent);
+                    if (typeof UI !== 'undefined') {
+                        if (typeof UI.hasPlayerTalkedToKael === 'function' && UI.hasPlayerTalkedToKael()) {
+                            if (typeof UI.openAtlasMarket === 'function') UI.openAtlasMarket(ent);
+                        } else if (typeof UI.openAtlasDialogue === 'function') {
+                            UI.openAtlasDialogue(ent);
+                        }
                     }
                     return true;
                 }
@@ -1446,8 +1450,12 @@ export function initJukeboxFileInput() {
             if (Math.hypot(pCX - zCX, pCY - zCY) < REACH * TILE_SIZE) {
                 if (mouse.worldX >= z.x && mouse.worldX <= z.x + z.width && mouse.worldY >= z.y && mouse.worldY <= z.y + z.height) {
                     if (z instanceof Engine.AtlasExplorer || (z.constructor && z.constructor.name === 'AtlasExplorer')) {
-                        if (typeof UI !== 'undefined' && typeof UI.openAtlasDialogue === 'function') {
-                            UI.openAtlasDialogue(z);
+                        if (typeof UI !== 'undefined') {
+                            if (typeof UI.hasPlayerTalkedToKael === 'function' && UI.hasPlayerTalkedToKael()) {
+                                if (typeof UI.openAtlasMarket === 'function') UI.openAtlasMarket(z);
+                            } else if (typeof UI.openAtlasDialogue === 'function') {
+                                UI.openAtlasDialogue(z);
+                            }
                         }
                         return true;
                     }
@@ -1724,6 +1732,16 @@ export function initJukeboxFileInput() {
                     }
                 }
                 wakeFluidsAround(brokenX, brokenY);
+                const queuedLeaf = leafDecayQueue.get(`${brokenX}_${brokenY}`);
+                if (queuedLeaf && typeof queuedLeaf === 'object' && queuedLeaf.clusterId) {
+                    const c = (typeof treeDecayClusters !== 'undefined' ? treeDecayClusters : window.treeDecayClusters)?.get(queuedLeaf.clusterId);
+                    if (c) {
+                        c.leavesRemaining = Math.max(0, c.leavesRemaining - 1);
+                        if (c.leavesRemaining <= 0) {
+                            (typeof treeDecayClusters !== 'undefined' ? treeDecayClusters : window.treeDecayClusters)?.delete(queuedLeaf.clusterId);
+                        }
+                    }
+                }
                 leafDecayQueue.delete(`${brokenX}_${brokenY}`);
                 saplingGrowthQueue.delete(`${brokenX}_${brokenY}`);
                 cropGrowthQueue.delete(`${brokenX}_${brokenY}`);
@@ -1736,8 +1754,19 @@ export function initJukeboxFileInput() {
             if (blockId === IDS.SNOW) scheduleSnowRegrowth(gridX, gridY);
             notifyBlockedSaplings();
             miningTarget.progress = 0;
-            if (wasTreeTrunk && (!isMultiplayer || isMultiplayerAuthority()) && ![...nonCollidableTreeWood].some(cell => cell.startsWith(`${gridX}_`))) {
-                scheduleTreeLeafDecay(gridX);
+            const isWoodBreak = (wasTreeTrunk || blockId === IDS.WOOD || blockId === IDS.JUNGLE_WOOD);
+            if (isWoodBreak && (!isMultiplayer || isMultiplayerAuthority())) {
+                let hasTrunkRemaining = false;
+                for (let ty = Math.max(0, gridY - 10); ty <= Math.min(WORLD_HEIGHT - 1, gridY + 10); ty++) {
+                    if (world[gridX]?.[ty] === IDS.WOOD || world[gridX]?.[ty] === IDS.JUNGLE_WOOD) {
+                        hasTrunkRemaining = true;
+                        break;
+                    }
+                }
+                const hasSetTrunk = [...nonCollidableTreeWood].some(cell => cell.startsWith(`${gridX}_`));
+                if (!hasTrunkRemaining && !hasSetTrunk) {
+                    scheduleTreeLeafDecay(gridX, gridY);
+                }
             }
             player.exhaustion += 0.05 * getDayHungerDrainMultiplier();
             let surfY = getWorldSurfaceY(gridX);
@@ -1794,16 +1823,14 @@ export function initJukeboxFileInput() {
             if (blockId === IDS.FLOWER_YELLOW) dropId = IDS.FLOWER_YELLOW;
             if (blockId === IDS.LEAVES) {
                 const leafDropRoll = Math.random();
-                if (leafDropRoll < 0.10) dropId = IDS.SAPLING;
-                else if (leafDropRoll < 0.18) dropId = IDS.APPLE;
-                else if (leafDropRoll < 0.35) dropId = IDS.STICK;
+                if (leafDropRoll < 0.08) dropId = IDS.APPLE;
+                else if (leafDropRoll < 0.25) dropId = IDS.STICK;
                 else dropId = null;
             }
             if (blockId === IDS.JUNGLE_LEAVES) {
                 const leafDropRoll = Math.random();
-                if (leafDropRoll < 0.10) dropId = IDS.JUNGLE_SAPLING;
-                else if (leafDropRoll < 0.22) dropId = IDS.MELON_SEEDS;
-                else if (leafDropRoll < 0.40) dropId = IDS.STICK;
+                if (leafDropRoll < 0.15) dropId = IDS.MELON_SEEDS;
+                else if (leafDropRoll < 0.35) dropId = IDS.STICK;
                 else dropId = null;
             }
             if (blockId === IDS.JUNGLE_SAPLING) dropId = IDS.JUNGLE_SAPLING;

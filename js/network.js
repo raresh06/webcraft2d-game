@@ -1335,6 +1335,7 @@ if (typeof window !== 'undefined') {
             return;
         }
         if (!world || !world[x]) return;
+        let prevBlockId = world[x]?.[y];
         let wasTreeTrunk = nonCollidableTreeWood.has(`${x}_${y}`);
         let wasSolid = world[x]?.[y] !== IDS.AIR;
         let wasSnow = world[x]?.[y] === IDS.SNOW;
@@ -1366,8 +1367,19 @@ if (typeof window !== 'undefined') {
         if (newId !== IDS.WHEAT_STAGE_1 && newId !== IDS.WHEAT_STAGE_2 && newId !== IDS.WHEAT_STAGE_3 && newId !== IDS.WHEAT_STAGE_4) {
             cropGrowthQueue.delete(`${x}_${y}`);
         }
-        if (wasTreeTrunk && newId === IDS.AIR && isMultiplayerAuthority() && ![...nonCollidableTreeWood].some(cell => cell.startsWith(`${x}_`))) {
-            scheduleTreeLeafDecay(x);
+        const isWoodSync = (wasTreeTrunk || prevBlockId === IDS.WOOD || prevBlockId === IDS.JUNGLE_WOOD);
+        if (isWoodSync && newId === IDS.AIR && isMultiplayerAuthority()) {
+            let hasTrunkRemaining = false;
+            for (let ty = Math.max(0, y - 10); ty <= Math.min(WORLD_HEIGHT - 1, y + 10); ty++) {
+                if (world[x]?.[ty] === IDS.WOOD || world[x]?.[ty] === IDS.JUNGLE_WOOD) {
+                    hasTrunkRemaining = true;
+                    break;
+                }
+            }
+            const hasSetTrunk = [...nonCollidableTreeWood].some(cell => cell.startsWith(`${x}_`));
+            if (!hasTrunkRemaining && !hasSetTrunk) {
+                scheduleTreeLeafDecay(x, y);
+            }
         }
     }
 
@@ -2074,8 +2086,8 @@ if (typeof window !== 'undefined') {
         // 4. Save Room Document with Offer to Firestore
         const activeMpSizeBtn = document.querySelector('#mp-world-size-selector button.active');
         const chosenMpSize = (activeMpSizeBtn?.dataset?.size === 'big' || (typeof window !== 'undefined' && window.selectedMpWorldSize === 'big') || (typeof selectedMpWorldSize !== 'undefined' && selectedMpWorldSize === 'big')) ? 'big' : 'small';
-        const chosenMpWidth = (chosenMpSize === 'big' ? 2048 : 512);
-        const chosenMpHeight = (chosenMpSize === 'big' ? 512 : 256);
+        const chosenMpWidth = (chosenMpSize === 'big' ? 2048 : 1024);
+        const chosenMpHeight = (chosenMpSize === 'big' ? 512 : 320);
         await setDoc(roomRef, {
             worldName, gameMode, minigameType, difficulty: mpCreateDifficulty, worldSize: chosenMpSize, worldWidth: chosenMpWidth, worldHeight: chosenMpHeight, starterItems, keepInventory: roomKeepInventory, achievementsEnabled: roomAchievementsEnabled, passwordHash, seed, timeOfDay: 0.2, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
             createdAt: Date.now(), ownerId: window.user.uid, status: 'open',
@@ -2301,7 +2313,7 @@ if (typeof window !== 'undefined') {
             keepInventory = currentDifficulty !== 'hardcore' && roomData.keepInventory === true;
             currentWorldAchievementsEnabled = (roomData.starterItems !== true && roomData.keepInventory !== true && roomData.achievementsEnabled !== false);
             timeOfDay = roomData.timeOfDay ?? 0.2;
-            let targetSize = roomData.worldSize || (roomData.worldWidth > 700 ? 'big' : 'small');
+            let targetSize = roomData.worldSize || (roomData.worldWidth > 1200 ? 'big' : 'small');
             setWorldDimensions(targetSize, roomData.worldWidth, roomData.worldHeight);
             document.getElementById('mp-room-display').innerText = currentMpWorldName;
             

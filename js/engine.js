@@ -184,12 +184,12 @@ export const WATER_FLOW_MAX = 5;
 export const LAVA_FLOW_MAX = 3;
 export const WATER_FLOW_INTERVAL = 4;
 export const LAVA_FLOW_INTERVAL = 16;
-export let WORLD_WIDTH = 512;
-export let WORLD_HEIGHT = 256;
+export let WORLD_WIDTH = 1024;
+export let WORLD_HEIGHT = 320;
 export let currentWorldSize = 'small';
 
 export function setWorldDimensions(size, explicitWidth, explicitHeight) {
-    currentWorldSize = (size === 'big' || (explicitWidth && explicitWidth > 700)) ? 'big' : 'small';
+    currentWorldSize = (size === 'big' || (explicitWidth && explicitWidth > 1200)) ? 'big' : 'small';
     if (explicitWidth && explicitHeight) {
         WORLD_WIDTH = explicitWidth;
         WORLD_HEIGHT = explicitHeight;
@@ -197,8 +197,8 @@ export function setWorldDimensions(size, explicitWidth, explicitHeight) {
         WORLD_WIDTH = 2048;
         WORLD_HEIGHT = 512;
     } else {
-        WORLD_WIDTH = 512;
-        WORLD_HEIGHT = 256;
+        WORLD_WIDTH = 1024;
+        WORLD_HEIGHT = 320;
     }
     if (typeof window !== 'undefined') {
         window.currentWorldSize = currentWorldSize;
@@ -207,6 +207,7 @@ export function setWorldDimensions(size, explicitWidth, explicitHeight) {
         if (typeof window.isOffscreenMapDirty !== 'undefined') window.isOffscreenMapDirty = true;
     }
 }
+export let worldBiomes = null;
 
 export function getMaxAnimals() {
     if (isMultiplayer) {
@@ -1199,6 +1200,7 @@ export function getMaxAnimals() {
         }
     }
     export let leafDecayQueue = new Map();
+    export let treeDecayClusters = new Map();
     export let saplingGrowthQueue = new Map();
     export let cropGrowthQueue = new Map();
     export let saplingBlockedWarnings = new Set();
@@ -3722,7 +3724,7 @@ export const SKIN_H = 32;
             block === IDS.SAPLING || block === IDS.JUNGLE_SAPLING || block === IDS.WATER || block === IDS.LAVA ||
             block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW ||
             block === IDS.LADDER || block === IDS.VINES || block === IDS.FERN || block === IDS.MELON_STEM ||
-            block === IDS.VOID_BERRY_BUSH) return false;
+            block === IDS.VOID_BERRY_BUSH || block === IDS.BAMBOO) return false;
         if (block === IDS.WHEAT_STAGE_1 || block === IDS.WHEAT_STAGE_2 || block === IDS.WHEAT_STAGE_3 || block === IDS.WHEAT_STAGE_4) return false;
         if (block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP || block === IDS.JUNGLE_DOOR_OPEN || block === IDS.JUNGLE_DOOR_OPEN_TOP) return false;
         if (block === IDS.WOOD || block === IDS.JUNGLE_WOOD) {
@@ -3773,13 +3775,21 @@ export const SKIN_H = 32;
     }
 
     export function isWater(x, y) {
-        if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
-        return world[x]?.[y] === IDS.WATER || fluids.get(getFluidKey(x, y))?.type === IDS.WATER;
+        const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+        if (!activeWorld) return false;
+        const curWorldW = activeWorld.length;
+        const curWorldH = activeWorld[0]?.length || 0;
+        if (x < 0 || x >= curWorldW || y < 0 || y >= curWorldH) return false;
+        return activeWorld[x]?.[y] === IDS.WATER || (typeof fluids !== 'undefined' && fluids.get(getFluidKey(x, y))?.type === IDS.WATER);
     }
 
     export function isLava(x, y) {
-        if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
-        return world[x]?.[y] === IDS.LAVA || fluids.get(getFluidKey(x, y))?.type === IDS.LAVA;
+        const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+        if (!activeWorld) return false;
+        const curWorldW = activeWorld.length;
+        const curWorldH = activeWorld[0]?.length || 0;
+        if (x < 0 || x >= curWorldW || y < 0 || y >= curWorldH) return false;
+        return activeWorld[x]?.[y] === IDS.LAVA || (typeof fluids !== 'undefined' && fluids.get(getFluidKey(x, y))?.type === IDS.LAVA);
     }
 
     export function setFluid(x, y, fluid) {
@@ -4122,21 +4132,24 @@ export const SKIN_H = 32;
 
             if (this.health !== undefined && !(this instanceof Player)) checkCactusContact(this);
             
+            const maxWorldW = (typeof world !== 'undefined' && world) ? WORLD_WIDTH : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.width) ? menuWorld.width : WORLD_WIDTH);
             if (this.x < 0) this.x = 0;
-            if (this.x > WORLD_WIDTH * TILE_SIZE - this.width) this.x = WORLD_WIDTH * TILE_SIZE - this.width;
+            if (this.x > maxWorldW * TILE_SIZE - this.width) this.x = maxWorldW * TILE_SIZE - this.width;
         }
 
         checkObstacleJump(dir) {
             if (!this.isGrounded || this.vx === 0) return;
+            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            if (!activeWorld) return;
+            const curWorldW = activeWorld.length;
             const stepDir = dir !== undefined ? dir : (this.vx > 0 ? 1 : -1);
             const checkX = Math.floor((this.x + this.width / 2 + stepDir * (this.width / 2 + 5)) / TILE_SIZE);
             const footY = Math.floor((this.y + this.height - 5) / TILE_SIZE);
             const headY = Math.floor((this.y + 5) / TILE_SIZE);
-            if (checkX >= 0 && checkX < WORLD_WIDTH) {
-                const b = world[checkX]?.[footY];
-                const upperB = world[checkX]?.[headY - 1];
-                if (b !== undefined && b !== IDS.AIR && b !== IDS.TORCH && b !== IDS.WOOD && b !== IDS.LEAVES && 
-                    (upperB === IDS.AIR || upperB === IDS.TORCH || upperB === IDS.WOOD || upperB === IDS.LEAVES)) {
+            if (checkX >= 0 && checkX < curWorldW) {
+                const b = activeWorld[checkX]?.[footY];
+                const upperB = activeWorld[checkX]?.[headY - 1];
+                if (b !== undefined && isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1)) {
                     this.vy = JUMP_FORCE;
                     this.isGrounded = false;
                 }
@@ -4158,20 +4171,25 @@ export const SKIN_H = 32;
 
         handleCollisions(isAxisX) {
             const eps = 0.05; 
+            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            if (!activeWorld) return;
+            const curWorldW = activeWorld.length;
+            const curWorldH = activeWorld[0]?.length || 0;
+            if (!curWorldW || !curWorldH) return;
             
             let leftTile = Math.floor((this.x + (isAxisX ? 0 : eps)) / TILE_SIZE);
             let rightTile = Math.floor((this.x + this.width - (isAxisX ? 0 : eps)) / TILE_SIZE);
             let topTile = Math.floor((this.y + (isAxisX ? eps : 0)) / TILE_SIZE);
             let bottomTile = Math.floor((this.y + this.height - (isAxisX ? eps : 0)) / TILE_SIZE);
 
-            leftTile = Math.max(0, Math.min(leftTile, WORLD_WIDTH - 1));
-            rightTile = Math.max(0, Math.min(rightTile, WORLD_WIDTH - 1));
-            topTile = Math.max(0, Math.min(topTile, WORLD_HEIGHT - 1));
-            bottomTile = Math.max(0, Math.min(bottomTile, WORLD_HEIGHT - 1));
+            leftTile = Math.max(0, Math.min(leftTile, curWorldW - 1));
+            rightTile = Math.max(0, Math.min(rightTile, curWorldW - 1));
+            topTile = Math.max(0, Math.min(topTile, curWorldH - 1));
+            bottomTile = Math.max(0, Math.min(bottomTile, curWorldH - 1));
 
             for (let y = topTile; y <= bottomTile; y++) {
                 for (let x = leftTile; x <= rightTile; x++) {
-                    let block = world[x][y];
+                    let block = activeWorld[x][y];
                     if (isSolidWorldBlock(x, y, block)) {
                         let bMinX = x * TILE_SIZE;
                         let bMaxX = (x + 1) * TILE_SIZE;
@@ -4240,14 +4258,18 @@ export const SKIN_H = 32;
     }
 
     export function checkCactusContact(entity) {
+        const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+        if (!activeWorld) return;
+        const curWorldW = activeWorld.length;
+        const curWorldH = activeWorld[0]?.length || 0;
         const padding = 2;
         const leftTile = Math.max(0, Math.floor((entity.x - padding) / TILE_SIZE));
-        const rightTile = Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.width + padding) / TILE_SIZE));
+        const rightTile = Math.min(curWorldW - 1, Math.floor((entity.x + entity.width + padding) / TILE_SIZE));
         const topTile = Math.max(0, Math.floor((entity.y - padding) / TILE_SIZE));
-        const bottomTile = Math.min(WORLD_HEIGHT - 1, Math.floor((entity.y + entity.height + padding) / TILE_SIZE));
+        const bottomTile = Math.min(curWorldH - 1, Math.floor((entity.y + entity.height + padding) / TILE_SIZE));
         for (let tileY = topTile; tileY <= bottomTile; tileY++) {
             for (let tileX = leftTile; tileX <= rightTile; tileX++) {
-                if (world[tileX][tileY] === IDS.CACTUS && entity.damageCooldown <= 0) {
+                if (activeWorld[tileX]?.[tileY] === IDS.CACTUS && entity.damageCooldown <= 0) {
                     entity.takeDamage(1, 0);
                     return;
                 }
@@ -5158,8 +5180,8 @@ export const SKIN_H = 32;
             if (item) ensureToolDurability(item);
             if (item && isTool(item.id) && item.durability <= 0) return 0;
             let id = item ? item.id : null;
-            if (targetBlock === IDS.WOOD || targetBlock === IDS.PLANKS || targetBlock === IDS.LADDER || targetBlock === IDS.WOODEN_STAIRS || targetBlock === IDS.WOODEN_STAIRS_LEFT || targetBlock === IDS.WOODEN_STAIRS_RIGHT) {
-                if (id === IDS.DIAMOND_AXE) return 18; if (id === IDS.GOLD_AXE) return 12; if (id === IDS.IRON_AXE) return 9; if (id === IDS.STONE_AXE) return 8; if (id === IDS.WOOD_AXE) return 5;
+            if (targetBlock === IDS.WOOD || targetBlock === IDS.PLANKS || targetBlock === IDS.LADDER || targetBlock === IDS.WOODEN_STAIRS || targetBlock === IDS.WOODEN_STAIRS_LEFT || targetBlock === IDS.WOODEN_STAIRS_RIGHT || targetBlock === IDS.JUNGLE_WOOD || targetBlock === IDS.JUNGLE_PLANKS || targetBlock === IDS.BAMBOO) {
+                if (id === IDS.DIAMOND_AXE || id === IDS.DIAMOND_SWORD) return 18; if (id === IDS.GOLD_AXE || id === IDS.GOLD_SWORD) return 12; if (id === IDS.IRON_AXE || id === IDS.IRON_SWORD) return 9; if (id === IDS.STONE_AXE || id === IDS.STONE_SWORD) return 8; if (id === IDS.WOOD_AXE || id === IDS.WOOD_SWORD) return 5;
             } else if (targetBlock === IDS.DIRT || targetBlock === IDS.PLOWED_DIRT || targetBlock === IDS.GRASS || targetBlock === IDS.SAND || targetBlock === IDS.SNOW) {
                 if (id === IDS.DIAMOND_SHOVEL) return 18; if (id === IDS.GOLD_SHOVEL) return 12; if (id === IDS.IRON_SHOVEL) return 9; if (id === IDS.STONE_SHOVEL) return 6; if (id === IDS.WOOD_SHOVEL) return 4;
             } else if (HARDNESS[targetBlock] >= 100) { 
@@ -5507,6 +5529,8 @@ export const SKIN_H = 32;
 
         hasHazardAhead(dir) {
             if (dir === 0) return false;
+            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            if (!activeWorld) return false;
             const checkX = Math.floor((this.x + this.width / 2 + dir * (this.width / 2 + 10)) / TILE_SIZE);
             const footY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
             const bodyY = Math.floor((this.y + 4) / TILE_SIZE);
@@ -5514,10 +5538,10 @@ export const SKIN_H = 32;
             const drop2Y = footY + 2;
 
             if (isWater(checkX, footY) || isWater(checkX, bodyY) || isWater(checkX, footY - 1)) return true;
-            if (world[checkX]?.[footY] === IDS.CACTUS || world[checkX]?.[bodyY] === IDS.CACTUS) return true;
+            if (activeWorld[checkX]?.[footY] === IDS.CACTUS || activeWorld[checkX]?.[bodyY] === IDS.CACTUS) return true;
             if (getFluid(checkX, footY)?.type === IDS.LAVA || getFluid(checkX, bodyY)?.type === IDS.LAVA) return true;
 
-            const blockAtStep = world[checkX]?.[footY];
+            const blockAtStep = activeWorld[checkX]?.[footY];
             const isStepSolid = isSolidWorldBlock(checkX, footY, blockAtStep);
             if (!isStepSolid) {
                 if (isWater(checkX, drop1Y) || isWater(checkX, drop2Y)) return true;
@@ -5528,16 +5552,19 @@ export const SKIN_H = 32;
 
         hasLethalDropAhead(dir) {
             if (dir === 0) return false;
+            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            if (!activeWorld) return false;
+            const curH = activeWorld[0]?.length || WORLD_HEIGHT;
             const checkX = Math.floor((this.x + this.width / 2 + dir * (this.width / 2 + 8)) / TILE_SIZE);
             const footY = Math.floor((this.y + this.height - 2) / TILE_SIZE);
             
-            if (isSolidWorldBlock(checkX, footY, world[checkX]?.[footY])) return false;
+            if (isSolidWorldBlock(checkX, footY, activeWorld[checkX]?.[footY])) return false;
             
             let dropDist = 0;
             for (let dy = 1; dy <= 5; dy++) {
                 const testY = footY + dy;
-                if (testY >= WORLD_HEIGHT) break;
-                if (isSolidWorldBlock(checkX, testY, world[checkX]?.[testY])) break;
+                if (testY >= curH) break;
+                if (isSolidWorldBlock(checkX, testY, activeWorld[checkX]?.[testY])) break;
                 if (isWater(checkX, testY)) return false;
                 dropDist++;
             }
@@ -5549,6 +5576,9 @@ export const SKIN_H = 32;
             this.timer--;
             if (this.panicTimer > 0) this.panicTimer--;
             else this.panic = false;
+
+            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const curWorldW = activeWorld ? activeWorld.length : WORLD_WIDTH;
 
             const curX = Math.floor((this.x + this.width / 2) / TILE_SIZE);
             const curFootY = Math.floor((this.y + this.height - 2) / TILE_SIZE);
@@ -5563,12 +5593,12 @@ export const SKIN_H = 32;
                 let rightLand = -1;
                 for (let d = 1; d <= 14; d++) {
                     if (leftLand < 0 && curX - d >= 0) {
-                        const b = world[curX - d]?.[curFootY];
+                        const b = activeWorld?.[curX - d]?.[curFootY];
                         if (isSolidWorldBlock(curX - d, curFootY, b) && !isWater(curX - d, curFootY - 1)) leftLand = d;
                         else if (!isWater(curX - d, curFootY) && !isWater(curX - d, curFootY - 1)) leftLand = d;
                     }
-                    if (rightLand < 0 && curX + d < WORLD_WIDTH) {
-                        const b = world[curX + d]?.[curFootY];
+                    if (rightLand < 0 && curX + d < curWorldW) {
+                        const b = activeWorld?.[curX + d]?.[curFootY];
                         if (isSolidWorldBlock(curX + d, curFootY, b) && !isWater(curX + d, curFootY - 1)) rightLand = d;
                         else if (!isWater(curX + d, curFootY) && !isWater(curX + d, curFootY - 1)) rightLand = d;
                     }
@@ -5655,9 +5685,9 @@ export const SKIN_H = 32;
                 const checkX = Math.floor((this.x + this.width / 2 + moveDir * (this.width / 2 + 5)) / TILE_SIZE);
                 const footY = Math.floor((this.y + this.height - 5) / TILE_SIZE);
                 const headY = Math.floor((this.y + 5) / TILE_SIZE);
-                if (checkX >= 0 && checkX < WORLD_WIDTH) {
-                    const b = world[checkX]?.[footY];
-                    const upperB = world[checkX]?.[headY - 1];
+                if (checkX >= 0 && checkX < curWorldW) {
+                    const b = activeWorld?.[checkX]?.[footY];
+                    const upperB = activeWorld?.[checkX]?.[headY - 1];
                     if (isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1)) {
                         this.vy = JUMP_FORCE * 0.85;
                         this.isGrounded = false;
@@ -6056,20 +6086,24 @@ export const SKIN_H = 32;
         }
 
         findNearbyTreeLeaf(searchRadiusTiles = 16) {
+            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            if (!activeWorld) return null;
+            const curWorldW = activeWorld.length;
+            const curWorldH = activeWorld[0]?.length || WORLD_HEIGHT;
             const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
             const curGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
             const candidates = [];
 
             const minX = Math.max(2, curGx - searchRadiusTiles);
-            const maxX = Math.min(WORLD_WIDTH - 3, curGx + searchRadiusTiles);
+            const maxX = Math.min(curWorldW - 3, curGx + searchRadiusTiles);
             const minY = Math.max(2, curGy - 14);
-            const maxY = Math.min(WORLD_HEIGHT - 3, curGy + 14);
+            const maxY = Math.min(curWorldH - 3, curGy + 14);
 
             for (let x = minX; x <= maxX; x++) {
-                if (!world[x]) continue;
+                if (!activeWorld[x]) continue;
                 for (let y = minY; y <= maxY; y++) {
-                    if (world[x][y] === IDS.LEAVES) {
-                        if (world[x][y - 1] === IDS.AIR) {
+                    if (activeWorld[x][y] === IDS.LEAVES || activeWorld[x][y] === IDS.JUNGLE_LEAVES) {
+                        if (activeWorld[x][y - 1] === IDS.AIR) {
                             candidates.push({ x, y });
                         }
                     }
@@ -6092,6 +6126,11 @@ export const SKIN_H = 32;
             else this.panic = false;
             if (this.peckTimer > 0) this.peckTimer--;
             if (this.temptAlertTimer > 0) this.temptAlertTimer--;
+
+            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const curWorldW = activeWorld ? activeWorld.length : WORLD_WIDTH;
+            const curWorldH = activeWorld ? (activeWorld[0]?.length || WORLD_HEIGHT) : WORLD_HEIGHT;
+            const activeHeights = (typeof surfaceHeights !== 'undefined' && surfaceHeights && surfaceHeights.length) ? surfaceHeights : (typeof menuWorld !== 'undefined' && menuWorld && (menuWorld.surfaceHeights || menuWorld.terrain) ? (menuWorld.surfaceHeights || menuWorld.terrain) : null);
 
             if (this.headTiltTimer > 0) {
                 this.headTiltTimer--;
@@ -6161,8 +6200,8 @@ export const SKIN_H = 32;
                 this.isGrounded = true;
 
                 if (this.targetLeaf) {
-                    const block = world[this.targetLeaf.x]?.[this.targetLeaf.y];
-                    if (block !== IDS.LEAVES) {
+                    const block = activeWorld?.[this.targetLeaf.x]?.[this.targetLeaf.y];
+                    if (block !== IDS.LEAVES && block !== IDS.JUNGLE_LEAVES) {
                         this.targetLeaf = null;
                         this.state = 'flying';
                         this.flightTimer = 300;
@@ -6231,9 +6270,9 @@ export const SKIN_H = 32;
                     const checkX = Math.floor((this.x + this.width / 2 + moveDir * (this.width / 2 + 4)) / TILE_SIZE);
                     const footY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
                     const headY = Math.floor((this.y + 4) / TILE_SIZE);
-                    if (checkX >= 0 && checkX < WORLD_WIDTH) {
-                        const b = world[checkX]?.[footY];
-                        const upperB = world[checkX]?.[headY - 1];
+                    if (checkX >= 0 && checkX < curWorldW) {
+                        const b = activeWorld?.[checkX]?.[footY];
+                        const upperB = activeWorld?.[checkX]?.[headY - 1];
                         if (isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1)) {
                             this.vy = JUMP_FORCE * 0.75;
                             this.isGrounded = false;
@@ -6258,8 +6297,8 @@ export const SKIN_H = 32;
                 this.flightTimer--;
                 this.flapTime += (this.panic ? 0.65 : 0.38);
 
-                const curGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
-                const groundY = surfaceHeights[curGx] !== undefined ? surfaceHeights[curGx] : Math.floor(WORLD_HEIGHT / 2);
+                const curGx = Math.max(0, Math.min(curWorldW - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
+                const groundY = (activeHeights && activeHeights[curGx] !== undefined) ? activeHeights[curGx] : Math.floor(curWorldH / 2);
                 const cruiseAltitudeY = Math.max(2 * TILE_SIZE, (groundY - 8) * TILE_SIZE);
 
                 if (this.panic) {
@@ -6275,7 +6314,7 @@ export const SKIN_H = 32;
                 } else {
                     if (this.flightTimer % 120 === 0 || Math.abs(this.x - this.flyTargetX) < 30) {
                         const roamDistance = (Math.random() - 0.5) * 250;
-                        this.flyTargetX = Math.max(50, Math.min(WORLD_WIDTH * TILE_SIZE - 50, this.x + roamDistance));
+                        this.flyTargetX = Math.max(50, Math.min(curWorldW * TILE_SIZE - 50, this.x + roamDistance));
                         this.flyTargetY = cruiseAltitudeY + (Math.random() - 0.5) * 50;
 
                         if (this.flightTimer < 250 && Math.random() < 0.45) {
@@ -6680,21 +6719,25 @@ export const SKIN_H = 32;
         }
 
         findNearbyTreeLeaf(searchRadiusTiles = 16) {
+            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            if (!activeWorld) return null;
+            const curWorldW = activeWorld.length;
+            const curWorldH = activeWorld[0]?.length || WORLD_HEIGHT;
             const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
             const curGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
             const candidates = [];
 
             const minX = Math.max(2, curGx - searchRadiusTiles);
-            const maxX = Math.min(WORLD_WIDTH - 3, curGx + searchRadiusTiles);
+            const maxX = Math.min(curWorldW - 3, curGx + searchRadiusTiles);
             const minY = Math.max(2, curGy - 14);
-            const maxY = Math.min(WORLD_HEIGHT - 3, curGy + 14);
+            const maxY = Math.min(curWorldH - 3, curGy + 14);
 
             for (let x = minX; x <= maxX; x++) {
-                if (!world[x]) continue;
+                if (!activeWorld[x]) continue;
                 for (let y = minY; y <= maxY; y++) {
-                    const block = world[x][y];
+                    const block = activeWorld[x][y];
                     if (block === IDS.JUNGLE_LEAVES || block === IDS.LEAVES) {
-                        if (world[x][y - 1] === IDS.AIR) candidates.push({ x, y });
+                        if (activeWorld[x][y - 1] === IDS.AIR) candidates.push({ x, y });
                     }
                 }
             }
@@ -6795,6 +6838,11 @@ export const SKIN_H = 32;
             if (this.temptAlertTimer > 0) this.temptAlertTimer--;
             if (this.hopTimer > 0) this.hopTimer--;
 
+            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const curWorldW = activeWorld ? activeWorld.length : WORLD_WIDTH;
+            const curWorldH = activeWorld ? (activeWorld[0]?.length || WORLD_HEIGHT) : WORLD_HEIGHT;
+            const activeHeights = (typeof surfaceHeights !== 'undefined' && surfaceHeights && surfaceHeights.length) ? surfaceHeights : (typeof menuWorld !== 'undefined' && menuWorld && (menuWorld.surfaceHeights || menuWorld.terrain) ? (menuWorld.surfaceHeights || menuWorld.terrain) : null);
+
             if (this.chirpTimer > 0) {
                 this.chirpTimer--;
             } else {
@@ -6891,7 +6939,7 @@ export const SKIN_H = 32;
                 this.isGrounded = true;
 
                 if (this.targetLeaf) {
-                    const block = world[this.targetLeaf.x]?.[this.targetLeaf.y];
+                    const block = activeWorld?.[this.targetLeaf.x]?.[this.targetLeaf.y];
                     if (block !== IDS.LEAVES && block !== IDS.JUNGLE_LEAVES) {
                         this.targetLeaf = null;
                         this.state = 'flying';
@@ -6964,9 +7012,9 @@ export const SKIN_H = 32;
                     const checkX = Math.floor((this.x + this.width / 2 + moveDir * (this.width / 2 + 4)) / TILE_SIZE);
                     const footY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
                     const headY = Math.floor((this.y + 4) / TILE_SIZE);
-                    if (checkX >= 0 && checkX < WORLD_WIDTH) {
-                        const b = world[checkX]?.[footY];
-                        const upperB = world[checkX]?.[headY - 1];
+                    if (checkX >= 0 && checkX < curWorldW) {
+                        const b = activeWorld?.[checkX]?.[footY];
+                        const upperB = activeWorld?.[checkX]?.[headY - 1];
                         if (isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1)) {
                             this.vy = JUMP_FORCE * 0.75;
                             this.isGrounded = false;
@@ -6991,8 +7039,8 @@ export const SKIN_H = 32;
                 this.flightTimer--;
                 this.flapTime += (this.panic ? 0.7 : 0.42);
 
-                const curGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
-                const groundY = surfaceHeights[curGx] !== undefined ? surfaceHeights[curGx] : Math.floor(WORLD_HEIGHT / 2);
+                const curGx = Math.max(0, Math.min(curWorldW - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
+                const groundY = (activeHeights && activeHeights[curGx] !== undefined) ? activeHeights[curGx] : Math.floor(curWorldH / 2);
                 const cruiseAltitudeY = Math.max(2 * TILE_SIZE, (groundY - 8) * TILE_SIZE);
 
                 if (this.panic) {
@@ -7012,7 +7060,7 @@ export const SKIN_H = 32;
                 } else {
                     if (this.flightTimer % 100 === 0 || Math.abs(this.x - this.flyTargetX) < 30) {
                         const roamDistance = (Math.random() - 0.5) * 220;
-                        this.flyTargetX = Math.max(50, Math.min(WORLD_WIDTH * TILE_SIZE - 50, this.x + roamDistance));
+                        this.flyTargetX = Math.max(50, Math.min(curWorldW * TILE_SIZE - 50, this.x + roamDistance));
                         this.flyTargetY = cruiseAltitudeY + (Math.random() - 0.5) * 40;
 
                         if (this.flightTimer < 250 && Math.random() < 0.5) {
@@ -7998,6 +8046,106 @@ export const SKIN_H = 32;
         }
     }
 
+    export let kaelSkinCanvas = null;
+    export function getKaelSkinCanvas() {
+        if (kaelSkinCanvas) return kaelSkinCanvas;
+        if (typeof document === 'undefined') return null;
+        const c = document.createElement('canvas');
+        c.width = 16;
+        c.height = 32;
+        const ctx = c.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+
+        const p = (x, y, col) => {
+            ctx.fillStyle = col;
+            ctx.fillRect(x, y, 1, 1);
+        };
+        const rect = (x, y, w, h, col) => {
+            ctx.fillStyle = col;
+            ctx.fillRect(x, y, w, h);
+        };
+
+        // --- 1. HEAD (8x8 at x: 4, y: 0) - Human face matching player build ---
+        // Base human skin
+        rect(4, 0, 8, 8, '#e8b188');
+        // Facial shading & jawline
+        rect(4, 6, 8, 2, '#dba075');
+        rect(6, 7, 4, 1, '#c68b59');
+        // Windswept dark chestnut traveler hair
+        rect(4, 0, 8, 2, '#4a2e1b');
+        p(4, 2, '#4a2e1b'); p(11, 2, '#4a2e1b');
+        p(5, 2, '#6e4428'); // Hair highlight
+        p(6, 2, '#4a2e1b'); p(7, 2, '#362012'); // Bangs
+        // Explorer brass goggles resting on forehead
+        p(6, 1, '#fbbf24'); p(7, 1, '#0284c7'); // Left goggle brass rim & cyan lens
+        p(8, 1, '#fbbf24'); p(9, 1, '#0284c7'); // Right goggle
+        // Human Eyes (white sclera with celestial cyan iris & dark pupil)
+        // Left eye at (5, 4)
+        p(5, 4, '#ffffff'); p(6, 4, '#0284c7');
+        p(5, 3, '#362012'); // Eyebrow
+        // Right eye at (9, 4)
+        p(9, 4, '#0284c7'); p(10, 4, '#ffffff');
+        p(10, 3, '#362012'); // Eyebrow
+        // Nose & mouth
+        p(7, 5, '#c68a5f');
+        p(7, 6, '#995832'); p(8, 6, '#995832');
+
+        // --- 2. TORSO (8x12 at x: 4, y: 8) ---
+        // Celestial indigo tunic base
+        rect(4, 8, 8, 12, '#1e1b4b');
+        // Open rugged leather traveler vest
+        rect(4, 8, 2, 9, '#582d12');
+        rect(10, 8, 2, 9, '#582d12');
+        p(5, 8, '#783d19'); p(10, 8, '#783d19');
+        // Celestial collar / scarf
+        rect(6, 8, 4, 2, '#312e81');
+        p(7, 9, '#fbbf24'); // Gold celestial star clasp
+        // Diagonal leather explorer sash
+        p(5, 10, '#451a03'); p(6, 11, '#451a03'); p(7, 12, '#fbbf24'); p(8, 13, '#451a03'); p(9, 14, '#451a03');
+        // Sturdy belt with brass buckle
+        rect(4, 16, 8, 2, '#2e1102');
+        p(7, 16, '#fbbf24'); p(8, 16, '#fbbf24');
+        p(5, 17, '#0284c7'); // Astrolabe pouch charm
+
+        // --- 3. FRONT ARM (4x12 at x: 0, y: 8) ---
+        // Leather adventurer coat shoulder sleeve
+        rect(0, 8, 4, 4, '#582d12');
+        p(1, 8, '#783d19');
+        // Folded tunic sleeve
+        rect(0, 12, 4, 3, '#1e1b4b');
+        // Bare human forearm / wrist wrap
+        rect(0, 15, 4, 2, '#dba075');
+        // Traveler's fingerless glove & hand
+        rect(0, 17, 4, 3, '#451a03');
+        rect(1, 18, 2, 2, '#e8b188'); // Exposed human fingers
+
+        // --- 4. BACK ARM (4x12 at x: 12, y: 8) ---
+        rect(12, 8, 4, 4, '#3d1a08'); // Shadowed shoulder
+        rect(12, 12, 4, 3, '#161928'); // Shadowed sleeve
+        rect(12, 15, 4, 2, '#c68a5f'); // Forearm
+        rect(12, 17, 4, 3, '#2e1102'); // Glove
+
+        // --- 5. FRONT LEG (4x12 at x: 4, y: 20) ---
+        // Deep indigo traveler trousers
+        rect(4, 20, 4, 6, '#1e2337');
+        p(5, 21, '#272f48'); p(6, 23, '#161928');
+        // Sturdy laced explorer boots
+        rect(4, 26, 4, 6, '#451a03');
+        p(5, 27, '#d97706'); p(5, 29, '#d97706'); // Brass lace buckles
+        rect(4, 31, 4, 1, '#1e0c01'); // Boot sole
+
+        // --- 6. BACK LEG (4x12 at x: 8, y: 20) ---
+        // Shadowed trousers
+        rect(8, 20, 4, 6, '#141826');
+        // Shadowed boots
+        rect(8, 26, 4, 6, '#2e1102');
+        p(9, 27, '#b45309'); p(9, 29, '#b45309');
+        rect(8, 31, 4, 1, '#130700');
+
+        kaelSkinCanvas = c;
+        return kaelSkinCanvas;
+    }
+
     export class AtlasExplorer extends PhysicsEntity {
         constructor(x, y) {
             super(x, y, TILE_SIZE * 0.75, TILE_SIZE * 1.8);
@@ -8036,9 +8184,16 @@ export const SKIN_H = 32;
         }
 
         interact(interactor) {
-            if (typeof window !== 'undefined' && typeof window.openAtlasDialogue === 'function') {
-                window.openAtlasDialogue(this);
-                return true;
+            if (typeof window !== 'undefined') {
+                if (typeof window.hasPlayerTalkedToKael === 'function' && window.hasPlayerTalkedToKael()) {
+                    if (typeof window.openAtlasMarket === 'function') {
+                        window.openAtlasMarket(this);
+                        return true;
+                    }
+                } else if (typeof window.openAtlasDialogue === 'function') {
+                    window.openAtlasDialogue(this);
+                    return true;
+                }
             }
             return false;
         }
@@ -8192,107 +8347,46 @@ export const SKIN_H = 32;
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - 14, drawY + h - 5, 28, 7);
             }
 
-            // Flip character horizontally if facing left
+            // Draw Kael using the standard player humanoid character renderer
+            const kCanvas = getKaelSkinCanvas();
+            if (kCanvas) {
+                drawCharacter(
+                    ctx, kCanvas, drawX, drawY, w, h,
+                    this.facingRight, this.walkAnimTime, this.isPacing, false,
+                    null, null, false, null, false, null, null
+                );
+            }
+
+            // Extra traveler accessories: held celestial star map or rolled map tube
+            const sx = w / 16;
+            const sy = h / 32;
             ctx.save();
             ctx.translate(drawX + w / 2, drawY);
             if (!this.facingRight) ctx.scale(-1, 1);
             ctx.translate(-w / 2, 0);
 
-            // Sprite rendering (16x32 grid mapped to w x h)
-            const sx = w / 16;
-            const sy = h / 32;
-            const p = (px, py, col) => {
-                ctx.fillStyle = col;
-                ctx.fillRect(px * sx, py * sy, sx, sy);
-            };
-
-            const swing = this.isPacing ? Math.sin(this.walkAnimTime) * 3 : 0;
-
-            // --- LEGS & TRAVEL BOOTS ---
-            // Left leg
-            ctx.fillStyle = '#1e1b4b'; // Deep indigo travel pants
-            ctx.fillRect(4 * sx, (20 - swing) * sy, 3 * sx, 7 * sy);
-            ctx.fillStyle = '#451a03'; // Sturdy leather boots
-            ctx.fillRect(3.5 * sx, (27 - swing) * sy, 4 * sx, 5 * sy);
-            ctx.fillStyle = '#fbbf24'; // Brass boot buckle
-            ctx.fillRect(4 * sx, (27 - swing) * sy, 2 * sx, 1.5 * sy);
-
-            // Right leg
-            ctx.fillStyle = '#1e1b4b';
-            ctx.fillRect(9 * sx, (20 + swing) * sy, 3 * sx, 7 * sy);
-            ctx.fillStyle = '#451a03';
-            ctx.fillRect(8.5 * sx, (27 + swing) * sy, 4 * sx, 5 * sy);
-            ctx.fillStyle = '#fbbf24';
-            ctx.fillRect(9 * sx, (27 + swing) * sy, 2 * sx, 1.5 * sy);
-
-            // --- TRAVELER'S CLOAK & TUNIC ---
-            // Cloak body
-            ctx.fillStyle = '#0f172a'; // Midnight dark navy
-            ctx.fillRect(3 * sx, 9 * sy, 10 * sx, 12 * sy);
-            ctx.fillStyle = '#1e1b4b'; // Inner tunic folds
-            ctx.fillRect(5 * sx, 10 * sy, 6 * sx, 10 * sy);
-            // Brass constellation trim on cloak hem
-            ctx.fillStyle = '#fbbf24';
-            ctx.fillRect(3 * sx, 20 * sy, 10 * sx, 1 * sy);
-            p(5, 19, '#fef08a'); p(8, 18, '#fef08a'); p(11, 19, '#fef08a');
-
-            // Leather shoulder sash / map strap
-            ctx.fillStyle = '#78350f';
-            p(4, 9, '#78350f'); p(5, 10, '#78350f'); p(6, 11, '#78350f'); p(7, 12, '#78350f');
-            p(8, 13, '#78350f'); p(9, 14, '#78350f'); p(10, 15, '#78350f');
-            // Rolled celestial star map strapped to back
-            ctx.fillStyle = '#fef08a';
-            ctx.fillRect(11 * sx, 10 * sy, 2.5 * sx, 8 * sy);
-            p(11, 12, '#0284c7'); p(12, 15, '#0284c7'); // Blue coordinate ink marks
-
-            // Brass astrolabe / planar sextant on belt
-            ctx.fillStyle = '#d97706';
-            ctx.fillRect(3 * sx, 17 * sy, 3 * sx, 3 * sy);
-            ctx.fillStyle = '#38bdf8'; // Glowing celestial lens center
-            p(4, 18, '#38bdf8');
-
-            // --- HOOD & CELESTIAL GAZE FACE ---
-            // Outer cowl
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(3 * sx, 1 * sy, 10 * sx, 8 * sy);
-            ctx.fillRect(2 * sx, 3 * sy, 12 * sx, 6 * sy);
-            // Cowl brim highlight
-            ctx.fillStyle = '#312e81';
-            ctx.fillRect(4 * sx, 1 * sy, 8 * sx, 1 * sy);
-            ctx.fillRect(2 * sx, 8 * sy, 12 * sx, 1.5 * sy);
-
-            // Shrouded face cavity
-            ctx.fillStyle = '#09090b';
-            ctx.fillRect(4 * sx, 3 * sy, 8 * sx, 5 * sy);
-
-            // Glowing celestial cyan eyes
-            ctx.fillStyle = '#38bdf8';
-            p(6, 5, '#38bdf8'); p(9, 5, '#38bdf8');
-            ctx.fillStyle = '#ffffff';
-            p(6.5, 5, '#ffffff'); p(9.5, 5, '#ffffff');
-
-            // --- ARMS / HELD MAP ---
             if (this.mapReadingTimer > 0) {
-                // Holding open star map parchment
-                ctx.fillStyle = '#fef08a'; // Parchment
+                // Open parchment map held in front
+                ctx.fillStyle = '#fef08a';
                 ctx.fillRect(6 * sx, 13 * sy, 8 * sx, 6 * sy);
-                ctx.fillStyle = '#0284c7'; // Planar lines
-                p(7, 14, '#0284c7'); p(8, 14, '#0284c7'); p(10, 15, '#a855f7'); p(11, 16, '#0284c7');
-                // Hands holding parchment
-                ctx.fillStyle = '#451a03'; // Leather gloves
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(7 * sx, 14 * sy, 2 * sx, 1 * sy);
+                ctx.fillStyle = '#a855f7';
+                ctx.fillRect(10 * sx, 15 * sy, 3 * sx, 1 * sy);
+                // Gloves holding edges
+                ctx.fillStyle = '#451a03';
                 ctx.fillRect(5 * sx, 15 * sy, 2 * sx, 2 * sy);
                 ctx.fillRect(13 * sx, 15 * sy, 2 * sx, 2 * sy);
             } else {
-                // Arm resting at side
-                ctx.fillStyle = '#0f172a';
-                ctx.fillRect(2 * sx, 10 * sy, 2.5 * sx, 7 * sy);
-                ctx.fillStyle = '#451a03'; // Glove
-                ctx.fillRect(2 * sx, 17 * sy, 2.5 * sx, 2 * sy);
+                // Rolled star map tube strapped to back
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(2 * sx, 9 * sy, 2.5 * sx, 9 * sy);
+                ctx.fillStyle = '#451a03';
+                ctx.fillRect(1.5 * sx, 12 * sy, 3.5 * sx, 2 * sy); // Leather strap
             }
+            ctx.restore();
 
-            ctx.restore(); // Restore facing flip
-
-            // --- OVERHEAD NAMEPLATE & TITLE ---
+            // Overhead Nameplate & Title
             if (this.warpState === 'active') {
                 const nameY = drawY - 20;
                 const nameCX = drawX + w / 2;
@@ -8331,7 +8425,9 @@ export const SKIN_H = 32;
                         ctx.font = 'bold 13px "VT323", monospace';
                         const pulseAlpha = 0.7 + Math.sin(Date.now() * 0.008) * 0.3;
                         ctx.fillStyle = `rgba(251, 191, 36, ${pulseAlpha})`;
-                        ctx.fillText('▼ [Left-Click to Speak] ▼', nameCX, nameY + 22);
+                        const hasTalked = (typeof window !== 'undefined' && typeof window.hasPlayerTalkedToKael === 'function') ? window.hasPlayerTalkedToKael() : false;
+                        const promptText = hasTalked ? '✦ [Right-Click to Trade] ✦' : '▼ [Right-Click to Speak] ▼';
+                        ctx.fillText(promptText, nameCX, nameY + 22);
                     }
                 }
             }
@@ -8342,7 +8438,7 @@ export const SKIN_H = 32;
 
     export function getInitialSpawnPoint() {
         const centerCol = Math.floor(WORLD_WIDTH / 2);
-        const nonSolid = new Set([IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP, IDS.WATER, IDS.LAVA, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW]);
+        const nonSolid = new Set([IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.JUNGLE_SAPLING, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP, IDS.JUNGLE_DOOR_OPEN, IDS.JUNGLE_DOOR_OPEN_TOP, IDS.WATER, IDS.LAVA, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.FERN, IDS.BAMBOO, IDS.VINES, IDS.LEAVES, IDS.JUNGLE_LEAVES]);
         const hazard = new Set([IDS.LAVA, IDS.CACTUS]);
 
         for (let r = 0; r < Math.floor(WORLD_WIDTH / 2); r++) {
@@ -8398,6 +8494,7 @@ export const SKIN_H = 32;
         fluidTick = 0;
         fluidWakeQueue = new Set();
         leafDecayQueue = new Map();
+        treeDecayClusters = new Map();
         saplingGrowthQueue = new Map();
         cropGrowthQueue = new Map();
         dirtToGrassQueue = new Map();
@@ -8412,60 +8509,51 @@ export const SKIN_H = 32;
         const tempSeed = seededRandom() * 10000;
         const humidSeed = seededRandom() * 10000;
         const mountainSeed = seededRandom() * 10000;
-        const biomes = new Array(WORLD_WIDTH);
+        worldBiomes = new Array(WORLD_WIDTH);
+        if (typeof window !== 'undefined') window.worldBiomes = worldBiomes;
+        const biomes = worldBiomes;
         const rawSurfaceHeights = new Array(WORLD_WIDTH);
         nonCollidableTreeWood = new Set();
         let lastTreeX = -10;
 
+        // Guaranteed Biome Distribution:
+        // Ensures all 6 biomes (snow, forest, plains, jungle, desert, mountains) generate in every world.
+        const biomeSequence = ['snow', 'forest', 'plains', 'jungle', 'desert', 'mountains'];
+        const seedShift = Math.floor(worldSeed * 137.5) % WORLD_WIDTH;
+        const reverseOrder = (Math.floor(worldSeed) % 2 === 1);
+        const activeBiomeList = reverseOrder ? [...biomeSequence].reverse() : [...biomeSequence];
+        const numBiomes = activeBiomeList.length;
+
         for (let x = 0; x < WORLD_WIDTH; x++) {
-            // Temperature field (-1 to 1) - slow gradual changes across the world
-            let tx = x + tempSeed;
-            let tempNoise = Math.sin(tx * 0.003) * 0.65 + Math.sin(tx * 0.008 + tempSeed * 0.5) * 0.35;
+            // Multi-octave organic domain warping for undulating natural biome borders
+            let warp = Math.sin(x * 0.012 + worldSeed * 0.4) * 45 +
+                       Math.cos(x * 0.028 + tempSeed * 0.6) * 22 +
+                       Math.sin(x * 0.065 + humidSeed * 0.8) * 12;
+            let warpedX = (x + seedShift + warp) % WORLD_WIDTH;
+            if (warpedX < 0) warpedX += WORLD_WIDTH;
 
-            // Humidity field (-1 to 1) - independent moisture distribution
-            let hx = x + humidSeed;
-            let humidNoise = Math.sin(hx * 0.004) * 0.65 + Math.cos(hx * 0.01 + humidSeed * 0.3) * 0.35;
-
-            // Mountain elevation peak factor
-            let mx = x + mountainSeed;
-            let mountainNoise = Math.sin(mx * 0.006) * 0.70 + Math.sin(mx * 0.015 + mountainSeed * 0.4) * 0.30;
-
-            let biome = "plains";
-            if (mountainNoise > 0.68 && tempNoise < 0.35) {
-                biome = "mountains";
-            } else if (tempNoise < -0.32) {
-                biome = "snow";
-            } else if (tempNoise > 0.20) {
-                if (humidNoise > 0.10) {
-                    biome = "jungle";
-                } else if (humidNoise < -0.15) {
-                    biome = "desert";
-                } else {
-                    biome = "plains";
-                }
-            } else { // Temperate
-                if (humidNoise > 0.12) {
-                    biome = "forest";
-                } else {
-                    biome = "plains";
-                }
-            }
+            let sectorFraction = (warpedX / WORLD_WIDTH) * numBiomes;
+            let sectorIndex = Math.floor(sectorFraction) % numBiomes;
+            let sectorProgress = sectorFraction - Math.floor(sectorFraction); // 0.0 to 1.0 within sector
+            let biome = activeBiomeList[sectorIndex];
             biomes[x] = biome;
 
             let wx = x + worldSeed;
             // Layered organic fractal terrain (continental + hills + detail)
-            let continental = Math.sin(wx * 0.004) * 32 + Math.cos(wx * 0.01 + worldSeed * 0.3) * 20;
-            let hills = Math.sin(wx * 0.02 + worldSeed * 0.5) * 11 + Math.sin(wx * 0.045) * 5;
+            let continental = Math.sin(wx * 0.004) * 28 + Math.cos(wx * 0.01 + worldSeed * 0.3) * 18;
+            let hills = Math.sin(wx * 0.02 + worldSeed * 0.5) * 10 + Math.sin(wx * 0.045) * 5;
             let detail = Math.sin(wx * 0.1 + worldSeed * 0.8) * 2 + Math.cos(wx * 0.18) * 0.9;
 
             let surfaceY = baseHeight + continental + hills + detail;
 
             if (biome === "mountains") {
-                let intensity = Math.min(1.0, (mountainNoise - 0.60) * 3.2);
-                let mountainSpikes = Math.abs(Math.sin(wx * 0.028 + worldSeed * 0.4) * 75 + Math.sin(wx * 0.065 + worldSeed * 0.6) * 30 + Math.sin(wx * 0.12) * 10);
-                surfaceY -= mountainSpikes * intensity;
+                // Smooth mountain envelope rising smoothly from borders to towering peaks in the center
+                let mountainEnvelope = Math.sin(sectorProgress * Math.PI);
+                let heightScale = WORLD_HEIGHT / 320;
+                let mountainSpikes = Math.abs(Math.sin(wx * 0.028 + worldSeed * 0.4) * 65 + Math.sin(wx * 0.065 + worldSeed * 0.6) * 25 + Math.sin(wx * 0.12) * 10);
+                surfaceY -= (32 + mountainSpikes) * mountainEnvelope * heightScale;
             } else if (biome === "desert") {
-                let dunes = Math.sin(wx * 0.02 + worldSeed * 0.7) * 10 + Math.abs(Math.sin(wx * 0.045)) * 6;
+                let dunes = Math.sin(wx * 0.02 + worldSeed * 0.7) * 9 + Math.abs(Math.sin(wx * 0.045)) * 5;
                 surfaceY = baseHeight + (continental * 0.35) + dunes + detail;
             } else if (biome === "jungle") {
                 let jungleHills = Math.sin(wx * 0.028 + worldSeed * 0.2) * 12 + Math.cos(wx * 0.055) * 6;
@@ -8554,13 +8642,35 @@ export const SKIN_H = 32;
                     if (isCave) {
                         world[x][y] = IDS.AIR;
                     } else {
-                        // Ore generation embedded in stone and cave walls
+                        // Ore generation embedded in stone and cave walls:
+                        // Deep ore layer thresholds dynamically scaled to world depth:
+                        // Gold strictly in lower half of underground; Diamonds strictly in deepest ~20% abyss.
+                        const undergroundDepth = WORLD_HEIGHT - baseHeight;
+                        const goldMinY = baseHeight + Math.floor(undergroundDepth * 0.52);
+                        const diamondMinY = baseHeight + Math.floor(undergroundDepth * 0.80);
+                        const emeraldMinY = baseHeight + Math.floor(undergroundDepth * 0.65);
+
                         let oreRoll = seededRandom();
-                        if (oreRoll < 0.035) world[x][y] = IDS.COAL_ORE;
-                        else if (oreRoll < 0.065) world[x][y] = IDS.IRON_ORE;
-                        else if (y > baseHeight + 35 && oreRoll < 0.088) world[x][y] = IDS.GOLD_ORE;
-                        else if (y > baseHeight + 70 && oreRoll < 0.100) world[x][y] = IDS.DIAMOND_ORE;
-                        else if ((biome === "mountains" || y > baseHeight + 60) && oreRoll < 0.108) world[x][y] = IDS.EMERALD_ORE;
+                        if (oreRoll < 0.035) {
+                            world[x][y] = IDS.COAL_ORE;
+                        } else if (oreRoll < 0.065) {
+                            world[x][y] = IDS.IRON_ORE;
+                        } else if (oreRoll < 0.080) {
+                            // Gold only generates in the deep lower half
+                            if (y >= goldMinY) {
+                                world[x][y] = IDS.GOLD_ORE;
+                            }
+                        } else if (oreRoll < 0.084) {
+                            // Rare Diamonds (0.4% chance, reduced from 1.2%), strictly in the bottom 20% abyss
+                            if (y >= diamondMinY) {
+                                world[x][y] = IDS.DIAMOND_ORE;
+                            }
+                        } else if (oreRoll < 0.089) {
+                            // Emeralds in mountains or deep underground
+                            if (biome === "mountains" || y >= emeraldMinY) {
+                                world[x][y] = IDS.EMERALD_ORE;
+                            }
+                        }
                     }
                 }
             }
@@ -9007,7 +9117,7 @@ export const SKIN_H = 32;
         }
 
         const validGround = new Set([IDS.GRASS, IDS.SNOW, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.DIRT, IDS.JUNGLE_LEAVES, IDS.LEAVES]);
-        const nonSolid = new Set([IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP]);
+        const nonSolid = new Set([IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.JUNGLE_SAPLING, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP, IDS.BAMBOO, IDS.FERN, IDS.VINES]);
 
         for (let i = 0; i < count && currentAnimals < maxAnimals; i++) {
             let chosenPlayer = activePlayers[Math.floor(Math.random() * activePlayers.length)];
@@ -9416,38 +9526,173 @@ export const SKIN_H = 32;
         return false;
     }
 
-    export function scheduleTreeLeafDecay(trunkX) {
-        for (let x = Math.max(0, trunkX - 6); x <= Math.min(WORLD_WIDTH - 1, trunkX + 6); x++) {
-            for (let y = 0; y < WORLD_HEIGHT; y++) {
-                const blk = world[x][y];
-                if ((blk === IDS.LEAVES || blk === IDS.JUNGLE_LEAVES) && !isLeafConnectedToWood(x, y, 5)) {
-                    leafDecayQueue.set(`${x}_${y}`, LEAF_DECAY_MIN_FRAMES + Math.floor(Math.random() * LEAF_DECAY_RANDOM_FRAMES));
+    export function scheduleTreeLeafDecay(trunkX, trunkY = null) {
+        const minY = (trunkY !== null && typeof trunkY === 'number') ? Math.max(0, trunkY - 14) : 0;
+        const maxY = (trunkY !== null && typeof trunkY === 'number') ? Math.min(WORLD_HEIGHT - 1, trunkY + 4) : (WORLD_HEIGHT - 1);
+        const minX = Math.max(0, trunkX - 6);
+        const maxX = Math.min(WORLD_WIDTH - 1, trunkX + 6);
+
+        const unassignedLeaves = [];
+        for (let x = minX; x <= maxX; x++) {
+            for (let y = minY; y <= maxY; y++) {
+                const blk = world[x]?.[y];
+                if ((blk === IDS.LEAVES || blk === IDS.JUNGLE_LEAVES) && !leafDecayQueue.has(`${x}_${y}`)) {
+                    if (!isLeafConnectedToWood(x, y, 5)) {
+                        unassignedLeaves.push({ x, y, blk });
+                    }
                 }
+            }
+        }
+
+        if (unassignedLeaves.length === 0) return;
+
+        // Group newly disconnected leaves into connected canopy components
+        const visited = new Set();
+        const leafMap = new Map();
+        for (const leaf of unassignedLeaves) {
+            leafMap.set(`${leaf.x}_${leaf.y}`, leaf);
+        }
+
+        let clusterSeq = 0;
+        for (const leaf of unassignedLeaves) {
+            const key = `${leaf.x}_${leaf.y}`;
+            if (visited.has(key)) continue;
+
+            const component = [];
+            const queue = [leaf];
+            visited.add(key);
+
+            while (queue.length > 0) {
+                const cur = queue.shift();
+                component.push(cur);
+
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const nKey = `${cur.x + dx}_${cur.y + dy}`;
+                        if (leafMap.has(nKey) && !visited.has(nKey)) {
+                            visited.add(nKey);
+                            queue.push(leafMap.get(nKey));
+                        }
+                    }
+                }
+            }
+
+            const clusterId = `tree_decay_${Date.now()}_${trunkX}_${clusterSeq++}_${Math.floor(Math.random() * 10000)}`;
+
+            // Quota strictly between 0 and 2 oak saplings per tree!
+            // 20% chance: 0 saplings, 50% chance: 1 sapling, 30% chance: 2 saplings
+            const roll = Math.random();
+            let targetSaplings = roll < 0.20 ? 0 : (roll < 0.70 ? 1 : 2);
+            targetSaplings = Math.min(targetSaplings, component.length);
+
+            treeDecayClusters.set(clusterId, {
+                id: clusterId,
+                type: leaf.blk === IDS.JUNGLE_LEAVES ? 'jungle' : 'oak',
+                targetSaplings: targetSaplings,
+                droppedSaplings: 0,
+                leavesRemaining: component.length,
+                totalLeaves: component.length
+            });
+
+            for (const l of component) {
+                leafDecayQueue.set(`${l.x}_${l.y}`, {
+                    delay: LEAF_DECAY_MIN_FRAMES + Math.floor(Math.random() * LEAF_DECAY_RANDOM_FRAMES),
+                    clusterId: clusterId
+                });
             }
         }
     }
 
 
     export function updateTreeLeafDecay() {
-        for (let [key, delay] of leafDecayQueue) {
+        for (let [key, val] of leafDecayQueue) {
+            let delay = typeof val === 'object' && val !== null ? val.delay : val;
+            const clusterId = typeof val === 'object' && val !== null ? val.clusterId : null;
+
             let [x, y] = key.split('_').map(Number);
             const blk = world[x]?.[y];
-            if (blk !== IDS.LEAVES && blk !== IDS.JUNGLE_LEAVES) { leafDecayQueue.delete(key); continue; }
+            if (blk !== IDS.LEAVES && blk !== IDS.JUNGLE_LEAVES) {
+                if (clusterId && treeDecayClusters.has(clusterId)) {
+                    const c = treeDecayClusters.get(clusterId);
+                    c.leavesRemaining = Math.max(0, c.leavesRemaining - 1);
+                    if (c.leavesRemaining <= 0) treeDecayClusters.delete(clusterId);
+                }
+                leafDecayQueue.delete(key);
+                continue;
+            }
+
             delay--;
-            if (delay > 0) { leafDecayQueue.set(key, delay); continue; }
-            if (isLeafConnectedToWood(x, y, 5)) { leafDecayQueue.delete(key); continue; }
+            if (delay > 0) {
+                if (typeof val === 'object' && val !== null) {
+                    val.delay = delay;
+                    leafDecayQueue.set(key, val);
+                } else {
+                    leafDecayQueue.set(key, delay);
+                }
+                continue;
+            }
+
+            if (isLeafConnectedToWood(x, y, 5)) {
+                if (clusterId && treeDecayClusters.has(clusterId)) {
+                    const c = treeDecayClusters.get(clusterId);
+                    c.leavesRemaining = Math.max(0, c.leavesRemaining - 1);
+                    if (c.leavesRemaining <= 0) treeDecayClusters.delete(clusterId);
+                }
+                leafDecayQueue.delete(key);
+                continue;
+            }
+
             world[x][y] = IDS.AIR;
             syncBlock(x, y, IDS.AIR);
-            let roll = Math.random();
-            if (blk === IDS.JUNGLE_LEAVES) {
-                if (roll < 0.12) spawnDroppedItem(IDS.JUNGLE_SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-                else if (roll < 0.25) spawnDroppedItem(IDS.MELON_SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-                else if (roll < 0.40) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+
+            let cluster = (clusterId && treeDecayClusters.has(clusterId)) ? treeDecayClusters.get(clusterId) : null;
+            if (cluster) {
+                cluster.leavesRemaining = Math.max(0, cluster.leavesRemaining - 1);
+                const saplingNeeded = cluster.targetSaplings - cluster.droppedSaplings;
+                let droppedSapling = false;
+
+                if (saplingNeeded > 0) {
+                    if (cluster.leavesRemaining < saplingNeeded) {
+                        droppedSapling = true;
+                    } else {
+                        const dropProb = saplingNeeded / (cluster.leavesRemaining + 1);
+                        if (Math.random() < dropProb) droppedSapling = true;
+                    }
+                }
+
+                if (droppedSapling) {
+                    cluster.droppedSaplings++;
+                    const dropId = (blk === IDS.JUNGLE_LEAVES) ? IDS.JUNGLE_SAPLING : IDS.SAPLING;
+                    spawnDroppedItem(dropId, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                } else {
+                    // Secondary drops: apples, sticks, melon seeds
+                    const roll = Math.random();
+                    if (blk === IDS.JUNGLE_LEAVES) {
+                        if (roll < 0.15) spawnDroppedItem(IDS.MELON_SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                        else if (roll < 0.35) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                    } else {
+                        if (roll < 0.05) spawnDroppedItem(IDS.APPLE, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                        else if (roll < 0.25) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                    }
+                }
+
+                if (cluster.leavesRemaining <= 0) {
+                    treeDecayClusters.delete(clusterId);
+                }
             } else {
-                if (roll < 0.15) spawnDroppedItem(IDS.SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-                else if (roll < 0.35) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-                else if (roll < 0.40) spawnDroppedItem(IDS.APPLE, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                let roll = Math.random();
+                if (blk === IDS.JUNGLE_LEAVES) {
+                    if (roll < 0.10) spawnDroppedItem(IDS.JUNGLE_SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                    else if (roll < 0.25) spawnDroppedItem(IDS.MELON_SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                    else if (roll < 0.40) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                } else {
+                    if (roll < 0.10) spawnDroppedItem(IDS.SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                    else if (roll < 0.30) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                    else if (roll < 0.35) spawnDroppedItem(IDS.APPLE, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                }
             }
+
             leafDecayQueue.delete(key);
         }
     }
@@ -10153,6 +10398,9 @@ export const SKIN_H = 32;
         }
     }
 
+    export const MENU_WORLD_WIDTH = 128;
+    export const MENU_WORLD_HEIGHT = 160;
+    export const MENU_SURFACE_Y = 56;
     export let menuCamX = 0;
     export let menuParallaxX = 0;
     export let menuParallaxY = 0;
@@ -10163,22 +10411,35 @@ export const SKIN_H = 32;
     export let menuTime = 0.20 + Math.random() * 0.15;
     export let menuLastFrame = performance.now();
 
-    export let menuFireflies = Array.from({ length: 36 }, () => ({
+    export let menuFireflies = Array.from({ length: 48 }, (_, i) => ({
         x: Math.random() * 2000,
         y: Math.random() * 800,
+        type: i < 16 ? 'firefly' : (i < 34 ? 'spore' : 'leaf'),
         vx: (Math.random() - 0.5) * 0.35,
         vy: (Math.random() - 0.5) * 0.25,
         phase: Math.random() * Math.PI * 2,
-        size: 2 + Math.random() * 2
+        size: 2 + Math.random() * 2,
+        color: ['#bbf7d0', '#86efac', '#fef08a', '#4ade80'][Math.floor(Math.random() * 4)],
+        leafColor: ['#15803d', '#22c55e', '#4ade80'][Math.floor(Math.random() * 3)]
     }));
 
     export function drawMenuFireflies(targetCtx, w, h, camX, camY) {
         targetCtx.save();
         for (let i = 0; i < menuFireflies.length; i++) {
             const f = menuFireflies[i];
-            f.x += f.vx;
-            f.y += f.vy;
-            f.phase += 0.04;
+            f.phase += 0.035;
+
+            if (f.type === 'leaf') {
+                f.x += 0.35 + Math.sin(f.phase) * 0.6;
+                f.y += 0.55;
+            } else if (f.type === 'spore') {
+                f.x += 0.2 + Math.sin(f.phase) * 0.3;
+                f.y -= 0.15 + Math.cos(f.phase * 0.8) * 0.2;
+            } else {
+                f.x += f.vx;
+                f.y += f.vy;
+            }
+
             if (f.x < camX - 100) f.x = camX + w + 50;
             if (f.x > camX + w + 100) f.x = camX - 50;
             if (f.y < camY - 50) f.y = camY + h;
@@ -10187,12 +10448,25 @@ export const SKIN_H = 32;
             const screenX = f.x - camX;
             const screenY = f.y - camY;
             if (screenX >= -10 && screenX <= w + 10 && screenY >= -10 && screenY <= h + 10) {
-                const pulse = (Math.sin(f.phase) + 1) * 0.5;
-                if (pulse > 0.08) {
-                    targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.85})`;
+                if (f.type === 'leaf') {
+                    targetCtx.fillStyle = f.leafColor;
+                    targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), 3, 2);
+                    targetCtx.fillStyle = '#166534';
+                    targetCtx.fillRect(Math.floor(screenX + 1), Math.floor(screenY + 1), 2, 2);
+                } else if (f.type === 'spore') {
+                    const pulse = (Math.sin(f.phase) + 1) * 0.5;
+                    targetCtx.fillStyle = 'rgba(254, 240, 138, 0.35)';
+                    targetCtx.fillRect(Math.floor(screenX - 1), Math.floor(screenY - 1), f.size + 2, f.size + 2);
+                    targetCtx.fillStyle = f.color;
                     targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), f.size, f.size);
-                    targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.25})`;
-                    targetCtx.fillRect(Math.floor(screenX - 2), Math.floor(screenY - 2), f.size + 4, f.size + 4);
+                } else {
+                    const pulse = (Math.sin(f.phase) + 1) * 0.5;
+                    if (pulse > 0.08) {
+                        targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.85})`;
+                        targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), f.size, f.size);
+                        targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.25})`;
+                        targetCtx.fillRect(Math.floor(screenX - 2), Math.floor(screenY - 2), f.size + 4, f.size + 4);
+                    }
                 }
             }
         }
@@ -10205,32 +10479,32 @@ export const SKIN_H = 32;
     }
 
     export function generateMenuWorld() {
-        if ((menuWorldInitialized || (typeof window !== 'undefined' && window.menuWorldInitialized)) && menuWorld && menuWorld.blocks && menuWorld.blocks.length === WORLD_WIDTH) {
+        if ((menuWorldInitialized || (typeof window !== 'undefined' && window.menuWorldInitialized)) && menuWorld && menuWorld.blocks && menuWorld.blocks.length === MENU_WORLD_WIDTH && menuWorld.blocks[0]?.length === MENU_WORLD_HEIGHT) {
             return;
         }
 
         menuWorldSeed = (Math.random() * 0xffffffff) >>> 0;
         menuTime = 0.22;
-        const baseH = Math.floor(WORLD_HEIGHT / 2);
-        const terrain = new Array(WORLD_WIDTH);
-        const blocks = new Array(WORLD_WIDTH);
+        const baseH = MENU_SURFACE_Y;
+        const terrain = new Array(MENU_WORLD_WIDTH);
+        const blocks = new Array(MENU_WORLD_WIDTH);
 
-        // 1. Generate full terrain column for all columns (Surface down to WORLD_HEIGHT)
-        for (let x = 0; x < WORLD_WIDTH; x++) {
-            const h = baseH + Math.round(Math.sin(x * 0.035) * 6 + Math.cos(x * 0.07) * 3);
+        // 1. Generate full terrain column for all columns (Surface down to MENU_WORLD_HEIGHT)
+        for (let x = 0; x < MENU_WORLD_WIDTH; x++) {
+            const h = baseH + Math.round(Math.sin(x * 0.04) * 4 + Math.cos(x * 0.08) * 2);
             terrain[x] = h;
-            const col = new Array(WORLD_HEIGHT).fill(IDS.AIR);
+            const col = new Array(MENU_WORLD_HEIGHT).fill(IDS.AIR);
 
             // Grass surface
             col[h] = IDS.GRASS;
 
             // Dirt (3-4 layers below grass)
-            for (let y = h + 1; y < Math.min(WORLD_HEIGHT, h + 4); y++) {
+            for (let y = h + 1; y < Math.min(MENU_WORLD_HEIGHT, h + 4); y++) {
                 col[y] = IDS.DIRT;
             }
 
             // Stone & Ores (filling all the way down through the bottom of the world)
-            for (let y = h + 4; y < WORLD_HEIGHT; y++) {
+            for (let y = h + 4; y < MENU_WORLD_HEIGHT; y++) {
                 // Natural organic cave pockets
                 const caveNoise = Math.sin(x * 0.14 + y * 0.2) + Math.cos(x * 0.18 - y * 0.14);
                 if (y > h + 7 && caveNoise > 1.35) {
@@ -10247,71 +10521,202 @@ export const SKIN_H = 32;
                 else col[y] = IDS.STONE;
             }
 
-            // Surface foliage: flowers and short grass
-            if (menuRandom() < 0.3) {
-                const flowerR = menuRandom();
-                col[h - 1] = flowerR < 0.35 ? IDS.FLOWER_RED : (flowerR < 0.65 ? IDS.FLOWER_YELLOW : IDS.SHORT_GRASS);
-            }
-
             blocks[x] = col;
         }
 
-        // 2. Beautiful Oak trees with seamless bark trunks and full rounded leaf canopies
-        for (let x = 6; x < WORLD_WIDTH - 6; x += 7) {
-            if (menuRandom() < 0.70) {
-                const sy = terrain[x];
-                const treeH = 4 + Math.floor(menuRandom() * 3);
-                // Wood trunk
-                for (let ty = sy - treeH; ty < sy; ty++) {
-                    if (ty >= 0) blocks[x][ty] = IDS.WOOD;
-                }
-                const top = sy - treeH;
+        // 2. Exact in-game Jungle Trees matching buildJungleTree
+        const setTrunk = (bx, by) => {
+            if (bx < 0 || bx >= MENU_WORLD_WIDTH || by < 0 || by >= MENU_WORLD_HEIGHT) return;
+            blocks[bx][by] = IDS.JUNGLE_WOOD;
+            nonCollidableTreeWood.add(`${bx}_${by}`);
+        };
+        const setLeaf = (bx, by) => {
+            if (bx < 0 || bx >= MENU_WORLD_WIDTH || by < 0 || by >= MENU_WORLD_HEIGHT) return;
+            if (blocks[bx][by] === IDS.AIR || blocks[bx][by] === undefined) blocks[bx][by] = IDS.JUNGLE_LEAVES;
+        };
+        const setVine = (bx, by) => {
+            if (bx < 0 || bx >= MENU_WORLD_WIDTH || by < 0 || by >= MENU_WORLD_HEIGHT) return;
+            if (blocks[bx][by] === IDS.AIR || blocks[bx][by] === undefined) blocks[bx][by] = IDS.VINES;
+        };
 
-                // Base canopy layer (width 5, height 2)
-                for (let lx = -2; lx <= 2; lx++) {
-                    const wx = x + lx;
-                    if (wx < 0 || wx >= WORLD_WIDTH) continue;
-                    for (let ly = -1; ly <= 1; ly++) {
-                        const wy = top + ly;
-                        if (wy < 0) continue;
-                        if (Math.abs(lx) === 2 && Math.abs(ly) === 1 && menuRandom() < 0.35) continue;
-                        if (blocks[wx][wy] === IDS.AIR || blocks[wx][wy] === undefined) {
-                            blocks[wx][wy] = IDS.LEAVES;
-                        }
-                    }
-                }
-
-                // Upper dome layer (width 3, height 2)
+        function buildMenuJungleTree(tx, sy, treeType = 'giant') {
+            if (treeType === 'jungle_bush') {
+                setTrunk(tx, sy - 1);
                 for (let lx = -1; lx <= 1; lx++) {
-                    const wx = x + lx;
-                    if (wx < 0 || wx >= WORLD_WIDTH) continue;
-                    for (let ly = -3; ly <= -2; ly++) {
-                        const wy = top + ly;
-                        if (wy < 0) continue;
-                        if (Math.abs(lx) === 1 && ly === -3 && menuRandom() < 0.45) continue;
-                        if (blocks[wx][wy] === IDS.AIR || blocks[wx][wy] === undefined) {
-                            blocks[wx][wy] = IDS.LEAVES;
-                        }
+                    for (let ly = -2; ly <= -1; ly++) {
+                        setLeaf(tx + lx, sy + ly);
                     }
                 }
+                setLeaf(tx, sy - 3);
+                return;
+            }
 
-                // Crown peak top leaf
-                if (top - 4 >= 0 && (blocks[x][top - 4] === IDS.AIR || blocks[x][top - 4] === undefined)) {
-                    blocks[x][top - 4] = IDS.LEAVES;
+            // Giant Jungle Tree: 12 to 20 blocks high (exact match to buildJungleTree)
+            const th = Math.floor(menuRandom() * 9) + 12;
+            const is2x2 = menuRandom() < 0.65;
+            const trunkWidth = is2x2 ? 2 : 1;
+
+            // Grow main trunk
+            for (let i = 1; i <= th; i++) {
+                for (let tw = 0; tw < trunkWidth; tw++) {
+                    setTrunk(tx + tw, sy - i);
+                }
+            }
+
+            // Spreading branch arms midway up (exact match)
+            const branchY1 = sy - Math.floor(th * 0.55);
+            setTrunk(tx - 1, branchY1);
+            setLeaf(tx - 2, branchY1);
+            setLeaf(tx - 2, branchY1 - 1);
+            setLeaf(tx - 1, branchY1 - 1);
+
+            const branchY2 = sy - Math.floor(th * 0.75);
+            setTrunk(tx + trunkWidth, branchY2);
+            setLeaf(tx + trunkWidth + 1, branchY2);
+            setLeaf(tx + trunkWidth + 1, branchY2 - 1);
+            setLeaf(tx + trunkWidth, branchY2 - 1);
+
+            // Broad canopy at top (radius 4 to 6)
+            const top = sy - th;
+            const canopyRadius = is2x2 ? 5 : 4;
+            for (let ly = -4; ly <= 2; ly++) {
+                const layerY = top + ly;
+                const r = canopyRadius - Math.abs(ly + 1);
+                for (let lx = -r; lx <= r + (is2x2 ? 1 : 0); lx++) {
+                    if (Math.abs(lx) === r && Math.abs(ly + 1) >= 2 && menuRandom() < 0.4) continue;
+                    setLeaf(tx + lx, layerY);
+                }
+            }
+
+            // Hanging Vines on trunk sides and under canopy
+            for (let side of [-1, trunkWidth]) {
+                const vineX = tx + side;
+                const startVineY = top + 2;
+                const vineLen = Math.floor(menuRandom() * 6) + 3;
+                for (let v = 0; v < vineLen; v++) {
+                    const vy = startVineY + v;
+                    if (vy < sy - 1) {
+                        setVine(vineX, vy);
+                    }
+                }
+            }
+            // Hanging vines under outer canopy edges
+            for (let offset of [-canopyRadius + 1, canopyRadius + (is2x2 ? 0 : -1)]) {
+                const vineX = tx + offset;
+                const startVineY = top + 3;
+                const vineLen = Math.floor(menuRandom() * 5) + 2;
+                for (let v = 0; v < vineLen; v++) {
+                    const vy = startVineY + v;
+                    if (vy < sy - 1) {
+                        setVine(vineX, vy);
+                    }
                 }
             }
         }
 
-        // 3. Animals
+        let lastTreeX = -999;
+        for (let x = 3; x < MENU_WORLD_WIDTH - 4; x++) {
+            const surfaceY = terrain[x];
+            if (x - lastTreeX >= 3 && menuRandom() < 0.65) {
+                const roll = menuRandom();
+                const treeType = roll < 0.80 ? 'giant' : 'jungle_bush';
+                buildMenuJungleTree(x, surfaceY, treeType);
+                lastTreeX = x + (treeType === 'giant' ? 3 : 1);
+            }
+        }
+
+        // 3. Ground Cover & Understory: Bamboo clumps (2-5 blocks tall), Ferns, Tall & Short Grass
+        for (let x = 0; x < MENU_WORLD_WIDTH; x++) {
+            const h = terrain[x];
+            if (blocks[x][h] === IDS.GRASS && blocks[x][h - 1] === IDS.AIR) {
+                const vegRoll = menuRandom();
+                if (vegRoll < 0.25) {
+                    blocks[x][h - 1] = IDS.FERN;
+                } else if (vegRoll < 0.45) {
+                    blocks[x][h - 1] = IDS.TALL_GRASS;
+                } else if (vegRoll < 0.60) {
+                    blocks[x][h - 1] = IDS.SHORT_GRASS;
+                } else if (vegRoll < 0.75) {
+                    // Bamboo shoot/stalk (2-5 blocks tall)
+                    const bambooHeight = Math.floor(menuRandom() * 4) + 2;
+                    for (let b = 1; b <= bambooHeight; b++) {
+                        if (h - b >= 0 && blocks[x][h - b] === IDS.AIR) {
+                            blocks[x][h - b] = IDS.BAMBOO;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Wild Melon Patches (exact match to generateWorld)
+        for (let x = 5; x < MENU_WORLD_WIDTH - 5; x++) {
+            if (menuRandom() < 0.48) {
+                const sy = terrain[x];
+                if (sy && blocks[x][sy] === IDS.GRASS && blocks[x][sy - 1] === IDS.AIR) {
+                    const patchSize = Math.floor(menuRandom() * 4) + 2;
+                    for (let p = 0; p < patchSize; p++) {
+                        const mx = x + (p % 3) - 1;
+                        if (mx >= 2 && mx < MENU_WORLD_WIDTH - 2) {
+                            const my = terrain[mx];
+                            if (my && blocks[mx][my] === IDS.GRASS && blocks[mx][my - 1] === IDS.AIR) {
+                                blocks[mx][my - 1] = IDS.MELON;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5. Animals & Birds: Colorful Parrots, Pigeons, Sheep, Pigs, Cows, Chickens
         const animals = [];
-        ['sheep', 'pig', 'chicken', 'cow', 'pigeon', 'sheep', 'pig', 'chicken', 'cow', 'pigeon'].forEach((type, index) => {
-            const x = 12 + menuRandom() * (WORLD_WIDTH - 24);
-            const entity = type === 'sheep' ? new Sheep(x * TILE_SIZE, 0) : type === 'pig' ? new Pig(x * TILE_SIZE, 0) : type === 'cow' ? new Cow(x * TILE_SIZE, 0) : type === 'pigeon' ? new Pigeon(x * TILE_SIZE, 0) : new Chicken(x * TILE_SIZE, 0);
+        const animalRoster = [
+            { type: 'parrot', variant: 0 },
+            { type: 'parrot', variant: 1 },
+            { type: 'pigeon', variant: null },
+            { type: 'parrot', variant: 2 },
+            { type: 'parrot', variant: 3 },
+            { type: 'pigeon', variant: null },
+            { type: 'sheep', variant: null },
+            { type: 'pig', variant: null },
+            { type: 'cow', variant: null },
+            { type: 'chicken', variant: null },
+            { type: 'parrot', variant: 0 },
+            { type: 'parrot', variant: 2 },
+            { type: 'pigeon', variant: null },
+            { type: 'sheep', variant: null },
+            { type: 'pig', variant: null },
+            { type: 'chicken', variant: null },
+            { type: 'cow', variant: null },
+            { type: 'pigeon', variant: null }
+        ];
+
+        animalRoster.forEach((spec, index) => {
+            let x;
+            if (index < 6) {
+                x = 10 + (index * 4) + menuRandom() * 3;
+            } else {
+                x = 8 + menuRandom() * (MENU_WORLD_WIDTH - 16);
+            }
+
+            let entity;
+            if (spec.type === 'parrot') {
+                entity = new Parrot(x * TILE_SIZE, 0, spec.variant);
+            } else if (spec.type === 'pigeon') {
+                entity = new Pigeon(x * TILE_SIZE, 0);
+            } else if (spec.type === 'sheep') {
+                entity = new Sheep(x * TILE_SIZE, 0);
+            } else if (spec.type === 'pig') {
+                entity = new Pig(x * TILE_SIZE, 0);
+            } else if (spec.type === 'cow') {
+                entity = new Cow(x * TILE_SIZE, 0);
+            } else {
+                entity = new Chicken(x * TILE_SIZE, 0);
+            }
+
             entity.dir = menuRandom() > 0.5 ? 1 : -1;
-            entity.menuSpeed = 0.7 + menuRandom() * 0.4;
             entity.y = (terrain[Math.floor(x)] || baseH) * TILE_SIZE - entity.height;
             entity.isGrounded = true;
-            animals.push({ type, entity, timer: 60 + menuRandom() * 120 });
+            animals.push({ type: spec.type, entity });
         });
         menuEntities = animals;
 
@@ -10320,14 +10725,18 @@ export const SKIN_H = 32;
             surfaceHeights: terrain,
             blocks,
             animals,
-            width: WORLD_WIDTH
+            width: MENU_WORLD_WIDTH
         };
         menuWorldInitialized = true;
-        if (typeof window !== 'undefined') window.menuWorldInitialized = true;
+        if (typeof window !== 'undefined') {
+            window.menuWorld = menuWorld;
+            window.menuEntities = animals;
+            window.menuWorldInitialized = true;
+        }
     }
 
     export function drawMenuBackground() {
-        if (!menuWorldInitialized || !menuWorld.blocks || !menuWorld.blocks.length) {
+        if (!menuWorldInitialized || !menuWorld.blocks || !menuWorld.blocks.length || menuWorld.blocks.length !== MENU_WORLD_WIDTH) {
             generateMenuWorld();
         }
         const now = performance.now();
@@ -10339,7 +10748,7 @@ export const SKIN_H = 32;
         const pointerY = Math.max(-1, Math.min(1, (mouse.clientY - window.innerHeight / 2) / Math.max(1, window.innerHeight / 2)));
         menuParallaxX += (pointerX * 24 - menuParallaxX) * 0.08;
         menuParallaxY += (pointerY * 14 - menuParallaxY) * 0.08;
-        menuCamX = (menuCamX + motion * 0.035) % (WORLD_WIDTH * TILE_SIZE);
+        menuCamX = (menuCamX + motion * 0.035) % (MENU_WORLD_WIDTH * TILE_SIZE);
         if (!menuBgCanvas && typeof document !== 'undefined') menuBgCanvas = document.getElementById('menuBgCanvas');
         if (menuBgCanvas && !menuCtx) menuCtx = menuBgCanvas.getContext('2d', { alpha: false });
         if (!menuBgCanvas || !menuCtx) return;
@@ -10355,10 +10764,30 @@ export const SKIN_H = 32;
         // 2. Parallax Mountain Ridges (Ultra-fast vector path filling)
         drawMountains(menuCtx, menuCamX, height, menuTime, width, menuParallaxX, menuParallaxY);
 
-        // 3. Drifting Clouds
+        // 3. Tropical Jungle Humidity Mist (Unconditional Fabulous Shader Layer)
+        menuCtx.save();
+        const mistLayers = [
+            { speed: 0.05, alpha: 0.22, yOffset: 0.18, hRatio: 0.65 },
+            { speed: 0.10, alpha: 0.18, yOffset: 0.35, hRatio: 0.60 },
+            { speed: 0.03, alpha: 0.15, yOffset: 0.05, hRatio: 0.90 }
+        ];
+        for (let l = 0; l < mistLayers.length; l++) {
+            const layer = mistLayers[l];
+            const a = layer.alpha;
+            const fogGrad = menuCtx.createLinearGradient(0, height * layer.yOffset, 0, height * (layer.yOffset + layer.hRatio));
+            fogGrad.addColorStop(0, 'rgba(180, 245, 205, 0)');
+            fogGrad.addColorStop(0.3, `rgba(160, 240, 195, ${a.toFixed(3)})`);
+            fogGrad.addColorStop(0.7, `rgba(140, 235, 180, ${(a * 1.15).toFixed(3)})`);
+            fogGrad.addColorStop(1, 'rgba(180, 245, 205, 0)');
+            menuCtx.fillStyle = fogGrad;
+            menuCtx.fillRect(0, height * layer.yOffset, width, height * layer.hRatio);
+        }
+        menuCtx.restore();
+
+        // 4. Drifting Clouds
         clouds.forEach(c => c.draw(menuCtx, menuCamX * 0.6));
 
-        // 4. Atmospheric Sun Glow / Godrays
+        // 5. Atmospheric Sun Glow
         const lightStrength = menuTime > 0.08 && menuTime < 0.42 ? 0.22 : (menuTime > 0.84 || menuTime < 0.08 ? 0.12 : 0.03);
         const sunX = width * 0.72 + menuParallaxX * 0.3;
         const sunY = height * 0.20 + menuParallaxY * 0.3;
@@ -10372,18 +10801,19 @@ export const SKIN_H = 32;
         menuCtx.fillRect(0, 0, width, height);
         menuCtx.restore();
 
-        // 5. Foreground Living World (Trees, Foliage, Grass, Dirt, Stone & Ore Strata)
+        // 6. Foreground Living World (Trees, Foliage, Grass, Dirt, Stone & Ore Strata)
+        // Camera is permanently anchored to the tropical jungle surface layer at MENU_SURFACE_Y
         const cameraX = menuCamX;
-        const cameraY = (WORLD_HEIGHT * TILE_SIZE / 2) - height * 0.38 + menuParallaxY * 0.8;
+        const cameraY = (MENU_SURFACE_Y * TILE_SIZE) - height * 0.52 + menuParallaxY * 0.8;
         const startCol = Math.floor(cameraX / TILE_SIZE) - 1;
         const endCol = startCol + Math.ceil(width / TILE_SIZE) + 2;
         const startRow = Math.max(0, Math.floor(cameraY / TILE_SIZE) - 2);
-        const endRow = Math.min(WORLD_HEIGHT - 1, Math.ceil((cameraY + height) / TILE_SIZE) + 1);
+        const endRow = Math.min(MENU_WORLD_HEIGHT - 1, Math.ceil((cameraY + height) / TILE_SIZE) + 1);
 
         menuCtx.imageSmoothingEnabled = false;
 
         for (let x = startCol; x <= endCol; x++) {
-            const wrappedX = ((x % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH;
+            const wrappedX = ((x % MENU_WORLD_WIDTH) + MENU_WORLD_WIDTH) % MENU_WORLD_WIDTH;
             const drawX = Math.round(x * TILE_SIZE - cameraX);
             const col = menuWorld.blocks?.[wrappedX];
             if (!col) continue;
@@ -10400,47 +10830,82 @@ export const SKIN_H = 32;
             }
         }
 
-        // 6. Draw Living Animated Animals (Smooth stepping, zero teleportation)
+        // 7. Living Animated Animals (Authentic in-game physics, AI, jumping, walking leg swings & bird flight)
         if (menuEntities && menuEntities.length) {
             menuEntities.forEach(entry => {
                 const entity = entry.entity;
-                entity.timer = (entity.timer || 60) - motion * 0.06;
-                if (entity.timer <= 0) {
-                    entity.dir = menuRandom() > 0.5 ? 1 : -1;
-                    if (menuRandom() < 0.35) entity.dir = 0;
-                    entity.timer = 60 + menuRandom() * 140;
-                }
                 
-                const curGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.width / 2) / TILE_SIZE)));
-                const groundY = (menuWorld.terrain && menuWorld.terrain[curGx] !== undefined) ? menuWorld.terrain[curGx] : Math.floor(WORLD_HEIGHT / 2);
-
-                if (entity.dir !== 0) {
-                    const nextGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.dir * 12 + entity.width / 2) / TILE_SIZE)));
-                    const nextGroundY = (menuWorld.terrain && menuWorld.terrain[nextGx] !== undefined) ? menuWorld.terrain[nextGx] : groundY;
-                    // Steep cliff or world bounds: turn around naturally
-                    if (Math.abs(nextGroundY - groundY) > 1 || nextGx <= 2 || nextGx >= WORLD_WIDTH - 3) {
-                        entity.dir = -entity.dir;
-                    }
+                // Turn around smoothly before hitting world boundaries
+                if (entity.x < 3 * TILE_SIZE) {
+                    entity.dir = 1;
+                    if (entity.vx < 0) entity.vx = -entity.vx;
+                } else if (entity.x > (MENU_WORLD_WIDTH - 4) * TILE_SIZE) {
+                    entity.dir = -1;
+                    if (entity.vx > 0) entity.vx = -entity.vx;
                 }
 
-                entity.x += entity.dir * (entity.menuSpeed || 0.8) * (motion * 0.06);
-                entity.x = Math.max(TILE_SIZE * 2, Math.min((WORLD_WIDTH - 3) * TILE_SIZE, entity.x));
+                // Full in-game AI, physics, gravity, obstacle jumps & flight
+                entity.update();
 
-                const targetY = groundY * TILE_SIZE - entity.height;
-                if (entity.y === undefined || Math.abs(entity.y - targetY) > TILE_SIZE * 3) {
-                    entity.y = targetY;
-                } else {
-                    entity.y += (targetY - entity.y) * 0.20;
+                // Safety fallback if entity goes below terrain
+                const curGx = Math.max(0, Math.min(MENU_WORLD_WIDTH - 1, Math.floor((entity.x + entity.width / 2) / TILE_SIZE)));
+                const groundY = (menuWorld.terrain && menuWorld.terrain[curGx] !== undefined) ? menuWorld.terrain[curGx] : MENU_SURFACE_Y;
+                if (entity.y > (groundY + 3) * TILE_SIZE) {
+                    entity.y = groundY * TILE_SIZE - entity.height;
+                    entity.vy = 0;
+                    entity.isGrounded = true;
                 }
 
                 entity.draw(menuCtx, cameraX, cameraY);
             });
         }
 
-        // 7. Glowing Animated Fireflies
+        // 8. Tropical Canopy Sunbeams / Godrays (Unconditional Fabulous Shader)
+        menuCtx.save();
+        menuCtx.globalCompositeOperation = 'lighter';
+        const numMenuRays = 6;
+        const baseRaySpacing = width / (numMenuRays - 1);
+        const rayParallaxOffset = (cameraX * 0.12) % baseRaySpacing;
+        const rayPixelStep = 8;
+        const raySliceHeight = 16;
+        const rayTilt = 0.18;
+        const rayTime = now * 0.001;
+
+        for (let i = 0; i < numMenuRays; i++) {
+            const rayPulse = Math.sin(rayTime * 1.2 + i * 1.5) * 0.5 + 0.5;
+            const driftX = Math.floor(Math.sin(rayTime * 0.6 + i * 0.8) * 24 / rayPixelStep) * rayPixelStep;
+            const topCenterX = Math.floor((i * baseRaySpacing - rayParallaxOffset + driftX) / rayPixelStep) * rayPixelStep;
+            const topHalfWidth = 26 + Math.floor(Math.sin(i * 1.8) * 8 / rayPixelStep) * rayPixelStep;
+            const bottomHalfWidth = topHalfWidth * 1.6;
+
+            const baseAlpha = 0.024 + rayPulse * 0.014;
+            const r = 230, g = 255, b = 145; // Tropical canopy sunbeams
+
+            for (let y = 0; y < height; y += raySliceHeight) {
+                const yRatio = y / height;
+                const fade = Math.max(0, 1.0 - yRatio * 0.85);
+                const sliceAlpha = baseAlpha * fade;
+                if (sliceAlpha <= 0.002) continue;
+
+                const sliceCenterX = Math.floor((topCenterX + rayTilt * y) / rayPixelStep) * rayPixelStep;
+                const sliceHalfWidth = Math.floor((topHalfWidth + yRatio * (bottomHalfWidth - topHalfWidth)) / rayPixelStep) * rayPixelStep;
+
+                menuCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${sliceAlpha.toFixed(4)})`;
+                menuCtx.fillRect(sliceCenterX - sliceHalfWidth, y, sliceHalfWidth * 2, raySliceHeight);
+            }
+        }
+        menuCtx.restore();
+
+        // 9. Floating Bioluminescent Spores, Jungle Leaves & Fireflies (Fabulous Atmosphere)
         drawMenuFireflies(menuCtx, width, height, cameraX, cameraY);
 
-        // 8. Cinematic Dark Edge Vignette
+        // 10. Tropical Jungle Biome Color Grading (Unconditional Fabulous Shader)
+        menuCtx.save();
+        menuCtx.fillStyle = 'rgba(34, 197, 94, 0.15)'; // Vibrant tropical emerald-jade canopy grade
+        menuCtx.fillRect(0, 0, width, height);
+        menuCtx.restore();
+
+        // 11. Cinematic Dark Edge Vignette
         const vignette = menuCtx.createRadialGradient(width / 2, height * 0.46, height * 0.28, width / 2, height * 0.46, height * 0.85);
         vignette.addColorStop(0, 'rgba(0,0,0,0)');
         vignette.addColorStop(0.7, 'rgba(4,8,14,0.30)');
@@ -10662,8 +11127,10 @@ export const SKIN_H = 32;
     export const MAX_FABULOUS_PARTICLES = 90;
 
     export function getActiveBiomeAt(gridX) {
-        if (!Array.isArray(world) || !Array.isArray(surfaceHeights) || surfaceHeights.length === 0) return 'plains';
         const gx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(gridX)));
+        if (worldBiomes && worldBiomes[gx]) return worldBiomes[gx];
+        if (typeof window !== 'undefined' && window.worldBiomes && window.worldBiomes[gx]) return window.worldBiomes[gx];
+        if (!Array.isArray(world) || !Array.isArray(surfaceHeights) || surfaceHeights.length === 0) return 'plains';
         let snowCount = 0;
         let sandCount = 0;
         let woodCount = 0;
@@ -10683,16 +11150,16 @@ export const SKIN_H = 32;
                 if (b0 === IDS.SNOW || b0 === IDS.ICE || b1 === IDS.SNOW || b1 === IDS.ICE) snowCount++;
                 else if (b0 === IDS.SAND || b1 === IDS.SAND) sandCount++;
                 else if (b0 === IDS.JUNGLE_WOOD || b0 === IDS.JUNGLE_LEAVES || b0 === IDS.BAMBOO || b0 === IDS.FERN || b0 === IDS.MELON || b0 === IDS.VINES || b1 === IDS.JUNGLE_WOOD || b1 === IDS.JUNGLE_LEAVES || bAbove === IDS.BAMBOO || bAbove === IDS.FERN || bAbove === IDS.MELON) jungleCount++;
-                else if (b0 === IDS.WOOD || b0 === IDS.LEAVES || b1 === IDS.WOOD) woodCount++;
+                else if (b0 === IDS.WOOD || b0 === IDS.LEAVES || b1 === IDS.WOOD || bAbove === IDS.WOOD || bAbove === IDS.LEAVES) woodCount++;
             }
         }
 
         if (jungleCount >= 1) return 'jungle';
         if (totalChecked > 0 && snowCount / totalChecked > 0.30) return 'snow';
         if (totalChecked > 0 && sandCount / totalChecked > 0.30) return 'desert';
-        if (woodCount >= 2) return 'forest';
+        if (woodCount >= 1) return 'forest';
         const surfY = surfaceHeights[gx] !== undefined ? surfaceHeights[gx] : getWorldSurfaceY(gx);
-        if (surfY < 48) return 'mountains';
+        if (surfY < Math.floor(WORLD_HEIGHT * 0.32) || (world[gx]?.[surfY] === IDS.STONE)) return 'mountains';
         return 'plains';
     }
 
@@ -10749,6 +11216,21 @@ export const SKIN_H = 32;
             } else {
                 targetR = 255; targetG = 175; targetB = 45; targetA = 0.16;
             }
+        } else if (activeBiome === 'jungle') {
+            // Tropical Jungle: Rich lush emerald-jade canopy grade with warm humidity mist
+            if (timeOfDay >= 0.36 && timeOfDay < 0.48) {
+                // Tropical Sunset: warm mango amber with humid glow
+                targetR = 255; targetG = 145; targetB = 35; targetA = 0.20;
+                targetFog = 0.25;
+            } else if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+                // Rainforest Night: deep moonlit indigo-teal
+                targetR = 12; targetG = 45; targetB = 68; targetA = 0.17;
+                targetFog = 0.18;
+            } else {
+                // Daytime: vibrant tropical emerald-jade canopy filtering
+                targetR = 34; targetG = 197; targetB = 94; targetA = 0.17;
+                targetFog = 0.22;
+            }
         } else if (activeBiome === 'forest') {
             // Plain Woods: Rich lush emerald canopy grade with golden sun accents
             if (timeOfDay >= 0.36 && timeOfDay < 0.48) {
@@ -10799,6 +11281,7 @@ export const SKIN_H = 32;
     export function drawSnowFog(targetCtx, w, h, camX) {
         if (!fabulousGraphics || currentFogDensity <= 0.01 || w <= 0 || h <= 0) return;
         targetCtx.save();
+        const isJungle = cachedActiveBiome === 'jungle';
         const layers = [
             { speed: 0.8, alpha: 0.28, yOffset: 0.15, hRatio: 0.7 },
             { speed: 1.4, alpha: 0.22, yOffset: 0.35, hRatio: 0.65 },
@@ -10807,12 +11290,19 @@ export const SKIN_H = 32;
 
         for (let l = 0; l < layers.length; l++) {
             const layer = layers[l];
-            const a = layer.alpha * currentFogDensity;
+            const a = layer.alpha * currentFogDensity * (isJungle ? 0.70 : 1.0);
             const fogGrad = targetCtx.createLinearGradient(0, h * layer.yOffset, 0, h * (layer.yOffset + layer.hRatio));
-            fogGrad.addColorStop(0, `rgba(230, 245, 255, 0)`);
-            fogGrad.addColorStop(0.3, `rgba(225, 242, 255, ${a.toFixed(3)})`);
-            fogGrad.addColorStop(0.7, `rgba(215, 238, 255, ${(a * 1.2).toFixed(3)})`);
-            fogGrad.addColorStop(1, `rgba(230, 245, 255, 0)`);
+            if (isJungle) {
+                fogGrad.addColorStop(0, `rgba(180, 245, 205, 0)`);
+                fogGrad.addColorStop(0.3, `rgba(160, 240, 195, ${a.toFixed(3)})`);
+                fogGrad.addColorStop(0.7, `rgba(140, 235, 180, ${(a * 1.15).toFixed(3)})`);
+                fogGrad.addColorStop(1, `rgba(180, 245, 205, 0)`);
+            } else {
+                fogGrad.addColorStop(0, `rgba(230, 245, 255, 0)`);
+                fogGrad.addColorStop(0.3, `rgba(225, 242, 255, ${a.toFixed(3)})`);
+                fogGrad.addColorStop(0.7, `rgba(215, 238, 255, ${(a * 1.2).toFixed(3)})`);
+                fogGrad.addColorStop(1, `rgba(230, 245, 255, 0)`);
+            }
 
             targetCtx.fillStyle = fogGrad;
             targetCtx.fillRect(0, h * layer.yOffset, w, h * layer.hRatio);
@@ -10855,7 +11345,7 @@ export const SKIN_H = 32;
         if (!fabulousGraphics || caveSkyOpacity > 0.45 || w <= 0 || h <= 0 || !player) return;
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const activeBiome = getActiveBiomeAt(playerGridX);
-        if (activeBiome !== 'forest' && activeBiome !== 'plains') return;
+        if (activeBiome !== 'forest' && activeBiome !== 'plains' && activeBiome !== 'jungle') return;
 
         // Intermittent presence: rays will not always appear (fades in and out during sunny intervals)
         const rayCycle = Math.sin(frameCount * 0.0018 + playerGridX * 0.05);
@@ -10888,7 +11378,7 @@ export const SKIN_H = 32;
             tilt = Math.sin((timeOfDay - 0.5) * Math.PI * 3) * 0.20;
         }
 
-        const numRays = 5;
+        const numRays = (activeBiome === 'jungle') ? 6 : 5;
         const baseSpacing = w / (numRays - 1);
         const parallaxOffset = (camX * 0.12) % baseSpacing;
         const pixelStep = 8;
@@ -10907,13 +11397,20 @@ export const SKIN_H = 32;
 
             if (isSunset) {
                 baseAlpha = (0.018 + rayPulse * 0.012) * skyClear;
-                r = 255; g = 165; b = 80;
+                r = (activeBiome === 'jungle') ? 255 : 255;
+                g = (activeBiome === 'jungle') ? 175 : 165;
+                b = (activeBiome === 'jungle') ? 70 : 80;
             } else if (isSunrise) {
                 baseAlpha = (0.016 + rayPulse * 0.010) * skyClear;
                 r = 255; g = 210; b = 130;
             } else if (isDaytime) {
-                baseAlpha = ((activeBiome === 'forest' ? 0.018 : 0.014) + rayPulse * 0.008) * skyClear;
-                r = 245; g = 250; b = 190;
+                if (activeBiome === 'jungle') {
+                    baseAlpha = (0.024 + rayPulse * 0.012) * skyClear;
+                    r = 230; g = 255; b = 145; // Tropical canopy sunbeams
+                } else {
+                    baseAlpha = ((activeBiome === 'forest' ? 0.018 : 0.014) + rayPulse * 0.008) * skyClear;
+                    r = 245; g = 250; b = 190;
+                }
             } else if (isNight) {
                 baseAlpha = (0.010 + rayPulse * 0.006) * skyClear;
                 r = 180; g = 210; b = 255;
@@ -11013,12 +11510,40 @@ export const SKIN_H = 32;
                     p.color = 'rgba(235, 195, 110, 0.65)';
                     p.vx = 1.4 + Math.random() * 1.2;
                     p.vy = 0.2 + Math.random() * 0.4;
-                } else if (isNight && (activeBiome === 'forest' || activeBiome === 'plains')) {
+                } else if (isNight && (activeBiome === 'forest' || activeBiome === 'plains' || activeBiome === 'jungle')) {
                     p.type = 'firefly';
-                    p.size = 3.0 + Math.random() * 1.5;
-                    p.color = 'rgba(180, 255, 80, 0.75)';
+                    p.size = (activeBiome === 'jungle') ? (3.5 + Math.random() * 1.5) : (3.0 + Math.random() * 1.5);
+                    p.color = (activeBiome === 'jungle') ? 'rgba(160, 255, 120, 0.85)' : 'rgba(180, 255, 80, 0.75)';
                     p.vx = (Math.random() - 0.5) * 0.8;
                     p.vy = (Math.random() - 0.5) * 0.8;
+                } else if (activeBiome === 'jungle') {
+                    // Tropical Jungle: Glowing bioluminescent spores, broad lush jungle leaves, tropical orchid petals
+                    const jRoll = Math.random();
+                    if (jRoll < 0.48) {
+                        p.type = 'jungle_spore';
+                        p.size = 2.0 + Math.random() * 1.5;
+                        const sporeColors = ['#bbf7d0', '#86efac', '#fef08a', '#4ade80'];
+                        p.sporeColor = sporeColors[Math.floor(Math.random() * sporeColors.length)];
+                        p.swayPhase = Math.random() * Math.PI * 2;
+                        p.vx = 0.25 + Math.random() * 0.3;
+                        p.vy = -0.2 + (Math.random() - 0.5) * 0.3;
+                    } else if (jRoll < 0.80) {
+                        p.type = 'leaf';
+                        p.size = 3.5 + Math.random() * 1.5;
+                        p.swayPhase = Math.random() * Math.PI * 2;
+                        p.swaySpeed = 0.04 + Math.random() * 0.03;
+                        p.fallSpeed = 0.60 + Math.random() * 0.40;
+                        p.leafColorChoice = 4 + Math.floor(Math.random() * 3);
+                        p.vx = 0.3;
+                        p.vy = p.fallSpeed;
+                    } else {
+                        p.type = 'petal';
+                        p.size = 2.5 + Math.random() * 1.2;
+                        p.petalType = 3 + Math.floor(Math.random() * 3);
+                        p.swayPhase = Math.random() * Math.PI * 2;
+                        p.vx = 0.4 + Math.random() * 0.4;
+                        p.vy = 0.25 + Math.random() * 0.25;
+                    }
                 } else {
                     // Daytime Plains & Plain Woods (Forest)
                     const pRoll = Math.random();
@@ -11063,6 +11588,22 @@ export const SKIN_H = 32;
                 targetCtx.fillRect(fx - 2, fy - 2, p.size + 4, p.size + 4);
                 targetCtx.fillStyle = `rgba(225, 255, 140, ${(pulse * 0.9 + 0.1).toFixed(2)})`;
                 targetCtx.fillRect(fx, fy, p.size, p.size);
+            } else if (p.type === 'jungle_spore') {
+                p.swayPhase = (p.swayPhase || 0) + 0.035;
+                p.vx = 0.25 + Math.sin(p.swayPhase) * 0.35;
+                p.vy = -0.15 + Math.cos(p.swayPhase * 0.8) * 0.25;
+                p.x += p.vx;
+                p.y += p.vy;
+
+                const sx = Math.floor(p.x - camX);
+                const sy = Math.floor(p.y - camY);
+                const alpha = Math.max(0, Math.min(0.9, (p.life / p.maxLife) * 1.5));
+                targetCtx.globalAlpha = alpha;
+                targetCtx.fillStyle = 'rgba(254, 240, 138, 0.35)';
+                targetCtx.fillRect(sx - 1, sy - 1, p.size + 2, p.size + 2);
+                targetCtx.fillStyle = p.sporeColor || '#86efac';
+                targetCtx.fillRect(sx, sy, p.size, p.size);
+                targetCtx.globalAlpha = 1.0;
             } else if (p.type === 'leaf') {
                 p.swayPhase = (p.swayPhase || 0) + (p.swaySpeed || 0.06);
                 p.vx = 0.4 + Math.sin(p.swayPhase) * 1.1;
@@ -11076,10 +11617,13 @@ export const SKIN_H = 32;
                 targetCtx.globalAlpha = alpha;
 
                 const leafColors = [
-                    ['#388e3c', '#4caf50'], // Vibrant grass leaf
-                    ['#2e7d32', '#1b5e20'], // Deep forest oak leaf
-                    ['#7cb342', '#8bc34a'], // Golden sunlit leaf
-                    ['#f57f17', '#e65100']  // Autumn amber leaf
+                    ['#388e3c', '#4caf50'], // 0 Vibrant grass leaf
+                    ['#2e7d32', '#1b5e20'], // 1 Deep forest oak leaf
+                    ['#7cb342', '#8bc34a'], // 2 Golden sunlit leaf
+                    ['#f57f17', '#e65100'], // 3 Autumn amber leaf
+                    ['#15803d', '#22c55e'], // 4 Lush rainforest canopy leaf
+                    ['#166534', '#15803d'], // 5 Deep jungle understory leaf
+                    ['#4ade80', '#16a34a']  // 6 Sunlit jungle vine leaf
                 ];
                 const pair = leafColors[p.leafColorChoice || 0] || leafColors[0];
                 targetCtx.fillStyle = pair[0];
@@ -11116,7 +11660,10 @@ export const SKIN_H = 32;
                 const alpha = Math.max(0, Math.min(0.9, (p.life / p.maxLife) * 1.5));
                 targetCtx.globalAlpha = alpha;
 
-                const petalPalette = ['#e53935', '#fdd835', '#f48fb1'];
+                const petalPalette = [
+                    '#e53935', '#fdd835', '#f48fb1', // Standard flowers
+                    '#f43f5e', '#a855f7', '#fbbf24'  // Tropical jungle orchid / exotic flora
+                ];
                 targetCtx.fillStyle = petalPalette[p.petalType || 0] || '#e53935';
                 targetCtx.fillRect(px, py, 2, 2);
                 targetCtx.fillRect(px + 1, py + 1, 1, 2);
@@ -12748,6 +13295,8 @@ try { if (typeof lastHotbarItemId !== "undefined") window.lastHotbarItemId = las
 try { if (typeof lastPlayerActivityAt !== "undefined") window.lastPlayerActivityAt = lastPlayerActivityAt; } catch(e) {}
 try { if (typeof lastRenderTime !== "undefined") window.lastRenderTime = lastRenderTime; } catch(e) {}
 try { if (typeof leafDecayQueue !== "undefined") window.leafDecayQueue = leafDecayQueue; } catch(e) {}
+try { if (typeof treeDecayClusters !== "undefined") window.treeDecayClusters = treeDecayClusters; } catch(e) {}
+try { if (typeof getKaelSkinCanvas !== "undefined") window.getKaelSkinCanvas = getKaelSkinCanvas; } catch(e) {}
 try { if (typeof mapAnimFrameId !== "undefined") window.mapAnimFrameId = mapAnimFrameId; } catch(e) {}
 try { if (typeof mapDragOriginPanX !== "undefined") window.mapDragOriginPanX = mapDragOriginPanX; } catch(e) {}
 try { if (typeof mapDragOriginPanY !== "undefined") window.mapDragOriginPanY = mapDragOriginPanY; } catch(e) {}
@@ -12931,3 +13480,4 @@ try { if (typeof drawShoulderParrot !== "undefined") window.drawShoulderParrot =
 try { if (typeof dismountParrot !== "undefined") window.dismountParrot = dismountParrot; } catch(e) {}
 try { if (typeof dismountAllShoulderParrots !== "undefined") window.dismountAllShoulderParrots = dismountAllShoulderParrots; } catch(e) {}
 try { if (typeof AtlasExplorer !== "undefined") window.AtlasExplorer = AtlasExplorer; } catch(e) {}
+try { if (typeof worldBiomes !== "undefined") window.worldBiomes = worldBiomes; } catch(e) {}

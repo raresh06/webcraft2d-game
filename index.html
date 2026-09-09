@@ -109,13 +109,13 @@
     <div id="autosave-toast-container"></div>
 
     <div id="achievements-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-md z-[160]" role="dialog" aria-modal="true" aria-labelledby="achievements-title">
-        <section class="achievements-panel p-4">
+        <section class="achievements-panel select-none">
             <div class="flex justify-between items-center pb-2 mb-3 border-b-2 border-[#46515a]">
                 <div class="flex items-center gap-3">
                     <h2 id="achievements-title" class="screen-title text-4xl font-bold text-[var(--mc-accent-color)] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323']">Achievements</h2>
                     <span id="achievements-progress-badge" class="bg-[#171b20] border-2 border-[var(--mc-accent-color)] text-[var(--mc-accent-color)] font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">0 / 33 (0%)</span>
                 </div>
-                <button class="mc-btn !w-9 !h-9 !text-2xl !p-0 !m-0 !bg-red-600 !text-white hover:!bg-red-500 flex items-center justify-center leading-none" onclick="closeAchievements()">X</button>
+                <button class="modal-close-red-btn" type="button" onclick="closeAchievements()" title="Close" aria-label="Close">X</button>
             </div>
 
             <div class="ach-tab-container" id="ach-tab-container">
@@ -235,7 +235,7 @@
                 <button type="button" class="mc-btn !w-auto !px-3 !py-1 !text-2xl !bg-[#855b14] hover:!bg-[#a16e19] !text-white flex-shrink-0" onclick="closeAchievements(); openAuthProfileModal('credentials');">Log In / Sign Up</button>
             </div>
 
-            <div id="achievements-list" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 custom-scrollbar max-h-[380px]"></div>
+            <div id="achievements-list" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 custom-scrollbar min-h-0"></div>
 
             <div class="mt-3 pt-2 border-t-2 border-[#46515a] flex justify-between items-center">
                 <button class="mc-btn !w-32 !px-2 !py-1 !text-2xl !m-0 !bg-red-800 hover:!bg-red-700 !text-white flex items-center justify-center text-center" onclick="resetAchievements()">Reset Tab</button>
@@ -247,85 +247,109 @@
 
     <!-- Emerald Vault & Currency Hub Modal -->
     <div id="emerald-vault-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md z-[260] flex items-center justify-center p-2 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="vault-modal-title">
-        <section class="vault-panel max-w-4xl w-[95%] sm:w-[92%] mx-auto my-auto h-[92vh] max-h-[680px] flex flex-col p-3 sm:p-5 relative select-none">
-            <!-- Header -->
-            <div class="flex justify-between items-center pb-2.5 mb-3 border-b-2 border-[#46515a] flex-shrink-0">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-[#161a1e] border-2 border-[#525e68] shadow-md flex items-center justify-center p-1">
-                        <img id="vault-header-emerald-img" class="pixelated w-8 h-8 object-contain" alt="Emerald" />
-                    </div>
-                    <div>
-                        <h2 id="vault-modal-title" class="screen-title text-2xl sm:text-3xl md:text-4xl font-bold text-[#4eed99] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide leading-none">Emerald Vault & Economy Hub</h2>
-                        <div class="text-xs sm:text-sm text-[#95a5b5] font-['VT323'] tracking-wider mt-0.5">Mined Wealth • Daily Challenges • Planar Transmutation</div>
-                    </div>
-                </div>
-                <button class="mc-btn !w-9 !h-9 !text-2xl !p-0 !m-0 !bg-[#8b2020] hover:!bg-[#b32b2b] !text-white flex items-center justify-center leading-none shadow-md flex-shrink-0" onclick="closeCurrencyHubModal()" title="Close (Esc)">✕</button>
-            </div>
-
-            <!-- Dual Balances Display -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3 flex-shrink-0">
-                <!-- Standard Emeralds Balance Card -->
-                <div class="flex items-center justify-between p-2.5 bg-[#171b20] border-2 border-[#333a41] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div class="vault-modal-wrapper select-none">
+            <section class="vault-panel select-none">
+                <!-- Header -->
+                <div class="flex justify-between items-center pb-2.5 mb-3 border-b-2 border-[#46515a] flex-shrink-0">
                     <div class="flex items-center gap-3">
-                        <div class="achievement-icon-frame !w-11 !h-11 flex-shrink-0">
-                            <img id="vault-emerald-img" class="pixelated w-8 h-8 object-contain" alt="Emerald" />
+                        <div class="w-10 h-10 bg-[#161a1e] border-2 border-[#525e68] shadow-md flex items-center justify-center p-1">
+                            <img id="vault-header-emerald-img" class="pixelated w-8 h-8 object-contain" alt="Emerald" />
                         </div>
                         <div>
-                            <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-widest leading-none vault-stat-green">Standard Emeralds</div>
-                            <div class="text-sm font-['VT323'] leading-tight vault-stat-sub">Mined, Quests & Achievements</div>
+                            <h2 id="vault-modal-title" class="screen-title text-2xl sm:text-3xl md:text-4xl font-bold text-[#4eed99] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide leading-none">Emerald Vault & Economy Hub</h2>
+                            <div class="text-xs sm:text-sm text-[#95a5b5] font-['VT323'] tracking-wider mt-0.5">Mined Wealth • Daily Challenges • Astral Emerald Exchange</div>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <div id="vault-standard-count" class="text-3xl sm:text-4xl font-bold font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000] vault-stat-green">0</div>
-                        <div class="text-sm font-['VT323'] font-semibold vault-badge-green">⬖ BALANCE</div>
-                    </div>
+                    <button class="modal-close-red-btn vault-modal-close" type="button" onclick="closeCurrencyHubModal()" title="Close (Esc)" aria-label="Close">X</button>
                 </div>
 
-                <!-- Astral Emeralds Balance Card -->
-                <div class="flex items-center justify-between p-2.5 bg-[#171b20] border-2 border-[#333a41] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                    <div class="flex items-center gap-3">
-                        <div class="achievement-icon-frame !w-11 !h-11 flex-shrink-0">
-                            <img id="vault-astral-img" class="pixelated w-8 h-8 object-contain" alt="Astral Emerald" />
+                <!-- Navigation Tabs UP TOP (Achievements Style with Pixel Art Icons) -->
+                <div class="vault-tab-container" id="vault-tab-container">
+                    <button id="vault-tab-overview-btn" class="ach-tab-btn vault-tab-btn active" onclick="switchVaultTab('overview')" aria-label="Mining and Overview">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="22" height="22" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="8" y="1" width="6" height="2" fill="#10b981"/>
+                                    <rect x="7" y="2" width="2" height="2" fill="#34d399"/>
+                                    <rect x="13" y="2" width="2" height="3" fill="#059669"/>
+                                    <rect x="9" y="2" width="4" height="2" fill="#6ee7b7"/>
+                                    <rect x="5" y="3" width="3" height="2" fill="#10b981"/>
+                                    <rect x="14" y="4" width="2" height="3" fill="#047857"/>
+                                    <rect x="3" y="5" width="3" height="2" fill="#059669"/>
+                                    <rect x="2" y="6" width="2" height="2" fill="#047857"/>
+                                    <rect x="8" y="5" width="2" height="2" fill="#85532b"/>
+                                    <rect x="7" y="7" width="2" height="2" fill="#a46c3d"/>
+                                    <rect x="6" y="9" width="2" height="2" fill="#85532b"/>
+                                    <rect x="5" y="11" width="2" height="2" fill="#a46c3d"/>
+                                    <rect x="4" y="13" width="2" height="2" fill="#85532b"/>
+                                    <rect x="3" y="14" width="2" height="2" fill="#523218"/>
+                                </svg>
+                            </span>
+                            <span class="vault-tab-title">Mining & Overview</span>
                         </div>
-                        <div>
-                            <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-widest leading-none vault-stat-purple">Astral Emeralds</div>
-                            <div class="text-sm font-['VT323'] leading-tight vault-stat-sub">Planar Altar & Kael Trades</div>
+                    </button>
+                    <button id="vault-tab-quests-btn" class="ach-tab-btn vault-tab-btn" onclick="switchVaultTab('quests')" aria-label="Daily Challenges">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="22" height="22" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="3" y="2" width="10" height="12" fill="#fef3c7"/>
+                                    <rect x="2" y="3" width="1" height="10" fill="#d97706"/>
+                                    <rect x="13" y="3" width="1" height="10" fill="#d97706"/>
+                                    <rect x="3" y="1" width="10" height="1" fill="#b45309"/>
+                                    <rect x="3" y="14" width="10" height="1" fill="#b45309"/>
+                                    <rect x="5" y="4" width="6" height="1" fill="#b45309"/>
+                                    <rect x="5" y="6" width="6" height="1" fill="#b45309"/>
+                                    <rect x="5" y="8" width="6" height="1" fill="#b45309"/>
+                                    <rect x="5" y="10" width="4" height="1" fill="#b45309"/>
+                                    <rect x="8" y="11" width="3" height="3" fill="#dc2626"/>
+                                    <rect x="9" y="12" width="1" height="1" fill="#fecaca"/>
+                                </svg>
+                            </span>
+                            <span class="vault-tab-title">Daily Challenges</span>
                         </div>
-                    </div>
-                    <div class="text-right">
-                        <div id="vault-astral-count" class="text-3xl sm:text-4xl font-bold font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000] vault-stat-purple">0</div>
-                        <div class="text-sm font-['VT323'] font-semibold vault-badge-purple">✦ PLANAR</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Horizontal 4-Tab Navigation -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 flex-shrink-0">
-                <button id="vault-tab-overview-btn" class="ach-tab-btn active !p-2" onclick="switchVaultTab('overview')">
-                    <div class="ach-tab-label-group justify-center">
-                        <span class="vault-tab-title">Mining & Overview</span>
-                    </div>
-                </button>
-                <button id="vault-tab-quests-btn" class="ach-tab-btn !p-2" onclick="switchVaultTab('quests')">
-                    <div class="ach-tab-label-group justify-center">
-                        <span class="vault-tab-title">Daily Challenges</span>
                         <span id="vault-quests-available-badge" class="ach-tab-count hidden !text-amber-300">0</span>
-                    </div>
-                </button>
-                <button id="vault-tab-exchange-btn" class="ach-tab-btn !p-2" onclick="switchVaultTab('exchange')">
-                    <div class="ach-tab-label-group justify-center">
-                        <span class="vault-tab-title">Astral Exchange</span>
-                    </div>
-                </button>
-                <button id="vault-tab-ach-btn" class="ach-tab-btn !p-2" onclick="openAchievementsFromVault()">
-                    <div class="ach-tab-label-group justify-center">
-                        <span class="vault-tab-title text-amber-300">Achievements ➔</span>
-                    </div>
-                </button>
-            </div>
+                    </button>
+                    <button id="vault-tab-exchange-btn" class="ach-tab-btn vault-tab-btn" onclick="switchVaultTab('exchange')" aria-label="Astral Exchange">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="22" height="22" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="7" y="1" width="2" height="2" fill="#f3e8ff"/>
+                                    <rect x="5" y="3" width="6" height="2" fill="#e9d5ff"/>
+                                    <rect x="4" y="5" width="8" height="3" fill="#c084fc"/>
+                                    <rect x="6" y="5" width="4" height="2" fill="#ffffff"/>
+                                    <rect x="3" y="7" width="10" height="2" fill="#a855f7"/>
+                                    <rect x="4" y="9" width="8" height="3" fill="#9333ea"/>
+                                    <rect x="5" y="12" width="6" height="2" fill="#7e22ce"/>
+                                    <rect x="7" y="14" width="2" height="1" fill="#581c87"/>
+                                    <rect x="2" y="3" width="1" height="1" fill="#f5d0fe"/>
+                                    <rect x="13" y="11" width="1" height="1" fill="#f5d0fe"/>
+                                </svg>
+                            </span>
+                            <span class="vault-tab-title">Astral Exchange</span>
+                        </div>
+                    </button>
+                    <button id="vault-tab-ach-btn" class="ach-tab-btn vault-tab-btn" onclick="openAchievementsFromVault()" aria-label="Achievements">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="22" height="22" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="4" y="2" width="8" height="2" fill="#fde047"/>
+                                    <rect x="3" y="4" width="10" height="4" fill="#eab308"/>
+                                    <rect x="5" y="4" width="6" height="3" fill="#fef08a"/>
+                                    <rect x="4" y="8" width="8" height="2" fill="#ca8a04"/>
+                                    <rect x="2" y="3" width="1" height="4" fill="#ca8a04"/>
+                                    <rect x="13" y="3" width="1" height="4" fill="#ca8a04"/>
+                                    <rect x="7" y="10" width="2" height="3" fill="#a16207"/>
+                                    <rect x="4" y="13" width="8" height="2" fill="#713f12"/>
+                                    <rect x="5" y="13" width="6" height="1" fill="#eab308"/>
+                                </svg>
+                            </span>
+                            <span class="vault-tab-title text-amber-300">Achievements</span>
+                        </div>
+                    </button>
+                </div>
 
             <!-- Tab 1: Overview & Mining Tracker -->
-            <div id="vault-tab-overview" class="vault-tab-content flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-3">
+            <div id="vault-tab-overview" class="vault-tab-content custom-scrollbar">
                 <!-- Top Standalone Card: Daily Emerald Mining Limit -->
                 <div class="vault-quota-card">
                     <div class="vault-quota-header">
@@ -463,8 +487,8 @@
                             <img id="vault-overview-astral-img" class="pixelated w-8 h-8 object-contain" alt="Astral Emerald" />
                         </div>
                         <div class="tutorial-card-content">
-                            <span class="tutorial-card-title purple">Astral Exchange</span>
-                            <p class="tutorial-card-desc">Transmute ordinary mined emeralds into rare celestial Astral Emeralds (✦) in the exchange altar.</p>
+                            <span class="tutorial-card-title purple">Astral Emerald Exchange</span>
+                            <p class="tutorial-card-desc">Exchange ordinary mined emeralds into rare celestial Astral Emeralds in the currency hub.</p>
                         </div>
                     </div>
 
@@ -523,7 +547,7 @@
             </div>
 
             <!-- Tab 2: Daily Challenges -->
-            <div id="vault-tab-quests" class="vault-tab-content hidden flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-2.5">
+            <div id="vault-tab-quests" class="vault-tab-content hidden custom-scrollbar">
                 <!-- Status Top Bar -->
                 <div class="flex flex-wrap justify-between items-center bg-[#171b20] border border-[#333a41] px-3 py-1.5 text-sm font-['VT323']">
                     <div class="flex items-center gap-2">
@@ -542,23 +566,35 @@
             </div>
 
             <!-- Tab 3: Astral Exchange -->
-            <div id="vault-tab-exchange" class="vault-tab-content hidden flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-3">
-                <!-- Altar Banner -->
-                <div class="bg-[#1a1426] border-2 border-[#4c1d95] p-3 sm:p-4 text-center relative overflow-hidden shadow-md flex-shrink-0">
-                    <div class="relative z-10">
-                        <div class="flex items-center justify-center gap-2 mb-0.5">
-                            <span class="text-purple-400 text-xl">✦</span>
-                            <h3 class="text-2xl sm:text-3xl font-bold text-purple-200 font-['VT323'] m-0 tracking-wide">Planar Transmutation Altar</h3>
-                            <span class="text-purple-400 text-xl">✦</span>
-                        </div>
-                        <p class="text-sm md:text-base text-purple-200/80 font-['VT323'] m-0 max-w-2xl mx-auto leading-snug">
-                            Harness dimensional energy to transmute standard Emeralds into rare Astral Emeralds. Required for Kael's otherworldly wares and forging Astral Gear.
-                        </p>
-                        <div class="mt-2 text-xs sm:text-sm text-purple-300/90 font-['VT323'] flex items-center justify-center gap-2">
-                            <span>Available in Vault:</span>
-                            <span id="vault-exchange-avail-emeralds" class="text-[#4eed99] font-bold text-base">0</span>
-                            <span class="text-[#4eed99] font-bold">⬖ Standard Emeralds</span>
-                        </div>
+            <div id="vault-tab-exchange" class="vault-tab-content hidden custom-scrollbar">
+                <!-- Astral Exchange Compact Banner -->
+                <div class="bg-[#150f24] border border-[#581c87] py-1 px-3 flex items-center justify-between gap-2 shadow-inner flex-shrink-0">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <svg viewBox="0 0 10 10" width="13" height="13" class="inline-block flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <rect x="4" y="0" width="2" height="2" fill="#e9d5ff"/>
+                            <rect x="3" y="2" width="4" height="2" fill="#c084fc"/>
+                            <rect x="0" y="4" width="2" height="2" fill="#e9d5ff"/>
+                            <rect x="2" y="3" width="6" height="4" fill="#a855f7"/>
+                            <rect x="4" y="4" width="2" height="2" fill="#ffffff"/>
+                            <rect x="8" y="4" width="2" height="2" fill="#e9d5ff"/>
+                            <rect x="3" y="6" width="4" height="2" fill="#9333ea"/>
+                            <rect x="4" y="8" width="2" height="2" fill="#7e22ce"/>
+                        </svg>
+                        <span class="text-base sm:text-lg font-bold text-purple-200 font-['VT323'] tracking-wide uppercase leading-none">Astral Emerald Exchange</span>
+                        <span class="hidden md:inline text-xs text-purple-300/70 font-['VT323'] truncate">— Convert mined Emeralds to trade with Kael & forge cosmic gear</span>
+                    </div>
+                    <div class="text-xs sm:text-sm text-purple-200 font-['VT323'] flex items-center gap-1.5 flex-shrink-0 bg-[#0c0816] px-2 py-0.5 border border-[#3b1a64]">
+                        <span class="text-purple-300">Vault:</span>
+                        <span id="vault-exchange-avail-emeralds" class="text-[#4eed99] font-bold text-base">0</span>
+                        <svg viewBox="0 0 10 10" width="11" height="11" class="inline-block flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <rect x="3" y="1" width="4" height="1" fill="#a7f3d0"/>
+                            <rect x="2" y="2" width="6" height="1" fill="#6ee7b7"/>
+                            <rect x="1" y="3" width="8" height="4" fill="#10b981"/>
+                            <rect x="3" y="3" width="2" height="2" fill="#ecfdf5"/>
+                            <rect x="2" y="7" width="6" height="1" fill="#059669"/>
+                            <rect x="3" y="8" width="4" height="1" fill="#047857"/>
+                        </svg>
+                        <span class="text-[#4eed99] font-bold">Standard</span>
                     </div>
                 </div>
 
@@ -567,130 +603,340 @@
                     <!-- Cards are dynamically managed & refreshed by renderAstralExchangeUI() -->
                 </div>
             </div>
-
-            <!-- Footer -->
-            <div class="mt-3 pt-2.5 border-t-2 border-[#46515a] flex justify-between items-center flex-shrink-0">
-                <div class="text-xs text-[#8292a0] font-['VT323']">Press <strong class="text-amber-400">[C]</strong> in-game to toggle this hub anytime.</div>
-                <button class="mc-btn !w-32 !px-2 !py-1 !text-2xl !m-0" onclick="closeCurrencyHubModal()">Close</button>
-            </div>
         </section>
+
+        <!-- Outside below the main box in its own separate container and box -->
+        <div class="vault-bottom-currency-box select-none">
+            <!-- Standard Emeralds Balance Card -->
+            <div class="vault-balance-card standard">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="achievement-icon-frame !w-10 !h-10 flex-shrink-0">
+                        <img id="vault-emerald-img" class="pixelated w-7 h-7 object-contain" alt="Emerald" />
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-wider leading-none vault-stat-green truncate">Standard Emeralds</div>
+                        <div class="text-xs sm:text-sm font-['VT323'] leading-tight vault-stat-sub text-[#94a3b8] truncate">Mined, Quests & Achievements</div>
+                    </div>
+                </div>
+                <div class="text-right flex-shrink-0 ml-2">
+                    <div id="vault-standard-count" class="text-2xl sm:text-3xl font-bold font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000] vault-stat-green">0</div>
+                    <div class="text-xs sm:text-sm font-['VT323'] font-semibold vault-badge-green flex items-center justify-end gap-1">
+                        <svg viewBox="0 0 10 10" width="10" height="10" class="inline-block flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <rect x="3" y="1" width="4" height="1" fill="#a7f3d0"/>
+                            <rect x="2" y="2" width="6" height="1" fill="#6ee7b7"/>
+                            <rect x="1" y="3" width="8" height="4" fill="#10b981"/>
+                            <rect x="3" y="3" width="2" height="2" fill="#ecfdf5"/>
+                            <rect x="2" y="7" width="6" height="1" fill="#059669"/>
+                            <rect x="3" y="8" width="4" height="1" fill="#047857"/>
+                        </svg>
+                        <span>BALANCE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Astral Emeralds Balance Card -->
+            <div class="vault-balance-card astral">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="achievement-icon-frame !w-10 !h-10 flex-shrink-0">
+                        <img id="vault-astral-img" class="pixelated w-7 h-7 object-contain" alt="Astral Emerald" />
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-wider leading-none vault-stat-purple truncate">Astral Emeralds</div>
+                        <div class="text-xs sm:text-sm font-['VT323'] leading-tight vault-stat-sub text-[#94a3b8] truncate">Astral Exchange & Kael Trades</div>
+                    </div>
+                </div>
+                <div class="text-right flex-shrink-0 ml-2">
+                    <div id="vault-astral-count" class="text-2xl sm:text-3xl font-bold font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000] vault-stat-purple">0</div>
+                    <div class="text-xs sm:text-sm font-['VT323'] font-semibold vault-badge-purple flex items-center justify-end gap-1">
+                        <svg viewBox="0 0 10 10" width="10" height="10" class="inline-block flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <rect x="4" y="0" width="2" height="2" fill="#e9d5ff"/>
+                            <rect x="3" y="2" width="4" height="2" fill="#c084fc"/>
+                            <rect x="0" y="4" width="2" height="2" fill="#e9d5ff"/>
+                            <rect x="2" y="3" width="6" height="4" fill="#a855f7"/>
+                            <rect x="4" y="4" width="2" height="2" fill="#ffffff"/>
+                            <rect x="8" y="4" width="2" height="2" fill="#e9d5ff"/>
+                            <rect x="3" y="6" width="4" height="2" fill="#9333ea"/>
+                            <rect x="4" y="8" width="2" height="2" fill="#7e22ce"/>
+                        </svg>
+                        <span>ASTRAL</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toggle Hint Underneath the whole box -->
+        <div class="vault-hub-hint text-center text-xs sm:text-sm text-[#8292a0] font-['VT323'] tracking-wider select-none mt-0.5">
+            Press <strong class="text-amber-400 font-bold">[C]</strong> in-game to toggle this hub anytime.
+        </div>
     </div>
+</div>
 
     <!-- Atlas Dialogue Modal (Kael, The Atlas Explorer) -->
-    <div id="atlas-dialogue-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-md z-[270] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="atlas-dialogue-speaker">
-        <div class="atlas-dialogue-box max-w-xl w-full p-4 md:p-5 relative select-none">
-            <!-- Header -->
-            <div class="flex items-center gap-3 pb-3 mb-3 border-b-2 border-[#46515a]">
-                <div class="atlas-npc-portrait-frame w-16 h-16 bg-[#101316] border-2 border-[#a855f7] flex-shrink-0 flex items-center justify-center overflow-hidden shadow-inner">
-                    <canvas id="atlas-portrait-canvas" width="64" height="64" class="pixelated w-full h-full"></canvas>
-                </div>
-                <div class="min-w-0 flex-1">
-                    <h3 id="atlas-dialogue-speaker" class="text-2xl md:text-3xl text-purple-300 font-bold font-['VT323'] m-0 tracking-wide drop-shadow">Kael, The Atlas Explorer</h3>
-                    <span class="text-sm text-cyan-400 font-['VT323'] uppercase tracking-wider">Planar Cartographer & Rift Walker</span>
-                </div>
-                <button class="mc-btn !w-8 !h-8 !text-xl !p-0 !m-0 !bg-[#8b2020] hover:!bg-[#b32b2b] !text-white flex items-center justify-center leading-none" onclick="closeAtlasDialogue()" title="Close">✕</button>
+    <div id="atlas-dialogue-modal" class="atlas-dialogue-overlay hidden select-none" role="dialog" aria-modal="true" aria-labelledby="atlas-dialogue-speaker">
+        <!-- Floating Dialogue Options (Center of the screen, NO box behind them) -->
+        <div id="atlas-dialogue-options" class="atlas-floating-options-container">
+            <!-- Branching choices dynamically added -->
+        </div>
+
+        <!-- In-Game Dialogue Box (Anchored at the bottom center, matching reference screenshot) -->
+        <div class="atlas-bottom-dialogue-box">
+            <!-- Left: Character Portrait in Clean White Frame -->
+            <div class="atlas-dialogue-portrait-frame">
+                <canvas id="atlas-portrait-canvas" width="64" height="64" class="pixelated w-full h-full"></canvas>
             </div>
 
-            <!-- Speech Body -->
-            <div class="atlas-speech-bubble bg-[#14181c] border-2 border-[#2b3542] p-3.5 mb-3.5 min-h-[90px] shadow-inner">
-                <p id="atlas-speech-text" class="text-white text-lg md:text-xl font-['VT323'] leading-relaxed m-0 whitespace-pre-wrap"></p>
-            </div>
-
-            <!-- Dialogue Options -->
-            <div id="atlas-dialogue-options" class="flex flex-col gap-2">
-                <!-- Branching choices dynamically added -->
+            <!-- Right: Speaker Name & Dialogue Content -->
+            <div class="atlas-dialogue-content-pane">
+                <div class="atlas-dialogue-header-row">
+                    <span id="atlas-dialogue-speaker" class="atlas-dialogue-speaker-name">Kael:</span>
+                    <button type="button" class="atlas-dialogue-close-x" onclick="closeAtlasDialogue()" title="Close Dialogue">✕</button>
+                </div>
+                <div id="atlas-speech-text" class="atlas-dialogue-speech-text"></div>
+                <div class="atlas-dialogue-advance-arrow" onclick="closeAtlasDialogue()" title="Click to continue">▼</div>
             </div>
         </div>
     </div>
 
     <!-- Atlas Market Modal (Astral Emerald Shop) -->
-    <div id="atlas-market-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md z-[275] flex items-center justify-center p-3 md:p-6" role="dialog" aria-modal="true" aria-labelledby="atlas-market-title">
-        <section class="atlas-market-panel max-w-4xl w-full p-4 md:p-6 flex flex-col max-h-[90vh] select-none">
-            <!-- Header -->
-            <div class="flex justify-between items-center pb-3 mb-3 border-b-2 border-[#46515a] flex-shrink-0">
-                <div>
-                    <h2 id="atlas-market-title" class="text-3xl md:text-4xl font-bold text-purple-300 font-['VT323'] m-0 drop-shadow">Atlas Market — Wares of the Void</h2>
-                    <p class="text-xs md:text-sm text-cyan-300 font-['VT323'] m-0">Kael's interdimensional cache. Currencies accepted: Astral Emeralds only.</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="atlas-market-balance px-3 py-1 bg-[#171b20] border-2 border-[#a855f7] flex items-center gap-2 shadow-inner">
-                        <img id="atlas-market-gem-img" class="pixelated w-5 h-5 object-contain" alt="Astral Emerald" />
-                        <span id="atlas-market-astral-count" class="text-2xl font-bold text-[#c084fc] font-['VT323'] leading-none">0</span>
-                        <span class="text-xs text-purple-300 uppercase font-['VT323']">ASTRAL</span>
+    <div id="atlas-market-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md z-[300] flex items-center justify-center p-2 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="atlas-market-title">
+        <div class="vault-modal-wrapper select-none">
+            <section class="atlas-market-panel select-none">
+                <!-- Header -->
+                <div class="flex justify-between items-center pb-2.5 mb-3 border-b-2 border-[#46515a] flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#171226] border-2 border-[#a855f7] shadow-md flex items-center justify-center p-1 flex-shrink-0">
+                            <img id="atlas-market-gem-img" class="pixelated w-8 h-8 object-contain" alt="Astral Emerald" />
+                        </div>
+                        <div>
+                            <h2 id="atlas-market-title" class="screen-title text-2xl sm:text-3xl md:text-4xl font-bold text-[#c084fc] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide leading-none">Atlas Market &amp; Planar Outpost</h2>
+                            <div class="text-xs sm:text-sm text-cyan-300 font-['VT323'] tracking-wider mt-0.5">Kael the Atlas Explorer • Interdimensional Relics &amp; Planar Oddities</div>
+                        </div>
                     </div>
-                    <button class="mc-btn !w-9 !h-9 !text-2xl !p-0 !m-0 !bg-[#8b2020] hover:!bg-[#b32b2b] !text-white flex items-center justify-center leading-none shadow-md" onclick="closeAtlasMarket()" title="Close">✕</button>
+                    <div class="flex items-center gap-3">
+                        <div class="atlas-market-balance px-3 py-1 bg-[#171b20] border-2 border-[#a855f7] flex items-center gap-2 shadow-inner">
+                            <img id="atlas-header-gem-img" class="pixelated w-5 h-5 object-contain" alt="Astral Emerald" />
+                            <span id="atlas-market-astral-count" class="text-2xl font-bold text-[#c084fc] font-['VT323'] leading-none">0</span>
+                            <span class="text-xs text-purple-300 uppercase font-['VT323']">ASTRAL</span>
+                        </div>
+                        <button class="modal-close-red-btn" type="button" onclick="closeAtlasMarket()" title="Close (Esc)" aria-label="Close">X</button>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs UP TOP -->
+                <div class="atlas-tab-container grid grid-cols-5 gap-2 w-full mb-2.5 flex-shrink-0" id="atlas-tab-container">
+                    <button id="atlas-tab-all-btn" class="ach-tab-btn atlas-tab-btn active" onclick="switchAtlasCategory('all')" aria-label="All Wares">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="2" y="4" width="12" height="10" fill="#7e22ce"/>
+                                    <rect x="3" y="5" width="10" height="8" fill="#a855f7"/>
+                                    <rect x="5" y="2" width="6" height="3" fill="#c084fc"/>
+                                    <rect x="7" y="7" width="2" height="3" fill="#facc15"/>
+                                </svg>
+                            </span>
+                            <span class="atlas-tab-title">All Wares</span>
+                        </div>
+                        <span id="atlas-tab-all-count" class="ach-tab-count">10</span>
+                    </button>
+                    <button id="atlas-tab-flora-btn" class="ach-tab-btn atlas-tab-btn" onclick="switchAtlasCategory('flora')" aria-label="Exotic Flora">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="7" y="10" width="2" height="4" fill="#15803d"/>
+                                    <rect x="4" y="6" width="4" height="4" fill="#22c55e"/>
+                                    <rect x="8" y="4" width="4" height="5" fill="#4ade80"/>
+                                    <rect x="9" y="3" width="2" height="2" fill="#86efac"/>
+                                </svg>
+                            </span>
+                            <span class="atlas-tab-title">Flora</span>
+                        </div>
+                        <span id="atlas-tab-flora-count" class="ach-tab-count">2</span>
+                    </button>
+                    <button id="atlas-tab-relic-btn" class="ach-tab-btn atlas-tab-btn" onclick="switchAtlasCategory('relic')" aria-label="Audio Relics">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="4" y="3" width="8" height="10" fill="#ec4899"/>
+                                    <rect x="3" y="4" width="10" height="8" fill="#f472b6"/>
+                                    <rect x="7" y="7" width="2" height="2" fill="#1e1b4b"/>
+                                </svg>
+                            </span>
+                            <span class="atlas-tab-title">Audio Relics</span>
+                        </div>
+                        <span id="atlas-tab-relic-count" class="ach-tab-count">2</span>
+                    </button>
+                    <button id="atlas-tab-gear-btn" class="ach-tab-btn atlas-tab-btn" onclick="switchAtlasCategory('gear')" aria-label="Cosmic Gear">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="7" y="2" width="2" height="8" fill="#e0e7ff"/>
+                                    <rect x="5" y="9" width="6" height="2" fill="#f59e0b"/>
+                                    <rect x="7" y="11" width="2" height="3" fill="#78350f"/>
+                                </svg>
+                            </span>
+                            <span class="atlas-tab-title">Cosmic Gear</span>
+                        </div>
+                        <span id="atlas-tab-gear-count" class="ach-tab-count">2</span>
+                    </button>
+                    <button id="atlas-tab-planar-btn" class="ach-tab-btn atlas-tab-btn" onclick="switchAtlasCategory('planar')" aria-label="Planar Blocks">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="3" y="3" width="10" height="10" fill="#38bdf8"/>
+                                    <rect x="4" y="4" width="8" height="8" fill="#7dd3fc"/>
+                                    <rect x="6" y="6" width="4" height="4" fill="#e0f2fe"/>
+                                </svg>
+                            </span>
+                            <span class="atlas-tab-title">Planar Blocks</span>
+                        </div>
+                        <span id="atlas-tab-planar-count" class="ach-tab-count">4</span>
+                    </button>
+                </div>
+
+                <!-- Grid -->
+                <div id="atlas-market-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto custom-scrollbar p-1 flex-1 min-h-0">
+                    <!-- Injected wares -->
+                </div>
+
+                <!-- Bottom Status Tip -->
+                <div class="mt-2.5 pt-2 border-t-2 border-[#46515a] flex justify-center items-center flex-shrink-0">
+                    <div class="text-xs text-[#8292a0] font-['VT323']">Press [Esc] to exit • Wares restock each rift cycle • Currencies persist across sessions</div>
+                </div>
+            </section>
+
+            <!-- External Bottom Currency / Trader Status Box -->
+            <div class="vault-bottom-currency-box select-none">
+                <!-- Trader Status Card -->
+                <div class="vault-balance-card">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="achievement-icon-frame !w-10 !h-10 flex-shrink-0 !border-[#a855f7]">
+                            <svg viewBox="0 0 16 16" width="28" height="28" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                <rect x="5" y="2" width="6" height="5" fill="#c084fc"/>
+                                <rect x="6" y="4" width="1" height="1" fill="#1e1b4b"/>
+                                <rect x="9" y="4" width="1" height="1" fill="#1e1b4b"/>
+                                <rect x="4" y="7" width="8" height="6" fill="#6b21a8"/>
+                                <rect x="3" y="8" width="1" height="4" fill="#a855f7"/>
+                                <rect x="12" y="8" width="1" height="4" fill="#a855f7"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-wider leading-none text-purple-300 truncate">Kael the Explorer</div>
+                            <div class="text-xs sm:text-sm font-['VT323'] leading-tight text-[#94a3b8] truncate">Interdimensional Rift Outpost</div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-2">
+                        <div class="text-xs sm:text-sm font-bold font-['VT323'] leading-none text-cyan-300 uppercase">TRADER ONLINE</div>
+                        <div class="text-xs sm:text-sm font-['VT323'] font-semibold text-emerald-400 flex items-center justify-end gap-1 mt-0.5">
+                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>ACTIVE</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Astral Emeralds Balance Card -->
+                <div class="vault-balance-card astral">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="achievement-icon-frame !w-10 !h-10 flex-shrink-0">
+                            <img id="atlas-bottom-astral-img" class="pixelated w-7 h-7 object-contain" alt="Astral Emerald" />
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-wider leading-none vault-stat-purple truncate">Astral Emeralds</div>
+                            <div class="text-xs sm:text-sm font-['VT323'] leading-tight vault-stat-sub text-[#94a3b8] truncate">Rift Expeditions &amp; Vault Exchange</div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-2">
+                        <div id="atlas-bottom-astral-count" class="text-2xl sm:text-3xl font-bold font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000] vault-stat-purple">0</div>
+                        <div class="text-xs sm:text-sm font-['VT323'] font-semibold vault-badge-purple flex items-center justify-end gap-1">
+                            <svg viewBox="0 0 10 10" width="10" height="10" class="inline-block flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                <rect x="3" y="1" width="4" height="1" fill="#e9d5ff"/>
+                                <rect x="2" y="2" width="6" height="1" fill="#c084fc"/>
+                                <rect x="1" y="3" width="8" height="4" fill="#a855f7"/>
+                                <rect x="3" y="3" width="2" height="2" fill="#faf5ff"/>
+                                <rect x="2" y="7" width="6" height="1" fill="#7e22ce"/>
+                                <rect x="3" y="8" width="4" height="1" fill="#581c87"/>
+                            </svg>
+                            <span>BALANCE</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <!-- Grid -->
-            <div id="atlas-market-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto custom-scrollbar p-1 flex-1">
-                <!-- Injected wares -->
-            </div>
-        </section>
+        </div>
     </div>
 
     <!-- Astral Infuser Station Modal -->
-    <div id="astral-infuser-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md z-[260] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="astral-infuser-title">
-        <section class="astral-infuser-panel max-w-xl w-full p-4 md:p-5 select-none">
-            <div class="flex justify-between items-center pb-2 mb-3 border-b-2 border-[#46515a]">
+    <div id="astral-infuser-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md z-[260] flex items-center justify-center p-2 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="astral-infuser-title">
+        <section class="astral-infuser-panel select-none">
+            <!-- Header -->
+            <div class="flex justify-between items-center pb-2.5 mb-3 border-b-2 border-[#46515a] flex-shrink-0">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 bg-[#181126] border-2 border-[#a855f7] flex items-center justify-center p-1 shadow-inner">
-                        <img id="infuser-header-gem-img" class="pixelated w-6 h-6 object-contain" alt="Astral Shard" />
+                    <div class="w-10 h-10 bg-[#181126] border-2 border-[#a855f7] flex items-center justify-center p-1 shadow-inner flex-shrink-0">
+                        <img id="infuser-header-gem-img" class="pixelated w-8 h-8 object-contain" alt="Astral Shard" />
                     </div>
-                    <h2 id="astral-infuser-title" class="text-3xl font-bold text-[#d8b4fe] font-['VT323'] m-0 drop-shadow">Astral Infuser Station</h2>
-                </div>
-                <button class="mc-btn !w-8 !h-8 !text-2xl !p-0 !m-0 !bg-[#8b2020] hover:!bg-[#b32b2b] !text-white flex items-center justify-center leading-none" onclick="closeAstralInfuser()" title="Close">✕</button>
-            </div>
-
-            <!-- Infuser Workstation Slots -->
-            <div class="infuser-stage flex items-center justify-center gap-4 my-4 bg-[#14181c] p-4 border-2 border-[#2b3542] shadow-inner">
-                <!-- Diamond Gear Slot -->
-                <div class="flex flex-col items-center gap-1">
-                    <span class="text-xs text-cyan-300 font-['VT323'] uppercase">Diamond Gear</span>
-                    <div id="infuser-slot-gear" class="w-16 h-16 bg-[#171b20] border-2 border-[#333a41] flex items-center justify-center cursor-pointer hover:border-cyan-400 transition-colors relative shadow-inner" onclick="handleInfuserSlotClick('gear')">
-                        <span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Empty Slot</span>
+                    <div>
+                        <h2 id="astral-infuser-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-[#d8b4fe] font-['VT323'] m-0 drop-shadow leading-none">Astral Infuser Station</h2>
+                        <div class="text-xs sm:text-sm text-cyan-300 font-['VT323'] tracking-wider mt-0.5">Transcend Diamond Armaments into Indestructible Astral Gear</div>
                     </div>
                 </div>
+                <button class="modal-close-red-btn" type="button" onclick="closeAstralInfuser()" title="Close" aria-label="Close">X</button>
+            </div>
 
-                <div class="text-3xl text-purple-400 font-bold font-['VT323']">+</div>
+            <!-- Infuser Workstation Body -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col justify-between min-h-0 pr-1 gap-2">
+                <!-- Infuser Workstation Slots -->
+                <div class="infuser-stage flex items-center justify-center gap-4 py-3 px-4 bg-[#14181c] border-2 border-[#2b3542] shadow-inner flex-shrink-0">
+                    <!-- Diamond Gear Slot -->
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="text-xs text-cyan-300 font-['VT323'] uppercase">Diamond Gear</span>
+                        <div id="infuser-slot-gear" class="w-16 h-16 bg-[#171b20] border-2 border-[#333a41] flex items-center justify-center cursor-pointer hover:border-cyan-400 transition-colors relative shadow-inner" onclick="handleInfuserSlotClick('gear')">
+                            <span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Empty Slot</span>
+                        </div>
+                    </div>
 
-                <!-- Astral Shard Slot -->
-                <div class="flex flex-col items-center gap-1">
-                    <span class="text-xs text-purple-300 font-['VT323'] uppercase">Astral Shard</span>
-                    <div id="infuser-slot-shard" class="w-16 h-16 bg-[#171b20] border-2 border-[#333a41] flex items-center justify-center cursor-pointer hover:border-[#a855f7] transition-colors relative shadow-inner" onclick="handleInfuserSlotClick('shard')">
-                        <span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Empty Slot</span>
+                    <div class="text-3xl text-purple-400 font-bold font-['VT323']">+</div>
+
+                    <!-- Astral Shard Slot -->
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="text-xs text-purple-300 font-['VT323'] uppercase">Astral Shard</span>
+                        <div id="infuser-slot-shard" class="w-16 h-16 bg-[#171b20] border-2 border-[#333a41] flex items-center justify-center cursor-pointer hover:border-[#a855f7] transition-colors relative shadow-inner" onclick="handleInfuserSlotClick('shard')">
+                            <span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Empty Slot</span>
+                        </div>
+                    </div>
+
+                    <div class="text-3xl text-purple-400 font-bold font-['VT323']">➔</div>
+
+                    <!-- Output Preview Slot -->
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="text-xs text-amber-300 font-['VT323'] uppercase">Astral Gear Result</span>
+                        <div id="infuser-slot-output" class="w-16 h-16 bg-[#1c162b] border-2 border-[#a855f7] flex items-center justify-center relative shadow-[0_0_15px_rgba(168,85,247,0.35)]">
+                            <span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Output</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="text-3xl text-purple-400 font-bold font-['VT323']">➔</div>
+                <!-- Status / Info text -->
+                <div id="infuser-status-text" class="text-center font-['VT323'] text-lg text-gray-300 my-1 min-h-[24px]">
+                    Place Diamond Equipment and 1 Astral Shard to forge Astral Gear.
+                </div>
 
-                <!-- Output Preview Slot -->
-                <div class="flex flex-col items-center gap-1">
-                    <span class="text-xs text-amber-300 font-['VT323'] uppercase">Astral Gear Result</span>
-                    <div id="infuser-slot-output" class="w-16 h-16 bg-[#1c162b] border-2 border-[#a855f7] flex items-center justify-center relative shadow-[0_0_15px_rgba(168,85,247,0.35)]">
-                        <span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Output</span>
+                <!-- Action Button -->
+                <div class="flex justify-center my-1">
+                    <button id="btn-astral-infuse" class="mc-btn !px-6 !py-2 !text-2xl font-bold !bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white disabled:opacity-50 disabled:cursor-not-allowed" onclick="performAstralInfusion()" disabled>
+                        ✦ INFUSE ASTRAL GEAR ✦
+                    </button>
+                </div>
+
+                <!-- Inventory quick picker -->
+                <div class="pt-2 border-t border-[#333a41]">
+                    <div class="text-xs text-gray-400 font-['VT323'] mb-1.5 uppercase">Eligible Items in Backpack (Click to Slot):</div>
+                    <div id="infuser-eligible-items" class="flex flex-wrap gap-2 min-h-[48px] bg-[#101316] p-2 border border-[#2b3542] overflow-y-auto max-h-[110px] custom-scrollbar">
+                        <!-- Clickable icons from inventory -->
                     </div>
                 </div>
             </div>
 
-            <!-- Status / Info text -->
-            <div id="infuser-status-text" class="text-center font-['VT323'] text-lg text-gray-300 mb-3 min-h-[24px]">
-                Place Diamond Equipment and 1 Astral Shard to forge Astral Gear.
-            </div>
-
-            <!-- Action Button -->
-            <div class="flex justify-center mb-3">
-                <button id="btn-astral-infuse" class="mc-btn !px-6 !py-2 !text-2xl font-bold !bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white disabled:opacity-50 disabled:cursor-not-allowed" onclick="performAstralInfusion()" disabled>
-                    ✦ INFUSE ASTRAL GEAR ✦
-                </button>
-            </div>
-
-            <!-- Inventory quick picker -->
-            <div class="pt-2.5 border-t border-[#333a41]">
-                <div class="text-xs text-gray-400 font-['VT323'] mb-1.5 uppercase">Eligible Items in Backpack (Click to Slot):</div>
-                <div id="infuser-eligible-items" class="flex flex-wrap gap-2 min-h-[44px] bg-[#101316] p-2 border border-[#2b3542]">
-                    <!-- Clickable icons from inventory -->
-                </div>
+            <!-- Footer -->
+            <div class="mt-auto pt-2.5 border-t-2 border-[#46515a] flex justify-center items-center flex-shrink-0">
+                <div class="text-xs text-[#8292a0] font-['VT323']">Infuse Diamond items with Astral Shards to create immortal gear</div>
             </div>
         </section>
     </div>
@@ -797,7 +1043,7 @@
                     <div class="auth-title-badge"><a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link hover:underline" title="Visit Webcraft2D on GitHub">WEBCRAFT</a> PROFILES</div>
                     <h2 id="auth-modal-title" class="auth-main-title">Welcome to <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link hover:underline" title="Visit Webcraft2D on GitHub">Webcraft</a></h2>
                 </div>
-                <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 !text-white flex items-center justify-center leading-none" onclick="promptGuestOnAuthClose()" aria-label="Close modal">X</button>
+                <button class="modal-close-red-btn" type="button" onclick="promptGuestOnAuthClose()" aria-label="Close modal" title="Close">X</button>
             </div>
             <p class="auth-subtitle mb-4">Create or link your profile to save skins, cloud stats & join the community</p>
 
@@ -1100,7 +1346,7 @@
                     <h2 id="profile-modal-title" class="font-['VT323'] text-2xl font-bold text-amber-400 tracking-wider m-0 drop-shadow-[1px_1px_0_#000] leading-none whitespace-nowrap">PLAYER PROFILE</h2>
                     <span class="credits-version-badge !text-xs !py-0.5 !px-1.5 !tracking-wider leading-none whitespace-nowrap flex-shrink-0">PLAYER CARD</span>
                 </div>
-                <button class="mc-btn !w-7 !h-7 !p-0 !m-0 !text-xl !bg-red-600 hover:!bg-red-500 !text-white flex items-center justify-center leading-none flex-shrink-0" onclick="closeProfileDetailsModal()" aria-label="Close modal">X</button>
+                <button class="modal-close-red-btn" type="button" onclick="closeProfileDetailsModal()" aria-label="Close modal" title="Close">X</button>
             </div>
 
             <!-- Profile Subnavigation Tabs (Overview vs Friends) -->
@@ -1398,7 +1644,7 @@
         <div id="whats-new-confetti" aria-hidden="true"></div>
         <section class="whats-new-panel">
             <button id="whats-new-startup-toggle" class="whats-new-startup-toggle" type="button" onclick="toggleWhatsNewStartup()" aria-pressed="true">Startup: ON</button>
-            <button class="whats-new-close" type="button" onclick="closeWhatsNew()" aria-label="Close What's New">X</button>
+            <button class="modal-close-red-btn whats-new-close" type="button" onclick="closeWhatsNew()" aria-label="Close What's New" title="Close">X</button>
             <h2 id="whats-new-title" class="screen-title text-4xl font-bold mb-3 font-['VT323'] pr-10">What's New in <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:text-amber-200 underline" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta 0.1.5</h2>
             <div class="whats-new-content" tabindex="0">
                 <div id="whats-new-entries"></div>
@@ -1412,7 +1658,7 @@
             <!-- Header -->
             <div class="bg-[#333a41] px-4 py-3 border-b-4 border-[#111820] flex justify-between items-center shadow-md">
                 <h2 class="screen-title text-4xl font-bold text-[#f2f6f8] drop-shadow-[2px_2px_0_#000] m-0 tracking-wide font-['VT323']">Multiplayer Lobby</h2>
-                <button class="mc-btn !w-10 !h-10 !text-2xl !p-0 !m-0 !bg-red-600 !text-white hover:!bg-red-500 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 flex items-center justify-center leading-none" onclick="closeMultiplayerMenu()">X</button>
+                <button class="modal-close-red-btn" type="button" onclick="closeMultiplayerMenu()" aria-label="Close multiplayer menu" title="Close">X</button>
             </div>
 
             <!-- Profile Info Bar -->
@@ -1477,7 +1723,7 @@
                         </div>
                         <label class="w-full text-left text-2xl font-bold text-[#333] mb-1 font-['VT323']">World Size:</label>
                         <div class="flex gap-2 w-full mb-2" id="mp-world-size-selector">
-                            <button type="button" class="diff-btn flex-1 active !text-lg !py-1" data-size="small" onclick="selectMpWorldSize('small')">Small (512x256)</button>
+                            <button type="button" class="diff-btn flex-1 active !text-lg !py-1" data-size="small" onclick="selectMpWorldSize('small')">Small (1024x320)</button>
                             <button type="button" class="diff-btn flex-1 !text-lg !py-1" data-size="big" onclick="selectMpWorldSize('big')">Big (2048x512)</button>
                         </div>
                         <p id="mp-world-size-warning" class="text-lg font-['VT323'] text-amber-300 bg-[#251e12] p-2 border border-amber-500/60 w-full mb-4 hidden flex items-center gap-1.5">
@@ -1582,7 +1828,7 @@
             </p>
             <label class="w-full text-left text-xl font-bold font-['VT323'] text-gray-800 mb-1">World Size:</label>
             <div class="flex gap-2 w-full mb-4" id="world-size-selector">
-                <button type="button" class="diff-btn flex-1 active !text-lg !py-1" data-size="small" onclick="selectWorldSize('small')">Small (512x256)</button>
+                <button type="button" class="diff-btn flex-1 active !text-lg !py-1" data-size="small" onclick="selectWorldSize('small')">Small (1024x320)</button>
                 <button type="button" class="diff-btn flex-1 !text-lg !py-1" data-size="big" onclick="selectWorldSize('big')">Big (2048x512)</button>
             </div>
             
@@ -1626,7 +1872,7 @@
                 <!-- Left: Title & World Info Badge -->
                 <div class="world-map-header-left">
                     <h2 id="world-map-title-text" class="world-map-title">World Map</h2>
-                    <span id="map-world-badge" class="world-map-badge">512x256 SMALL</span>
+                    <span id="map-world-badge" class="world-map-badge">1024x320 SMALL</span>
                 </div>
 
                 <!-- Center: Sunken Coordinate Readout -->
@@ -1652,7 +1898,7 @@
                     </div>
 
                     <button type="button" class="world-map-btn" onclick="resetMapView()" title="Reset View & Zoom">Reset</button>
-                    <button type="button" class="world-map-close-btn" onclick="toggleWorldMap(false)" title="Close Map (M / ESC)">✕</button>
+                    <button type="button" class="modal-close-red-btn world-map-close-btn" onclick="toggleWorldMap(false)" title="Close Map (M / ESC)" aria-label="Close">X</button>
                 </div>
             </div>
 
@@ -2122,7 +2368,7 @@
 
     <div id="credits-modal" class="menu-overlay credits-modal hidden" role="dialog" aria-modal="true" aria-labelledby="credits-title">
         <section class="whats-new-panel credits-panel">
-            <button class="whats-new-close" type="button" onclick="closeCredits()" aria-label="Close Credits">X</button>
+            <button class="modal-close-red-btn whats-new-close" type="button" onclick="closeCredits()" aria-label="Close Credits" title="Close">X</button>
             <h2 id="credits-title" class="screen-title text-4xl font-bold mb-2 font-['VT323'] pr-10">Credits</h2>
             <div class="credits-content custom-scrollbar" tabindex="0">
                 <div class="credits-banner">
@@ -2481,7 +2727,7 @@
             <!-- Header -->
             <div class="skin-upload-header">
                 <h2 id="skin-upload-title" class="skin-upload-title">Upload to Skins Shop</h2>
-                <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 !text-white flex items-center justify-center leading-none" onclick="closeSkinUploadModal()" aria-label="Close modal">X</button>
+                <button class="modal-close-red-btn" type="button" onclick="closeSkinUploadModal()" aria-label="Close modal" title="Close">X</button>
             </div>
 
             <!-- Body: Large Preview Frame + Form -->
@@ -2538,7 +2784,7 @@
             <!-- Header -->
             <div class="skin-upload-header">
                 <h2 id="skin-owned-title" class="skin-upload-title">Skin Already Owned</h2>
-                <button class="mc-btn !w-8 !h-8 !p-0 !m-0 !text-2xl !bg-red-600 hover:!bg-red-500 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 !text-white flex items-center justify-center leading-none" onclick="closeSkinOwnedModal()" aria-label="Close modal">X</button>
+                <button class="modal-close-red-btn" type="button" onclick="closeSkinOwnedModal()" aria-label="Close modal" title="Close">X</button>
             </div>
 
             <!-- Body: Preview Frame + Info -->
@@ -2647,14 +2893,14 @@
 
     <!-- Onboarding / Tutorial Guide Modal -->
     <div id="tutorial-modal" class="menu-overlay hidden z-[260]" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
-        <section class="tutorial-panel p-4">
+        <section class="tutorial-panel select-none">
             <!-- Header -->
             <div class="flex justify-between items-center pb-2 mb-2.5 border-b-2 border-[#46515a]">
                 <div class="flex items-center gap-3">
                     <h2 id="tutorial-title" class="screen-title text-4xl font-bold text-[var(--mc-accent-color)] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323']">Survival Guide</h2>
                     <span id="tutorial-step-indicator" class="bg-[#171b20] border-2 border-[var(--mc-accent-color)] text-[var(--mc-accent-color)] font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">1 / 7</span>
                 </div>
-                <button class="mc-btn !w-9 !h-9 !text-2xl !p-0 !m-0 !bg-red-600 !text-white hover:!bg-red-500 flex items-center justify-center leading-none" onclick="closeTutorialModal()" aria-label="Close Guide">X</button>
+                <button class="modal-close-red-btn" type="button" onclick="closeTutorialModal()" aria-label="Close Guide" title="Close">X</button>
             </div>
 
             <!-- Step Navigation Tabs (7 clear categories) -->
@@ -2683,7 +2929,7 @@
             </div>
 
             <!-- Dynamic Step Content Body with Custom Scrollbar -->
-            <div id="tutorial-step-content" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2.5 custom-scrollbar min-h-[360px] max-h-[440px]">
+            <div id="tutorial-step-content" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2.5 custom-scrollbar min-h-0">
                 <!-- Rendered dynamically by renderTutorialStep -->
             </div>
 
