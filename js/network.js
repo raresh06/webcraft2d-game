@@ -1244,7 +1244,7 @@ if (typeof window !== 'undefined') {
 
 
     export function tryCompleteMultiplayerSleep() {
-        if (!isSleeping || timeOfDay <= 0.5 || timeOfDay > 0.9) return;
+        if (!isSleeping || timeOfDay <= 0.62 || timeOfDay > 0.95) return;
         if (sleepStartTime && performance.now() - sleepStartTime >= sleepTransitionMs) {
             completeSleepTransition();
         }
@@ -2132,7 +2132,7 @@ if (typeof window !== 'undefined') {
         const chosenMpWidth = (chosenMpSize === 'big' ? 2048 : 1024);
         const chosenMpHeight = (chosenMpSize === 'big' ? 512 : 320);
         await setDoc(roomRef, {
-            worldName, gameMode, minigameType, difficulty: mpCreateDifficulty, worldSize: chosenMpSize, worldWidth: chosenMpWidth, worldHeight: chosenMpHeight, starterItems, keepInventory: roomKeepInventory, achievementsEnabled: roomAchievementsEnabled, passwordHash, seed, timeOfDay: 0.2, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
+            worldName, gameMode, minigameType, difficulty: mpCreateDifficulty, worldSize: chosenMpSize, worldWidth: chosenMpWidth, worldHeight: chosenMpHeight, starterItems, keepInventory: roomKeepInventory, achievementsEnabled: roomAchievementsEnabled, passwordHash, seed, timeOfDay: 0.02, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
             createdAt: Date.now(), ownerId: window.user.uid, status: 'open',
             offer: { type: offer.type, sdp: offer.sdp }
         });
@@ -2355,7 +2355,7 @@ if (typeof window !== 'undefined') {
             currentDifficulty = roomData.difficulty || 'normal';
             keepInventory = currentDifficulty !== 'hardcore' && roomData.keepInventory === true;
             currentWorldAchievementsEnabled = (roomData.starterItems !== true && roomData.keepInventory !== true && roomData.achievementsEnabled !== false);
-            timeOfDay = roomData.timeOfDay ?? 0.2;
+            timeOfDay = roomData.timeOfDay ?? 0.02;
             let targetSize = roomData.worldSize || (roomData.worldWidth > 1200 ? 'big' : 'small');
             setWorldDimensions(targetSize, roomData.worldWidth, roomData.worldHeight);
             document.getElementById('mp-room-display').innerText = currentMpWorldName;

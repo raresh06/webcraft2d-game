@@ -3648,32 +3648,29 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export const RECIPES = [
         { output: { id: IDS.BUCKET, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 3 }], reqTable: true, category: 'utility' },
-        { output: { id: IDS.JUKEBOX, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 8 }, { id: IDS.DIAMOND, count: 1 }], reqTable: true, category: 'utility' },
+        { output: { id: IDS.JUKEBOX, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 8 }, { id: IDS.DIAMOND, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.EMPTY_VINYL, count: 1 }, inputs: [{ id: IDS.COAL, count: 4 }, { id: IDS.IRON_INGOT, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.PLANKS, count: 4 }, inputs: [{ id: IDS.WOOD, count: 1 }], reqTable: false },
         { output: { id: IDS.JUNGLE_PLANKS, count: 4 }, inputs: [{ id: IDS.JUNGLE_WOOD, count: 1 }], reqTable: false, category: 'blocks' },
-        { output: { id: IDS.CHEST, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 8 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.CHEST, count: 1 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 8 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.PLANKS, count: 2 }], reqTable: false },
-        { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 2 }], reqTable: false },
+        { output: { id: IDS.CHEST, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 8 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 2 }], reqTable: false },
         { output: { id: IDS.JUNGLE_DOOR, count: 1 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.SIGN, count: 3 }, inputs: [{ id: IDS.PLANKS, count: 6 }, { id: IDS.STICK, count: 1 }], reqTable: true, category: 'utility' },
-        { output: { id: IDS.SIGN, count: 3 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 6 }, { id: IDS.STICK, count: 1 }], reqTable: true, category: 'utility' },
+        { output: { id: IDS.SIGN, count: 3 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 6 }, { id: IDS.STICK, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
         { output: { id: IDS.MELON, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.LADDER, count: 3 }, inputs: [{ id: IDS.STICK, count: 7 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.WOODEN_STAIRS, count: 4 }, inputs: [{ id: IDS.PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.WOODEN_STAIRS, count: 4 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 6 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.COBBLESTONE_STAIRS, count: 4 }, inputs: [{ id: IDS.COBBLESTONE, count: 6 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.TORCH, count: 4 }, inputs: [{ id: IDS.COAL, count: 1 }, { id: IDS.STICK, count: 1 }], reqTable: false },
-        { output: { id: IDS.CRAFTING_TABLE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 4 }], reqTable: false },
-        { output: { id: IDS.DOOR, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.CRAFTING_TABLE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 4 }], reqTable: false },
+        { output: { id: IDS.DOOR, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 6 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.FURNACE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 8 }], reqTable: true },
-        { output: { id: IDS.BED, count: 1 }, inputs: [{ id: IDS.WOOL, count: 3 }, { id: IDS.PLANKS, count: 3 }], reqTable: true },
-        { output: { id: IDS.WOOD_PICKAXE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.WOOD_SWORD, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
-        { output: { id: IDS.WOOD_AXE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.WOOD_SHOVEL, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.WOOD_HOE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.BED, count: 1 }, inputs: [{ id: IDS.WOOL, count: 3 }, { id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 3 }], reqTable: true },
+        { output: { id: IDS.WOOD_PICKAXE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
+        { output: { id: IDS.WOOD_SWORD, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
+        { output: { id: IDS.WOOD_AXE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
+        { output: { id: IDS.WOOD_SHOVEL, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.WOOD_HOE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
         { output: { id: IDS.STONE_PICKAXE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
         { output: { id: IDS.STONE_SWORD, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
         { output: { id: IDS.STONE_AXE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
@@ -4342,6 +4339,123 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }, 4000);
     }
 
+    export function showKaelArrivalBanner() {
+        let container = document.getElementById('kael-banner-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'kael-banner-container';
+            document.body.appendChild(container);
+        }
+
+        const banner = document.createElement('div');
+        banner.className = 'kael-arrival-banner';
+
+        const iconFrame = document.createElement('div');
+        iconFrame.className = 'kael-relic-frame';
+        if (typeof textures !== 'undefined' && textures[IDS.ASTRAL_SHARD]) {
+            const img = document.createElement('img');
+            img.src = textures[IDS.ASTRAL_SHARD].src;
+            img.className = 'w-8 h-8 pixelated drop-shadow-[2px_2px_0_#000]';
+            iconFrame.appendChild(img);
+        } else {
+            iconFrame.innerHTML = `
+                <svg viewBox="0 0 24 24" width="28" height="28" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                    <rect x="10" y="2" width="4" height="2" fill="#fde047"/>
+                    <rect x="8" y="4" width="8" height="3" fill="#c084fc"/>
+                    <rect x="6" y="7" width="12" height="10" fill="#a855f7"/>
+                    <rect x="8" y="10" width="8" height="4" fill="#7e22ce"/>
+                    <rect x="9" y="17" width="6" height="3" fill="#6b21a8"/>
+                    <rect x="11" y="20" width="2" height="2" fill="#3b0764"/>
+                    <rect x="9" y="8" width="2" height="2" fill="#ffffff"/>
+                </svg>
+            `;
+        }
+        banner.appendChild(iconFrame);
+
+        const content = document.createElement('div');
+        content.className = 'flex flex-col min-w-0';
+
+        const header = document.createElement('span');
+        header.className = "text-base text-amber-300 font-bold font-['VT323'] tracking-widest leading-none drop-shadow-[2px_2px_0_#000] uppercase";
+        header.innerText = 'PLANAR RIFT OPENED';
+        content.appendChild(header);
+
+        const title = document.createElement('span');
+        title.className = "text-2xl sm:text-3xl text-purple-200 font-bold font-['VT323'] drop-shadow-[2px_2px_0_#000] truncate leading-tight";
+        title.innerText = 'Kael, The Atlas Explorer has arrived!';
+        content.appendChild(title);
+
+        const subtitle = document.createElement('span');
+        subtitle.className = "text-sm sm:text-base text-emerald-300/90 font-['VT323'] drop-shadow-[1px_1px_0_#000] leading-none mt-0.5";
+        subtitle.innerText = 'Seek the cosmic traveler before the rift collapses!';
+        content.appendChild(subtitle);
+
+        banner.appendChild(content);
+        container.appendChild(banner);
+
+        if (typeof playSound === 'function') {
+            playSound('portal_warp', { vol: 1.0 });
+        }
+
+        setTimeout(() => {
+            banner.classList.add('dismissing');
+            setTimeout(() => {
+                if (banner.parentElement) banner.remove();
+            }, 400);
+        }, 6500);
+    }
+
+    export function showKaelDepartureBanner() {
+        let container = document.getElementById('kael-banner-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'kael-banner-container';
+            document.body.appendChild(container);
+        }
+
+        const banner = document.createElement('div');
+        banner.className = 'kael-arrival-banner';
+
+        const iconFrame = document.createElement('div');
+        iconFrame.className = 'kael-relic-frame';
+        iconFrame.innerHTML = `
+            <svg viewBox="0 0 24 24" width="28" height="28" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                <rect x="4" y="2" width="16" height="20" fill="#1e1035"/>
+                <rect x="7" y="6" width="10" height="12" fill="#311042"/>
+                <rect x="10" y="9" width="4" height="6" fill="#6b21a8"/>
+                <rect x="11" y="11" width="2" height="2" fill="#38bdf8"/>
+            </svg>
+        `;
+        banner.appendChild(iconFrame);
+
+        const content = document.createElement('div');
+        content.className = 'flex flex-col min-w-0';
+
+        const header = document.createElement('span');
+        header.className = "text-base text-amber-400/80 font-bold font-['VT323'] tracking-widest leading-none drop-shadow-[2px_2px_0_#000] uppercase";
+        header.innerText = 'PLANAR RIFT COLLAPSED';
+        content.appendChild(header);
+
+        const title = document.createElement('span');
+        title.className = "text-2xl sm:text-3xl text-slate-300 font-bold font-['VT323'] drop-shadow-[2px_2px_0_#000] truncate leading-tight";
+        title.innerText = 'Kael has departed through the void.';
+        content.appendChild(title);
+
+        banner.appendChild(content);
+        container.appendChild(banner);
+
+        if (typeof playSound === 'function') {
+            playSound('portal_warp', { vol: 0.7 });
+        }
+
+        setTimeout(() => {
+            banner.classList.add('dismissing');
+            setTimeout(() => {
+                if (banner.parentElement) banner.remove();
+            }, 400);
+        }, 5000);
+    }
+
     export function openAchievements(initialTab = null) {
         if (initialTab) {
             currentAchievementsTab = initialTab;
@@ -4851,14 +4965,52 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         return false;
     }
 
+    export function getRecipeInputCount(input) {
+        if (Array.isArray(input.ids)) {
+            let total = 0;
+            input.ids.forEach(id => {
+                total += getItemCount(id);
+            });
+            return total;
+        }
+        return getItemCount(input.id);
+    }
+
+    export function hasRecipeInput(input) {
+        return getRecipeInputCount(input) >= input.count;
+    }
+
+    export function consumeRecipeInput(input) {
+        if (Array.isArray(input.ids)) {
+            let remainingNeeded = input.count;
+            const inv = (typeof window !== 'undefined' && window.inventory) ? window.inventory : inventory;
+            for (let i = 0; i < inv.length; i++) {
+                const item = inv[i];
+                if (item && input.ids.includes(item.id)) {
+                    if (item.count <= remainingNeeded) {
+                        remainingNeeded -= item.count;
+                        inv[i] = null;
+                    } else {
+                        item.count -= remainingNeeded;
+                        remainingNeeded = 0;
+                    }
+                    if (remainingNeeded <= 0) break;
+                }
+            }
+            if (typeof setEngineInventory === 'function') setEngineInventory(inv);
+            if (typeof window !== 'undefined') window.inventory = inv;
+            return remainingNeeded <= 0;
+        }
+        return consumeItem(input.id, input.count);
+    }
 
     export function craftRecipe(recipeIndex) {
         const recipe = RECIPES[recipeIndex];
-        let canCraft = recipe.inputs.every(req => hasItem(req.id, req.count));
+        let canCraft = recipe.inputs.every(req => hasRecipeInput(req));
         const outputFits = canFitItem(recipe.output.id, recipe.output.count);
         if (canCraft && !outputFits && isMultiplayer && !isMultiplayerAuthority() && pendingDropRequest) return;
         if (canCraft) {
-            recipe.inputs.forEach(req => consumeItem(req.id, req.count));
+            recipe.inputs.forEach(req => consumeRecipeInput(req));
             if (!outputFits) {
                 dropItemForWorld(recipe.output.id, player.x + player.width / 2, player.y, recipe.output.count);
             } else {
@@ -6395,17 +6547,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         player.isDead = false; player.vy = 0; player.vx = 0; player.damageCooldown = 60;
         if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
         
-        entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.15; dayCount = 1; frameCount = 0;
+        entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.02; dayCount = 1; frameCount = 0;
         if (typeof setEngineFurnaces === 'function') setEngineFurnaces([]);
         if (typeof window !== 'undefined') window.furnaces = [];
         if (typeof setEngineJukeboxes === 'function') setEngineJukeboxes([]);
         if (typeof window !== 'undefined') window.jukeboxes = [];
         if (typeof jukebox !== 'undefined' && jukebox.stop) jukebox.stop();
-        if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(0.15);
+        if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(0.02);
         if (typeof setEngineDayCount === 'function') setEngineDayCount(1);
         if (typeof setEngineFrameCount === 'function') setEngineFrameCount(0);
         if (typeof window !== 'undefined') {
-            window.timeOfDay = 0.15;
+            window.timeOfDay = 0.02;
             window.dayCount = 1;
             window.frameCount = 0;
         }
@@ -6734,17 +6886,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             player.isDead = false; player.vy = 0; player.vx = 0; player.damageCooldown = 60;
             if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
 
-            entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.15; dayCount = 1; frameCount = 0;
+            entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.02; dayCount = 1; frameCount = 0;
             if (typeof setEngineFurnaces === 'function') setEngineFurnaces([]);
             if (typeof window !== 'undefined') window.furnaces = [];
             if (typeof setEngineJukeboxes === 'function') setEngineJukeboxes([]);
             if (typeof window !== 'undefined') window.jukeboxes = [];
             if (typeof jukebox !== 'undefined' && jukebox.stop) jukebox.stop();
-            if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(0.15);
+            if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(0.02);
             if (typeof setEngineDayCount === 'function') setEngineDayCount(1);
             if (typeof setEngineFrameCount === 'function') setEngineFrameCount(0);
             if (typeof window !== 'undefined') {
-                window.timeOfDay = 0.15;
+                window.timeOfDay = 0.02;
                 window.dayCount = 1;
                 window.frameCount = 0;
             }
@@ -6917,7 +7069,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             window.surfaceHeights = surfaceHeights;
             if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights(surfaceHeights);
 
-            timeOfDay = data.timeOfDay !== undefined ? data.timeOfDay : 0.2;
+            timeOfDay = data.timeOfDay !== undefined ? data.timeOfDay : 0.02;
             dayCount = data.dayCount || 1;
             frameCount = data.frameCount || 0;
             if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(timeOfDay);
@@ -8577,13 +8729,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         let materialsSummary = [];
 
         recipe.inputs.forEach(r => {
-            const has = getItemCount(r.id);
+            const has = getRecipeInputCount(r);
             const needed = r.count;
             const ready = (has >= needed);
             if (!ready) allIngredientsReady = false;
             materialsSummary.push({
                 id: r.id,
-                name: ID_NAMES[r.id] || 'Material',
+                name: r.name || ID_NAMES[r.id] || 'Material',
                 tex: (typeof textures !== 'undefined' && textures[r.id]) ? textures[r.id].src : '',
                 has,
                 needed,
@@ -8863,7 +9015,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         const frag = document.createDocumentFragment();
         filteredRecipes.forEach(({ recipe, idx }) => {
-            let canCraft = recipe.inputs.every(req => hasItem(req.id, req.count));
+            let canCraft = recipe.inputs.every(req => hasRecipeInput(req));
             let isPinned = (pinnedRecipeIndex === idx);
             let row = document.createElement('div');
             row.className = `flex flex-col bg-black/40 p-1.5 rounded border ${isPinned ? 'crafting-row-pinned' : (canCraft ? 'border-[#8c5a2b]/80 bg-black/50' : 'border-gray-700/80 opacity-80')} mb-1 hover:bg-black/70 transition-colors cursor-pointer`;
@@ -8936,11 +9088,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             let reqs = document.createElement('div');
             reqs.className = 'text-base text-gray-300 mt-0.5 pl-8 flex flex-wrap gap-2';
             recipe.inputs.forEach(r => {
-                let has = hasItem(r.id, r.count);
-                let currentCount = getItemCount(r.id);
+                let has = hasRecipeInput(r);
+                let currentCount = getRecipeInputCount(r);
+                let displayName = r.name || ID_NAMES[r.id] || 'Material';
                 let reqSpan = document.createElement('span');
                 reqSpan.className = has ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
-                reqSpan.innerText = `${currentCount}/${r.count} ${ID_NAMES[r.id]}`;
+                reqSpan.innerText = `${currentCount}/${r.count} ${displayName}`;
                 reqs.appendChild(reqSpan);
             });
             
@@ -11828,3 +11981,5 @@ try { if (typeof getTier3AstralIllustration !== "undefined") window.getTier3Astr
 try { if (typeof openSignEditor !== "undefined") window.openSignEditor = openSignEditor; } catch(e) {}
 try { if (typeof closeSignEditor !== "undefined") window.closeSignEditor = closeSignEditor; } catch(e) {}
 try { if (typeof regenerateLostWorld !== "undefined") window.regenerateLostWorld = regenerateLostWorld; } catch(e) {}
+try { if (typeof showKaelArrivalBanner !== "undefined") window.showKaelArrivalBanner = showKaelArrivalBanner; } catch(e) {}
+try { if (typeof showKaelDepartureBanner !== "undefined") window.showKaelDepartureBanner = showKaelDepartureBanner; } catch(e) {}

@@ -170,7 +170,7 @@ export const TERMINAL_VELOCITY = 15;
 export const JUMP_FORCE = -8.5;
 export const MOVE_SPEED = 3.6;
 export const REACH = 4.2;
-export const DAY_LENGTH_FRAMES = 60 * 60 * 8;
+export const DAY_LENGTH_FRAMES = 60 * 60 * 20; // 72,000 frames = 20 minutes (Minecraft standard day cycle)
 export const DAY_LENGTH = 24000;
 export const CAVE_SKY_START_TILES = 6;
 export const CAVE_SKY_FADE_TILES = 3;
@@ -4092,9 +4092,9 @@ export const SKIN_H = 32;
             if (drawX < -this.w) drawX += WORLD_WIDTH * TILE_SIZE;
             else if (drawX > canvas.width + this.w) drawX -= WORLD_WIDTH * TILE_SIZE;
 
-            let isSunset = (timeOfDay >= 0.35 && timeOfDay < 0.48);
-            let isSunrise = (timeOfDay >= 0.84 || timeOfDay < 0.04);
-            let isNight = (timeOfDay >= 0.48 && timeOfDay < 0.84);
+            let isSunset = (timeOfDay >= 0.58 && timeOfDay < 0.68);
+            let isSunrise = (timeOfDay >= 0.90 || timeOfDay < 0.04);
+            let isNight = (timeOfDay >= 0.68 && timeOfDay < 0.90);
 
             let bodyColor = 'rgba(255, 255, 255, 0.82)';
             let shadeColor = 'rgba(210, 225, 242, 0.88)';
@@ -5344,7 +5344,7 @@ export const SKIN_H = 32;
             if (this.health <= 0) return;
 
             // Daytime Sunlight Burning: Zombies burn rapidly in daylight when exposed to open sky
-            const isDaytime = (timeOfDay < 0.42 || timeOfDay > 0.88);
+            const isDaytime = (timeOfDay < 0.58 || timeOfDay > 0.90);
             if (isDaytime) {
                 let headGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
                 let headGy = Math.max(0, Math.floor((this.y + 4) / TILE_SIZE));
@@ -8229,6 +8229,8 @@ export const SKIN_H = 32;
             this.title = 'Planar Cartographer';
             this.warpState = 'warping_in'; // 'warping_in', 'active', 'warping_out'
             this.warpProgress = 0.05;
+            this.warpInTotalFrames = 200; // ~3.3 seconds (extended cinematic arrival)
+            this.warpOutTotalFrames = 150; // ~2.5 seconds (extended departure)
             this.stayTimer = 0;
             this.maxStayDuration = 7200; // ~2 minutes of active stay
             this.isDeparted = false;
@@ -8277,11 +8279,13 @@ export const SKIN_H = 32;
             if (this.isDeparted) return;
 
             if (this.warpState === 'warping_in') {
-                this.warpProgress += 0.025;
-                if (frameCount % 4 === 0) {
-                    const cx = this.x + this.width / 2 + (Math.random() - 0.5) * 20;
-                    const cy = this.y + this.height / 2 + (Math.random() - 0.5) * 35;
-                    particles.push(new Particle(cx, cy, (Math.random() > 0.5) ? '#a855f7' : '#fbbf24'));
+                this.warpProgress += (1 / this.warpInTotalFrames);
+                if (frameCount % 3 === 0) {
+                    const cx = this.x + this.width / 2 + (Math.random() - 0.5) * 28;
+                    const cy = this.y + this.height / 2 + (Math.random() - 0.5) * 44;
+                    const p = new Particle(cx, cy, (Math.random() > 0.4) ? '#c084fc' : '#38bdf8');
+                    p.vy = -0.5 - Math.random() * 0.8;
+                    particles.push(p);
                 }
                 if (this.warpProgress >= 1) {
                     this.warpProgress = 1;
@@ -8291,11 +8295,13 @@ export const SKIN_H = 32;
             }
 
             if (this.warpState === 'warping_out') {
-                this.warpProgress -= 0.025;
-                if (frameCount % 4 === 0) {
-                    const cx = this.x + this.width / 2 + (Math.random() - 0.5) * 20;
-                    const cy = this.y + this.height / 2 + (Math.random() - 0.5) * 35;
-                    particles.push(new Particle(cx, cy, '#38bdf8'));
+                this.warpProgress -= (1 / this.warpOutTotalFrames);
+                if (frameCount % 3 === 0) {
+                    const cx = this.x + this.width / 2 + (Math.random() - 0.5) * 28;
+                    const cy = this.y + this.height / 2 + (Math.random() - 0.5) * 44;
+                    const p = new Particle(cx, cy, '#38bdf8');
+                    p.vy = -0.6 - Math.random() * 0.8;
+                    particles.push(p);
                 }
                 if (this.warpProgress <= 0) {
                     this.warpProgress = 0;
@@ -8448,6 +8454,84 @@ export const SKIN_H = 32;
             }
         }
 
+        drawPixelRiftPortal(ctx, cx, cy, progress, state) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+
+            const pixelSize = 4;
+            const fullW = 44;
+            const fullH = 76;
+
+            // Animate portal width and height based on warp progress
+            let scaleX = state === 'active' ? 1.0 : Math.min(1.0, progress * 1.5);
+            let scaleY = state === 'active' ? 1.0 : Math.min(1.0, Math.max(0.08, progress * 1.25));
+
+            const curW = Math.max(8, Math.floor((fullW * scaleX) / pixelSize) * pixelSize);
+            const curH = Math.max(16, Math.floor((fullH * scaleY) / pixelSize) * pixelSize);
+
+            const halfW = curW / 2;
+            const halfH = curH / 2;
+            const startY = Math.round(cy - halfH);
+
+            const animTick = Math.floor(frameCount * 0.18);
+
+            // 1. Stepped Pixel Aperture & Dimensional Void Frame
+            for (let py = 0; py < curH; py += pixelSize) {
+                const normY = (py - halfH) / halfH; // -1 to 1
+                const sliceRatio = Math.sqrt(Math.max(0, 1 - normY * normY));
+                const sliceHalfW = Math.floor((halfW * sliceRatio) / pixelSize) * pixelSize;
+                if (sliceHalfW <= 0) continue;
+
+                const rowX1 = Math.round(cx - sliceHalfW);
+                const rowW = sliceHalfW * 2;
+
+                // Outer cosmic void rim
+                ctx.fillStyle = '#090312';
+                ctx.fillRect(rowX1 - pixelSize, startY + py, rowW + pixelSize * 2, pixelSize);
+
+                // Astral Amethyst stepped boundary ring
+                const ringPhase = Math.sin(normY * 4 + animTick * 0.4);
+                ctx.fillStyle = ringPhase > 0 ? '#6b21a8' : '#7e22ce';
+                ctx.fillRect(rowX1, startY + py, rowW, pixelSize);
+
+                // Inner Dimensional Swirling Energy
+                const innerHalfW = Math.max(0, sliceHalfW - pixelSize);
+                if (innerHalfW > 0) {
+                    const innerX = Math.round(cx - innerHalfW);
+                    const innerW = innerHalfW * 2;
+
+                    for (let px = 0; px < innerW; px += pixelSize) {
+                        const colIdx = Math.floor(px / pixelSize);
+                        const wave = Math.sin(colIdx * 0.85 + normY * 2.8 - animTick * 0.45);
+                        let col = '#a855f7';
+                        if (wave > 0.65) col = '#fde047'; // Starlight gold spark
+                        else if (wave > 0.25) col = '#38bdf8'; // Cyan rift glow
+                        else if (wave > -0.25) col = '#c084fc'; // Bright lilac
+                        else col = '#581c87'; // Deep void purple
+
+                        ctx.fillStyle = col;
+                        ctx.fillRect(innerX + px, startY + py, pixelSize, pixelSize);
+                    }
+                }
+            }
+
+            // 2. Swirling Pixel Orbiting Runes (4 stepped orbiting pixel crystals)
+            const numRunes = 4;
+            const orbitRadius = Math.max(16, halfW + 6);
+            for (let r = 0; r < numRunes; r++) {
+                const angle = (animTick * 0.12) + (r * (Math.PI * 2 / numRunes));
+                const rx = Math.round((cx + Math.cos(angle) * orbitRadius) / pixelSize) * pixelSize;
+                const ry = Math.round((cy + Math.sin(angle) * (halfH * 0.85)) / pixelSize) * pixelSize;
+
+                ctx.fillStyle = (r % 2 === 0) ? '#38bdf8' : '#fde047';
+                ctx.fillRect(rx - 2, ry - 2, 4, 4);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(rx - 1, ry - 1, 2, 2);
+            }
+
+            ctx.restore();
+        }
+
         draw(ctx, camX, camY) {
             if (this.isDeparted) return;
             const drawX = Math.round(this.x - camX);
@@ -8457,42 +8541,18 @@ export const SKIN_H = 32;
 
             ctx.save();
 
-            // 1. Draw Planar Rift Vortex Behind Kael (when warping in or out, or subtle backdrop)
+            // 1. Draw Stepped Pixel-Art Planar Rift Vortex Behind Kael
             if (this.warpProgress < 1 || this.warpState !== 'active') {
                 const cx = drawX + w / 2;
                 const cy = drawY + h / 2;
-                const scale = Math.max(0.01, this.warpProgress);
-                const rot = Date.now() * 0.003;
-
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.scale(scale, scale);
-                ctx.rotate(rot);
-
-                // Outer aura
-                const grad = ctx.createRadialGradient(0, 0, 8, 0, 0, 36);
-                grad.addColorStop(0, 'rgba(192, 132, 252, 0.85)');
-                grad.addColorStop(0.5, 'rgba(88, 28, 135, 0.6)');
-                grad.addColorStop(1, 'rgba(15, 23, 42, 0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(0, 0, 36, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Rift spiral arms
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                for (let a = 0; a < Math.PI * 2; a += 0.4) {
-                    const r = 12 + a * 3;
-                    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-                }
-                ctx.stroke();
-
-                ctx.restore();
+                this.drawPixelRiftPortal(ctx, cx, cy, this.warpProgress, this.warpState);
             }
 
-            ctx.globalAlpha = Math.min(1.0, Math.max(0.0, this.warpProgress));
+            // Kael materializes as portal establishes itself
+            const kaelAlpha = (this.warpState === 'warping_in') 
+                ? Math.max(0.0, Math.min(1.0, (this.warpProgress - 0.35) / 0.65))
+                : Math.min(1.0, Math.max(0.0, this.warpProgress));
+            ctx.globalAlpha = kaelAlpha;
 
             if (advancedGraphics) {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - 14, drawY + h - 5, 28, 7);
@@ -8548,10 +8608,10 @@ export const SKIN_H = 32;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
 
-                const titleStr = '✦ Kael, The Atlas Explorer ✦';
+                const titleStr = 'Kael, The Atlas Explorer';
                 const subStr = '[Planar Cartographer]';
                 const titleWidth = ctx.measureText(titleStr).width;
-                const bgW = Math.round(Math.max(titleWidth + 18, 172));
+                const bgW = Math.round(Math.max(titleWidth + 28, 172));
                 const bgH = 26;
                 const bgX = Math.round(nameCX - bgW / 2);
                 const bgY = Math.round(nameY - bgH / 2);
@@ -8579,9 +8639,16 @@ export const SKIN_H = 32;
                 ctx.fillRect(bgX + bgW - 2, bgY + 1, 1, 1);
 
                 // Title & Subtitle text
-                ctx.fillStyle = '#fbbf24'; // Gold stars
-                ctx.fillText('✦', bgX + 10, nameY - 4);
-                ctx.fillText('✦', bgX + bgW - 10, nameY - 4);
+                // Pixel Diamond Badges (replacing non-pixelart unicode stars)
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillRect(bgX + 9, nameY - 6, 3, 1);
+                ctx.fillRect(bgX + 8, nameY - 5, 5, 1);
+                ctx.fillRect(bgX + 9, nameY - 4, 3, 1);
+                ctx.fillRect(bgX + 10, nameY - 7, 1, 3);
+                ctx.fillRect(bgX + bgW - 12, nameY - 6, 3, 1);
+                ctx.fillRect(bgX + bgW - 13, nameY - 5, 5, 1);
+                ctx.fillRect(bgX + bgW - 12, nameY - 4, 3, 1);
+                ctx.fillRect(bgX + bgW - 11, nameY - 7, 1, 3);
 
                 ctx.fillStyle = '#f5f3ff'; // Clean crisp white/lilac
                 ctx.fillText('Kael, The Atlas Explorer', nameCX, nameY - 4);
@@ -9494,7 +9561,7 @@ export const SKIN_H = 32;
             if (!forcePassive) return;
         }
 
-        const isNight = timeOfDay > 0.42 && timeOfDay < 0.88;
+        const isNight = timeOfDay >= 0.68 && timeOfDay < 0.90;
         const isDay = !isNight;
 
         let activePlayerPositions = [{ x: player.x, y: player.y }];
@@ -9673,7 +9740,7 @@ export const SKIN_H = 32;
 
     export function ensureDesertScorpions() {
         if (typeof getActiveBiomeAt !== 'function' || !Array.isArray(entities)) return;
-        const isNight = timeOfDay > 0.42 && timeOfDay < 0.88;
+        const isNight = timeOfDay >= 0.68 && timeOfDay < 0.90;
         if (!isNight) return;
         const currentScorpions = entities.filter(e => e instanceof Scorpion).length;
         if (currentScorpions >= 3) return;
@@ -9857,6 +9924,49 @@ export const SKIN_H = 32;
     }
 
 
+    export function deliverLeafDecayItem(dropId, x, y, count = 1) {
+        if (!dropId) return;
+        const curPlayer = (typeof player !== 'undefined') ? player : (typeof window !== 'undefined' ? window.player : null);
+        
+        let targetPlayer = curPlayer;
+        if (isMultiplayer && typeof remotePlayers !== 'undefined' && remotePlayers) {
+            let pX = curPlayer ? curPlayer.x : 0;
+            let pY = curPlayer ? curPlayer.y : 0;
+            let minDist = Math.hypot(pX - (x * TILE_SIZE + TILE_SIZE / 2), pY - (y * TILE_SIZE + TILE_SIZE / 2));
+            Object.values(remotePlayers).forEach(rp => {
+                if (rp && !rp.isDead && rp.x !== undefined) {
+                    let d = Math.hypot(rp.x - (x * TILE_SIZE + TILE_SIZE / 2), rp.y - (y * TILE_SIZE + TILE_SIZE / 2));
+                    if (d < minDist) {
+                        minDist = d;
+                        targetPlayer = rp;
+                    }
+                }
+            });
+        }
+
+        if (targetPlayer === curPlayer && curPlayer) {
+            const given = giveItem(dropId, count);
+            if (given) {
+                if (typeof playSound === 'function') playSound('pop', { vol: 0.35 });
+                if (typeof particles !== 'undefined' && Array.isArray(particles)) {
+                    particles.push(new Particle(curPlayer.x + curPlayer.width / 2, curPlayer.y + 10, '#84cc16'));
+                }
+            } else {
+                // Inventory full: drop right near player
+                dropItemForWorld(dropId, curPlayer.x + curPlayer.width / 2, curPlayer.y, count);
+            }
+        } else if (isMultiplayer && isMultiplayerAuthority()) {
+            const targetX = targetPlayer ? targetPlayer.x + (targetPlayer.width || 24) / 2 : x * TILE_SIZE + TILE_SIZE / 2;
+            const targetY = targetPlayer ? targetPlayer.y + 10 : y * TILE_SIZE + TILE_SIZE / 2;
+            dropItemForWorld(dropId, targetX, targetY, count);
+        } else {
+            const given = giveItem(dropId, count);
+            if (!given && curPlayer) {
+                dropItemForWorld(dropId, curPlayer.x + curPlayer.width / 2, curPlayer.y, count);
+            }
+        }
+    }
+
     export function updateTreeLeafDecay() {
         for (let [key, val] of leafDecayQueue) {
             let delay = typeof val === 'object' && val !== null ? val.delay : val;
@@ -9916,16 +10026,16 @@ export const SKIN_H = 32;
                 if (droppedSapling) {
                     cluster.droppedSaplings++;
                     const dropId = (blk === IDS.JUNGLE_LEAVES) ? IDS.JUNGLE_SAPLING : IDS.SAPLING;
-                    spawnDroppedItem(dropId, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                    deliverLeafDecayItem(dropId, x, y, 1);
                 } else {
                     // Secondary drops: apples, sticks, melon seeds
                     const roll = Math.random();
                     if (blk === IDS.JUNGLE_LEAVES) {
-                        if (roll < 0.15) spawnDroppedItem(IDS.MELON_SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-                        else if (roll < 0.35) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                        if (roll < 0.15) deliverLeafDecayItem(IDS.MELON_SEEDS, x, y, 1);
+                        else if (roll < 0.35) deliverLeafDecayItem(IDS.STICK, x, y, 1);
                     } else {
-                        if (roll < 0.05) spawnDroppedItem(IDS.APPLE, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-                        else if (roll < 0.25) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                        if (roll < 0.05) deliverLeafDecayItem(IDS.APPLE, x, y, 1);
+                        else if (roll < 0.25) deliverLeafDecayItem(IDS.STICK, x, y, 1);
                     }
                 }
 
@@ -9935,13 +10045,13 @@ export const SKIN_H = 32;
             } else {
                 let roll = Math.random();
                 if (blk === IDS.JUNGLE_LEAVES) {
-                    if (roll < 0.10) spawnDroppedItem(IDS.JUNGLE_SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-                    else if (roll < 0.25) spawnDroppedItem(IDS.MELON_SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-                    else if (roll < 0.40) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                    if (roll < 0.10) deliverLeafDecayItem(IDS.JUNGLE_SAPLING, x, y, 1);
+                    else if (roll < 0.25) deliverLeafDecayItem(IDS.MELON_SEEDS, x, y, 1);
+                    else if (roll < 0.40) deliverLeafDecayItem(IDS.STICK, x, y, 1);
                 } else {
-                    if (roll < 0.10) spawnDroppedItem(IDS.SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-                    else if (roll < 0.30) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-                    else if (roll < 0.35) spawnDroppedItem(IDS.APPLE, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                    if (roll < 0.10) deliverLeafDecayItem(IDS.SAPLING, x, y, 1);
+                    else if (roll < 0.30) deliverLeafDecayItem(IDS.STICK, x, y, 1);
+                    else if (roll < 0.35) deliverLeafDecayItem(IDS.APPLE, x, y, 1);
                 }
             }
 
@@ -10400,16 +10510,16 @@ export const SKIN_H = 32;
     }
 
     export function drawDynamicSky(targetCtx, w, h, time) {
-        let duskAmount = time >= 0.34 && time < 0.48 ? smoothStep(Math.min(1, (time - 0.34) / 0.14)) : 0;
-        let dawnAmount = time >= 0.84 ? smoothStep(Math.min(1, (time - 0.84) / 0.14)) : time < 0.02 ? 1 : 0;
+        let duskAmount = time >= 0.58 && time < 0.68 ? smoothStep(Math.min(1, (time - 0.58) / 0.10)) : 0;
+        let dawnAmount = time >= 0.90 ? smoothStep(Math.min(1, (time - 0.90) / 0.10)) : time < 0.04 ? 1 : 0;
         let nightAmount = 0;
-        if (time >= 0.34 && time < 0.48) nightAmount = duskAmount;
-        else if (time >= 0.48 && time < 0.84) nightAmount = 1;
-        else if (time >= 0.84) nightAmount = 1 - dawnAmount;
-        else if (time < 0.02) nightAmount = 1 - smoothStep(time / 0.02);
+        if (time >= 0.58 && time < 0.68) nightAmount = duskAmount;
+        else if (time >= 0.68 && time < 0.90) nightAmount = 1;
+        else if (time >= 0.90) nightAmount = 1 - dawnAmount;
+        else if (time < 0.04) nightAmount = 1 - smoothStep(time / 0.04);
         let topColor = DAYLIGHT_TOP;
         let bottomColor = DAYLIGHT_BOTTOM;
-        if (time >= 0.34 && time < 0.48) {
+        if (time >= 0.58 && time < 0.68) {
             let sunsetProgress = duskAmount;
             if (sunsetProgress < 0.5) {
                 let sunsetBlend = smoothStep(sunsetProgress * 2);
@@ -10420,11 +10530,11 @@ export const SKIN_H = 32;
                 topColor = blendColor(TWILIGHT_TOP, NIGHT_TOP, nightBlend, skyTopColor);
                 bottomColor = blendColor(TWILIGHT_BOTTOM, NIGHT_BOTTOM, nightBlend, skyBottomColor);
             }
-        } else if (time >= 0.48 && time < 0.84) {
+        } else if (time >= 0.68 && time < 0.90) {
             topColor = NIGHT_TOP;
             bottomColor = NIGHT_BOTTOM;
-        } else if (time >= 0.84 || time < 0.02) {
-            let sunriseProgress = time >= 0.84 ? (time - 0.84) / 0.18 : (time + 0.16) / 0.18;
+        } else if (time >= 0.90 || time < 0.04) {
+            let sunriseProgress = time >= 0.90 ? (time - 0.90) / 0.14 : (time + 0.10) / 0.14;
             sunriseProgress = Math.max(0, Math.min(1, sunriseProgress));
             if (sunriseProgress < 0.5) {
                 let twilightBlend = smoothStep(sunriseProgress * 2);
@@ -10459,12 +10569,12 @@ export const SKIN_H = 32;
 
     export function drawMountains(targetCtx, camX, h, time, w, offsetX = 0, offsetY = 0) {
         let darkFactor = 1;
-        if (time > 0.38 && time <= 0.48) darkFactor = 1 - (time - 0.38) * 8; 
-        else if (time > 0.48 && time <= 0.84) darkFactor = 0.2;
-        else if (time > 0.84) darkFactor = 0.2 + (time - 0.84) * 8;
+        if (time >= 0.58 && time < 0.68) darkFactor = 1 - (time - 0.58) * 8; 
+        else if (time >= 0.68 && time < 0.90) darkFactor = 0.2;
+        else if (time >= 0.90) darkFactor = 0.2 + (time - 0.90) * 8;
         darkFactor = Math.max(0.12, Math.min(1, darkFactor));
 
-        const isSunset = (time > 0.35 && time < 0.48);
+        const isSunset = (time >= 0.58 && time < 0.68);
         const step = 8;
         const maxCols = Math.ceil(w / step) + 4;
 
@@ -11467,18 +11577,18 @@ export const SKIN_H = 32;
             targetR = 195; targetG = 230; targetB = 255; targetA = 0.16;
             targetFog = 0.55;
         } else if (activeBiome === 'desert') {
-            if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+            if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
                 targetR = 18; targetG = 32; targetB = 76; targetA = 0.14;
             } else {
                 targetR = 255; targetG = 175; targetB = 45; targetA = 0.16;
             }
         } else if (activeBiome === 'jungle') {
             // Tropical Jungle: Rich lush emerald-jade canopy grade with warm humidity mist
-            if (timeOfDay >= 0.36 && timeOfDay < 0.48) {
+            if (timeOfDay >= 0.58 && timeOfDay < 0.68) {
                 // Tropical Sunset: warm mango amber with humid glow
                 targetR = 255; targetG = 145; targetB = 35; targetA = 0.20;
                 targetFog = 0.25;
-            } else if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+            } else if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
                 // Rainforest Night: deep moonlit indigo-teal
                 targetR = 12; targetG = 45; targetB = 68; targetA = 0.17;
                 targetFog = 0.18;
@@ -11489,24 +11599,24 @@ export const SKIN_H = 32;
             }
         } else if (activeBiome === 'forest') {
             // Plain Woods: Rich lush emerald canopy grade with golden sun accents
-            if (timeOfDay >= 0.36 && timeOfDay < 0.48) {
+            if (timeOfDay >= 0.58 && timeOfDay < 0.68) {
                 targetR = 255; targetG = 155; targetB = 60; targetA = 0.18;
-            } else if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+            } else if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
                 targetR = 18; targetG = 38; targetB = 84; targetA = 0.15;
             } else {
                 targetR = 75; targetG = 215; targetB = 95; targetA = 0.14;
             }
         } else if (activeBiome === 'mountains') {
-            if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+            if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
                 targetR = 16; targetG = 28; targetB = 68; targetA = 0.13;
             } else {
                 targetR = 155; targetG = 190; targetB = 250; targetA = 0.11;
             }
         } else {
             // Open Plains: Warm sun-drenched golden-meadow tint
-            if (timeOfDay >= 0.36 && timeOfDay < 0.48) {
+            if (timeOfDay >= 0.58 && timeOfDay < 0.68) {
                 targetR = 255; targetG = 160; targetB = 65; targetA = 0.18;
-            } else if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+            } else if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
                 targetR = 20; targetG = 42; targetB = 90; targetA = 0.15;
             } else {
                 targetR = 145; targetG = 225; targetB = 85; targetA = 0.13;
@@ -11585,8 +11695,7 @@ export const SKIN_H = 32;
         if (!fabulousGraphics || caveSkyOpacity > 0.5 || w <= 0 || h <= 0 || !player) return;
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const activeBiome = getActiveBiomeAt(playerGridX);
-        if (activeBiome !== 'desert' || timeOfDay < 0.08 || timeOfDay > 0.44) return;
-
+        if (activeBiome !== 'desert' || timeOfDay < 0.08 || timeOfDay > 0.58) return;
         targetCtx.save();
         targetCtx.fillStyle = 'rgba(255, 210, 110, 0.06)';
         const numWaves = 4;
@@ -11608,10 +11717,10 @@ export const SKIN_H = 32;
         if (rayCycle < 0.35) return;
         const presence = Math.max(0, Math.min(1.0, (rayCycle - 0.35) / 0.65));
 
-        const isDaytime = (timeOfDay > 0.88 || timeOfDay < 0.48);
-        const isSunset = (timeOfDay >= 0.38 && timeOfDay < 0.48);
-        const isSunrise = (timeOfDay >= 0.88 || timeOfDay <= 0.06);
-        const isNight = (timeOfDay >= 0.48 && timeOfDay < 0.88);
+        const isDaytime = (timeOfDay >= 0.90 || timeOfDay < 0.58);
+        const isSunset = (timeOfDay >= 0.58 && timeOfDay < 0.68);
+        const isSunrise = (timeOfDay >= 0.90 || timeOfDay <= 0.04);
+        const isNight = (timeOfDay >= 0.68 && timeOfDay < 0.90);
 
         // Subtle intensity based on daylight, presence & caveSkyOpacity
         const skyClear = Math.max(0, 1.0 - caveSkyOpacity * 2.2) * presence;
@@ -11623,15 +11732,15 @@ export const SKIN_H = 32;
         // Calculate sun/moon ray tilt angle across the sky
         let tilt = 0;
         if (isDaytime) {
-            if (timeOfDay > 0.88) {
-                tilt = 0.40 - ((timeOfDay - 0.88) / 0.12) * 0.30;
-            } else if (timeOfDay <= 0.20) {
-                tilt = 0.10 - (timeOfDay / 0.20) * 0.15;
+            if (timeOfDay >= 0.90) {
+                tilt = 0.40 - ((timeOfDay - 0.90) / 0.10) * 0.25;
+            } else if (timeOfDay <= 0.30) {
+                tilt = 0.15 - (timeOfDay / 0.30) * 0.20;
             } else {
-                tilt = -0.05 - ((timeOfDay - 0.20) / 0.28) * 0.40;
+                tilt = -0.05 - ((timeOfDay - 0.30) / 0.28) * 0.40;
             }
         } else if (isNight) {
-            tilt = Math.sin((timeOfDay - 0.5) * Math.PI * 3) * 0.20;
+            tilt = Math.sin((timeOfDay - 0.79) * Math.PI * 3) * 0.20;
         }
 
         const numRays = (activeBiome === 'jungle') ? 6 : 5;
@@ -11735,7 +11844,7 @@ export const SKIN_H = 32;
         const activeBiome = getActiveBiomeAt(playerGridX);
         const isSnowy = (activeBiome === 'snow') || (getSnowBiomeRatio(playerGridX, 10) > 0.25);
         const isUnderground = caveSkyOpacity > 0.4;
-        const isNight = timeOfDay >= 0.48 && timeOfDay <= 0.88;
+        const isNight = timeOfDay >= 0.68 && timeOfDay <= 0.90;
 
         targetCtx.save();
         for (let i = 0; i < fabulousAmbientParticles.length; i++) {
@@ -11959,17 +12068,17 @@ export const SKIN_H = 32;
         drawSnowFog(ctx, canvas.width, canvas.height, camX);
         clouds.forEach(c => c.draw(ctx, camX));
 
-        let timeAngle = (timeOfDay - 0.25) * Math.PI * 2; 
+        let timeAngle = (timeOfDay - 0.30) * Math.PI * 2; 
         let celX = canvas.width/2 - Math.sin(timeAngle) * (canvas.width * 0.45);
         let celY = canvas.height/2 + Math.cos(timeAngle) * (canvas.height * 0.45);
         
         ctx.imageSmoothingEnabled = false;
 
-        let isDaytime = (timeOfDay > 0.88 || timeOfDay < 0.44);
+        let isDaytime = (timeOfDay >= 0.90 || timeOfDay < 0.58);
         if (isDaytime) {
             let sunSize = 64;
-            let isSunset = (timeOfDay >= 0.34 && timeOfDay <= 0.44);
-            let isSunrise = (timeOfDay >= 0.88 || timeOfDay <= 0.06);
+            let isSunset = (timeOfDay >= 0.58 && timeOfDay < 0.68);
+            let isSunrise = (timeOfDay >= 0.90 || timeOfDay <= 0.04);
 
             // Sun radiant corona bloom (Pre-rendered GPU sprite blit)
             const sunGlowSprite = (isSunset || isSunrise) ? cachedSunGlowSunsetCanvas : cachedSunGlowDayCanvas;
@@ -11989,7 +12098,7 @@ export const SKIN_H = 32;
             ctx.fillStyle = (isSunset || isSunrise) ? '#fff4b8' : '#ffffff';
             ctx.fillRect(Math.floor(celX - coreSize/2), Math.floor(celY - coreSize/2), coreSize, coreSize);
         } else {
-            let moonAngle = (timeOfDay - 0.75) * Math.PI * 2;
+            let moonAngle = (timeOfDay - 0.81) * Math.PI * 2;
             let mX = canvas.width/2 - Math.sin(moonAngle) * (canvas.width * 0.45);
             let mY = canvas.height/2 + Math.cos(moonAngle) * (canvas.height * 0.45);
             let moonSize = 52;
@@ -12035,8 +12144,8 @@ export const SKIN_H = 32;
         }
 
 
-        if (advancedGraphics && (timeOfDay > 0.08 && timeOfDay < 0.4)) {
-            let flareAmount = Math.max(0, 1 - Math.abs(timeOfDay - 0.24) * 3.8);
+        if (advancedGraphics && (timeOfDay > 0.08 && timeOfDay < 0.58)) {
+            let flareAmount = Math.max(0, 1 - Math.abs(timeOfDay - 0.30) * 3.5);
             let flareCenterX = canvas.width / 2 + (canvas.width / 2 - celX) * 0.28;
             let flareCenterY = canvas.height / 2 + (canvas.height / 2 - celY) * 0.28;
             ctx.save();
@@ -12051,7 +12160,7 @@ export const SKIN_H = 32;
             ctx.fillRect(Math.floor(canvas.width / 2 - 5), Math.floor(canvas.height / 2 - 5), 10, 10);
             ctx.restore();
         }
-        if (advancedGraphics && timeOfDay >= 0.48 && timeOfDay <= 0.88) {
+        if (advancedGraphics && timeOfDay >= 0.68 && timeOfDay <= 0.90) {
             let starCycle = frameCount % 720;
             for (let shootingStar = 0; shootingStar < 3; shootingStar++) {
                 let starAge = starCycle - (shootingStar * 240 + 35);
@@ -12654,9 +12763,9 @@ export const SKIN_H = 32;
         lightCtx.clearRect(0, 0, lightCanvas.width, lightCanvas.height);
         
         let surfaceDarkness = 0;
-        if (timeOfDay > 0.4 && timeOfDay <= 0.5) surfaceDarkness = (timeOfDay - 0.4) * 8; 
-        else if (timeOfDay > 0.5 && timeOfDay <= 0.9) surfaceDarkness = 0.8;
-        else if (timeOfDay > 0.9) surfaceDarkness = 0.8 - ((timeOfDay - 0.9) * 8);
+        if (timeOfDay > 0.58 && timeOfDay <= 0.68) surfaceDarkness = (timeOfDay - 0.58) * 8; 
+        else if (timeOfDay > 0.68 && timeOfDay <= 0.90) surfaceDarkness = 0.8;
+        else if (timeOfDay > 0.90) surfaceDarkness = 0.8 - ((timeOfDay - 0.90) * 8);
         surfaceDarkness = Math.max(0, Math.min(0.85, surfaceDarkness));
 
         // Depth darkness: Smoothly scales darker as you descend into deep underground caves
@@ -12811,10 +12920,11 @@ export const SKIN_H = 32;
 
     export function updateTimeUI() {
         let t = "Morning";
-        if (timeOfDay > 0.3) t = "Afternoon";
-        if (timeOfDay > 0.4) t = "Sunset";
-        if (timeOfDay > 0.5) t = "Night";
-        if (timeOfDay > 0.9) t = "Sunrise";
+        if (timeOfDay >= 0.92 || timeOfDay < 0.04) t = "Sunrise";
+        else if (timeOfDay < 0.25) t = "Morning";
+        else if (timeOfDay < 0.60) t = "Afternoon";
+        else if (timeOfDay < 0.70) t = "Sunset";
+        else t = "Night";
         drawTimeClock(timeOfDay);
         document.getElementById('time-display').innerText = t;
         document.getElementById('day-counter').innerText = dayCount;
@@ -12886,8 +12996,8 @@ export const SKIN_H = 32;
         ctx.clip();
 
         // 5. Rotate Celestial Disc (Daytime Sky / Night Sky)
-        // timeOfDay: 0 = Dawn, 0.25 = High Noon, 0.5 = Sunset, 0.75 = Midnight
-        const rotAngle = (time - 0.25) * Math.PI * 2;
+        // timeOfDay: 0 = Dawn, 0.30 = High Noon, 0.65 = Sunset, 0.81 = Midnight
+        const rotAngle = (time - 0.30) * Math.PI * 2;
 
         ctx.save();
         ctx.translate(cx, cy);
@@ -13739,3 +13849,4 @@ try { if (typeof AtlasExplorer !== "undefined") window.AtlasExplorer = AtlasExpl
 try { if (typeof worldBiomes !== "undefined") window.worldBiomes = worldBiomes; } catch(e) {}
 try { if (typeof signs !== "undefined") window.signs = signs; } catch(e) {}
 try { if (typeof setEngineSigns !== "undefined") window.setEngineSigns = setEngineSigns; } catch(e) {}
+try { if (typeof deliverLeafDecayItem !== "undefined") window.deliverLeafDecayItem = deliverLeafDecayItem; } catch(e) {}

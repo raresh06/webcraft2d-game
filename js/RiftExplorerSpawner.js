@@ -9,6 +9,7 @@ import {
     isMultiplayer, isMultiplayerAuthority, broadcastDataPacket,
     AtlasExplorer
 } from './engine.js';
+import { showKaelArrivalBanner, showKaelDepartureBanner } from './ui.js';
 
 class RiftExplorerSpawnerManager {
     constructor() {
@@ -148,9 +149,15 @@ class RiftExplorerSpawnerManager {
             window.entities = entities;
         }
 
-        // Sound & visual toast alert
-        playSound('portal_warp');
-        showToast('✦ A Planar Rift opens... Kael, The Atlas Explorer has arrived! ✦', 6000);
+        // Sound & visual banner alert
+        if (typeof showKaelArrivalBanner === 'function') {
+            showKaelArrivalBanner();
+        } else if (typeof window !== 'undefined' && typeof window.showKaelArrivalBanner === 'function') {
+            window.showKaelArrivalBanner();
+        } else {
+            playSound('portal_warp');
+            showToast('Planar Rift Opened: Kael, The Atlas Explorer has arrived!', 6000);
+        }
 
         // Multiplayer broadcast
         if (isMultiplayer && isMultiplayerAuthority()) {
@@ -180,15 +187,27 @@ class RiftExplorerSpawnerManager {
             entities.push(explorer);
             this.activeExplorer = explorer;
         }
-        playSound('portal_warp');
-        showToast('✦ A Planar Rift opens... Kael, The Atlas Explorer has arrived! ✦', 6000);
+        if (typeof showKaelArrivalBanner === 'function') {
+            showKaelArrivalBanner();
+        } else if (typeof window !== 'undefined' && typeof window.showKaelArrivalBanner === 'function') {
+            window.showKaelArrivalBanner();
+        } else {
+            playSound('portal_warp');
+            showToast('Planar Rift Opened: Kael, The Atlas Explorer has arrived!', 6000);
+        }
     }
 
     handleRemoteDeparture() {
         if (this.activeExplorer) {
             this.activeExplorer.warpState = 'warping_out';
-            playSound('portal_warp');
-            showToast('✦ Kael steps through a collapsing rift into the Astral Void... ✦', 5000);
+            if (typeof showKaelDepartureBanner === 'function') {
+                showKaelDepartureBanner();
+            } else if (typeof window !== 'undefined' && typeof window.showKaelDepartureBanner === 'function') {
+                window.showKaelDepartureBanner();
+            } else {
+                playSound('portal_warp');
+                showToast('Planar Rift Closed: Kael steps through a collapsing rift into the Astral Void.', 5000);
+            }
         }
     }
 }

@@ -1300,7 +1300,7 @@ export function initJukeboxFileInput() {
 
     export function completeSleepTransition() {
         if (!isMultiplayer) {
-            setEngineTimeOfDay(0.2);
+            setEngineTimeOfDay(0.02);
             setEngineDayCount(dayCount + 1);
             setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
@@ -1313,7 +1313,7 @@ export function initJukeboxFileInput() {
         const activePlayers = Object.values(remotePlayers).filter(remotePlayer => remotePlayer && !remotePlayer.isDisconnected && (!remotePlayer.lastSeenLocalTime || Date.now() - remotePlayer.lastSeenLocalTime < 12000));
         const allSleeping = activePlayers.length > 0 ? activePlayers.every(remotePlayer => remotePlayer.sleeping) : isSleeping;
         if (allSleeping && isSleeping) {
-            setEngineTimeOfDay(0.2);
+            setEngineTimeOfDay(0.02);
             setEngineDayCount(dayCount + 1);
             setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
@@ -1375,7 +1375,7 @@ export function initJukeboxFileInput() {
         }
 
         if (world[gx][gy] === IDS.BED) {
-            if (timeOfDay <= 0.5 || timeOfDay > 0.9) {
+            if (timeOfDay <= 0.62 || timeOfDay > 0.95) {
                 showToast('You can only sleep at night.');
                 return true;
             }
