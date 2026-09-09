@@ -828,6 +828,7 @@ export function getMaxAnimals() {
     ID_NAMES[IDS.ASTRAL_LEGGINGS] = 'Astral Leggings';
     ID_NAMES[IDS.ASTRAL_BOOTS] = 'Astral Boots';
     ID_NAMES[IDS.EMERALD] = 'Emerald';
+    ID_NAMES[IDS.SIGN] = 'Sign';
 
     export const TOOL_DURABILITY = {
         [IDS.WOOD_PICKAXE]: 60, [IDS.WOOD_AXE]: 60, [IDS.WOOD_SWORD]: 60,
@@ -1218,6 +1219,11 @@ export function getMaxAnimals() {
     export let chests = new Map();
     export let openedChest = null;
     export let jukeboxes = [];
+    export let signs = new Map();
+    export function setEngineSigns(m) {
+        signs = m instanceof Map ? m : new Map(Object.entries(m || {}));
+        if (typeof window !== 'undefined') window.signs = signs;
+    }
     
     export let isInventoryOpen = false;
     export let hotbarWheelLockUntil = 0;
@@ -2537,6 +2543,24 @@ export function getMaxAnimals() {
                         p(x, y, '#5c3e1e');
                     }
                 }
+                else if (id === IDS.SIGN) {
+                    // Wooden post in center bottom (x: 7-8, y: 10-15)
+                    if ((x === 7 || x === 8) && y >= 10 && y <= 15) {
+                        p(x, y, x === 7 ? '#6b4931' : '#523720');
+                    }
+                    // Wooden sign board on top (x: 1 to 14, y: 1 to 9)
+                    else if (x >= 1 && x <= 14 && y >= 1 && y <= 9) {
+                        if (x === 1 || x === 14 || y === 1 || y === 9) {
+                            p(x, y, '#4a3318'); // border outline
+                        } else {
+                            p(x, y, (x + y) % 2 === 0 ? '#9e7b4f' : '#a68254'); // oak plank surface
+                        }
+                        // Subtle text lines on board
+                        if ((y === 4 || y === 6) && x >= 3 && x <= 12 && x !== 6 && x !== 9) {
+                            p(x, y, '#59442a');
+                        }
+                    }
+                }
                 else if (id === IDS.WOODEN_STAIRS_RIGHT) {
                     const isSolidPart = (y >= 8) || (x >= 8);
                     if (isSolidPart) {
@@ -3728,7 +3752,7 @@ export const SKIN_H = 32;
             block === IDS.SAPLING || block === IDS.JUNGLE_SAPLING || block === IDS.WATER || block === IDS.LAVA ||
             block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW ||
             block === IDS.LADDER || block === IDS.VINES || block === IDS.FERN || block === IDS.MELON_STEM ||
-            block === IDS.VOID_BERRY_BUSH || block === IDS.BAMBOO) return false;
+            block === IDS.VOID_BERRY_BUSH || block === IDS.BAMBOO || block === IDS.SIGN) return false;
         if (block === IDS.WHEAT_STAGE_1 || block === IDS.WHEAT_STAGE_2 || block === IDS.WHEAT_STAGE_3 || block === IDS.WHEAT_STAGE_4) return false;
         if (block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP || block === IDS.JUNGLE_DOOR_OPEN || block === IDS.JUNGLE_DOOR_OPEN_TOP) return false;
         if (block === IDS.WOOD || block === IDS.JUNGLE_WOOD) {
@@ -8698,7 +8722,7 @@ export const SKIN_H = 32;
         
         world = Array.from({ length: WORLD_WIDTH }, () => Array(WORLD_HEIGHT).fill(IDS.AIR));
         bgWorld = Array.from({ length: WORLD_WIDTH }, () => Array(WORLD_HEIGHT).fill(IDS.AIR));
-        window.world = world; window.bgWorld = bgWorld;
+        if (typeof window !== 'undefined') { window.world = world; window.bgWorld = bgWorld; }
         if (typeof toggleBackgroundBuildMode === 'function') toggleBackgroundBuildMode(false);
         fluids = new Map();
         fluidTick = 0;
@@ -8713,6 +8737,8 @@ export const SKIN_H = 32;
         activeProjectiles = [];
         chests = new Map();
         openedChest = null;
+        signs = new Map();
+        if (typeof window !== 'undefined') window.signs = signs;
         
         const baseHeight = Math.floor(WORLD_HEIGHT / 2);
         const worldSeed = seededRandom() * 10000;
@@ -13711,3 +13737,5 @@ try { if (typeof dismountParrot !== "undefined") window.dismountParrot = dismoun
 try { if (typeof dismountAllShoulderParrots !== "undefined") window.dismountAllShoulderParrots = dismountAllShoulderParrots; } catch(e) {}
 try { if (typeof AtlasExplorer !== "undefined") window.AtlasExplorer = AtlasExplorer; } catch(e) {}
 try { if (typeof worldBiomes !== "undefined") window.worldBiomes = worldBiomes; } catch(e) {}
+try { if (typeof signs !== "undefined") window.signs = signs; } catch(e) {}
+try { if (typeof setEngineSigns !== "undefined") window.setEngineSigns = setEngineSigns; } catch(e) {}

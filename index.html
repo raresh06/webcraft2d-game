@@ -97,6 +97,7 @@
 
     <!-- UI Tooltip -->
     <div id="item-tooltip" class="tooltip">Item Name</div>
+    <div id="sign-hover-tooltip" class="tooltip hidden" style="pointer-events: none; z-index: 250; max-width: 260px; white-space: pre-wrap; text-align: center; font-family: 'VT323', monospace; font-size: 1.25rem; line-height: 1.2; background: rgba(30, 22, 16, 0.95); border: 2px solid #b38245; color: #fef08a; padding: 6px 10px; box-shadow: 2px 2px 0 #000;"></div>
     
     <!-- Floating Dragged Item Container -->
     <div id="dragged-item-container">
@@ -682,11 +683,6 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
-                        <div class="atlas-market-balance px-3 py-1 bg-[#171b20] border-2 border-[#a855f7] flex items-center gap-2 shadow-inner">
-                            <img id="atlas-header-gem-img" class="pixelated w-5 h-5 object-contain" alt="Astral Emerald" />
-                            <span id="atlas-market-astral-count" class="text-2xl font-bold text-[#c084fc] font-['VT323'] leading-none">0</span>
-                            <span class="text-xs text-purple-300 uppercase font-['VT323']">ASTRAL</span>
-                        </div>
                         <button class="modal-close-red-btn" type="button" onclick="closeAtlasMarket()" title="Close (Esc)" aria-label="Close">X</button>
                     </div>
                 </div>
@@ -773,35 +769,8 @@
                 </div>
             </section>
 
-            <!-- External Bottom Currency / Trader Status Box -->
-            <div class="vault-bottom-currency-box select-none">
-                <!-- Trader Status Card -->
-                <div class="vault-balance-card">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="achievement-icon-frame !w-10 !h-10 flex-shrink-0 !border-[#a855f7]">
-                            <svg viewBox="0 0 16 16" width="28" height="28" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                                <rect x="5" y="2" width="6" height="5" fill="#c084fc"/>
-                                <rect x="6" y="4" width="1" height="1" fill="#1e1b4b"/>
-                                <rect x="9" y="4" width="1" height="1" fill="#1e1b4b"/>
-                                <rect x="4" y="7" width="8" height="6" fill="#6b21a8"/>
-                                <rect x="3" y="8" width="1" height="4" fill="#a855f7"/>
-                                <rect x="12" y="8" width="1" height="4" fill="#a855f7"/>
-                            </svg>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-wider leading-none text-purple-300 truncate">Kael the Explorer</div>
-                            <div class="text-xs sm:text-sm font-['VT323'] leading-tight text-[#94a3b8] truncate">Interdimensional Rift Outpost</div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-shrink-0 ml-2">
-                        <div class="text-xs sm:text-sm font-bold font-['VT323'] leading-none text-cyan-300 uppercase">TRADER ONLINE</div>
-                        <div class="text-xs sm:text-sm font-['VT323'] font-semibold text-emerald-400 flex items-center justify-end gap-1 mt-0.5">
-                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span>ACTIVE</span>
-                        </div>
-                    </div>
-                </div>
-
+            <!-- External Bottom Currency Box -->
+            <div class="vault-bottom-currency-box select-none" style="grid-template-columns: 1fr !important; width: min(420px, calc(100vw - 32px)) !important; margin: 0 auto !important;">
                 <!-- Astral Emeralds Balance Card -->
                 <div class="vault-balance-card astral">
                     <div class="flex items-center gap-3 min-w-0">
@@ -829,6 +798,25 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Sign Edit Modal (Minecraft Wooden Sign Editor) -->
+    <div id="sign-edit-modal" class="menu-overlay hidden bg-black/75 backdrop-blur-sm z-[320] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="sign-edit-title">
+        <div class="flex flex-col items-center select-none animate-scale-up" style="max-width: 360px; width: 100%;">
+            <h2 id="sign-edit-title" class="text-2xl sm:text-3xl font-bold text-amber-200 drop-shadow-[2px_2px_0_#000] mb-3 font-['VT323'] tracking-wide">Edit Sign Message</h2>
+            
+            <!-- Minecraft Sign Wooden Board -->
+            <div class="relative w-full max-w-[320px] bg-[#9a7444] border-4 border-[#523d21] shadow-[4px_4px_0_#000] p-4 flex flex-col items-center gap-1.5" style="background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 2px, transparent 2px, transparent 8px);">
+                <input id="sign-line-0" type="text" maxlength="24" class="sign-input-line w-full text-center font-['VT323'] text-xl text-black bg-transparent border-b border-black/20 focus:border-black focus:outline-none placeholder-amber-900/40" placeholder="" autocomplete="off" spellcheck="false" />
+                <input id="sign-line-1" type="text" maxlength="24" class="sign-input-line w-full text-center font-['VT323'] text-xl text-black bg-transparent border-b border-black/20 focus:border-black focus:outline-none placeholder-amber-900/40" placeholder="" autocomplete="off" spellcheck="false" />
+                <input id="sign-line-2" type="text" maxlength="24" class="sign-input-line w-full text-center font-['VT323'] text-xl text-black bg-transparent border-b border-black/20 focus:border-black focus:outline-none placeholder-amber-900/40" placeholder="" autocomplete="off" spellcheck="false" />
+                <input id="sign-line-3" type="text" maxlength="24" class="sign-input-line w-full text-center font-['VT323'] text-xl text-black bg-transparent border-b border-black/20 focus:border-black focus:outline-none placeholder-amber-900/40" placeholder="" autocomplete="off" spellcheck="false" />
+            </div>
+            <!-- Sign Post Graphic -->
+            <div class="w-6 h-10 bg-[#7c562c] border-x-2 border-b-2 border-[#523d21] shadow-[2px_2px_0_#000]"></div>
+
+            <button type="button" class="mc-btn !w-36 !py-1 !text-2xl mt-3 font-['VT323']" onclick="closeSignEditor(true)">Done</button>
         </div>
     </div>
 

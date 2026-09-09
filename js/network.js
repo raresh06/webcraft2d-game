@@ -1344,6 +1344,8 @@ if (typeof window !== 'undefined') {
         world[x][y] = newId;
         if (newId === IDS.WOOD && treeTrunk) nonCollidableTreeWood.add(`${x}_${y}`);
         if (newId === IDS.AIR) {
+            const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+            if (liveSigns) liveSigns.delete(`${x}_${y}`);
             notifyBlockedSaplings();
             checkSandFallAbove(x, y);
             dirtToGrassQueue.delete(`${x}_${y}`);
@@ -2013,11 +2015,52 @@ if (typeof window !== 'undefined') {
                         }
                         break;
                     }
+
+                    case 'sign_update': {
+                        if (packet.x !== undefined && packet.y !== undefined) {
+                            const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+                            if (liveSigns) {
+                                liveSigns.set(`${packet.x}_${packet.y}`, {
+                                    text: packet.text || '',
+                                    lines: Array.isArray(packet.lines) ? packet.lines : [packet.text || '', '', '', '']
+                                });
+                            }
+                        }
+                        break;
+                    }
+
+                    case 'sign_delete': {
+                        if (packet.x !== undefined && packet.y !== undefined) {
+                            const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+                            if (liveSigns) liveSigns.delete(`${packet.x}_${packet.y}`);
+                        }
+                        break;
+                    }
                 }
             } catch(err) {
                 console.error("Error processing WebRTC data channel packet", err);
             }
         };
+    }
+
+    export function syncSign(x, y, text, lines) {
+        if (!isMultiplayer) return;
+        broadcastDataPacket({
+            type: 'sign_update',
+            x,
+            y,
+            text: text || '',
+            lines: Array.isArray(lines) ? lines : [text || '', '', '', '']
+        });
+    }
+
+    export function syncSignDelete(x, y) {
+        if (!isMultiplayer) return;
+        broadcastDataPacket({
+            type: 'sign_delete',
+            x,
+            y
+        });
     }
 
     export async function createMultiplayerRoom() {
@@ -2357,6 +2400,14 @@ if (typeof window !== 'undefined') {
                         if (Array.isArray(cwData.furnaces)) {
                             furnaces = cwData.furnaces;
                         }
+                        if (cwData.signs) {
+                            const restoredSigns = new Map(Object.entries(cwData.signs));
+                            if (typeof window !== 'undefined' && typeof window.setEngineSigns === 'function') {
+                                window.setEngineSigns(restoredSigns);
+                            } else if (typeof window !== 'undefined') {
+                                window.signs = restoredSigns;
+                            }
+                        }
                     } else if (cwData && cwData.worldRle) {
                         world = decompressWorld(cwData.worldRle, WORLD_WIDTH, WORLD_HEIGHT);
                         if (cwData.bgWorldRle) {
@@ -2375,6 +2426,14 @@ if (typeof window !== 'undefined') {
                         }
                         if (Array.isArray(cwData.furnaces)) {
                             furnaces = cwData.furnaces;
+                        }
+                        if (cwData.signs) {
+                            const restoredSigns = new Map(Object.entries(cwData.signs));
+                            if (typeof window !== 'undefined' && typeof window.setEngineSigns === 'function') {
+                                window.setEngineSigns(restoredSigns);
+                            } else if (typeof window !== 'undefined') {
+                                window.signs = restoredSigns;
+                            }
                         }
                     } else {
                         generateWorld(targetSeed);
@@ -2688,6 +2747,7 @@ if (typeof window !== 'undefined') {
                 saplingGrowthQueue: Object.fromEntries(saplingGrowthQueue),
                 cropGrowthQueue: Object.fromEntries(cropGrowthQueue),
                 furnaces: furnaces,
+                signs: Object.fromEntries((typeof window !== 'undefined' && window.signs) ? window.signs : (typeof signs !== 'undefined' ? signs : new Map())),
                 timestamp: Date.now()
             });
 
@@ -2794,5 +2854,7 @@ try { if (typeof DEFAULT_BETA_PASSWORD_HASH !== "undefined") window.DEFAULT_BETA
 try { if (typeof CLOSED_BETA_LOCALSTORAGE_KEY !== "undefined") window.CLOSED_BETA_LOCALSTORAGE_KEY = CLOSED_BETA_LOCALSTORAGE_KEY; } catch(e) {}
 try { if (typeof fetchClosedBetaConfig !== "undefined") window.fetchClosedBetaConfig = fetchClosedBetaConfig; } catch(e) {}
 try { if (typeof setClosedBetaLockState !== "undefined") window.setClosedBetaLockState = setClosedBetaLockState; } catch(e) {}
+try { if (typeof syncSign !== "undefined") window.syncSign = syncSign; } catch(e) {}
+try { if (typeof syncSignDelete !== "undefined") window.syncSignDelete = syncSignDelete; } catch(e) {}
 
 

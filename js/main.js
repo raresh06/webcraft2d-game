@@ -672,6 +672,7 @@ export function initJukeboxFileInput() {
         if (isVisible('loading-screen')) { callClose('cancelMultiplayerConnection'); return true; }
         if (isVisible('kick-modal')) { callClose('dismissKickModal'); return true; }
         if (isVisible('accent-color-popover')) { callClose('closeAccentColorPicker'); return true; }
+        if (isVisible('sign-edit-modal')) { callClose('closeSignEditor', true); return true; }
 
         // 3. Dynamic Universal Stacking Scanner: Detect ALL visible modal overlays & dialogs
         const candidateOverlays = Array.from(document.querySelectorAll(
@@ -1087,6 +1088,53 @@ export function initJukeboxFileInput() {
         }
     });
 
+    export function hideSignHoverTooltip() {
+        if (typeof document === 'undefined') return;
+        const tip = document.getElementById('sign-hover-tooltip');
+        if (tip) {
+            tip.classList.add('hidden');
+            tip.style.display = 'none';
+        }
+    }
+
+    export function updateSignHoverTooltip(clientX, clientY) {
+        if (typeof document === 'undefined') return;
+        const tip = document.getElementById('sign-hover-tooltip');
+        if (!tip) return;
+
+        const curInventoryOpen = isInventoryOpen || (typeof UI !== 'undefined' && UI.isInventoryOpen) || (typeof window !== 'undefined' && window.isInventoryOpen) || (document.getElementById('inventory-container') && !document.getElementById('inventory-container').classList.contains('hidden'));
+        if (STATE !== 'PLAYING' || curInventoryOpen) {
+            hideSignHoverTooltip();
+            return;
+        }
+
+        let gx = Math.floor(mouse.worldX / TILE_SIZE);
+        let gy = Math.floor(mouse.worldY / TILE_SIZE);
+        if (gx < 0 || gx >= WORLD_WIDTH || gy < 0 || gy >= WORLD_HEIGHT || !world || !world[gx] || world[gx][gy] !== IDS.SIGN) {
+            hideSignHoverTooltip();
+            return;
+        }
+
+        const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+        const signData = liveSigns ? liveSigns.get(`${gx}_${gy}`) : null;
+        const lines = signData?.lines || (signData?.text ? signData.text.split('\n') : []);
+        const nonEmptyLines = lines.filter(l => l && l.trim().length > 0);
+
+        if (nonEmptyLines.length > 0) {
+            tip.innerText = lines.join('\n');
+            tip.classList.remove('hidden');
+            tip.style.display = 'block';
+            tip.style.left = (clientX + 14) + 'px';
+            tip.style.top = (clientY + 14) + 'px';
+        } else {
+            tip.innerText = '[ Empty Sign ]\nRight-click to edit';
+            tip.classList.remove('hidden');
+            tip.style.display = 'block';
+            tip.style.left = (clientX + 14) + 'px';
+            tip.style.top = (clientY + 14) + 'px';
+        }
+    }
+
     let canvasListenersAttached = false;
     export function initCanvasMouseListeners() {
         if (typeof document === 'undefined') return;
@@ -1099,6 +1147,11 @@ export function initJukeboxFileInput() {
             const r = curCanvas.getBoundingClientRect(); 
             mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; 
             mouse.worldX = mouse.x + camera.x; mouse.worldY = mouse.y + camera.y;
+            updateSignHoverTooltip(e.clientX, e.clientY);
+        });
+
+        curCanvas.addEventListener('mouseleave', () => {
+            hideSignHoverTooltip();
         });
 
         curCanvas.addEventListener('mousedown', (e) => {
@@ -1308,6 +1361,15 @@ export function initJukeboxFileInput() {
         if (world[gx][gy] === IDS.ASTRAL_INFUSER) {
             if (typeof UI !== 'undefined' && typeof UI.openAstralInfuser === 'function') {
                 UI.openAstralInfuser(gx, gy);
+            }
+            return true;
+        }
+
+        if (world[gx][gy] === IDS.SIGN) {
+            if (typeof UI !== 'undefined' && typeof UI.openSignEditor === 'function') {
+                UI.openSignEditor(gx, gy);
+            } else if (typeof window !== 'undefined' && typeof window.openSignEditor === 'function') {
+                window.openSignEditor(gx, gy);
             }
             return true;
         }
@@ -1749,6 +1811,10 @@ export function initJukeboxFileInput() {
                     brokenCells.push([bedPairStart + 1, gridY]);
                 }
             }
+            let detachedSignCells = [];
+            if (gridY > 0 && world[gridX]?.[gridY - 1] === IDS.SIGN) {
+                detachedSignCells.push([gridX, gridY - 1]);
+            }
             brokenCells.push(...detachedTorchCells);
             brokenCells.forEach(([brokenX, brokenY]) => {
                 removeFluid(brokenX, brokenY);
@@ -1776,9 +1842,33 @@ export function initJukeboxFileInput() {
                 cropGrowthQueue.delete(`${brokenX}_${brokenY}`);
                 saplingBlockedWarnings.delete(`${brokenX}_${brokenY}`);
                 dirtToGrassQueue.delete(`${brokenX}_${brokenY}`);
+                const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+                if (liveSigns && liveSigns.has(`${brokenX}_${brokenY}`)) {
+                    liveSigns.delete(`${brokenX}_${brokenY}`);
+                    if (typeof Network !== 'undefined' && typeof Network.syncSignDelete === 'function') {
+                        Network.syncSignDelete(brokenX, brokenY);
+                    } else if (typeof window !== 'undefined' && typeof window.syncSignDelete === 'function') {
+                        window.syncSignDelete(brokenX, brokenY);
+                    }
+                }
                 syncBlock(brokenX, brokenY, IDS.AIR);
                 checkSandFallAbove(brokenX, brokenY);
                 if (world[brokenX]?.[brokenY + 1] === IDS.DIRT) scheduleDirtToGrass(brokenX, brokenY + 1);
+            });
+            detachedSignCells.forEach(([sx, sy]) => {
+                removeFluid(sx, sy);
+                world[sx][sy] = IDS.AIR;
+                syncBlock(sx, sy, IDS.AIR);
+                const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+                if (liveSigns && liveSigns.has(`${sx}_${sy}`)) {
+                    liveSigns.delete(`${sx}_${sy}`);
+                    if (typeof Network !== 'undefined' && typeof Network.syncSignDelete === 'function') {
+                        Network.syncSignDelete(sx, sy);
+                    } else if (typeof window !== 'undefined' && typeof window.syncSignDelete === 'function') {
+                        window.syncSignDelete(sx, sy);
+                    }
+                }
+                dropItemForWorld(IDS.SIGN, sx * TILE_SIZE + TILE_SIZE / 2, sy * TILE_SIZE + TILE_SIZE / 2, 1);
             });
             if (blockId === IDS.SNOW) scheduleSnowRegrowth(gridX, gridY);
             notifyBlockedSaplings();
@@ -2212,6 +2302,32 @@ export function initJukeboxFileInput() {
             if (sel.count <= 0) inventory[selectedIndex] = null;
             if (!isMultiplayer) saveCurrentWorld();
             updateUI();
+            return true;
+        }
+
+        if (sel.id === IDS.SIGN) {
+            if (gy >= WORLD_HEIGHT - 1 || !isSolidWorldBlock(gx, gy + 1, world[gx]?.[gy + 1]) || (world[gx][gy] !== IDS.AIR && world[gx][gy] !== IDS.SHORT_GRASS && world[gx][gy] !== IDS.TALL_GRASS)) return false;
+            if (world[gx][gy] === IDS.SHORT_GRASS || world[gx][gy] === IDS.TALL_GRASS) {
+                if (Math.random() < 0.20) dropItemForWorld(IDS.SEEDS, gx * TILE_SIZE + TILE_SIZE / 2, gy * TILE_SIZE + TILE_SIZE / 2, 1);
+            }
+            removeFluid(gx, gy);
+            world[gx][gy] = IDS.SIGN;
+            wakeFluidsAround(gx, gy);
+            syncBlock(gx, gy, IDS.SIGN);
+            const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+            if (liveSigns) {
+                liveSigns.set(`${gx}_${gy}`, { text: '', lines: ['', '', '', ''] });
+            }
+            sel.count--;
+            if (sel.count <= 0) inventory[selectedIndex] = null;
+            playSound('step', { material: 'wood' });
+            updateUI();
+            if (typeof UI !== 'undefined' && typeof UI.openSignEditor === 'function') {
+                UI.openSignEditor(gx, gy, true);
+            } else if (typeof window !== 'undefined' && typeof window.openSignEditor === 'function') {
+                window.openSignEditor(gx, gy, true);
+            }
+            if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
             return true;
         }
 
@@ -3394,4 +3510,6 @@ try { if (typeof updateMusicPlayerHUD !== "undefined") window.updateMusicPlayerH
 try { if (typeof ejectActiveJukebox !== "undefined") window.ejectActiveJukebox = ejectActiveJukebox; } catch(e) {}
 try { if (typeof respawnDailyAnimals !== "undefined") window.respawnDailyAnimals = respawnDailyAnimals; } catch(e) {}
 try { if (typeof handleEntityInteraction !== "undefined") window.handleEntityInteraction = handleEntityInteraction; } catch(e) {}
+try { if (typeof updateSignHoverTooltip !== "undefined") window.updateSignHoverTooltip = updateSignHoverTooltip; } catch(e) {}
+try { if (typeof hideSignHoverTooltip !== "undefined") window.hideSignHoverTooltip = hideSignHoverTooltip; } catch(e) {}
 

@@ -1,6 +1,6 @@
 import {
     IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, currentWorldSize,
-    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot,
+    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot, AtlasExplorer,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY, getActiveBiomeAt,
@@ -19,7 +19,7 @@ import {
     setWorldDimensions, getMaxAnimals,
     getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
     TOOL_DURABILITY, ARMOR_DURABILITY, FPS_CAP_OPTIONS, diffDescriptions, DIFFICULTIES,
-    LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS, getFpsCapText
+    LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS, getFpsCapText, signs, setEngineSigns
 } from './engine.js';
 
 import {
@@ -28,7 +28,8 @@ import {
     addFriendByTag, sendFriendRequestByTag, fetchIncomingFriendRequests,
     acceptFriendRequestByTag, declineFriendRequestByTag,
     removeFriendByTag, fetchFriendsProfiles, validateWebcraftTag, normalizeWebcraftTag,
-    startPresenceHeartbeat, stopPresenceHeartbeat
+    startPresenceHeartbeat, stopPresenceHeartbeat,
+    syncSign, syncSignDelete
 } from './network.js';
 import * as Gamepad from './gamepad.js';
 import { jukebox, getAudioTrack, saveAudioTrack, deleteAudioTrack } from './jukebox.js';
@@ -321,9 +322,26 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     setRandomSplashText();
 
-    export function showToast(msg, iconHtml = null) {
+    export function showToast(msg, iconOrDuration = null, maybeDuration = 3000) {
         const c = document.getElementById('toast-container');
         if (!c) return;
+
+        let iconHtml = null;
+        let duration = 3000;
+
+        if (typeof iconOrDuration === 'number') {
+            duration = iconOrDuration;
+        } else if (typeof iconOrDuration === 'string') {
+            if (/^\d+$/.test(iconOrDuration.trim())) {
+                duration = parseInt(iconOrDuration.trim(), 10);
+            } else {
+                iconHtml = iconOrDuration;
+                if (typeof maybeDuration === 'number') {
+                    duration = maybeDuration;
+                }
+            }
+        }
+
         const t = document.createElement('div');
         t.className = 'toast flex items-center gap-2.5';
         if (iconHtml) {
@@ -332,7 +350,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             t.innerText = msg;
         }
         c.appendChild(t);
-        setTimeout(() => { if(t.parentElement) t.remove(); }, 3000);
+        setTimeout(() => { if(t.parentElement) t.remove(); }, duration);
     }
 
 
@@ -1651,19 +1669,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     let activeKaelEntity = null;
     let currentKaelNode = 'start';
     let hasTalkedToKael = false;
-    try {
-        hasTalkedToKael = localStorage.getItem('webcraft_kael_talked') === 'true';
-    } catch (e) {}
 
     export function hasPlayerTalkedToKael() {
+        if (currentWorldId) {
+            try {
+                const val = localStorage.getItem('webcraft_kael_talked_' + currentWorldId);
+                if (val !== null) return val === 'true';
+            } catch (e) {}
+        }
         return hasTalkedToKael;
     }
 
     export function setPlayerTalkedToKael(val = true) {
         hasTalkedToKael = !!val;
-        try {
-            localStorage.setItem('webcraft_kael_talked', hasTalkedToKael ? 'true' : 'false');
-        } catch (e) {}
+        if (currentWorldId) {
+            try {
+                localStorage.setItem('webcraft_kael_talked_' + currentWorldId, hasTalkedToKael ? 'true' : 'false');
+            } catch (e) {}
+        }
     }
 
     export const KAEL_DIALOGUES = {
@@ -2113,6 +2136,87 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (modal) modal.classList.add('hidden');
         infuserSlottedGear = null;
         infuserSlottedShard = null;
+    }
+
+    // --- Minecraft Sign Board System ---
+    let activeSignCoord = null;
+
+    export function openSignEditor(gx, gy, isNew = false) {
+        activeSignCoord = { x: gx, y: gy };
+        const modal = document.getElementById('sign-edit-modal');
+        if (!modal) return;
+
+        const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : (typeof signs !== 'undefined' ? signs : null);
+        const signData = liveSigns ? liveSigns.get(`${gx}_${gy}`) : null;
+        const lines = signData?.lines || ['', '', '', ''];
+
+        for (let i = 0; i < 4; i++) {
+            const input = document.getElementById(`sign-line-${i}`);
+            if (input) {
+                input.value = lines[i] || '';
+                if (!input.dataset.listenerAttached) {
+                    input.dataset.listenerAttached = 'true';
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (i < 3) {
+                                document.getElementById(`sign-line-${i + 1}`)?.focus();
+                            } else {
+                                closeSignEditor(true);
+                            }
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            closeSignEditor(true);
+                        }
+                    });
+                }
+            }
+        }
+
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            const first = document.getElementById('sign-line-0');
+            if (first) {
+                first.focus();
+                first.select();
+            }
+        }, 50);
+    }
+
+    export function closeSignEditor(save = true) {
+        const modal = document.getElementById('sign-edit-modal');
+        if (!modal || modal.classList.contains('hidden')) return;
+
+        if (save && activeSignCoord) {
+            const lines = [];
+            for (let i = 0; i < 4; i++) {
+                const input = document.getElementById(`sign-line-${i}`);
+                lines.push(input ? input.value.slice(0, 24) : '');
+            }
+            const fullText = lines.join('\n').trimEnd();
+            const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : (typeof signs !== 'undefined' ? signs : null);
+            if (liveSigns) {
+                liveSigns.set(`${activeSignCoord.x}_${activeSignCoord.y}`, {
+                    text: fullText,
+                    lines: lines
+                });
+            }
+
+            if (typeof syncSign === 'function') {
+                syncSign(activeSignCoord.x, activeSignCoord.y, fullText, lines);
+            } else if (typeof window !== 'undefined' && typeof window.syncSign === 'function') {
+                window.syncSign(activeSignCoord.x, activeSignCoord.y, fullText, lines);
+            }
+
+            if (!isMultiplayer && typeof saveCurrentWorld === 'function') {
+                saveCurrentWorld();
+            }
+        }
+
+        activeSignCoord = null;
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
     }
 
     export function renderInfuserUI() {
@@ -3553,6 +3657,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.PLANKS, count: 2 }], reqTable: false },
         { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 2 }], reqTable: false },
         { output: { id: IDS.JUNGLE_DOOR, count: 1 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.SIGN, count: 3 }, inputs: [{ id: IDS.PLANKS, count: 6 }, { id: IDS.STICK, count: 1 }], reqTable: true, category: 'utility' },
+        { output: { id: IDS.SIGN, count: 3 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 6 }, { id: IDS.STICK, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
         { output: { id: IDS.MELON, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.LADDER, count: 3 }, inputs: [{ id: IDS.STICK, count: 7 }], reqTable: true, category: 'blocks' },
@@ -6094,23 +6200,30 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function decompressWorld(compressed, width = WORLD_WIDTH, height = WORLD_HEIGHT) {
-        if (!Array.isArray(compressed) || compressed.length % 2 !== 0) throw new Error('Invalid compressed world');
+        if (!Array.isArray(compressed) || compressed.length === 0 || compressed.length % 2 !== 0) {
+            return Array.from({ length: width }, () => Array(height).fill(IDS.AIR));
+        }
         const restoredWorld = Array.from({ length: width }, () => new Array(height));
         let flatIndex = 0;
         const totalBlocks = width * height;
         for (let index = 0; index < compressed.length; index += 2) {
             const blockId = compressed[index];
             const count = compressed[index + 1];
-            if (!Number.isInteger(blockId) || !Number.isInteger(count) || count < 1) throw new Error('Invalid compressed world');
+            if (!Number.isInteger(blockId) || !Number.isInteger(count) || count < 1) continue;
             for (let offset = 0; offset < count; offset++) {
-                if (flatIndex >= totalBlocks) throw new Error('Invalid compressed world size');
+                if (flatIndex >= totalBlocks) break;
                 const x = Math.floor(flatIndex / height);
                 const y = flatIndex % height;
                 restoredWorld[x][y] = blockId;
                 flatIndex++;
             }
         }
-        if (flatIndex !== totalBlocks) throw new Error('Invalid compressed world size: got ' + flatIndex + ', expected ' + totalBlocks);
+        while (flatIndex < totalBlocks) {
+            const x = Math.floor(flatIndex / height);
+            const y = flatIndex % height;
+            restoredWorld[x][y] = IDS.AIR;
+            flatIndex++;
+        }
         return restoredWorld;
     }
 
@@ -6178,6 +6291,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             row.tabIndex = 0;
             row.setAttribute('role', 'button');
             
+            let hasSaveData = (typeof localStorage !== 'undefined') && !!localStorage.getItem('swc_data_' + w.id);
             let difficulty = (w.difficulty || 'normal').toLowerCase();
             let diffName = difficulty.toUpperCase();
             let sizeName = (w.worldSize || (w.worldWidth > 700 ? 'big' : 'small')).toUpperCase();
@@ -6195,8 +6309,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     <span class="world-badge world-badge-difficulty-${difficulty} font-['VT323']">${diffName}</span>
                     <span class="world-badge ${versionClass} font-['VT323']">v${w.gameVersion || 'older'}</span>
                     ${!isCompatible ? '<span class="world-badge world-badge-version-invalid font-[\'VT323\']">INCOMPATIBLE</span>' : ''}
+                    ${!hasSaveData ? '<span class="world-badge font-[\'VT323\'] bg-amber-700 text-amber-100" title="Save data missing">NO SAVE DATA</span>' : ''}
                 </div>
-                <p class="world-meta text-lg font-['VT323'] font-bold mt-0.5">Day ${w.dayCount || 1} • ${new Date(w.lastPlayed).toLocaleString()}</p>
+                <p class="world-meta text-lg font-['VT323'] font-bold mt-0.5">${hasSaveData ? `Day ${w.dayCount || 1} • ` : '⚠️ Missing save data (click to repair or delete) • '}${new Date(w.lastPlayed).toLocaleString()}</p>
             `;
             if (isCompatible) {
                 info.onclick = () => loadWorld(w.id);
@@ -6251,6 +6366,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         isMultiplayer = false;
         currentWorldId = 'world_' + Date.now();
         if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
+        setPlayerTalkedToKael(false);
         currentDifficulty = selectedDiffChoice;
         if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(currentDifficulty);
         if (typeof window !== 'undefined') window.currentDifficulty = currentDifficulty;
@@ -6359,7 +6475,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
         updateArmorUI();
         updateHudArmorBar();
-        saveCurrentWorld();
+        const saved = saveCurrentWorld();
+        if (!saved) {
+            let curWorlds = getSavedWorlds().filter(w => w.id !== currentWorldId);
+            saveWorldsList(curWorlds);
+            showToast('Warning: Could not save world data to browser storage. Storage quota may be full.');
+        }
         
         document.getElementById('btn-quit-to-menu').innerText = "Save & Quit to Title";
         document.getElementById('room-indicator').classList.add('hidden');
@@ -6415,12 +6536,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             inventory: liveInventory, equippedArmor: liveEquippedArmor, furnaces: (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces,
             jukeboxes: (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : (typeof jukeboxes !== 'undefined' ? jukeboxes : []),
             chests: Object.fromEntries(chests),
+            signs: Object.fromEntries((typeof window !== 'undefined' && window.signs) ? window.signs : (typeof signs !== 'undefined' ? signs : new Map())),
+            kaelTalked: hasPlayerTalkedToKael(),
             saplingGrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.saplingGrowthQueue) ? window.saplingGrowthQueue : saplingGrowthQueue),
             cropGrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.cropGrowthQueue) ? window.cropGrowthQueue : cropGrowthQueue),
             dirtToGrassQueue: Object.fromEntries((typeof window !== 'undefined' && window.dirtToGrassQueue) ? window.dirtToGrassQueue : dirtToGrassQueue),
             snowRegrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.snowRegrowthQueue) ? window.snowRegrowthQueue : snowRegrowthQueue),
             treeWoodCells: [...nonCollidableTreeWood],
-            entities: liveEntities.map(e => ({
+            entities: (liveEntities || []).filter(e => e && e.constructor).map(e => ({
                 type: e.constructor.name,
                 x: e.x,
                 y: e.y,
@@ -6578,12 +6701,96 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         reader.readAsText(file);
     }
 
+    export function regenerateLostWorld(wInfo) {
+        if (!wInfo) return;
+        showSingleplayerLoading(wInfo.name);
+        setMultiplayerLoadingStatus('Regenerating world terrain', 45);
+
+        setTimeout(() => {
+            currentWorldId = wInfo.id;
+            isMultiplayer = false;
+            if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
+            setPlayerTalkedToKael(false);
+            currentDifficulty = wInfo.difficulty || 'normal';
+            if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(currentDifficulty);
+            if (typeof window !== 'undefined') window.currentDifficulty = currentDifficulty;
+            setWorldDimensions(wInfo.worldSize || 'small');
+            keepInventory = !!wInfo.keepInventory;
+            currentWorldAchievementsEnabled = !!wInfo.achievementsEnabled;
+
+            generateWorld();
+            if (typeof window !== 'undefined' && window.world) world = window.world;
+            if (typeof window !== 'undefined' && window.surfaceHeights) surfaceHeights = window.surfaceHeights;
+            if (typeof setEngineWorld === 'function') setEngineWorld(world);
+            if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights(surfaceHeights);
+
+            const spawn = getInitialSpawnPoint();
+            if (!player) player = (typeof window !== 'undefined' && window.player) ? window.player : new Player(spawn.x, spawn.y);
+            player.x = spawn.x; player.y = spawn.y;
+            player.fallStartY = spawn.y;
+            player.isGrounded = true;
+            player.health = player.maxHealth; player.hunger = 20; player.exhaustion = 0; player.oxygen = player.maxOxygen;
+            player.poisonTimer = 0;
+            player.isDead = false; player.vy = 0; player.vx = 0; player.damageCooldown = 60;
+            if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
+
+            entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.15; dayCount = 1; frameCount = 0;
+            if (typeof setEngineFurnaces === 'function') setEngineFurnaces([]);
+            if (typeof window !== 'undefined') window.furnaces = [];
+            if (typeof setEngineJukeboxes === 'function') setEngineJukeboxes([]);
+            if (typeof window !== 'undefined') window.jukeboxes = [];
+            if (typeof jukebox !== 'undefined' && jukebox.stop) jukebox.stop();
+            if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(0.15);
+            if (typeof setEngineDayCount === 'function') setEngineDayCount(1);
+            if (typeof setEngineFrameCount === 'function') setEngineFrameCount(0);
+            if (typeof window !== 'undefined') {
+                window.timeOfDay = 0.15;
+                window.dayCount = 1;
+                window.frameCount = 0;
+            }
+
+            inventory.fill(null);
+            equippedArmor = [null, null, null, null];
+            if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
+            if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
+            if (wInfo.starterItems) {
+                giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 32); giveItem(IDS.RAW_PORKCHOP, 5); giveItem(IDS.TORCH, 16); giveItem(IDS.SAPLING, 4);
+            }
+            updateArmorUI();
+            updateHudArmorBar();
+            saveCurrentWorld();
+
+            hideSingleplayerLoading();
+            document.getElementById('btn-quit-to-menu').innerText = "Save & Quit to Title";
+            document.getElementById('room-indicator').classList.add('hidden');
+            showToast(`World "${wInfo.name}" regenerated and saved!`);
+            startGameplay();
+        }, 120);
+    }
+
     export function loadWorld(id) {
         const worldInfo = getSavedWorlds().find(world => world.id === id);
         if (worldInfo && (worldInfo.gameVersion !== GAME_VERSION || worldInfo.gameBuild !== GAME_BUILD)) {
             showToast(`Cannot open world '${worldInfo.name}': Incompatible version (World is v${worldInfo.gameVersion || 'older'}, Client is v${GAME_VERSION}).`);
             return;
         }
+
+        const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('swc_data_' + id) : null;
+        if (!raw) {
+            const worldName = worldInfo?.name || 'Selected World';
+            const action = confirm(`Save data for "${worldName}" is missing from browser storage.\n\n• Click OK to regenerate this world from scratch and play\n• Click Cancel to remove this world from your list`);
+            if (action) {
+                if (worldInfo) {
+                    regenerateLostWorld(worldInfo);
+                } else {
+                    showToast('Could not find world metadata to regenerate.');
+                }
+            } else {
+                deleteWorld(id, false);
+            }
+            return;
+        }
+
         showSingleplayerLoading(worldInfo?.name);
         setMultiplayerLoadingStatus('Reading save data', 34);
         setTimeout(() => {
@@ -6608,7 +6815,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function loadWorldData(id) {
         let raw = localStorage.getItem('swc_data_' + id);
-        if(!raw) { hideSingleplayerLoading(); showToast('This world has no saved game data.'); return; }
+        if(!raw) {
+            hideSingleplayerLoading();
+            const worldInfo = getSavedWorlds().find(world => world.id === id);
+            if (worldInfo) {
+                const action = confirm(`Save data for "${worldInfo.name}" is missing from browser storage.\n\n• Click OK to regenerate this world from scratch and play\n• Click Cancel to remove this world from your list`);
+                if (action) {
+                    regenerateLostWorld(worldInfo);
+                    return;
+                } else {
+                    deleteWorld(id, false);
+                    return;
+                }
+            }
+            showToast('This world has no saved game data.');
+            return;
+        }
         currentWorldId = id; isMultiplayer = false;
         if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
         try {
@@ -6782,6 +7004,20 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (typeof window !== 'undefined') window.jukeboxes = jukeboxes;
             if (typeof jukebox !== 'undefined' && jukebox.stop) jukebox.stop();
             chests = new Map(Object.entries(data.chests || {}).map(([key, value]) => [key, { items: Array.isArray(value.items) ? value.items : new Array(27).fill(null) }]));
+            const restoredSigns = new Map(Object.entries(data.signs || {}));
+            if (typeof setEngineSigns === 'function') setEngineSigns(restoredSigns);
+            if (typeof window !== 'undefined') window.signs = restoredSigns;
+
+            if (data.kaelTalked !== undefined) {
+                setPlayerTalkedToKael(!!data.kaelTalked);
+            } else {
+                try {
+                    const stored = localStorage.getItem('webcraft_kael_talked_' + currentWorldId);
+                    setPlayerTalkedToKael(stored === 'true');
+                } catch(e) {
+                    setPlayerTalkedToKael(false);
+                }
+            }
             openedChest = null;
             fallingBlocks = [];
             activeProjectiles = [];
@@ -6801,6 +7037,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 }
                 else if (e.type === 'Creeper') inst = new Creeper(e.x, e.y);
                 else if (e.type === 'Scorpion') inst = new Scorpion(e.x, e.y);
+                else if (e.type === 'AtlasExplorer') inst = new AtlasExplorer(e.x, e.y);
                 else inst = new Zombie(e.x, e.y);
                 inst.health = e.health;
                 if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon || inst instanceof Parrot) inst.dir = e.dir;
@@ -6841,7 +7078,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function deleteWorld(id, prompt = true) {
         if(prompt && !confirm("Delete this world forever?")) return;
         let worlds = getSavedWorlds(); worlds = worlds.filter(w => w.id !== id); saveWorldsList(worlds);
-        localStorage.removeItem('swc_data_' + id); renderWorldsList();
+        localStorage.removeItem('swc_data_' + id);
+        try { localStorage.removeItem('webcraft_kael_talked_' + id); } catch(e) {}
+        renderWorldsList();
     }
 
 
@@ -11586,3 +11825,6 @@ try { if (typeof getPixelPadlockSvg !== "undefined") window.getPixelPadlockSvg =
 try { if (typeof getTier1AstralIllustration !== "undefined") window.getTier1AstralIllustration = getTier1AstralIllustration; } catch(e) {}
 try { if (typeof getTier2AstralIllustration !== "undefined") window.getTier2AstralIllustration = getTier2AstralIllustration; } catch(e) {}
 try { if (typeof getTier3AstralIllustration !== "undefined") window.getTier3AstralIllustration = getTier3AstralIllustration; } catch(e) {}
+try { if (typeof openSignEditor !== "undefined") window.openSignEditor = openSignEditor; } catch(e) {}
+try { if (typeof closeSignEditor !== "undefined") window.closeSignEditor = closeSignEditor; } catch(e) {}
+try { if (typeof regenerateLostWorld !== "undefined") window.regenerateLostWorld = regenerateLostWorld; } catch(e) {}
