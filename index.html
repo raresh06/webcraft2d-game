@@ -567,37 +567,6 @@
 
             <!-- Tab 3: Astral Exchange -->
             <div id="vault-tab-exchange" class="vault-tab-content hidden custom-scrollbar">
-                <!-- Astral Exchange Compact Banner -->
-                <div class="bg-[#150f24] border border-[#581c87] py-1 px-3 flex items-center justify-between gap-2 shadow-inner flex-shrink-0">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <svg viewBox="0 0 10 10" width="13" height="13" class="inline-block flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                            <rect x="4" y="0" width="2" height="2" fill="#e9d5ff"/>
-                            <rect x="3" y="2" width="4" height="2" fill="#c084fc"/>
-                            <rect x="0" y="4" width="2" height="2" fill="#e9d5ff"/>
-                            <rect x="2" y="3" width="6" height="4" fill="#a855f7"/>
-                            <rect x="4" y="4" width="2" height="2" fill="#ffffff"/>
-                            <rect x="8" y="4" width="2" height="2" fill="#e9d5ff"/>
-                            <rect x="3" y="6" width="4" height="2" fill="#9333ea"/>
-                            <rect x="4" y="8" width="2" height="2" fill="#7e22ce"/>
-                        </svg>
-                        <span class="text-base sm:text-lg font-bold text-purple-200 font-['VT323'] tracking-wide uppercase leading-none">Astral Emerald Exchange</span>
-                        <span class="hidden md:inline text-xs text-purple-300/70 font-['VT323'] truncate">— Convert mined Emeralds to trade with Kael & forge cosmic gear</span>
-                    </div>
-                    <div class="text-xs sm:text-sm text-purple-200 font-['VT323'] flex items-center gap-1.5 flex-shrink-0 bg-[#0c0816] px-2 py-0.5 border border-[#3b1a64]">
-                        <span class="text-purple-300">Vault:</span>
-                        <span id="vault-exchange-avail-emeralds" class="text-[#4eed99] font-bold text-base">0</span>
-                        <svg viewBox="0 0 10 10" width="11" height="11" class="inline-block flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                            <rect x="3" y="1" width="4" height="1" fill="#a7f3d0"/>
-                            <rect x="2" y="2" width="6" height="1" fill="#6ee7b7"/>
-                            <rect x="1" y="3" width="8" height="4" fill="#10b981"/>
-                            <rect x="3" y="3" width="2" height="2" fill="#ecfdf5"/>
-                            <rect x="2" y="7" width="6" height="1" fill="#059669"/>
-                            <rect x="3" y="8" width="4" height="1" fill="#047857"/>
-                        </svg>
-                        <span class="text-[#4eed99] font-bold">Standard</span>
-                    </div>
-                </div>
-
                 <!-- 3 Conversion Tier Cards -->
                 <div id="vault-exchange-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1 items-stretch">
                     <!-- Cards are dynamically managed & refreshed by renderAstralExchangeUI() -->
@@ -2898,12 +2867,12 @@
             <div class="flex justify-between items-center pb-2 mb-2.5 border-b-2 border-[#46515a]">
                 <div class="flex items-center gap-3">
                     <h2 id="tutorial-title" class="screen-title text-4xl font-bold text-[var(--mc-accent-color)] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323']">Survival Guide</h2>
-                    <span id="tutorial-step-indicator" class="bg-[#171b20] border-2 border-[var(--mc-accent-color)] text-[var(--mc-accent-color)] font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">1 / 7</span>
+                    <span id="tutorial-step-indicator" class="bg-[#171b20] border-2 border-[var(--mc-accent-color)] text-[var(--mc-accent-color)] font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">1 / 9</span>
                 </div>
                 <button class="modal-close-red-btn" type="button" onclick="closeTutorialModal()" aria-label="Close Guide" title="Close">X</button>
             </div>
 
-            <!-- Step Navigation Tabs (7 clear categories) -->
+            <!-- Step Navigation Tabs (9 clear categories) -->
             <div class="tutorial-tabs-container" id="tutorial-step-tabs">
                 <button class="tutorial-tab-btn active" onclick="goToTutorialStep(0)">
                     <span>1. The World</span>
@@ -2918,13 +2887,19 @@
                     <span>4. Farming</span>
                 </button>
                 <button class="tutorial-tab-btn" onclick="goToTutorialStep(4)">
-                    <span>5. Mobs & Night</span>
+                    <span>5. Wildlife & Mobs</span>
                 </button>
                 <button class="tutorial-tab-btn" onclick="goToTutorialStep(5)">
                     <span>6. Armor & Gear</span>
                 </button>
                 <button class="tutorial-tab-btn" onclick="goToTutorialStep(6)">
-                    <span>7. Multiplayer</span>
+                    <span>7. Kael & Market</span>
+                </button>
+                <button class="tutorial-tab-btn" onclick="goToTutorialStep(7)">
+                    <span>8. Astral Alchemy</span>
+                </button>
+                <button class="tutorial-tab-btn" onclick="goToTutorialStep(8)">
+                    <span>9. Multiplayer</span>
                 </button>
             </div>
 

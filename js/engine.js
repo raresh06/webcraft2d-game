@@ -628,6 +628,7 @@ export function getMaxAnimals() {
         JUNGLE_DOOR: 46, JUNGLE_DOOR_TOP: 47, JUNGLE_DOOR_OPEN: 48, JUNGLE_DOOR_OPEN_TOP: 49,
         VINES: 50, MELON: 51, FERN: 52, BAMBOO: 53, MELON_STEM: 54,
         EMERALD_ORE: 55, PRISM_GLASS: 56, VOID_STONE_BRICK: 57, ASTRAL_INFUSER: 58, VOID_BERRY_BUSH: 59, SUNBURST_MELON: 60,
+        SIGN: 61,
         STICK: 100, WOOD_PICKAXE: 101, STONE_PICKAXE: 102, 
         WOOD_SWORD: 103, STONE_SWORD: 104, WOOD_AXE: 105, 
         COAL: 106, GOLD_INGOT: 107,
@@ -714,6 +715,7 @@ export function getMaxAnimals() {
     MINIMAP_COLOR_32[IDS.ASTRAL_INFUSER] = 0xFF8A3070;
     MINIMAP_COLOR_32[IDS.VOID_BERRY_BUSH] = 0xFFB04090;
     MINIMAP_COLOR_32[IDS.SUNBURST_MELON] = 0xFF20A0F0;
+    MINIMAP_COLOR_32[IDS.SIGN] = 0xFF3A5579;
 
     export const HARDNESS = {
         [IDS.DIRT]: 20, [IDS.PLOWED_DIRT]: 20, [IDS.GRASS]: 25, [IDS.STONE]: 150, [IDS.COBBLESTONE]: 150,
@@ -732,7 +734,8 @@ export function getMaxAnimals() {
         [IDS.JUNGLE_DOOR]: 45, [IDS.JUNGLE_DOOR_TOP]: 45, [IDS.JUNGLE_DOOR_OPEN]: 45, [IDS.JUNGLE_DOOR_OPEN_TOP]: 45,
         [IDS.VINES]: 5, [IDS.MELON]: 30, [IDS.FERN]: 1, [IDS.BAMBOO]: 15, [IDS.MELON_STEM]: 1,
         [IDS.EMERALD_ORE]: 240, [IDS.PRISM_GLASS]: 15, [IDS.VOID_STONE_BRICK]: 200,
-        [IDS.ASTRAL_INFUSER]: 250, [IDS.VOID_BERRY_BUSH]: 10, [IDS.SUNBURST_MELON]: 30
+        [IDS.ASTRAL_INFUSER]: 250, [IDS.VOID_BERRY_BUSH]: 10, [IDS.SUNBURST_MELON]: 30,
+        [IDS.SIGN]: 15
     };
 
     export const ID_NAMES = Object.fromEntries(Object.entries(IDS).map(([k, v]) => [v, k.replace(/_/g, ' ')]));
@@ -3368,7 +3371,7 @@ export const SKIN_H = 32;
         ctx.restore();
     }
 
-    export function drawCharacter(ctx, skinCanvas, x, y, w, h, facingRight, walkAnim, isMoving, isDamage, headTargetX, headTargetY, isAttacking, heldItemId, isClimbing = false, armorList = null, shoulderParrots = null) {
+    export function drawCharacter(ctx, skinCanvas, x, y, w, h, facingRight, walkAnim, isMoving, isDamage, headTargetX, headTargetY, isAttacking, heldItemId, isClimbing = false, armorList = null, shoulderParrots = null, walkBlend = null) {
         const activeArmor = (STATE === 'MENU') ? (armorList || [null, null, null, null]) : (armorList !== null ? armorList : equippedArmor);
         ctx.save();
         ctx.translate(x, y);
@@ -3380,8 +3383,9 @@ export const SKIN_H = 32;
         let sX = w / 16;
         let sY = h / 32;
 
-        let swing = isClimbing ? Math.sin(walkAnim) * Math.PI / 7 : Math.sin(walkAnim) * Math.PI / 4.2;
-        let armSwing = isClimbing ? -Math.PI / 1.5 + Math.sin(walkAnim) * Math.PI / 7 : Math.sin(walkAnim) * Math.PI / 6;
+        const blend = (walkBlend !== null && typeof walkBlend === 'number') ? Math.max(0, Math.min(1, walkBlend)) : (isMoving ? 1 : 0);
+        let swing = (!isMoving && !isClimbing && blend <= 0) ? 0 : (isClimbing ? Math.sin(walkAnim) * Math.PI / 7 : Math.sin(walkAnim) * (Math.PI / 4.2) * blend);
+        let armSwing = (!isMoving && !isClimbing && blend <= 0) ? 0 : (isClimbing ? -Math.PI / 1.5 + Math.sin(walkAnim) * Math.PI / 7 : Math.sin(walkAnim) * (Math.PI / 6) * blend);
         let frontArmSwing = isAttacking ? -Math.PI / 2 - Math.sin(frameCount * 0.4) * 0.5 : (isClimbing ? -Math.PI / 1.5 - Math.sin(walkAnim) * Math.PI / 7 : -armSwing);
 
         if (!facingRight) {
@@ -3774,8 +3778,22 @@ export const SKIN_H = 32;
         return fluids.get(getFluidKey(x, y)) || null;
     }
 
-    export function isWater(x, y) {
-        const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+    export function getActivePhysicsWorld(entity = null) {
+        if (entity?.isMenuEntity || (typeof STATE !== 'undefined' && STATE === 'MENU')) {
+            return (typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null;
+        }
+        return (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+    }
+
+    export function getActivePhysicsTerrain(entity = null) {
+        if (entity?.isMenuEntity || (typeof STATE !== 'undefined' && STATE === 'MENU')) {
+            return (typeof menuWorld !== 'undefined' && menuWorld && (menuWorld.surfaceHeights || menuWorld.terrain)) ? (menuWorld.surfaceHeights || menuWorld.terrain) : null;
+        }
+        return (typeof surfaceHeights !== 'undefined' && surfaceHeights && surfaceHeights.length) ? surfaceHeights : ((typeof menuWorld !== 'undefined' && menuWorld && (menuWorld.surfaceHeights || menuWorld.terrain)) ? (menuWorld.surfaceHeights || menuWorld.terrain) : null);
+    }
+
+    export function isWater(x, y, entity = null) {
+        const activeWorld = getActivePhysicsWorld(entity);
         if (!activeWorld) return false;
         const curWorldW = activeWorld.length;
         const curWorldH = activeWorld[0]?.length || 0;
@@ -3783,8 +3801,8 @@ export const SKIN_H = 32;
         return activeWorld[x]?.[y] === IDS.WATER || (typeof fluids !== 'undefined' && fluids.get(getFluidKey(x, y))?.type === IDS.WATER);
     }
 
-    export function isLava(x, y) {
-        const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+    export function isLava(x, y, entity = null) {
+        const activeWorld = getActivePhysicsWorld(entity);
         if (!activeWorld) return false;
         const curWorldW = activeWorld.length;
         const curWorldH = activeWorld[0]?.length || 0;
@@ -4096,6 +4114,14 @@ export const SKIN_H = 32;
             this.fallStartY = y;
         }
 
+        getActiveWorld() {
+            return getActivePhysicsWorld(this);
+        }
+
+        getActiveTerrain() {
+            return getActivePhysicsTerrain(this);
+        }
+
         applyPhysics() {
             const wasGrounded = this.isGrounded;
             const prevVy = this.vy;
@@ -4118,7 +4144,7 @@ export const SKIN_H = 32;
             if (!wasGrounded && this.isGrounded && prevVy > 0 && !(this instanceof Player) && !(this instanceof Chicken) && this.health !== undefined) {
                 const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
                 const curGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
-                if (!isWater(curGx, curGy) && this.fallStartY !== undefined) {
+                if (!isWater(curGx, curGy, this) && this.fallStartY !== undefined) {
                     const fallTiles = (this.y - this.fallStartY) / TILE_SIZE;
                     if (fallTiles > 4) {
                         const fallDmg = Math.floor(fallTiles - 4);
@@ -4132,14 +4158,15 @@ export const SKIN_H = 32;
 
             if (this.health !== undefined && !(this instanceof Player)) checkCactusContact(this);
             
-            const maxWorldW = (typeof world !== 'undefined' && world) ? WORLD_WIDTH : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.width) ? menuWorld.width : WORLD_WIDTH);
+            const activeWorld = this.getActiveWorld();
+            const maxWorldW = activeWorld ? activeWorld.length : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.width) ? menuWorld.width : WORLD_WIDTH);
             if (this.x < 0) this.x = 0;
             if (this.x > maxWorldW * TILE_SIZE - this.width) this.x = maxWorldW * TILE_SIZE - this.width;
         }
 
         checkObstacleJump(dir) {
             if (!this.isGrounded || this.vx === 0) return;
-            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const activeWorld = this.getActiveWorld();
             if (!activeWorld) return;
             const curWorldW = activeWorld.length;
             const stepDir = dir !== undefined ? dir : (this.vx > 0 ? 1 : -1);
@@ -4149,7 +4176,7 @@ export const SKIN_H = 32;
             if (checkX >= 0 && checkX < curWorldW) {
                 const b = activeWorld[checkX]?.[footY];
                 const upperB = activeWorld[checkX]?.[headY - 1];
-                if (b !== undefined && isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1)) {
+                if (b !== undefined && isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1, this)) {
                     this.vy = JUMP_FORCE;
                     this.isGrounded = false;
                 }
@@ -4171,7 +4198,7 @@ export const SKIN_H = 32;
 
         handleCollisions(isAxisX) {
             const eps = 0.05; 
-            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const activeWorld = this.getActiveWorld();
             if (!activeWorld) return;
             const curWorldW = activeWorld.length;
             const curWorldH = activeWorld[0]?.length || 0;
@@ -4223,12 +4250,12 @@ export const SKIN_H = 32;
                                     else if (this.vx < 0) this.x = (hitStep ? stepMaxX : bMaxX) + 0.1;
                                     this.vx = 0;
                                 } else {
-                                    if (this.vy > 0) {
+                                    if (this.vy > 0 || this.vy === 0) {
                                         let floorY = (hitStep ? bMinY : slabMinY);
-                                        this.y = floorY - this.height - 0.1;
+                                        this.y = floorY - this.height - 0.05;
                                         this.isGrounded = true;
                                     } else if (this.vy < 0) {
-                                        this.y = bMaxY + 0.1;
+                                        this.y = bMaxY + 0.05;
                                     }
                                     this.vy = 0;
                                 }
@@ -4242,11 +4269,11 @@ export const SKIN_H = 32;
                                 else if (this.vx < 0) this.x = bMaxX + 0.1;
                                 this.vx = 0;
                             } else {
-                                if (this.vy > 0) {
-                                    this.y = bMinY - this.height - 0.1;
+                                if (this.vy > 0 || this.vy === 0) {
+                                    this.y = bMinY - this.height - 0.05;
                                     this.isGrounded = true;
                                 } else if (this.vy < 0) {
-                                    this.y = bMaxY + 0.1;
+                                    this.y = bMaxY + 0.05;
                                 }
                                 this.vy = 0;
                             }
@@ -4258,7 +4285,7 @@ export const SKIN_H = 32;
     }
 
     export function checkCactusContact(entity) {
-        const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+        const activeWorld = getActivePhysicsWorld(entity);
         if (!activeWorld) return;
         const curWorldW = activeWorld.length;
         const curWorldH = activeWorld[0]?.length || 0;
@@ -4741,6 +4768,7 @@ export const SKIN_H = 32;
             this.maxOxygen = 10; this.oxygen = this.maxOxygen;
             this.damageCooldown = 0; this.isDead = false; this.facingRight = true;
             this.walkAnimTime = 0;
+            this.walkBlend = 0;
             this.fallStartY = y;
             this.poisonTimer = 0;
             this.airborneTicks = 0;
@@ -4878,12 +4906,22 @@ export const SKIN_H = 32;
                 this.airborneTicks++;
             }
 
-            if (moveDir !== 0 && (this.isGrounded || this.airborneTicks <= 4) && Math.abs(this.vx) > 0.15) {
+            const isWalking = moveDir !== 0 && (this.isGrounded || this.airborneTicks <= 4) && Math.abs(this.vx) > 0.15;
+            if (isWalking) {
                 this.walkAnimTime += (Math.abs(this.vx) / MOVE_SPEED) * 0.20;
+                this.walkBlend = Math.min(1.0, (this.walkBlend || 0) + 0.18);
             } else if (!this.isGrounded && this.airborneTicks > 4) {
                 this.walkAnimTime = Math.PI / 6;
+                this.walkBlend = Math.max(0.0, (this.walkBlend || 0) - 0.10);
             } else {
                 this.walkAnimTime = 0;
+                this.walkBlend = Math.max(0.0, (this.walkBlend || 0) - 0.20);
+                if (this.walkBlend <= 0.02) {
+                    this.walkBlend = 0;
+                    this.walkAnimTime = 0;
+                } else {
+                    this.walkAnimTime += 0.08;
+                }
             }
             if (advancedGraphics && Math.abs(this.vx) > 0.5 && this.isGrounded && frameCount % 7 === 0) {
                 let footDust = new Particle(this.x + this.width / 2, this.y + this.height - 2, '#b8a982');
@@ -4975,6 +5013,9 @@ export const SKIN_H = 32;
                         playSound('eat');
                         if (typeof window !== 'undefined' && typeof window.trackDailyQuestProgress === 'function') {
                             window.trackDailyQuestProgress('eat_food', { itemId: eatenId });
+                        }
+                        if (eatenId === IDS.VOID_BERRY) {
+                            unlockAchievement('void_nourishment');
                         }
                         let pColor = (eatenId === IDS.VOID_BERRY) ? '#c084fc' : ((eatenId === IDS.SUNBURST_MELON_SLICE) ? '#f59e0b' : ((eatenId === IDS.MELON_SLICE) ? '#ef4444' : ((eatenId === IDS.COOKED_PORKCHOP || eatenId === IDS.COOKED_MUTTON || eatenId === IDS.COOKED_BEEF) ? '#8B4513' : (eatenId === IDS.RAW_BEEF ? '#991b1b' : (eatenId === IDS.COOKED_CHICKEN ? '#d98c53' : (eatenId === IDS.BREAD ? '#d2b48c' : (eatenId === IDS.APPLE ? '#ff3333' : '#ff99cc')))))));
                         for(let i=0; i<10; i++) particles.push(new Particle(this.x+this.width/2, this.y, pColor));
@@ -5206,8 +5247,8 @@ export const SKIN_H = 32;
 
         draw(ctx, camX, camY) {
             if (this.isDead) return;
-            const drawX = Math.round(this.x) - camX;
-            const drawY = Math.round(this.y) - camY;
+            const drawX = Math.round(this.x - camX);
+            const drawY = Math.round(this.y - camY);
             
             if (advancedGraphics) {
                 ctx.drawImage(cachedShadowCanvas, drawX + this.width/2 - this.width/2.2, drawY + this.height - 6, this.width * (2/2.2), 8);
@@ -5215,15 +5256,17 @@ export const SKIN_H = 32;
 
             let isAttacking = attackAnimationTimer > 0;
             let activeItem = inventory[selectedHotbarIndex] ? inventory[selectedHotbarIndex].id : null;
+            const isMoving = (this.walkBlend || 0) > 0.05 || Math.abs(this.vx) > 0.15;
             
             // Advanced segmented rendering with perched shoulder parrots!
             drawCharacter(
                 ctx, skinCanvasObj, drawX, drawY, this.width, this.height, 
-                this.facingRight, this.walkAnimTime, this.vx !== 0, this.damageCooldown > 0,
+                this.facingRight, this.walkAnimTime, isMoving, this.damageCooldown > 0,
                 isInventoryOpen ? null : mouse.worldX - camX, 
                 isInventoryOpen ? null : mouse.worldY - camY, 
                 isAttacking, activeItem, this.isClimbing, null,
-                { left: this.leftShoulderParrot, right: this.rightShoulderParrot }
+                { left: this.leftShoulderParrot, right: this.rightShoulderParrot },
+                this.walkBlend !== undefined ? this.walkBlend : 1.0
             );
         }
     }
@@ -5281,7 +5324,9 @@ export const SKIN_H = 32;
             if (isDaytime) {
                 let headGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
                 let headGy = Math.max(0, Math.floor((this.y + 4) / TILE_SIZE));
-                if (typeof hasDirectSkyAccess === 'function' && hasDirectSkyAccess(headGx, headGy)) {
+                let footGy = Math.max(0, Math.floor((this.y + this.height - 2) / TILE_SIZE));
+                let inWater = (typeof isWater === 'function' && isWater(headGx, footGy));
+                if (!inWater && typeof hasDirectSkyAccess === 'function' && hasDirectSkyAccess(headGx, headGy, true)) {
                     this.onFire = true;
                     if (frameCount % 4 === 0) {
                         particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height * 0.8, Math.random() < 0.6 ? '#ff6600' : '#ffaa00'));
@@ -5307,15 +5352,15 @@ export const SKIN_H = 32;
                 } else { this.vx = 0; }
             } else { this.vx = 0; }
 
-            if (this.vx !== 0 && this.isGrounded) {
+            const prevX = this.x;
+            this.applyPhysics();
+            const actualMoved = Math.abs(this.x - prevX);
+
+            if (actualMoved > 0.05 && this.isGrounded) {
                 this.walkAnimTime += 0.18;
-            } else if (!this.isGrounded) {
-                this.walkAnimTime = Math.PI / 6;
             } else {
                 this.walkAnimTime = 0;
             }
-
-            this.applyPhysics();
 
             if (target && this.x < target.x + target.width && this.x + this.width > target.x &&
                 this.y < target.y + target.height && this.y + this.height > target.y) {
@@ -5352,7 +5397,7 @@ export const SKIN_H = 32;
             const sX = w / 16;
             const sY = h / 32;
 
-            const legSwing = Math.sin(this.walkAnimTime) * (Math.PI / 4.5);
+            const legSwing = (this.walkAnimTime > 0) ? Math.sin(this.walkAnimTime) * (Math.PI / 4.5) : 0;
             const armBob = Math.sin(frameCount * 0.08) * 0.06;
 
             // Authentic Zombie Color Palette
@@ -5529,7 +5574,7 @@ export const SKIN_H = 32;
 
         hasHazardAhead(dir) {
             if (dir === 0) return false;
-            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const activeWorld = this.getActiveWorld();
             if (!activeWorld) return false;
             const checkX = Math.floor((this.x + this.width / 2 + dir * (this.width / 2 + 10)) / TILE_SIZE);
             const footY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
@@ -5537,14 +5582,14 @@ export const SKIN_H = 32;
             const drop1Y = footY + 1;
             const drop2Y = footY + 2;
 
-            if (isWater(checkX, footY) || isWater(checkX, bodyY) || isWater(checkX, footY - 1)) return true;
+            if (isWater(checkX, footY, this) || isWater(checkX, bodyY, this) || isWater(checkX, footY - 1, this)) return true;
             if (activeWorld[checkX]?.[footY] === IDS.CACTUS || activeWorld[checkX]?.[bodyY] === IDS.CACTUS) return true;
             if (getFluid(checkX, footY)?.type === IDS.LAVA || getFluid(checkX, bodyY)?.type === IDS.LAVA) return true;
 
             const blockAtStep = activeWorld[checkX]?.[footY];
             const isStepSolid = isSolidWorldBlock(checkX, footY, blockAtStep);
             if (!isStepSolid) {
-                if (isWater(checkX, drop1Y) || isWater(checkX, drop2Y)) return true;
+                if (isWater(checkX, drop1Y, this) || isWater(checkX, drop2Y, this)) return true;
                 if (getFluid(checkX, drop1Y)?.type === IDS.LAVA || getFluid(checkX, drop2Y)?.type === IDS.LAVA) return true;
             }
             return false;
@@ -5552,7 +5597,7 @@ export const SKIN_H = 32;
 
         hasLethalDropAhead(dir) {
             if (dir === 0) return false;
-            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const activeWorld = this.getActiveWorld();
             if (!activeWorld) return false;
             const curH = activeWorld[0]?.length || WORLD_HEIGHT;
             const checkX = Math.floor((this.x + this.width / 2 + dir * (this.width / 2 + 8)) / TILE_SIZE);
@@ -5565,7 +5610,7 @@ export const SKIN_H = 32;
                 const testY = footY + dy;
                 if (testY >= curH) break;
                 if (isSolidWorldBlock(checkX, testY, activeWorld[checkX]?.[testY])) break;
-                if (isWater(checkX, testY)) return false;
+                if (isWater(checkX, testY, this)) return false;
                 dropDist++;
             }
             return dropDist >= 3;
@@ -5577,13 +5622,13 @@ export const SKIN_H = 32;
             if (this.panicTimer > 0) this.panicTimer--;
             else this.panic = false;
 
-            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const activeWorld = this.getActiveWorld();
             const curWorldW = activeWorld ? activeWorld.length : WORLD_WIDTH;
 
             const curX = Math.floor((this.x + this.width / 2) / TILE_SIZE);
             const curFootY = Math.floor((this.y + this.height - 2) / TILE_SIZE);
             const curBodyY = Math.floor((this.y + this.height / 2) / TILE_SIZE);
-            const currentlyInWater = isWater(curX, curFootY) || isWater(curX, curBodyY);
+            const currentlyInWater = isWater(curX, curFootY, this) || isWater(curX, curBodyY, this);
 
             if (currentlyInWater) {
                 this.vy = Math.min(this.vy, -2.4);
@@ -5695,13 +5740,15 @@ export const SKIN_H = 32;
                 }
             }
 
-            if (this.vx !== 0) {
-                this.walkAnimTime = (this.walkAnimTime || 0) + (Math.abs(this.vx) / (this.baseSpeed || 1)) * 0.22;
+            const prevX = this.x;
+            this.applyPhysics();
+            const actualMoved = Math.abs(this.x - prevX);
+
+            if (actualMoved > 0.05 && (this.isGrounded || currentlyInWater)) {
+                this.walkAnimTime = (this.walkAnimTime || 0) + (actualMoved / (this.baseSpeed || 1)) * 0.22;
             } else {
                 this.walkAnimTime = 0;
             }
-
-            this.applyPhysics();
         }
     }
 
@@ -6086,7 +6133,7 @@ export const SKIN_H = 32;
         }
 
         findNearbyTreeLeaf(searchRadiusTiles = 16) {
-            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const activeWorld = this.getActiveWorld();
             if (!activeWorld) return null;
             const curWorldW = activeWorld.length;
             const curWorldH = activeWorld[0]?.length || WORLD_HEIGHT;
@@ -6127,10 +6174,10 @@ export const SKIN_H = 32;
             if (this.peckTimer > 0) this.peckTimer--;
             if (this.temptAlertTimer > 0) this.temptAlertTimer--;
 
-            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const activeWorld = this.getActiveWorld();
             const curWorldW = activeWorld ? activeWorld.length : WORLD_WIDTH;
             const curWorldH = activeWorld ? (activeWorld[0]?.length || WORLD_HEIGHT) : WORLD_HEIGHT;
-            const activeHeights = (typeof surfaceHeights !== 'undefined' && surfaceHeights && surfaceHeights.length) ? surfaceHeights : (typeof menuWorld !== 'undefined' && menuWorld && (menuWorld.surfaceHeights || menuWorld.terrain) ? (menuWorld.surfaceHeights || menuWorld.terrain) : null);
+            const activeHeights = this.getActiveTerrain();
 
             if (this.headTiltTimer > 0) {
                 this.headTiltTimer--;
@@ -6280,13 +6327,15 @@ export const SKIN_H = 32;
                     }
                 }
 
-                if (this.vx !== 0) {
-                    this.walkAnimTime = (this.walkAnimTime || 0) + (Math.abs(this.vx) / this.baseSpeed) * 0.25;
+                const prevX = this.x;
+                this.applyPhysics();
+                const actualMoved = Math.abs(this.x - prevX);
+
+                if (actualMoved > 0.05 && this.isGrounded) {
+                    this.walkAnimTime = (this.walkAnimTime || 0) + (actualMoved / this.baseSpeed) * 0.25;
                 } else {
                     this.walkAnimTime = 0;
                 }
-
-                this.applyPhysics();
 
                 if (!this.isGrounded && this.vy > 3.0) {
                     this.state = 'flying';
@@ -6719,7 +6768,7 @@ export const SKIN_H = 32;
         }
 
         findNearbyTreeLeaf(searchRadiusTiles = 16) {
-            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const activeWorld = this.getActiveWorld();
             if (!activeWorld) return null;
             const curWorldW = activeWorld.length;
             const curWorldH = activeWorld[0]?.length || WORLD_HEIGHT;
@@ -6838,10 +6887,10 @@ export const SKIN_H = 32;
             if (this.temptAlertTimer > 0) this.temptAlertTimer--;
             if (this.hopTimer > 0) this.hopTimer--;
 
-            const activeWorld = (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+            const activeWorld = this.getActiveWorld();
             const curWorldW = activeWorld ? activeWorld.length : WORLD_WIDTH;
             const curWorldH = activeWorld ? (activeWorld[0]?.length || WORLD_HEIGHT) : WORLD_HEIGHT;
-            const activeHeights = (typeof surfaceHeights !== 'undefined' && surfaceHeights && surfaceHeights.length) ? surfaceHeights : (typeof menuWorld !== 'undefined' && menuWorld && (menuWorld.surfaceHeights || menuWorld.terrain) ? (menuWorld.surfaceHeights || menuWorld.terrain) : null);
+            const activeHeights = this.getActiveTerrain();
 
             if (this.chirpTimer > 0) {
                 this.chirpTimer--;
@@ -7022,13 +7071,15 @@ export const SKIN_H = 32;
                     }
                 }
 
-                if (this.vx !== 0) {
-                    this.walkAnimTime = (this.walkAnimTime || 0) + (Math.abs(this.vx) / this.baseSpeed) * 0.25;
+                const prevX = this.x;
+                this.applyPhysics();
+                const actualMoved = Math.abs(this.x - prevX);
+
+                if (actualMoved > 0.05 && this.isGrounded) {
+                    this.walkAnimTime = (this.walkAnimTime || 0) + (actualMoved / this.baseSpeed) * 0.25;
                 } else {
                     this.walkAnimTime = 0;
                 }
-
-                this.applyPhysics();
 
                 if (!this.isGrounded && this.vy > 3.0) {
                     this.state = 'flying';
@@ -8250,20 +8301,28 @@ export const SKIN_H = 32;
                 particles.push(p);
             }
 
+            // Water Buoyancy
+            const centerGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const footGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
+            const inWater = (typeof isWater === 'function' && isWater(centerGx, footGy));
+            if (inWater) {
+                this.vy = Math.min(this.vy, -2.4);
+            }
+
             const curPlayer = (typeof player !== 'undefined') ? player : window.player;
             if (curPlayer) {
                 const dx = (curPlayer.x + curPlayer.width / 2) - (this.x + this.width / 2);
                 const dy = (curPlayer.y + curPlayer.height / 2) - (this.y + this.height / 2);
                 const dist = Math.hypot(dx, dy);
 
-                if (dist < TILE_SIZE * 7) {
+                if (dist < TILE_SIZE * 6) {
                     // Smart gaze & posture towards player
                     this.facingRight = (dx >= 0);
                     this.vx = 0;
                     this.isPacing = false;
                     this.mapReadingTimer = Math.max(0, this.mapReadingTimer - 1);
                 } else {
-                    // Pacing and map reading
+                    // Pacing and map reading cycle
                     this.paceTimer--;
                     if (this.paceTimer <= 0) {
                         if (this.isPacing) {
@@ -8280,13 +8339,55 @@ export const SKIN_H = 32;
                             else this.facingRight = (Math.random() > 0.5);
 
                             this.vx = this.facingRight ? (MOVE_SPEED * 0.28) : (-MOVE_SPEED * 0.28);
-                            this.paceTimer = 100 + Math.floor(Math.random() * 80);
+                            this.paceTimer = 120 + Math.floor(Math.random() * 80);
                         }
                     }
 
                     if (this.isPacing) {
                         this.walkAnimTime += 0.18;
                         this.checkObstacleJump();
+                        // Intelligent pathfinding: check front obstacles, drops, hazards
+                        const stepDir = this.facingRight ? 1 : -1;
+                        const frontGx = Math.floor((this.x + this.width / 2 + stepDir * (this.width / 2 + 5)) / TILE_SIZE);
+                        const frontFootGy = Math.floor((this.y + this.height - 4) / TILE_SIZE);
+                        const frontHeadGy = Math.floor((this.y + 4) / TILE_SIZE);
+
+                        const activeWorld = (typeof world !== 'undefined' && world) ? world : null;
+                        if (activeWorld && frontGx >= 0 && frontGx < activeWorld.length) {
+                            const bFoot = activeWorld[frontGx]?.[frontFootGy];
+                            const bHead = activeWorld[frontGx]?.[frontHeadGy];
+                            const isFootSolid = bFoot !== undefined && isSolidWorldBlock(frontGx, frontFootGy, bFoot);
+                            const isHeadSolid = bHead !== undefined && isSolidWorldBlock(frontGx, frontHeadGy, bHead);
+                            const isUpperSolid = isSolidWorldBlock(frontGx, frontHeadGy - 1, activeWorld[frontGx]?.[frontHeadGy - 1]);
+
+                            // 1. 2-block high barrier or ceiling block ahead: stop and turn around
+                            if (isHeadSolid || (isFootSolid && isUpperSolid)) {
+                                this.facingRight = !this.facingRight;
+                                this.vx = this.facingRight ? (MOVE_SPEED * 0.28) : (-MOVE_SPEED * 0.28);
+                                this.isPacing = false;
+                                this.mapReadingTimer = 90;
+                                this.paceTimer = 110;
+                            } else if (isFootSolid) {
+                                // 1-block step up: jump over it smoothly!
+                                this.checkObstacleJump();
+                            } else {
+                                // 2. Check for lethal drop or lava/cactus ahead
+                                let dropDist = 0;
+                                while (dropDist < 5 && (!isSolidWorldBlock(frontGx, frontFootGy + 1 + dropDist, activeWorld[frontGx]?.[frontFootGy + 1 + dropDist]))) {
+                                    dropDist++;
+                                }
+                                const landingB = activeWorld[frontGx]?.[frontFootGy + 1 + dropDist];
+                                const isHazard = (landingB === IDS.LAVA || landingB === IDS.CACTUS || (typeof isWater === 'function' && isWater(frontGx, frontFootGy + 1)));
+                                if (dropDist >= 3 || isHazard) {
+                                    // Turn around before falling
+                                    this.facingRight = !this.facingRight;
+                                    this.vx = this.facingRight ? (MOVE_SPEED * 0.28) : (-MOVE_SPEED * 0.28);
+                                    this.isPacing = false;
+                                    this.mapReadingTimer = 80;
+                                    this.paceTimer = 100;
+                                }
+                            }
+                        }
                     } else {
                         this.vx = 0;
                         if (this.mapReadingTimer > 0) this.mapReadingTimer--;
@@ -8294,7 +8395,33 @@ export const SKIN_H = 32;
                 }
             }
 
+            const prevX = this.x;
             this.applyPhysics();
+            const actualMoved = Math.abs(this.x - prevX);
+
+            // Detect if blocked against a wall while pacing
+            if (this.isPacing) {
+                if (actualMoved < 0.05) {
+                    this.stuckTimer = (this.stuckTimer || 0) + 1;
+                    if (this.stuckTimer > 15) {
+                        this.stuckTimer = 0;
+                        this.facingRight = !this.facingRight;
+                        this.isPacing = false;
+                        this.mapReadingTimer = 90;
+                        this.paceTimer = 110;
+                    }
+                } else {
+                    this.stuckTimer = 0;
+                }
+            } else {
+                this.stuckTimer = 0;
+            }
+
+            if (this.isPacing && actualMoved > 0.05 && (this.isGrounded || inWater)) {
+                this.walkAnimTime += 0.18;
+            } else {
+                this.walkAnimTime = 0;
+            }
         }
 
         draw(ctx, camX, camY) {
@@ -8349,11 +8476,13 @@ export const SKIN_H = 32;
 
             // Draw Kael using the standard player humanoid character renderer
             const kCanvas = getKaelSkinCanvas();
+            const isReallyMoving = this.isPacing && (this.walkAnimTime > 0);
             if (kCanvas) {
                 drawCharacter(
                     ctx, kCanvas, drawX, drawY, w, h,
-                    this.facingRight, this.walkAnimTime, this.isPacing, false,
-                    null, null, false, null, false, null, null
+                    this.facingRight, this.walkAnimTime, isReallyMoving, false,
+                    null, null, false, null,
+                    false, null, null, null
                 );
             }
 
@@ -8386,48 +8515,129 @@ export const SKIN_H = 32;
             }
             ctx.restore();
 
-            // Overhead Nameplate & Title
+            // Overhead Nameplate & Pop-up Tooltip (Authentic Webcraft Pixel-Art Style)
             if (this.warpState === 'active') {
-                const nameY = drawY - 20;
-                const nameCX = drawX + w / 2;
+                const nameCX = Math.round(drawX + w / 2);
+                const nameY = Math.round(drawY - 22);
 
-                ctx.font = 'bold 15px "VT323", monospace';
+                ctx.font = 'bold 14px "VT323", monospace';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
 
                 const titleStr = '✦ Kael, The Atlas Explorer ✦';
                 const subStr = '[Planar Cartographer]';
                 const titleWidth = ctx.measureText(titleStr).width;
-                const bgW = Math.max(titleWidth + 16, 140);
+                const bgW = Math.round(Math.max(titleWidth + 18, 172));
                 const bgH = 26;
+                const bgX = Math.round(nameCX - bgW / 2);
+                const bgY = Math.round(nameY - bgH / 2);
 
-                // Nameplate background pill
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-                ctx.strokeStyle = '#c084fc';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.roundRect(nameCX - bgW / 2, nameY - bgH / 2, bgW, bgH, 4);
-                ctx.fill();
-                ctx.stroke();
+                // Pixel-Art Slate Nameplate (Crisp 9-slice / Minecraft slate style with sharp corners)
+                // 1. Drop shadow & outer border (1px black/slate)
+                ctx.fillStyle = '#080a0c';
+                ctx.fillRect(bgX - 1, bgY - 1, bgW + 2, bgH + 2);
+
+                // 2. Slate inner base
+                ctx.fillStyle = 'rgba(18, 14, 28, 0.95)';
+                ctx.fillRect(bgX, bgY, bgW, bgH);
+
+                // 3. Pixel Bevel Borders (Authentic Webcraft/Minecraft highlight & shadow)
+                ctx.fillStyle = '#a855f7'; // Top highlight
+                ctx.fillRect(bgX, bgY, bgW, 1);
+                ctx.fillRect(bgX, bgY, 1, bgH); // Left highlight
+                ctx.fillStyle = '#3b0764'; // Bottom shadow
+                ctx.fillRect(bgX, bgY + bgH - 1, bgW, 1);
+                ctx.fillRect(bgX + bgW - 1, bgY, 1, bgH); // Right shadow
+
+                // Corner pixel dots
+                ctx.fillStyle = '#c084fc';
+                ctx.fillRect(bgX + 1, bgY + 1, 1, 1);
+                ctx.fillRect(bgX + bgW - 2, bgY + 1, 1, 1);
 
                 // Title & Subtitle text
-                ctx.fillStyle = '#f3e8ff';
-                ctx.fillText(titleStr, nameCX, nameY - 4);
+                ctx.fillStyle = '#fbbf24'; // Gold stars
+                ctx.fillText('✦', bgX + 10, nameY - 4);
+                ctx.fillText('✦', bgX + bgW - 10, nameY - 4);
+
+                ctx.fillStyle = '#f5f3ff'; // Clean crisp white/lilac
+                ctx.fillText('Kael, The Atlas Explorer', nameCX, nameY - 4);
+
                 ctx.font = '11px "VT323", monospace';
-                ctx.fillStyle = '#38bdf8';
+                ctx.fillStyle = '#38bdf8'; // Sky blue
                 ctx.fillText(subStr, nameCX, nameY + 7);
 
-                // Interaction indicator if player is near
+                // Proximity Interaction Pop-up if player is near
                 const curP = (typeof player !== 'undefined') ? player : window.player;
                 if (curP) {
                     const dToP = Math.hypot((curP.x + curP.width / 2) - (this.x + this.width / 2), (curP.y + curP.height / 2) - (this.y + this.height / 2));
                     if (dToP < TILE_SIZE * 3.5) {
-                        ctx.font = 'bold 13px "VT323", monospace';
-                        const pulseAlpha = 0.7 + Math.sin(Date.now() * 0.008) * 0.3;
-                        ctx.fillStyle = `rgba(251, 191, 36, ${pulseAlpha})`;
                         const hasTalked = (typeof window !== 'undefined' && typeof window.hasPlayerTalkedToKael === 'function') ? window.hasPlayerTalkedToKael() : false;
-                        const promptText = hasTalked ? '✦ [Right-Click to Trade] ✦' : '▼ [Right-Click to Speak] ▼';
-                        ctx.fillText(promptText, nameCX, nameY + 22);
+                        const actionWord = hasTalked ? 'Trade' : 'Speak';
+                        const promptText = `Press [E] to ${actionWord}`;
+
+                        // Measure prompt text dynamically so box perfectly bounds the content
+                        ctx.font = 'bold 15px "VT323", monospace';
+                        const textW = Math.ceil(ctx.measureText(promptText).width);
+                        const popW = Math.max(154, textW + 40);
+                        const popH = 22;
+                        const popX = Math.round(nameCX - popW / 2);
+                        const popY = Math.round(bgY - popH - 5);
+
+                        // Pop-up outer pixel border
+                        ctx.fillStyle = '#080a0c';
+                        ctx.fillRect(popX - 1, popY - 1, popW + 2, popH + 2);
+
+                        // Pop-up dark slate background
+                        ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
+                        ctx.fillRect(popX, popY, popW, popH);
+
+                        // Pop-up crisp amber/gold highlight border
+                        const pulse = (Math.sin(Date.now() * 0.007) + 1) * 0.5;
+                        ctx.fillStyle = (pulse > 0.5) ? '#fbbf24' : '#d97706';
+                        ctx.fillRect(popX, popY, popW, 1);
+                        ctx.fillRect(popX, popY, 1, popH);
+                        ctx.fillStyle = '#78350f';
+                        ctx.fillRect(popX, popY + popH - 1, popW, 1);
+                        ctx.fillRect(popX + popW - 1, popY, 1, popH);
+
+                        // Pixel downward arrow pointer (pointing at nameplate)
+                        ctx.fillStyle = '#080a0c';
+                        ctx.fillRect(nameCX - 3, popY + popH, 6, 2);
+                        ctx.fillRect(nameCX - 2, popY + popH + 2, 4, 1);
+                        ctx.fillRect(nameCX - 1, popY + popH + 3, 2, 1);
+                        ctx.fillStyle = '#fbbf24';
+                        ctx.fillRect(nameCX - 2, popY + popH, 4, 1);
+                        ctx.fillRect(nameCX - 1, popY + popH + 1, 2, 1);
+
+                        // Pixel Key Badge [E]
+                        const keyX = popX + 8;
+                        const keyY = popY + 4;
+                        const keyW = 14;
+                        const keyH = 14;
+
+                        // Key cap outer shadow
+                        ctx.fillStyle = '#020617';
+                        ctx.fillRect(keyX - 1, keyY - 1, keyW + 2, keyH + 2);
+                        // Key cap face
+                        ctx.fillStyle = '#1e293b';
+                        ctx.fillRect(keyX, keyY, keyW, keyH);
+                        // Key cap top highlight
+                        ctx.fillStyle = '#64748b';
+                        ctx.fillRect(keyX, keyY, keyW, 1);
+                        ctx.fillRect(keyX, keyY, 1, keyH);
+                        // Key letter E
+                        ctx.font = 'bold 12px "VT323", monospace';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#fef08a';
+                        ctx.fillText('E', keyX + keyW / 2, keyY + keyH / 2 + 1);
+
+                        // Pop-up text with guaranteed spacing
+                        ctx.font = 'bold 15px "VT323", monospace';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#fef08a';
+                        ctx.fillText(promptText, keyX + keyW + 7, popY + popH / 2 + 1);
                     }
                 }
             }
@@ -9229,11 +9439,22 @@ export const SKIN_H = 32;
         return false;
     }
 
-    export function hasDirectSkyAccess(gx, gy) {
+    export function hasDirectSkyAccess(gx, gy, ignoreTranslucent = true) {
         if (gx < 0 || gx >= WORLD_WIDTH) return true;
+        const nonSunlightBlocking = new Set([
+            IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.JUNGLE_SAPLING,
+            IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.FERN, IDS.SHORT_GRASS,
+            IDS.TALL_GRASS, IDS.VINES, IDS.GLASS
+        ]);
+        if (ignoreTranslucent) {
+            nonSunlightBlocking.add(IDS.LEAVES);
+            nonSunlightBlocking.add(IDS.PINE_LEAVES);
+            nonSunlightBlocking.add(IDS.JUNGLE_LEAVES);
+            nonSunlightBlocking.add(IDS.BAMBOO);
+        }
         for (let y = gy; y >= 0; y--) {
             let b = world[gx]?.[y];
-            if (b !== undefined && b !== IDS.AIR && b !== IDS.TORCH && b !== IDS.SAPLING && b !== IDS.FLOWER_RED && b !== IDS.FLOWER_YELLOW) {
+            if (b !== undefined && !nonSunlightBlocking.has(b)) {
                 return false;
             }
         }
@@ -9264,7 +9485,9 @@ export const SKIN_H = 32;
                 if (isDay && e instanceof Zombie) {
                     let headGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((e.x + e.width / 2) / TILE_SIZE)));
                     let headGy = Math.max(0, Math.floor((e.y + 4) / TILE_SIZE));
-                    if (hasDirectSkyAccess(headGx, headGy)) {
+                    let footGy = Math.max(0, Math.floor((e.y + e.height - 2) / TILE_SIZE));
+                    let inWater = (typeof isWater === 'function' && isWater(headGx, footGy));
+                    if (!inWater && hasDirectSkyAccess(headGx, headGy, true)) {
                         if (frameCount % 15 === 0) {
                             e.takeDamage(3, 0);
                             for (let p = 0; p < 2; p++) particles.push(new Particle(e.x + Math.random() * e.width, e.y + Math.random() * e.height * 0.7, '#ffaa00'));
@@ -9347,18 +9570,21 @@ export const SKIN_H = 32;
                     continue;
                 }
                 let surfY = getWorldSurfaceY(candX);
-                let minY = isPlayerInCave ? Math.max(surfY + 2, pGy - 10) : surfY + 3;
+                // During daytime, hostiles MUST ONLY spawn deep subterranean (at least 8 blocks below surface)
+                let minY = isDay ? (surfY + 8) : (isPlayerInCave ? Math.max(surfY + 2, pGy - 10) : surfY + 3);
                 let maxY = isPlayerInCave ? Math.min(WORLD_HEIGHT - 3, pGy + 12) : WORLD_HEIGHT - 4;
                 if (minY >= maxY) continue;
 
                 let candY = minY + Math.floor(Math.random() * (maxY - minY));
+                if (isDay && candY < surfY + 8) continue;
+
                 let floorBlock = world[candX]?.[candY + 1];
                 let feetBlock = world[candX]?.[candY];
                 let headBlock = world[candX]?.[candY - 1];
 
                 if (feetBlock === IDS.AIR && headBlock === IDS.AIR && floorBlock !== undefined && floorBlock !== IDS.AIR && floorBlock !== IDS.WATER && floorBlock !== IDS.LAVA) {
-                    // MUST be sheltered underground with a roof overhead during the daytime
-                    if (isDay && hasDirectSkyAccess(candX, candY)) {
+                    // MUST be sheltered deep underground with a solid roof overhead during the daytime
+                    if (isDay && hasDirectSkyAccess(candX, candY, true)) {
                         continue;
                     }
                     if (!isNearTorch(candX, candY, 4)) {
@@ -10716,6 +10942,7 @@ export const SKIN_H = 32;
             entity.dir = menuRandom() > 0.5 ? 1 : -1;
             entity.y = (terrain[Math.floor(x)] || baseH) * TILE_SIZE - entity.height;
             entity.isGrounded = true;
+            entity.isMenuEntity = true;
             animals.push({ type: spec.type, entity });
         });
         menuEntities = animals;
@@ -10834,14 +11061,17 @@ export const SKIN_H = 32;
         if (menuEntities && menuEntities.length) {
             menuEntities.forEach(entry => {
                 const entity = entry.entity;
+                entity.isMenuEntity = true;
                 
                 // Turn around smoothly before hitting world boundaries
                 if (entity.x < 3 * TILE_SIZE) {
                     entity.dir = 1;
-                    if (entity.vx < 0) entity.vx = -entity.vx;
+                    entity.vx = Math.abs(entity.speed || entity.baseSpeed || 1);
+                    entity.x = 3 * TILE_SIZE;
                 } else if (entity.x > (MENU_WORLD_WIDTH - 4) * TILE_SIZE) {
                     entity.dir = -1;
-                    if (entity.vx > 0) entity.vx = -entity.vx;
+                    entity.vx = -Math.abs(entity.speed || entity.baseSpeed || 1);
+                    entity.x = (MENU_WORLD_WIDTH - 4) * TILE_SIZE;
                 }
 
                 // Full in-game AI, physics, gravity, obstacle jumps & flight
@@ -10850,7 +11080,7 @@ export const SKIN_H = 32;
                 // Safety fallback if entity goes below terrain
                 const curGx = Math.max(0, Math.min(MENU_WORLD_WIDTH - 1, Math.floor((entity.x + entity.width / 2) / TILE_SIZE)));
                 const groundY = (menuWorld.terrain && menuWorld.terrain[curGx] !== undefined) ? menuWorld.terrain[curGx] : MENU_SURFACE_Y;
-                if (entity.y > (groundY + 3) * TILE_SIZE) {
+                if (entity.y > (groundY + 2) * TILE_SIZE) {
                     entity.y = groundY * TILE_SIZE - entity.height;
                     entity.vy = 0;
                     entity.isGrounded = true;

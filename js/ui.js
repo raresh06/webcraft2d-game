@@ -1584,6 +1584,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         playSound('astral_exchange');
         showToast(`Exchanged ${emeraldCost} Emeralds for +${astralGain} Astral Emerald${astralGain > 1 ? 's' : ''}!`);
         unlockAchievement('astral_pioneer');
+        unlockAchievement('astral_exchange_master');
         updateEmeraldsUI();
         renderAstralExchangeUI();
     }
@@ -3709,6 +3710,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             difficulty: 'Easy',
             emeraldReward: 10
         },
+        {
+            id: 'sound_of_music',
+            title: 'Retro Grooves',
+            description: 'Insert and play a music disc in a Jukebox to fill the world with melodies.',
+            iconItem: IDS.JUKEBOX,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 10
+        },
 
         // --- MEDIUM TIER ---
         {
@@ -3852,6 +3862,33 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             difficulty: 'Medium',
             emeraldReward: 25
         },
+        {
+            id: 'cosmic_merchant',
+            title: 'Planar Commerce',
+            description: 'Purchase a rare treasure from Kael in the Atlas Market.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 25
+        },
+        {
+            id: 'astral_infusion',
+            title: 'Celestial Forge',
+            description: 'Craft or place an Astral Infuser station to harness cosmic alchemy.',
+            iconItem: IDS.ASTRAL_INFUSER,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'void_nourishment',
+            title: 'Taste of the Cosmos',
+            description: 'Consume a radiant Void Berry harvested from celestial flora.',
+            iconItem: IDS.VOID_BERRY,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 15
+        },
 
         // --- HARD TIER ---
         {
@@ -3936,6 +3973,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             difficulty: 'Hard',
             emeraldReward: 40
         },
+        {
+            id: 'kinetic_shearing',
+            title: 'High-Frequency Shears',
+            description: 'Shear a sheep using high-tech Kinetic Shears for triple wool yields.',
+            iconItem: IDS.KINETIC_SHEARS,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 30
+        },
+        {
+            id: 'astral_exchange_master',
+            title: 'Vault Tycoon',
+            description: 'Exchange standard Emeralds for Astral Emeralds in the Astral Exchange Vault.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 35
+        },
 
         // --- MASTER TIER ---
         {
@@ -3993,6 +4048,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             iconItem: IDS.FEATHER,
             badge: 'Master',
             difficulty: 'Master'
+        },
+        {
+            id: 'astral_ascension',
+            title: 'Celestial Juggernaut',
+            description: 'Forge and equip a complete 4-piece set of Astral Armor (Helmet, Chest, Legs, Boots).',
+            iconItem: IDS.ASTRAL_CHESTPLATE,
+            badge: 'Master',
+            difficulty: 'Master',
+            emeraldReward: 50
         }
     ];
 
@@ -4710,6 +4774,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             else if (recipe.output.id === IDS.GOLD_PICKAXE || recipe.output.id === IDS.GOLD_SWORD || recipe.output.id === IDS.GOLD_AXE) unlockAchievement('shiny_bling');
             else if ([IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE].includes(recipe.output.id)) unlockAchievement('time_to_cultivate');
             else if (recipe.output.id === IDS.BREAD) unlockAchievement('bake_bread');
+            else if (recipe.output.id === IDS.ASTRAL_INFUSER) unlockAchievement('astral_infusion');
             if (isArmor(recipe.output.id)) {
                 unlockAchievement('suit_up');
                 if (recipe.output.id === IDS.HELMET_GOLD || recipe.output.id === IDS.CHESTPLATE_GOLD || recipe.output.id === IDS.LEGGINGS_GOLD || recipe.output.id === IDS.BOOTS_GOLD) {
@@ -7469,6 +7534,20 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
         setUIState('MENU');
         if (typeof setEngineState === 'function') setEngineState('MENU');
+        
+        // Clear active gameplay world references so menu background never cross-contaminates
+        world = null;
+        if (typeof window !== 'undefined') window.world = null;
+        if (typeof setEngineWorld === 'function') setEngineWorld(null);
+        
+        surfaceHeights = [];
+        if (typeof window !== 'undefined') window.surfaceHeights = [];
+        if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights([]);
+        
+        entities = [];
+        if (typeof window !== 'undefined') window.entities = [];
+        if (typeof setEngineEntities === 'function') setEngineEntities([]);
+
         document.getElementById('pause-menu').classList.add('hidden'); document.getElementById('death-menu').classList.add('hidden');
         inventory = new Array(INVENTORY_SIZE).fill(null);
         equippedArmor = [null, null, null, null];
@@ -8901,6 +8980,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             equippedArmor[3]?.id === IDS.BOOTS_DIAMOND) {
             unlockAchievement('covert_with_diamonds');
         }
+        if (equippedArmor[0]?.id === IDS.ASTRAL_HELMET &&
+            equippedArmor[1]?.id === IDS.ASTRAL_CHESTPLATE &&
+            equippedArmor[2]?.id === IDS.ASTRAL_LEGGINGS &&
+            equippedArmor[3]?.id === IDS.ASTRAL_BOOTS) {
+            unlockAchievement('astral_ascension');
+        }
         if (getTotalArmorDefense() >= 20) {
             unlockAchievement('armored_tank');
         }
@@ -9288,7 +9373,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     // ONBOARDING & TUTORIAL GUIDE SYSTEM (AUTHENTIC PIXEL-ART GAME DESIGN)
     // =========================================================================
     export let currentTutorialStep = 0;
-    export const TOTAL_TUTORIAL_STEPS = 7;
+    export const TOTAL_TUTORIAL_STEPS = 9;
 
     export function getTutorialTextureSrc(id) {
         if (typeof textures !== 'undefined' && textures && textures[id]) {
@@ -9398,8 +9483,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                                     <span class="mc-keycap">E</span>
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Inventory & Crafting</span>
-                                    <p class="tutorial-card-desc">Manage hotbar, backpack storage, and craft recipes.</p>
+                                    <span class="tutorial-card-title gold">Inventory & Interact</span>
+                                    <p class="tutorial-card-desc">Manage backpack storage, craft recipes, and talk/trade with NPCs like Kael.</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
@@ -9559,15 +9644,25 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                         <div class="tutorial-preview-box w-full mb-2">
                             <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
                         </div>
-                        <div class="tutorial-grid-3">
+                        <div class="tutorial-grid-2">
                             <div class="tutorial-card">
                                 <div class="flex gap-1">
                                     ${renderItemFrameHtml(IDS.RAW_PORKCHOP, "Porkchop")}
                                     ${renderItemFrameHtml(IDS.WOOL, "Wool")}
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title green">Peaceful Wildlife</span>
-                                    <p class="tutorial-card-desc">Hunt Pigs for Porkchops to replenish hunger and heal. Shear Sheep for Wool.</p>
+                                    <span class="tutorial-card-title green">1. Peaceful Wildlife & Hunting</span>
+                                    <p class="tutorial-card-desc">Hunt Pigs for Porkchops to replenish hunger and regenerate health. Shear Sheep for cozy Wool.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.SEEDS, "Seeds")}
+                                    ${renderItemFrameHtml(IDS.KINETIC_SHEARS, "Kinetic Shears")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">2. Parrots & Kinetic Shears</span>
+                                    <p class="tutorial-card-desc">Tame Jungle Parrots with seeds to perch on your shoulders! Kinetic Shears harvest 3x wool and leaves instantly.</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
@@ -9576,15 +9671,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                                     ${renderItemFrameHtml(IDS.BONE, "Bone")}
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">Monsters in the Dark</span>
-                                    <p class="tutorial-card-desc">Zombies, Skeletons, and Creepers spawn in the dark. Craft a Sword to fight back!</p>
+                                    <span class="tutorial-card-title orange">3. Monsters in the Dark</span>
+                                    <p class="tutorial-card-desc">Zombies, Skeletons, and Creepers spawn when night falls. Forge sharp Swords and armor to defend yourself!</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.BED, "Bed")}
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.BED, "Bed")}
+                                    ${renderItemFrameHtml(IDS.TORCH, "Torch")}
+                                </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Sleep Through Night</span>
-                                    <p class="tutorial-card-desc">Combine 3 Planks + 3 Wool. Right-Click a Bed at dusk to fast-forward to morning safely.</p>
+                                    <span class="tutorial-card-title gold">4. Beds & Safe Haven</span>
+                                    <p class="tutorial-card-desc">Combine 3 Planks + 3 Wool. Right-Click a Bed at dusk to fast-forward safely to morning and set your spawn.</p>
                                 </div>
                             </div>
                         </div>
@@ -9627,10 +9725,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                                 <div class="flex gap-1">
                                     ${renderItemFrameHtml(IDS.IRON_INGOT, "Ingot")}
                                     ${renderItemFrameHtml(IDS.DIAMOND, "Diamond")}
+                                    ${renderItemFrameHtml(IDS.ASTRAL_CHESTPLATE, "Astral Armor")}
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Tier Progression</span>
-                                    <p class="tutorial-card-desc">Leather -> Iron -> Gold -> Diamond. Diamond armor offers peak damage reduction and the greatest durability.</p>
+                                    <span class="tutorial-card-title gold">Tier Progression & Astral</span>
+                                    <p class="tutorial-card-desc">Leather -> Iron -> Gold -> Diamond -> Astral. Diamond armor can be upgraded to celestial Astral Armor at an Astral Infuser!</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
@@ -9644,6 +9743,113 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     </div>
                 `;
                 drawTutorialArmorScene();
+            }
+        },
+        {
+            title: "Planar Cartography & Kael",
+            badge: "NPCs & Trading",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-preview-box w-full mb-2">
+                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
+                        </div>
+                        <div class="tutorial-grid-2">
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.VOID_STONE_BRICK, "Planar Rift")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title purple">1. Planar Rifts & Explorer Arrival</span>
+                                    <p class="tutorial-card-desc">Mysterious Planar Rifts pierce the world. Kael, The Atlas Explorer, steps through from across the cosmos to study anomalies.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="min-w-[70px] flex justify-center">
+                                    <span class="mc-keycap">E</span>
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">2. Speak & Interact [E]</span>
+                                    <p class="tutorial-card-desc">Approach Kael and press [E] (or Right-Click) to engage in interactive dialogue, discover planar secrets, and open trading.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.ASTRAL_EMERALD, "Atlas Market")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">3. The Atlas Market</span>
+                                    <p class="tutorial-card-desc">Browse Kael's revolving catalog of rare artifacts, biome charts, celestial gear, and exotic blocks. Stock rotates every visit!</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.EMERALD_ORE, "Astral Emeralds")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title green">4. Astral Emerald Economy</span>
+                                    <p class="tutorial-card-desc">Trade surplus supplies or exchange mined Emeralds for Astral Emeralds—the universal currency of planar travelers.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tutorial-tip-box">
+                            ${renderItemFrameHtml(IDS.ASTRAL_EMERALD, "Market Tip")}
+                            <span><b>EXPLORER TIP:</b> Talk to Kael whenever a rift opens! Fulfilling his trade requests earns you the <b>Planar Commerce</b> achievement and rare celestial artifacts.</span>
+                        </div>
+                    </div>
+                `;
+                drawTutorialKaelScene();
+            }
+        },
+        {
+            title: "Astral Infusion & Gems",
+            badge: "Endgame Alchemy",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-preview-box w-full mb-2">
+                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
+                        </div>
+                        <div class="tutorial-grid-2">
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.EMERALD_ORE, "Emerald Ore")}
+                                    ${renderItemFrameHtml(IDS.ASTRAL_SHARD, "Astral Shard")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title green">1. Deep Gems & Shards</span>
+                                    <p class="tutorial-card-desc">Mine Emerald Ore in the deepest caverns and harvest Astral Shards from dimensional anomalies and void flora.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.ASTRAL_EMERALD, "Astral Exchange")}
+                                    ${renderItemFrameHtml(IDS.DIAMOND, "Diamond")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">2. Astral Exchange Vault</span>
+                                    <p class="tutorial-card-desc">Access the Astral Exchange in inventory to convert valuable minerals and gems into Astral Emeralds at dynamic market rates.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.ASTRAL_INFUSER, "Astral Infuser")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title purple">3. Craft the Astral Infuser</span>
+                                    <p class="tutorial-card-desc">Craft an Astral Infuser station (Void Stone Bricks, Diamonds, and Astral Shards) to establish your celestial transmutation forge.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.CHESTPLATE_DIAMOND, "Diamond")}
+                                    ${renderItemFrameHtml(IDS.ASTRAL_CHESTPLATE, "Astral")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">4. Diamond to Astral Ascension</span>
+                                    <p class="tutorial-card-desc">Infuse Diamond Armor and tools with Astral Shards inside the Infuser to ascend them into Astral Tier—granting supreme defense!</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tutorial-tip-box">
+                            ${renderItemFrameHtml(IDS.ASTRAL_CHESTPLATE, "Ascension Tip")}
+                            <span><b>ALCHEMIST TIP:</b> Equipping a full 4-piece set of Astral Armor (Helmet, Chestplate, Leggings, Boots) unlocks the coveted <b>Celestial Juggernaut</b> achievement!</span>
+                        </div>
+                    </div>
+                `;
+                drawTutorialAstralScene();
             }
         },
         {
@@ -9757,7 +9963,25 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             [IDS.MELON_SLICE]: '#ef5350',
             [IDS.MELON_SEEDS]: '#404040',
             [IDS.FERN]: '#43a047',
-            [IDS.BAMBOO]: '#4caf50'
+            [IDS.BAMBOO]: '#4caf50',
+            [IDS.VOID_STONE_BRICK]: '#1f1929',
+            [IDS.EMERALD_ORE]: '#10b981',
+            [IDS.ASTRAL_INFUSER]: '#7e22ce',
+            [IDS.ASTRAL_EMERALD]: '#34d399',
+            [IDS.ASTRAL_SHARD]: '#c084fc',
+            [IDS.ASTRAL_SWORD]: '#a855f7',
+            [IDS.ASTRAL_PICKAXE]: '#a855f7',
+            [IDS.ASTRAL_HELMET]: '#9333ea',
+            [IDS.ASTRAL_CHESTPLATE]: '#9333ea',
+            [IDS.ASTRAL_LEGGINGS]: '#9333ea',
+            [IDS.ASTRAL_BOOTS]: '#9333ea',
+            [IDS.KINETIC_SHEARS]: '#38bdf8',
+            [IDS.SHEARS]: '#94a3b8',
+            [IDS.CHESTPLATE_DIAMOND]: '#55e6e6',
+            [IDS.DIAMOND]: '#00e5ff',
+            [IDS.RAW_PORKCHOP]: '#f472b6',
+            [IDS.WOOL]: '#f8fafc',
+            [IDS.BONE]: '#f1f5f9'
         };
         ctx.fillStyle = fallbackColors[id] || '#5c4033';
         ctx.fillRect(ix, iy, size, size);
@@ -10379,6 +10603,319 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         ctx.fillText("Storage", w - 61, 102);
     }
 
+    export function drawTutorialKaelScene() {
+        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        const w = c.width, h = c.height;
+        ctx.imageSmoothingEnabled = false;
+
+        const groundY = 88;
+        const bSize = 24;
+
+        // Dark celestial / rift sky
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+        skyGrad.addColorStop(0, '#0a091e');
+        skyGrad.addColorStop(0.5, '#181335');
+        skyGrad.addColorStop(1, '#2c194d');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, groundY);
+
+        // Twinkling stars
+        ctx.fillStyle = '#ffffff';
+        const stars = [
+            [25, 12], [70, 32], [115, 15], [170, 24], [230, 10], [290, 36],
+            [340, 14], [395, 28], [450, 18], [510, 34], [570, 12], [630, 26], [690, 14], [730, 32]
+        ];
+        stars.forEach(([sx, sy]) => ctx.fillRect(sx, sy, 2, 2));
+
+        // Distant violet nebula mountains
+        drawMountainRidge(ctx, 0, w, groundY, '#2a1a45');
+        drawWoodlandHills(ctx, 0, w, groundY, '#1b2d2f');
+
+        // Ground terrain: 2 complete rows across entire canvas
+        for (let x = 0; x < w; x += bSize) {
+            let top = IDS.GRASS;
+            if (x >= 144 && x <= 240) top = IDS.VOID_STONE_BRICK;
+            drawTutorialBlock(ctx, top, x, groundY, bSize);
+            drawTutorialBlock(ctx, top === IDS.VOID_STONE_BRICK ? IDS.STONE : IDS.DIRT, x, groundY + bSize, bSize);
+        }
+
+        // Planar Rift Vortex at x: 192
+        const riftX = 192, riftY = groundY - 38;
+        const riftGrad = ctx.createRadialGradient(riftX, riftY, 4, riftX, riftY, 40);
+        riftGrad.addColorStop(0, 'rgba(192, 132, 252, 0.9)');
+        riftGrad.addColorStop(0.5, 'rgba(126, 34, 206, 0.6)');
+        riftGrad.addColorStop(0.8, 'rgba(6, 182, 212, 0.3)');
+        riftGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = riftGrad;
+        ctx.beginPath();
+        ctx.ellipse(riftX, riftY, 32, 42, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rift core slit
+        ctx.fillStyle = '#f5d0fe';
+        ctx.beginPath();
+        ctx.ellipse(riftX, riftY, 5, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cosmic floating particles around rift
+        const riftParticles = [
+            [riftX - 18, riftY - 24, '#c084fc'],
+            [riftX + 22, riftY - 14, '#38bdf8'],
+            [riftX - 12, riftY + 18, '#a855f7'],
+            [riftX + 16, riftY + 22, '#34d399']
+        ];
+        riftParticles.forEach(([px, py, col]) => {
+            ctx.fillStyle = col;
+            ctx.fillRect(px, py, 3, 3);
+        });
+
+        // Kael, The Atlas Explorer standing at x: 232
+        const kCanvas = (typeof getKaelSkinCanvas === 'function') ? getKaelSkinCanvas() : null;
+        if (kCanvas) {
+            ctx.drawImage(kCanvas, 226, groundY - 48, 24, 48);
+        } else {
+            drawTutorialPlayer(ctx, 226, groundY - 44, { skin: 'alex' });
+        }
+
+        // Kael Name Tag
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(170, groundY - 66, 136, 15);
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(170, groundY - 66, 136, 15);
+        ctx.fillStyle = '#e9d5ff';
+        ctx.font = 'bold 12px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('✦ Kael, The Atlas Explorer ✦', 238, groundY - 54);
+
+        // Steve / Player standing at x: 118 facing Kael
+        drawTutorialPlayer(ctx, 118, groundY - 44, {
+            skin: 'steve',
+            heldItem: IDS.ASTRAL_EMERALD,
+            name: '<Steve>',
+            nameColor: '#38bdf8'
+        });
+
+        // Speech bubble prompt: "[E] Talk / Open Atlas Market"
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.fillRect(124, 12, 196, 26);
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(124, 12, 196, 26);
+        ctx.fillStyle = '#fde047';
+        ctx.font = 'bold 16px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('PRESS [E] TO TALK & TRADE', 222, 29);
+
+        // Right side: Atlas Market showcase HUD
+        const panelX = 390, panelY = 12, panelW = 350, panelH = 76;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+        ctx.fillRect(panelX, panelY, panelW, panelH);
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+        // Header
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 18px "VT323", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('ATLAS MARKET CATALOG', panelX + 12, panelY + 18);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '13px "VT323", monospace';
+        ctx.fillText('Rotating Planar Relics', panelX + 180, panelY + 18);
+
+        // Market item slots
+        const trades = [
+            { cost: '5x', costId: IDS.ASTRAL_EMERALD, outId: IDS.ASTRAL_SHARD, name: 'Shard' },
+            { cost: '12x', costId: IDS.ASTRAL_EMERALD, outId: IDS.ASTRAL_SWORD, name: 'Blade' },
+            { cost: '8x', costId: IDS.ASTRAL_EMERALD, outId: IDS.KINETIC_SHEARS, name: 'Shears' }
+        ];
+
+        const tSpacing = 110;
+        for (let i = 0; i < trades.length; i++) {
+            const tr = trades[i];
+            const tx = panelX + 12 + i * tSpacing;
+            const ty = panelY + 28;
+
+            ctx.fillStyle = '#101418';
+            ctx.fillRect(tx, ty, 100, 38);
+            ctx.strokeStyle = '#333a41';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(tx, ty, 100, 38);
+
+            drawTutorialBlock(ctx, tr.costId, tx + 4, ty + 7, 24);
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 14px "VT323", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(tr.cost, tx + 30, ty + 23);
+
+            ctx.fillStyle = '#ffd34d';
+            ctx.font = '14px "VT323", monospace';
+            ctx.fillText('->', tx + 48, ty + 23);
+
+            drawTutorialBlock(ctx, tr.outId, tx + 66, ty + 7, 24);
+        }
+    }
+
+    export function drawTutorialAstralScene() {
+        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        const w = c.width, h = c.height;
+        ctx.imageSmoothingEnabled = false;
+
+        // Dark celestial workshop backdrop
+        ctx.fillStyle = '#0f0c1b';
+        ctx.fillRect(0, 0, w, h);
+
+        // Subtle cosmic grid lines
+        ctx.strokeStyle = '#231838';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < w; x += 24) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+
+        // Top banner: ASTRAL INFUSION & CELESTIAL ASCENSION
+        ctx.fillStyle = '#191228';
+        ctx.fillRect(w / 2 - 240, 7, 480, 24);
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(w / 2 - 240, 7, 480, 24);
+
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 18px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("ASTRAL INFUSION: DIAMOND GEAR -> ASTRAL ASCENSION (+9 DEFENSE)", w / 2, 24);
+
+        // Central Altar with Astral Infuser
+        const altarX = Math.floor(w / 2);
+        const altarY = 62;
+
+        // Infusion Energy Beam
+        const beamGrad = ctx.createLinearGradient(altarX, altarY - 45, altarX, altarY + 20);
+        beamGrad.addColorStop(0, 'rgba(192, 132, 252, 0)');
+        beamGrad.addColorStop(0.5, 'rgba(192, 132, 252, 0.35)');
+        beamGrad.addColorStop(1, 'rgba(126, 34, 206, 0.6)');
+        ctx.fillStyle = beamGrad;
+        ctx.fillRect(altarX - 28, altarY - 26, 56, 50);
+
+        // Infuser Block
+        drawTutorialBlock(ctx, IDS.ASTRAL_INFUSER, altarX - 18, altarY - 14, 36);
+
+        // Sparkling motes
+        const motes = [
+            [altarX - 24, altarY - 20, '#c084fc'],
+            [altarX + 22, altarY - 16, '#f472b6'],
+            [altarX - 14, altarY - 32, '#38bdf8'],
+            [altarX + 16, altarY - 28, '#fef08a']
+        ];
+        motes.forEach(([mx, my, col]) => {
+            ctx.fillStyle = col;
+            ctx.fillRect(mx, my, 3, 3);
+        });
+
+        // Infuser label
+        ctx.fillStyle = '#f5d0fe';
+        ctx.font = 'bold 16px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Astral Infuser", altarX, altarY + 36);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '13px "VT323", monospace';
+        ctx.fillText("Celestial Station", altarX, altarY + 49);
+
+        // Left Side: Inputs (Diamond Chestplate + Astral Shards)
+        const leftStartX = 90;
+        const slotSize = 46;
+
+        // Slot 1: Diamond Chestplate
+        ctx.fillStyle = '#101418';
+        ctx.fillRect(leftStartX, 44, slotSize, slotSize);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(leftStartX, 44, slotSize, slotSize);
+        drawTutorialBlock(ctx, IDS.CHESTPLATE_DIAMOND, leftStartX + 7, 51, 32);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 16px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Diamond Armor", leftStartX + slotSize / 2, 104);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '13px "VT323", monospace';
+        ctx.fillText("+8 Defense", leftStartX + slotSize / 2, 118);
+
+        // Plus Sign
+        ctx.fillStyle = '#ffd34d';
+        ctx.font = 'bold 24px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("+", leftStartX + slotSize + 22, 72);
+
+        // Slot 2: Astral Shards / Gems
+        const slot2X = leftStartX + slotSize + 44;
+        ctx.fillStyle = '#101418';
+        ctx.fillRect(slot2X, 44, slotSize, slotSize);
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(slot2X, 44, slotSize, slotSize);
+        drawTutorialBlock(ctx, IDS.ASTRAL_SHARD, slot2X + 7, 51, 32);
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 16px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Astral Shards", slot2X + slotSize / 2, 104);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '13px "VT323", monospace';
+        ctx.fillText("Cosmic Catalyst", slot2X + slotSize / 2, 118);
+
+        // Arrow pointing right to Infuser
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 22px "VT323", monospace';
+        ctx.fillText("▶▶", slot2X + slotSize + 24, 71);
+
+        // Right Side: Ascended Output (Astral Chestplate)
+        const rightStartX = altarX + 90;
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 22px "VT323", monospace';
+        ctx.fillText("▶▶", rightStartX - 24, 71);
+
+        // Slot 3: Astral Chestplate
+        ctx.fillStyle = '#1e1133';
+        ctx.fillRect(rightStartX, 44, slotSize, slotSize);
+        ctx.strokeStyle = '#e879f9';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(rightStartX, 44, slotSize, slotSize);
+        drawTutorialBlock(ctx, IDS.ASTRAL_CHESTPLATE, rightStartX + 7, 51, 32);
+        ctx.fillStyle = '#f0abfc';
+        ctx.font = 'bold 16px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Astral Chestplate", rightStartX + slotSize / 2, 104);
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 13px "VT323", monospace';
+        ctx.fillText("+9 DEF + KINETIC", rightStartX + slotSize / 2, 118);
+
+        // Far right: Astral Exchange Vault mini badge
+        const vaultX = rightStartX + slotSize + 40;
+        ctx.fillStyle = '#101418';
+        ctx.fillRect(vaultX, 44, 90, slotSize);
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(vaultX, 44, 90, slotSize);
+        drawTutorialBlock(ctx, IDS.EMERALD_ORE, vaultX + 6, 52, 30);
+        ctx.fillStyle = '#ffd34d';
+        ctx.font = '14px "VT323", monospace';
+        ctx.fillText('->', vaultX + 46, 72);
+        drawTutorialBlock(ctx, IDS.ASTRAL_EMERALD, vaultX + 56, 52, 30);
+
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 15px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Exchange Vault", vaultX + 45, 104);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '13px "VT323", monospace';
+        ctx.fillText("Currency Mint", vaultX + 45, 118);
+    }
+
     export function drawTutorialMultiplayerScene() {
         const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
         if (!c) return;
@@ -10878,6 +11415,8 @@ try { if (typeof drawTutorialCraftingScene !== "undefined") window.drawTutorialC
 try { if (typeof drawTutorialFarmingScene !== "undefined") window.drawTutorialFarmingScene = drawTutorialFarmingScene; } catch(e) {}
 try { if (typeof drawTutorialMobsScene !== "undefined") window.drawTutorialMobsScene = drawTutorialMobsScene; } catch(e) {}
 try { if (typeof drawTutorialArmorScene !== "undefined") window.drawTutorialArmorScene = drawTutorialArmorScene; } catch(e) {}
+try { if (typeof drawTutorialKaelScene !== "undefined") window.drawTutorialKaelScene = drawTutorialKaelScene; } catch(e) {}
+try { if (typeof drawTutorialAstralScene !== "undefined") window.drawTutorialAstralScene = drawTutorialAstralScene; } catch(e) {}
 try { if (typeof drawTutorialMultiplayerScene !== "undefined") window.drawTutorialMultiplayerScene = drawTutorialMultiplayerScene; } catch(e) {}
 try { if (typeof getTutorialTextureSrc !== "undefined") window.getTutorialTextureSrc = getTutorialTextureSrc; } catch(e) {}
 try { if (typeof renderItemFrameHtml !== "undefined") window.renderItemFrameHtml = renderItemFrameHtml; } catch(e) {}

@@ -189,6 +189,7 @@ class AtlasTradeManagerClass {
         playSound('astral_exchange');
         showToast(`✦ Acquired ${trade.name}! (-${trade.cost} Astral Emeralds)`);
         unlockAchievement('astral_pioneer');
+        unlockAchievement('cosmic_merchant');
 
         // Broadcast updated stock to multiplayer peers if host
         if (isMultiplayer && isMultiplayerAuthority()) {

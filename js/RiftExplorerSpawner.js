@@ -119,6 +119,11 @@ class RiftExplorerSpawnerManager {
                             !isSolidWorldBlock(checkGx, gy - 2, headB) && headB !== IDS.LAVA &&
                             !isSolidWorldBlock(checkGx, gy - 1, torsoB) && torsoB !== IDS.LAVA
                         ) {
+                            // Ensure Kael does not spawn trapped in a 1-wide trench
+                            const leftSolid = isSolidWorldBlock(checkGx - 1, gy - 1, curWorld[checkGx - 1]?.[gy - 1]);
+                            const rightSolid = isSolidWorldBlock(checkGx + 1, gy - 1, curWorld[checkGx + 1]?.[gy - 1]);
+                            if (leftSolid && rightSolid) continue;
+
                             return {
                                 x: checkGx * TILE_SIZE + 4,
                                 y: (gy - 2) * TILE_SIZE + 4

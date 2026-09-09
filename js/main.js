@@ -903,7 +903,49 @@ export function initJukeboxFileInput() {
             if (k === debugKey) {
                 e.preventDefault(); toggleDebug();
             }
-            else if (k === invKey || k === 'i') toggleInventory();
+            else if (k === invKey || k === 'e') {
+                const atlasDialogueModal = document.getElementById('atlas-dialogue-modal');
+                const isAtlasDialogueOpen = atlasDialogueModal && !atlasDialogueModal.classList.contains('hidden') && atlasDialogueModal.style.display !== 'none';
+                const atlasMarketModal = document.getElementById('atlas-market-modal');
+                const isAtlasMarketOpen = atlasMarketModal && !atlasMarketModal.classList.contains('hidden') && atlasMarketModal.style.display !== 'none';
+
+                if (isAtlasDialogueOpen || isAtlasMarketOpen) {
+                    e.preventDefault();
+                    if (isAtlasDialogueOpen && typeof UI !== 'undefined' && typeof UI.closeAtlasDialogue === 'function') UI.closeAtlasDialogue();
+                    if (isAtlasMarketOpen && typeof UI !== 'undefined' && typeof UI.closeAtlasMarket === 'function') UI.closeAtlasMarket();
+                    return;
+                }
+
+                const curEntities = (typeof entities !== 'undefined' && Array.isArray(entities)) ? entities : (typeof window !== 'undefined' && Array.isArray(window.entities) ? window.entities : []);
+                const pCX = player.x + player.width / 2;
+                const pCY = player.y + player.height / 2;
+                let nearbyKael = null;
+                for (let ent of curEntities) {
+                    if (ent && (ent instanceof Engine.AtlasExplorer || ent.constructor?.name === 'AtlasExplorer') && !ent.isDeparted && ent.warpState === 'active') {
+                        const entCX = ent.x + ent.width / 2;
+                        const entCY = ent.y + ent.height / 2;
+                        if (Math.hypot(pCX - entCX, pCY - entCY) <= TILE_SIZE * 3.5) {
+                            nearbyKael = ent;
+                            break;
+                        }
+                    }
+                }
+
+                if (nearbyKael && !isInventoryOpen) {
+                    e.preventDefault();
+                    if (typeof UI !== 'undefined') {
+                        if (typeof UI.hasPlayerTalkedToKael === 'function' && UI.hasPlayerTalkedToKael()) {
+                            if (typeof UI.openAtlasMarket === 'function') UI.openAtlasMarket(nearbyKael);
+                        } else if (typeof UI.openAtlasDialogue === 'function') {
+                            UI.openAtlasDialogue(nearbyKael);
+                        }
+                    }
+                    return;
+                }
+
+                toggleInventory();
+            }
+            else if (k === 'i') toggleInventory();
             else {
                 keys[k] = true;
                 if (e.code) keys[e.code] = true;
@@ -1250,16 +1292,6 @@ export function initJukeboxFileInput() {
                 if (ent instanceof Parrot) {
                     return ent.interact(player, inventory, selectedHotbarIndex);
                 }
-                if (ent instanceof Engine.AtlasExplorer || (ent.constructor && ent.constructor.name === 'AtlasExplorer')) {
-                    if (typeof UI !== 'undefined') {
-                        if (typeof UI.hasPlayerTalkedToKael === 'function' && UI.hasPlayerTalkedToKael()) {
-                            if (typeof UI.openAtlasMarket === 'function') UI.openAtlasMarket(ent);
-                        } else if (typeof UI.openAtlasDialogue === 'function') {
-                            UI.openAtlasDialogue(ent);
-                        }
-                    }
-                    return true;
-                }
             }
         }
         return false;
@@ -1407,6 +1439,7 @@ export function initJukeboxFileInput() {
                     if (record && record.blob) {
                         await jukebox.play(record.blob, { name: trackName, trackId }, { x: gx, y: gy }, jb.record);
                         showToast('Now Playing: ' + trackName);
+                        unlockAchievement('sound_of_music');
                     } else {
                         showToast('Could not load song for this disc.');
                     }
@@ -1450,14 +1483,7 @@ export function initJukeboxFileInput() {
             if (Math.hypot(pCX - zCX, pCY - zCY) < REACH * TILE_SIZE) {
                 if (mouse.worldX >= z.x && mouse.worldX <= z.x + z.width && mouse.worldY >= z.y && mouse.worldY <= z.y + z.height) {
                     if (z instanceof Engine.AtlasExplorer || (z.constructor && z.constructor.name === 'AtlasExplorer')) {
-                        if (typeof UI !== 'undefined') {
-                            if (typeof UI.hasPlayerTalkedToKael === 'function' && UI.hasPlayerTalkedToKael()) {
-                                if (typeof UI.openAtlasMarket === 'function') UI.openAtlasMarket(z);
-                            } else if (typeof UI.openAtlasDialogue === 'function') {
-                                UI.openAtlasDialogue(z);
-                            }
-                        }
-                        return true;
+                        return true; // Friendly NPC, cannot be harmed
                     }
                     z.takeDamage(wDmg, pCX < zCX ? 1 : -1);
                     damageSelectedTool(1);
@@ -1467,6 +1493,9 @@ export function initJukeboxFileInput() {
                         const isKineticShears = heldTool && heldTool.id === IDS.KINETIC_SHEARS;
                         const woolAmount = isKineticShears ? 3 : 1;
                         giveItem(IDS.WOOL, woolAmount);
+                        if (isKineticShears) {
+                            unlockAchievement('kinetic_shearing');
+                        }
                         if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
                             UI.trackDailyQuestProgress('shear_sheep', { count: woolAmount });
                         }
@@ -2379,6 +2408,9 @@ export function initJukeboxFileInput() {
             if (sel.id === IDS.JUKEBOX) {
                 const liveJbs = (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : jukeboxes;
                 liveJbs.push({ x: gx, y: gy, record: null, isPlaying: false });
+            }
+            if (sel.id === IDS.ASTRAL_INFUSER) {
+                unlockAchievement('astral_infusion');
             }
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
