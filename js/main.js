@@ -3081,7 +3081,7 @@ export function initJukeboxFileInput() {
                 let surfaceY = typeof getWorldSurfaceY === 'function' ? getWorldSurfaceY(debugGridX) : 0;
                 let playerFeetGridY = (player.y + player.height) / TILE_SIZE;
                 let isSnowy = typeof getSnowBiomeRatio === 'function' ? getSnowBiomeRatio(debugGridX, 8) > 0.35 : false;
-                let biome = playerFeetGridY > surfaceY + CAVE_SKY_START_TILES ? 'Underground' : (isSnowy ? 'Snowy Biome' : 'Plains Surface');
+                let biome = (caveSkyOpacity > 0.4 && playerFeetGridY > surfaceY + CAVE_SKY_START_TILES) ? 'Underground' : (isSnowy ? 'Snowy Biome' : 'Plains Surface');
 
                 const dbgEl = document.getElementById('debug-info');
                 if (dbgEl) {

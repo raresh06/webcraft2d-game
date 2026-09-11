@@ -14,18 +14,57 @@ import { showKaelArrivalBanner, showKaelDepartureBanner } from './ui.js';
 class RiftExplorerSpawnerManager {
     constructor() {
         this.lastCheckedDay = 0;
-        this.nextArrivalDay = 1; // Arrives Day 1!
+        this.nextArrivalDay = 2;
+        this.nextArrivalDayTime = 0.20;
         this.activeExplorer = null;
-        this.hasSpawnedDayOne = false;
+        this.hasSpawnedInitial = false;
+        this.lastArrivalDay = 0;
         this.arrivalIntervalMin = 3;
         this.arrivalIntervalMax = 5;
     }
 
+    initNewWorld() {
+        this.lastCheckedDay = 1;
+        this.hasSpawnedInitial = true;
+        this.activeExplorer = null;
+        this.lastArrivalDay = 0;
+        // Does NOT always spawn in the beginning!
+        // 25% chance of arriving later on Day 1 (afternoon), otherwise arrives Day 2, 3, or 4
+        if (Math.random() < 0.25) {
+            this.nextArrivalDay = 1;
+            this.nextArrivalDayTime = 0.28 + Math.random() * 0.15; // Afternoon of Day 1
+        } else {
+            this.nextArrivalDay = Math.floor(Math.random() * 3) + 2; // Day 2, 3, or 4
+            this.nextArrivalDayTime = 0.10 + Math.random() * 0.30;
+        }
+    }
+
     reset() {
         this.lastCheckedDay = 0;
-        this.nextArrivalDay = 1;
+        this.nextArrivalDay = 2;
+        this.nextArrivalDayTime = 0.20;
         this.activeExplorer = null;
-        this.hasSpawnedDayOne = false;
+        this.hasSpawnedInitial = false;
+        this.lastArrivalDay = 0;
+    }
+
+    saveState() {
+        return {
+            nextArrivalDay: this.nextArrivalDay,
+            nextArrivalDayTime: this.nextArrivalDayTime,
+            lastCheckedDay: this.lastCheckedDay,
+            hasSpawnedInitial: this.hasSpawnedInitial,
+            lastArrivalDay: this.lastArrivalDay
+        };
+    }
+
+    loadState(data) {
+        if (!data) return;
+        if (data.nextArrivalDay !== undefined) this.nextArrivalDay = data.nextArrivalDay;
+        if (data.nextArrivalDayTime !== undefined) this.nextArrivalDayTime = data.nextArrivalDayTime;
+        if (data.lastCheckedDay !== undefined) this.lastCheckedDay = data.lastCheckedDay;
+        if (data.hasSpawnedInitial !== undefined) this.hasSpawnedInitial = !!data.hasSpawnedInitial;
+        if (data.lastArrivalDay !== undefined) this.lastArrivalDay = data.lastArrivalDay;
     }
 
     checkCycle(currentDayCount, timeOfDay, playerRef) {
@@ -37,33 +76,40 @@ class RiftExplorerSpawnerManager {
             this.activeExplorer = null;
         }
 
-        // Only spawn if no active explorer is already present
-        const existing = entities.find(e => e instanceof AtlasExplorer && !e.isDeparted);
+        // Only spawn if no active explorer is already present in the world!
+        const existing = entities.find(e => (e instanceof AtlasExplorer || (e && e.constructor && e.constructor.name === 'AtlasExplorer')) && !e.isDeparted);
         if (existing) {
             this.activeExplorer = existing;
             return;
         }
 
-        // Day 1 immediate arrival check
-        if (!this.hasSpawnedDayOne && currentDayCount >= 1) {
-            this.hasSpawnedDayOne = true;
-            this.lastCheckedDay = currentDayCount;
-            this.scheduleNextArrival(currentDayCount);
-            this.spawnExplorer(playerRef);
+        // If legacy world was not initialized, schedule first arrival for a future day
+        if (!this.hasSpawnedInitial) {
+            this.hasSpawnedInitial = true;
+            this.nextArrivalDay = currentDayCount + Math.floor(Math.random() * 3) + 1;
+            this.nextArrivalDayTime = 0.15 + Math.random() * 0.25;
             return;
         }
 
         // Check if day has advanced to or past scheduled arrival day
         if (currentDayCount >= this.nextArrivalDay) {
-            this.lastCheckedDay = currentDayCount;
-            this.scheduleNextArrival(currentDayCount);
-            this.spawnExplorer(playerRef);
+            const targetTime = this.nextArrivalDayTime !== undefined ? this.nextArrivalDayTime : 0.20;
+            if (currentDayCount > this.nextArrivalDay || timeOfDay >= targetTime) {
+                // Prevent duplicate spawn on same day
+                if (this.lastArrivalDay === currentDayCount) return;
+
+                this.lastArrivalDay = currentDayCount;
+                this.lastCheckedDay = currentDayCount;
+                this.scheduleNextArrival(currentDayCount);
+                this.spawnExplorer(playerRef);
+            }
         }
     }
 
     scheduleNextArrival(currentDay) {
         const delta = Math.floor(Math.random() * (this.arrivalIntervalMax - this.arrivalIntervalMin + 1)) + this.arrivalIntervalMin;
         this.nextArrivalDay = currentDay + delta;
+        this.nextArrivalDayTime = 0.10 + Math.random() * 0.30;
     }
 
     findSafeArrivalLocation(playerRef) {

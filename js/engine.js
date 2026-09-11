@@ -3761,6 +3761,23 @@ export const SKIN_H = 32;
         return true;
     }
 
+    export function isNonSurfaceBlock(block) {
+        if (block === undefined || block === IDS.AIR) return true;
+        if (block === IDS.LEAVES || block === IDS.JUNGLE_LEAVES) return true;
+        if (block === IDS.WOOD || block === IDS.JUNGLE_WOOD) return true;
+        if (block === IDS.SAPLING || block === IDS.JUNGLE_SAPLING) return true;
+        if (block === IDS.TORCH || block === IDS.LADDER || block === IDS.SIGN) return true;
+        if (block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS) return true;
+        if (block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || block === IDS.FERN) return true;
+        if (block === IDS.VINES || block === IDS.BAMBOO || block === IDS.CACTUS) return true;
+        if (block === IDS.MELON || block === IDS.MELON_STEM || block === IDS.SUNBURST_MELON) return true;
+        if (block === IDS.VOID_BERRY_BUSH || block === IDS.PRISM_GLASS) return true;
+        if (block >= IDS.WHEAT_STAGE_1 && block <= IDS.WHEAT_STAGE_4) return true;
+        if (block >= IDS.DOOR && block <= IDS.DOOR_OPEN_TOP) return true;
+        if (block >= IDS.JUNGLE_DOOR && block <= IDS.JUNGLE_DOOR_OPEN_TOP) return true;
+        return false;
+    }
+
     export function getFluidKey(x, y) { return `${x}_${y}`; }
 
     export function getChestKey(x, y) { return `${x}_${y}`; }
@@ -8232,7 +8249,7 @@ export const SKIN_H = 32;
             this.warpInTotalFrames = 200; // ~3.3 seconds (extended cinematic arrival)
             this.warpOutTotalFrames = 150; // ~2.5 seconds (extended departure)
             this.stayTimer = 0;
-            this.maxStayDuration = 7200; // ~2 minutes of active stay
+            this.maxStayDuration = 18000; // ~5 minutes of active stay in 20-min day cycle
             this.isDeparted = false;
             this.facingRight = true;
             this.tetherX = x;
@@ -8306,6 +8323,9 @@ export const SKIN_H = 32;
                 if (this.warpProgress <= 0) {
                     this.warpProgress = 0;
                     this.isDeparted = true;
+                    const entList = (typeof entities !== 'undefined' && Array.isArray(entities)) ? entities : (typeof window !== 'undefined' && Array.isArray(window.entities) ? window.entities : []);
+                    const idx = entList.indexOf(this);
+                    if (idx !== -1) entList.splice(idx, 1);
                 }
                 return;
             }
@@ -8315,6 +8335,9 @@ export const SKIN_H = 32;
             if (this.stayTimer >= this.maxStayDuration) {
                 this.warpState = 'warping_out';
                 if (typeof playSound === 'function') playSound('portal_warp');
+                if (typeof window !== 'undefined' && typeof window.showKaelDepartureBanner === 'function') {
+                    window.showKaelDepartureBanner();
+                }
                 if (isMultiplayer && isMultiplayerAuthority() && typeof broadcastDataPacket === 'function') {
                     broadcastDataPacket({ type: 'ATLAS_EXPLORER_DEPARTED' });
                 }
@@ -8819,25 +8842,41 @@ export const SKIN_H = 32;
         nonCollidableTreeWood = new Set();
         let lastTreeX = -10;
 
-        // Guaranteed Biome Distribution:
-        // Ensures all 6 biomes (snow, forest, plains, jungle, desert, mountains) generate in every world.
-        const biomeSequence = ['snow', 'forest', 'plains', 'jungle', 'desert', 'mountains'];
-        const seedShift = Math.floor(worldSeed * 137.5) % WORLD_WIDTH;
-        const reverseOrder = (Math.floor(worldSeed) % 2 === 1);
-        const activeBiomeList = reverseOrder ? [...biomeSequence].reverse() : [...biomeSequence];
+        // Guaranteed Biome Distribution & Mountain Corner Rule:
+        // Ensures all 6 biomes generate in every world, and no matter the world size,
+        // mountains are guaranteed to generate anchored to either the LEFT or RIGHT corner/end of the map!
+        const mountainSide = (Math.floor(worldSeed) % 2 === 0) ? 'left' : 'right';
+
+        let activeBiomeList;
+        if (mountainSide === 'left') {
+            // Mountains anchored to the far left corner (index 0).
+            // Natural climatic gradient: Mountains -> Snow -> Forest/Plains (player spawn) -> Jungle -> Desert
+            activeBiomeList = (Math.floor(worldSeed * 0.5) % 2 === 0)
+                ? ['mountains', 'snow', 'forest', 'plains', 'jungle', 'desert']
+                : ['mountains', 'snow', 'plains', 'forest', 'jungle', 'desert'];
+        } else {
+            // Mountains anchored to the far right corner (index 5).
+            // Natural climatic gradient: Desert -> Jungle -> Plains/Forest (player spawn) -> Snow -> Mountains
+            activeBiomeList = (Math.floor(worldSeed * 0.5) % 2 === 0)
+                ? ['desert', 'jungle', 'plains', 'forest', 'snow', 'mountains']
+                : ['desert', 'jungle', 'forest', 'plains', 'snow', 'mountains'];
+        }
         const numBiomes = activeBiomeList.length;
 
         for (let x = 0; x < WORLD_WIDTH; x++) {
             // Multi-octave organic domain warping for undulating natural biome borders
-            let warp = Math.sin(x * 0.012 + worldSeed * 0.4) * 45 +
-                       Math.cos(x * 0.028 + tempSeed * 0.6) * 22 +
-                       Math.sin(x * 0.065 + humidSeed * 0.8) * 12;
-            let warpedX = (x + seedShift + warp) % WORLD_WIDTH;
-            if (warpedX < 0) warpedX += WORLD_WIDTH;
+            let warp = Math.sin(x * 0.012 + worldSeed * 0.4) * 35 +
+                       Math.cos(x * 0.028 + tempSeed * 0.6) * 18 +
+                       Math.sin(x * 0.065 + humidSeed * 0.8) * 10;
+
+            // Dampen warp near map corners (first & last 45 tiles) so corner biomes stay firmly anchored to the edges of the map
+            let distFromCorner = Math.min(x, WORLD_WIDTH - 1 - x);
+            let cornerDampen = Math.min(1.0, distFromCorner / 45);
+            let warpedX = Math.max(0, Math.min(WORLD_WIDTH - 1, x + warp * cornerDampen));
 
             let sectorFraction = (warpedX / WORLD_WIDTH) * numBiomes;
-            let sectorIndex = Math.floor(sectorFraction) % numBiomes;
-            let sectorProgress = sectorFraction - Math.floor(sectorFraction); // 0.0 to 1.0 within sector
+            let sectorIndex = Math.max(0, Math.min(numBiomes - 1, Math.floor(sectorFraction)));
+            let sectorProgress = sectorFraction - sectorIndex; // 0.0 to 1.0 within sector
             let biome = activeBiomeList[sectorIndex];
             biomes[x] = biome;
 
@@ -8850,8 +8889,13 @@ export const SKIN_H = 32;
             let surfaceY = baseHeight + continental + hills + detail;
 
             if (biome === "mountains") {
-                // Smooth mountain envelope rising smoothly from borders to towering peaks in the center
-                let mountainEnvelope = Math.sin(sectorProgress * Math.PI);
+                // Determine progress from the outer map corner (0.0 at corner/end of map, 1.0 at inland biome border)
+                let progressFromCorner = (mountainSide === 'left')
+                    ? Math.max(0, Math.min(1.0, sectorProgress))
+                    : Math.max(0, Math.min(1.0, 1.0 - sectorProgress));
+
+                // Smooth inland transition (0.0 at inland border -> rises smoothly to 1.0 towards corner)
+                let mountainEnvelope = Math.sin((1.0 - progressFromCorner) * Math.PI * 0.5);
                 let heightScale = WORLD_HEIGHT / 320;
                 let mountainSpikes = Math.abs(Math.sin(wx * 0.028 + worldSeed * 0.4) * 65 + Math.sin(wx * 0.065 + worldSeed * 0.6) * 25 + Math.sin(wx * 0.12) * 10);
                 surfaceY -= (32 + mountainSpikes) * mountainEnvelope * heightScale;
@@ -9645,7 +9689,7 @@ export const SKIN_H = 32;
         let chosenPlayer = activePlayerPositions[Math.floor(Math.random() * activePlayerPositions.length)];
         let pGx = Math.floor((chosenPlayer.x + (chosenPlayer.width || 24) / 2) / TILE_SIZE);
         let pGy = Math.floor((chosenPlayer.y + (chosenPlayer.height || 48)) / TILE_SIZE);
-        let isPlayerInCave = pGy > getWorldSurfaceY(pGx) + CAVE_SKY_START_TILES;
+        let isPlayerInCave = pGy > getWorldSurfaceY(pGx) + CAVE_SKY_START_TILES && (typeof caveSkyOpacity === 'undefined' || caveSkyOpacity > 0.2);
 
         let tryCave = isPlayerInCave || isDay || Math.random() < 0.40;
         let spawnSide = Math.random() > 0.5 ? 1 : -1;
@@ -11285,10 +11329,23 @@ export const SKIN_H = 32;
         const curWorld = world || window.world;
         if (!curWorld || !Array.isArray(curWorld) || x < 0 || x >= WORLD_WIDTH) return WORLD_HEIGHT;
         const curHeights = (surfaceHeights && surfaceHeights.length === WORLD_WIDTH) ? surfaceHeights : window.surfaceHeights;
-        if (curHeights && curHeights.length === WORLD_WIDTH && Number.isFinite(curHeights[x])) return curHeights[x];
+        if (curHeights && curHeights.length === WORLD_WIDTH && Number.isFinite(curHeights[x])) {
+            const recordedY = curHeights[x];
+            const blockAtRecorded = curWorld[x]?.[recordedY];
+            // If the recorded height points to valid ground/terrain (not air, tree, or foliage), use it!
+            if (blockAtRecorded !== undefined && !isNonSurfaceBlock(blockAtRecorded)) {
+                return recordedY;
+            }
+        }
+        // Fallback and self-healing: scan downward for the first true solid terrain block
         for (let y = 0; y < WORLD_HEIGHT; y++) {
             const block = curWorld[x]?.[y];
-            if (block !== undefined && block !== IDS.AIR && block !== IDS.LEAVES && block !== IDS.WOOD && block !== IDS.SAPLING && block !== IDS.TORCH) return y;
+            if (block !== undefined && !isNonSurfaceBlock(block)) {
+                if (curHeights && curHeights.length === WORLD_WIDTH) {
+                    curHeights[x] = y; // self-heal cache in place
+                }
+                return y;
+            }
         }
         return WORLD_HEIGHT;
     }
@@ -11297,7 +11354,46 @@ export const SKIN_H = 32;
         const curPlayer = player || window.player;
         const curWorld = world || window.world;
         if (!curPlayer || !curWorld) return 0;
-        const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((curPlayer.x || 0) + (curPlayer.width || 24) / 2) / TILE_SIZE)));
+
+        const playerCenterX = (curPlayer.x || 0) + (curPlayer.width || 24) / 2;
+        const playerFeetWorldY = (curPlayer.y || 0) + (curPlayer.height || 48);
+        const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(playerCenterX / TILE_SIZE)));
+        const playerHeadGridY = Math.max(0, Math.floor((curPlayer.y || 0) / TILE_SIZE));
+
+        // 1. Raycast upward directly above player to test for open sky access vs solid subterranean ceiling
+        const leftCol = Math.max(0, Math.floor(((curPlayer.x || 0) + 2) / TILE_SIZE));
+        const rightCol = Math.min(WORLD_WIDTH - 1, Math.floor(((curPlayer.x || 0) + (curPlayer.width || 24) - 2) / TILE_SIZE));
+
+        let maxCeilingThickness = 0;
+        let hasOpenSky = false;
+
+        for (let cx = leftCol; cx <= rightCol; cx++) {
+            let solidCount = 0;
+            for (let y = playerHeadGridY; y >= 0; y--) {
+                const b = curWorld[cx]?.[y];
+                if (b !== undefined && !isNonSurfaceBlock(b)) {
+                    solidCount++;
+                }
+            }
+            if (solidCount === 0) {
+                hasOpenSky = true;
+            }
+            if (solidCount > maxCeilingThickness) {
+                maxCeilingThickness = solidCount;
+            }
+        }
+
+        // Direct open sky or only foliage/canopy/air above means player is definitely not in a subterranean cave
+        if (hasOpenSky) {
+            return 0;
+        }
+
+        // A thin surface structure (e.g. 1-2 block wooden bridge or roof) does not constitute a subterranean cave
+        if (maxCeilingThickness < 3) {
+            return 0;
+        }
+
+        // 2. Measure depth below the local terrain surface
         let avgSurfaceY = 0;
         let count = 0;
         for (let ox = -2; ox <= 2; ox++) {
@@ -11306,9 +11402,17 @@ export const SKIN_H = 32;
             count++;
         }
         avgSurfaceY = (avgSurfaceY / count) * TILE_SIZE;
-        const playerFeetWorldY = (curPlayer.y || 0) + (curPlayer.height || 48);
+
         const caveDepthTiles = (playerFeetWorldY - avgSurfaceY) / TILE_SIZE;
-        return Math.max(0, Math.min(1, (caveDepthTiles - CAVE_SKY_START_TILES) / CAVE_SKY_FADE_TILES));
+        if (caveDepthTiles <= CAVE_SKY_START_TILES) {
+            return 0;
+        }
+
+        // Smoothly fade from 0 to 1 as player ventures deeper into subterranean cavern
+        const depthFactor = Math.max(0, Math.min(1, (caveDepthTiles - CAVE_SKY_START_TILES) / CAVE_SKY_FADE_TILES));
+        const ceilingFactor = Math.max(0, Math.min(1, (maxCeilingThickness - 2) / 3));
+
+        return Math.min(depthFactor, ceilingFactor);
     }
 
     export function getSnowBiomeRatio(centerGridX, radius = 18) {
@@ -11558,7 +11662,7 @@ export const SKIN_H = 32;
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const playerFeetGridY = ((player.y || 0) + (player.height || 48)) / TILE_SIZE;
         const surfY = getWorldSurfaceY(playerGridX);
-        const isUnderground = playerFeetGridY > surfY + CAVE_SKY_START_TILES;
+        const isUnderground = playerFeetGridY > surfY + CAVE_SKY_START_TILES && caveSkyOpacity > 0.15;
 
         if (playerGridX !== cachedBiomeGridX || frameCount % 15 === 0) {
             cachedBiomeGridX = playerGridX;
@@ -13646,6 +13750,7 @@ try { if (typeof isNearTorch !== "undefined") window.isNearTorch = isNearTorch; 
 try { if (typeof isOffscreenMapDirty !== "undefined") window.isOffscreenMapDirty = isOffscreenMapDirty; } catch(e) {}
 try { if (typeof isOpenDoorBlock !== "undefined") window.isOpenDoorBlock = isOpenDoorBlock; } catch(e) {}
 try { if (typeof isPreviewWalking !== "undefined") window.isPreviewWalking = isPreviewWalking; } catch(e) {}
+try { if (typeof isNonSurfaceBlock !== "undefined") window.isNonSurfaceBlock = isNonSurfaceBlock; } catch(e) {}
 try { if (typeof isSolidWorldBlock !== "undefined") window.isSolidWorldBlock = isSolidWorldBlock; } catch(e) {}
 try { if (typeof isWater !== "undefined") window.isWater = isWater; } catch(e) {}
 try { if (typeof isWoodPartOfTree !== "undefined") window.isWoodPartOfTree = isWoodPartOfTree; } catch(e) {}
@@ -13781,7 +13886,9 @@ try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay
     export function setEngineSnowRegrowthQueue(newQueue) { snowRegrowthQueue = newQueue; if (typeof window !== 'undefined') window.snowRegrowthQueue = newQueue; }
     export function setSelectedHotbarIndex(idx) { selectedHotbarIndex = idx; if (typeof window !== 'undefined') window.selectedHotbarIndex = idx; }
     export function setAttackAnimationTimer(t) { attackAnimationTimer = t; if (typeof window !== 'undefined') window.attackAnimationTimer = t; }
+    export function setEngineWorldBiomes(newBiomes) { worldBiomes = newBiomes; if (typeof window !== 'undefined') window.worldBiomes = newBiomes; }
 
+try { if (typeof setEngineWorldBiomes !== "undefined") window.setEngineWorldBiomes = setEngineWorldBiomes; } catch(e) {}
 try { if (typeof setEngineCropGrowthQueue !== "undefined") window.setEngineCropGrowthQueue = setEngineCropGrowthQueue; } catch(e) {}
 try { if (typeof setEngineSaplingGrowthQueue !== "undefined") window.setEngineSaplingGrowthQueue = setEngineSaplingGrowthQueue; } catch(e) {}
 try { if (typeof setEngineDirtToGrassQueue !== "undefined") window.setEngineDirtToGrassQueue = setEngineDirtToGrassQueue; } catch(e) {}

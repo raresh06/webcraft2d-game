@@ -3,7 +3,7 @@ import {
     Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot, AtlasExplorer,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
-    textures, getPlayerCaveSkyOpacity, getWorldSurfaceY, getActiveBiomeAt,
+    textures, getPlayerCaveSkyOpacity, getWorldSurfaceY, getActiveBiomeAt, isNonSurfaceBlock,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
     setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineState,
@@ -19,7 +19,8 @@ import {
     setWorldDimensions, getMaxAnimals,
     getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
     TOOL_DURABILITY, ARMOR_DURABILITY, FPS_CAP_OPTIONS, diffDescriptions, DIFFICULTIES,
-    LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS, getFpsCapText, signs, setEngineSigns
+    LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS, getFpsCapText, signs, setEngineSigns,
+    worldBiomes, setEngineWorldBiomes
 } from './engine.js';
 
 import {
@@ -33,6 +34,7 @@ import {
 } from './network.js';
 import * as Gamepad from './gamepad.js';
 import { jukebox, getAudioTrack, saveAudioTrack, deleteAudioTrack } from './jukebox.js';
+import { RiftExplorerSpawner } from './RiftExplorerSpawner.js';
 
 export const INVENTORY_SIZE = 28;
 export const SKIN_W = 16;
@@ -4376,17 +4378,20 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         content.className = 'flex flex-col min-w-0';
 
         const header = document.createElement('span');
-        header.className = "text-base text-amber-300 font-bold font-['VT323'] tracking-widest leading-none drop-shadow-[2px_2px_0_#000] uppercase";
+        header.className = "kael-banner-header text-amber-300 font-bold font-['VT323'] tracking-widest leading-none drop-shadow-[2px_2px_0_#000] uppercase";
+        header.style.color = '#fde047';
         header.innerText = 'PLANAR RIFT OPENED';
         content.appendChild(header);
 
         const title = document.createElement('span');
-        title.className = "text-2xl sm:text-3xl text-purple-200 font-bold font-['VT323'] drop-shadow-[2px_2px_0_#000] truncate leading-tight";
+        title.className = "kael-banner-title text-2xl sm:text-3xl text-white font-bold font-['VT323'] drop-shadow-[2px_2px_0_#000] truncate leading-tight";
+        title.style.color = '#ffffff';
         title.innerText = 'Kael, The Atlas Explorer has arrived!';
         content.appendChild(title);
 
         const subtitle = document.createElement('span');
-        subtitle.className = "text-sm sm:text-base text-emerald-300/90 font-['VT323'] drop-shadow-[1px_1px_0_#000] leading-none mt-0.5";
+        subtitle.className = "kael-banner-subtitle text-sm sm:text-base text-white font-['VT323'] drop-shadow-[1px_1px_0_#000] leading-none mt-0.5";
+        subtitle.style.color = '#ffffff';
         subtitle.innerText = 'Seek the cosmic traveler before the rift collapses!';
         content.appendChild(subtitle);
 
@@ -4406,6 +4411,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function showKaelDepartureBanner() {
+        if (typeof closeAtlasDialogue === 'function') closeAtlasDialogue();
+        if (typeof closeAtlasMarket === 'function') closeAtlasMarket();
+
         let container = document.getElementById('kael-banner-container');
         if (!container) {
             container = document.createElement('div');
@@ -4432,14 +4440,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         content.className = 'flex flex-col min-w-0';
 
         const header = document.createElement('span');
-        header.className = "text-base text-amber-400/80 font-bold font-['VT323'] tracking-widest leading-none drop-shadow-[2px_2px_0_#000] uppercase";
+        header.className = "kael-banner-header text-amber-400 font-bold font-['VT323'] tracking-widest leading-none drop-shadow-[2px_2px_0_#000] uppercase";
+        header.style.color = '#fbbf24';
         header.innerText = 'PLANAR RIFT COLLAPSED';
         content.appendChild(header);
 
         const title = document.createElement('span');
-        title.className = "text-2xl sm:text-3xl text-slate-300 font-bold font-['VT323'] drop-shadow-[2px_2px_0_#000] truncate leading-tight";
+        title.className = "kael-banner-title text-2xl sm:text-3xl text-white font-bold font-['VT323'] drop-shadow-[2px_2px_0_#000] truncate leading-tight";
+        title.style.color = '#ffffff';
         title.innerText = 'Kael has departed through the void.';
         content.appendChild(title);
+
+        const subtitle = document.createElement('span');
+        subtitle.className = "kael-banner-subtitle text-sm sm:text-base text-white font-['VT323'] drop-shadow-[1px_1px_0_#000] leading-none mt-0.5";
+        subtitle.style.color = '#ffffff';
+        subtitle.innerText = 'The cosmic traveler will return on another day.';
+        content.appendChild(subtitle);
 
         banner.appendChild(content);
         container.appendChild(banner);
@@ -6548,6 +6564,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
         
         entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.02; dayCount = 1; frameCount = 0;
+        if (typeof RiftExplorerSpawner !== 'undefined' && RiftExplorerSpawner.initNewWorld) RiftExplorerSpawner.initNewWorld();
         if (typeof setEngineFurnaces === 'function') setEngineFurnaces([]);
         if (typeof window !== 'undefined') window.furnaces = [];
         if (typeof setEngineJukeboxes === 'function') setEngineJukeboxes([]);
@@ -6690,12 +6707,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             chests: Object.fromEntries(chests),
             signs: Object.fromEntries((typeof window !== 'undefined' && window.signs) ? window.signs : (typeof signs !== 'undefined' ? signs : new Map())),
             kaelTalked: hasPlayerTalkedToKael(),
+            riftSpawner: (typeof RiftExplorerSpawner !== 'undefined' && RiftExplorerSpawner.saveState) ? RiftExplorerSpawner.saveState() : null,
+            worldBiomes: (typeof worldBiomes !== 'undefined' && Array.isArray(worldBiomes)) ? worldBiomes : ((typeof window !== 'undefined' && Array.isArray(window.worldBiomes)) ? window.worldBiomes : null),
             saplingGrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.saplingGrowthQueue) ? window.saplingGrowthQueue : saplingGrowthQueue),
             cropGrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.cropGrowthQueue) ? window.cropGrowthQueue : cropGrowthQueue),
             dirtToGrassQueue: Object.fromEntries((typeof window !== 'undefined' && window.dirtToGrassQueue) ? window.dirtToGrassQueue : dirtToGrassQueue),
             snowRegrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.snowRegrowthQueue) ? window.snowRegrowthQueue : snowRegrowthQueue),
             treeWoodCells: [...nonCollidableTreeWood],
-            entities: (liveEntities || []).filter(e => e && e.constructor).map(e => ({
+            entities: (liveEntities || []).filter(e => e && e.constructor && !e.isDeparted).map(e => ({
                 type: e.constructor.name,
                 x: e.x,
                 y: e.y,
@@ -6703,7 +6722,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 dir: e.dir || 1,
                 ...(e.variant !== undefined ? { variant: e.variant } : {}),
                 ...(e.isTamed !== undefined ? { isTamed: e.isTamed } : {}),
-                ...(e.isSitting !== undefined ? { isSitting: e.isSitting } : {})
+                ...(e.isSitting !== undefined ? { isSitting: e.isSitting } : {}),
+                ...(e.constructor.name === 'AtlasExplorer' ? {
+                    warpState: (e.warpState === 'warping_out') ? 'warping_out' : 'active',
+                    warpProgress: (e.warpProgress !== undefined) ? e.warpProgress : 1.0,
+                    stayTimer: e.stayTimer || 0,
+                    maxStayDuration: e.maxStayDuration || 18000,
+                    isDeparted: !!e.isDeparted
+                } : {})
             }))
         };
         const serializedSaveData = JSON.stringify(saveData);
@@ -6887,6 +6913,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
 
             entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.02; dayCount = 1; frameCount = 0;
+            if (typeof RiftExplorerSpawner !== 'undefined' && RiftExplorerSpawner.initNewWorld) RiftExplorerSpawner.initNewWorld();
             if (typeof setEngineFurnaces === 'function') setEngineFurnaces([]);
             if (typeof window !== 'undefined') window.furnaces = [];
             if (typeof setEngineJukeboxes === 'function') setEngineJukeboxes([]);
@@ -7054,12 +7081,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             
             // 3. Rebuild surfaceHeights properly from the restored world blocks
             surfaceHeights = new Array(WORLD_WIDTH);
-            const nonGround = new Set([IDS.AIR, IDS.LEAVES, IDS.WOOD, IDS.TORCH, IDS.SAPLING, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP]);
             for (let x = 0; x < WORLD_WIDTH; x++) {
                 let surfY = WORLD_HEIGHT - 1;
                 for (let y = 0; y < WORLD_HEIGHT; y++) {
                     let b = world[x]?.[y];
-                    if (b !== undefined && !nonGround.has(b)) {
+                    if (b !== undefined && !isNonSurfaceBlock(b)) {
                         surfY = y;
                         break;
                     }
@@ -7160,6 +7186,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (typeof setEngineSigns === 'function') setEngineSigns(restoredSigns);
             if (typeof window !== 'undefined') window.signs = restoredSigns;
 
+            if (data.worldBiomes && Array.isArray(data.worldBiomes)) {
+                worldBiomes = data.worldBiomes;
+                if (typeof setEngineWorldBiomes === 'function') setEngineWorldBiomes(worldBiomes);
+                if (typeof window !== 'undefined') window.worldBiomes = worldBiomes;
+            }
+
             if (data.kaelTalked !== undefined) {
                 setPlayerTalkedToKael(!!data.kaelTalked);
             } else {
@@ -7175,7 +7207,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             activeProjectiles = [];
             nonCollidableTreeWood = new Set(data.treeWoodCells || []);
             ensureTreeWoodNonCollidable();
-            entities = (data.entities || []).map(e => {
+            entities = (data.entities || []).filter(e => !e.isDeparted).map(e => {
                 let inst;
                 if (e.type === 'Pig') inst = new Pig(e.x, e.y);
                 else if (e.type === 'Chicken') inst = new Chicken(e.x, e.y);
@@ -7189,15 +7221,39 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 }
                 else if (e.type === 'Creeper') inst = new Creeper(e.x, e.y);
                 else if (e.type === 'Scorpion') inst = new Scorpion(e.x, e.y);
-                else if (e.type === 'AtlasExplorer') inst = new AtlasExplorer(e.x, e.y);
+                else if (e.type === 'AtlasExplorer') {
+                    inst = new AtlasExplorer(e.x, e.y);
+                    inst.warpState = (e.warpState === 'warping_out') ? 'warping_out' : 'active';
+                    inst.warpProgress = (e.warpProgress !== undefined) ? e.warpProgress : 1.0;
+                    inst.stayTimer = (e.stayTimer !== undefined) ? e.stayTimer : 0;
+                    inst.maxStayDuration = (e.maxStayDuration !== undefined) ? e.maxStayDuration : 18000;
+                    inst.isDeparted = !!e.isDeparted;
+                }
                 else inst = new Zombie(e.x, e.y);
                 inst.health = e.health;
-                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon || inst instanceof Parrot) inst.dir = e.dir;
+                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon || inst instanceof Parrot || inst instanceof AtlasExplorer) inst.dir = e.dir || 1;
                 return inst;
             });
             ensureDesertScorpions();
             window.entities = entities;
             if (typeof setEngineEntities === 'function') setEngineEntities(entities);
+
+            if (typeof RiftExplorerSpawner !== 'undefined') {
+                if (data.riftSpawner) {
+                    RiftExplorerSpawner.loadState(data.riftSpawner);
+                } else {
+                    RiftExplorerSpawner.loadState({
+                        hasSpawnedInitial: true,
+                        nextArrivalDay: (dayCount || 1) + 2
+                    });
+                }
+                const activeAtlas = entities.find(e => e instanceof AtlasExplorer && !e.isDeparted);
+                if (activeAtlas) {
+                    RiftExplorerSpawner.activeExplorer = activeAtlas;
+                } else {
+                    RiftExplorerSpawner.activeExplorer = null;
+                }
+            }
             
             // 5. Update world metadata and upgrade version safely
             let worlds = getSavedWorlds();
@@ -7935,9 +7991,21 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof window !== 'undefined') window.surfaceHeights = [];
         if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights([]);
         
+        worldBiomes = null;
+        if (typeof window !== 'undefined') window.worldBiomes = null;
+        if (typeof setEngineWorldBiomes === 'function') setEngineWorldBiomes(null);
+        
         entities = [];
         if (typeof window !== 'undefined') window.entities = [];
         if (typeof setEngineEntities === 'function') setEngineEntities([]);
+
+        if (typeof RiftExplorerSpawner !== 'undefined') {
+            RiftExplorerSpawner.activeExplorer = null;
+        }
+        if (typeof closeAtlasDialogue === 'function') closeAtlasDialogue();
+        if (typeof closeAtlasMarket === 'function') closeAtlasMarket();
+        const kaelBannerContainer = document.getElementById('kael-banner-container');
+        if (kaelBannerContainer) kaelBannerContainer.innerHTML = '';
 
         document.getElementById('pause-menu').classList.add('hidden'); document.getElementById('death-menu').classList.add('hidden');
         inventory = new Array(INVENTORY_SIZE).fill(null);

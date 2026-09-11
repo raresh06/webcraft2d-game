@@ -2444,12 +2444,31 @@ if (typeof window !== 'undefined') {
                 }
 
                 surfaceHeights = new Array(WORLD_WIDTH);
-                const nonGround = new Set([IDS.AIR, IDS.LEAVES, IDS.WOOD, IDS.TORCH, IDS.SAPLING, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP]);
+                const nonGroundFallback = new Set([
+                    IDS.AIR, IDS.LEAVES, IDS.JUNGLE_LEAVES,
+                    IDS.WOOD, IDS.JUNGLE_WOOD,
+                    IDS.SAPLING, IDS.JUNGLE_SAPLING,
+                    IDS.TORCH, IDS.LADDER, IDS.SIGN,
+                    IDS.SHORT_GRASS, IDS.TALL_GRASS,
+                    IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.FERN,
+                    IDS.VINES, IDS.BAMBOO, IDS.CACTUS,
+                    IDS.MELON, IDS.MELON_STEM, IDS.SUNBURST_MELON,
+                    IDS.VOID_BERRY_BUSH, IDS.PRISM_GLASS,
+                    IDS.DOOR, IDS.DOOR_TOP, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP,
+                    IDS.JUNGLE_DOOR, IDS.JUNGLE_DOOR_TOP, IDS.JUNGLE_DOOR_OPEN, IDS.JUNGLE_DOOR_OPEN_TOP,
+                    IDS.WHEAT_STAGE_1, IDS.WHEAT_STAGE_2, IDS.WHEAT_STAGE_3, IDS.WHEAT_STAGE_4
+                ]);
+                const isNonGroundBlock = (block) => {
+                    if (typeof window !== 'undefined' && typeof window.isNonSurfaceBlock === 'function') {
+                        return window.isNonSurfaceBlock(block);
+                    }
+                    return block === undefined || nonGroundFallback.has(block);
+                };
                 for (let x = 0; x < WORLD_WIDTH; x++) {
                     let surfY = WORLD_HEIGHT - 1;
                     for (let y = 0; y < WORLD_HEIGHT; y++) {
                         let b = world[x]?.[y];
-                        if (b !== undefined && !nonGround.has(b)) {
+                        if (b !== undefined && !isNonGroundBlock(b)) {
                             surfY = y;
                             break;
                         }
