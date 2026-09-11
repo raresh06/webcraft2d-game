@@ -437,20 +437,30 @@ export function getMaxAnimals() {
         moonGlowCtx.beginPath(); moonGlowCtx.arc(90, 90, 80, 0, Math.PI * 2); moonGlowCtx.fill();
     }
 
-    // Pre-rendered Soft Entity Drop Shadow Sprite
+    // Pre-rendered Pixel-Art Entity Drop Shadow Sprite (Retro Minecraft pixelated disc)
     export const cachedShadowCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
     if (cachedShadowCanvas) {
-        cachedShadowCanvas.width = 64;
-        cachedShadowCanvas.height = 16;
+        cachedShadowCanvas.width = 24;
+        cachedShadowCanvas.height = 8;
         const shadowCtx = cachedShadowCanvas.getContext('2d');
-        const shGrad = shadowCtx.createRadialGradient(32, 8, 0, 32, 8, 32);
-        shGrad.addColorStop(0, 'rgba(0, 0, 0, 0.42)');
-        shGrad.addColorStop(0.7, 'rgba(0, 0, 0, 0.35)');
-        shGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        shadowCtx.fillStyle = shGrad;
-        shadowCtx.beginPath();
-        shadowCtx.ellipse(32, 8, 30, 7, 0, 0, Math.PI * 2);
-        shadowCtx.fill();
+        if (shadowCtx) {
+            shadowCtx.imageSmoothingEnabled = false;
+            // Rasterize crisp stepped pixel-art ellipse with dark core and translucent outer rim
+            for (let y = 0; y < 8; y++) {
+                for (let x = 0; x < 24; x++) {
+                    const dx = (x - 11.5) / 11;
+                    const dy = (y - 3.5) / 3.5;
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq <= 0.55) {
+                        shadowCtx.fillStyle = 'rgba(0, 0, 0, 0.45)'; // Dark core
+                        shadowCtx.fillRect(x, y, 1, 1);
+                    } else if (distSq <= 1.0) {
+                        shadowCtx.fillStyle = 'rgba(0, 0, 0, 0.22)'; // Stepped pixel rim
+                        shadowCtx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+        }
     }
 
     // Persistent offscreen canvas and ImageData for pixel-art aurora rendering
@@ -3205,8 +3215,20 @@ export const SKIN_H = 32;
         // 3. Draw Held Item
         if (renderItem && heldItemId && textures[heldItemId]) {
             ctx.translate(-pivotX + (4 * sX) / 2, -pivotY + (12 * sY)); 
-            ctx.rotate(-Math.PI / 4); // point outward
-            ctx.drawImage(textures[heldItemId], -10, -20, 24, 24);
+            const isHandheld = (typeof isTool === 'function' && isTool(heldItemId)) || [
+                IDS.STICK, IDS.TORCH, IDS.BOW, IDS.BONE, IDS.FEATHER,
+                IDS.ASTRAL_SHARD, IDS.CHRONO_ANCHOR, IDS.CELESTIAL_COMPASS, IDS.VOID_BEACON
+            ].includes(heldItemId);
+
+            if (isHandheld) {
+                // Diagonal handheld tool/weapon: pivot at grip (handle at hand), angled 45° forward & up in player facing direction
+                ctx.rotate(Math.PI * 0.5);
+                ctx.drawImage(textures[heldItemId], -20, -20, 24, 24);
+            } else {
+                // Blocks, food, and generic items held upright in front of the hand
+                ctx.rotate(Math.PI * 0.1);
+                ctx.drawImage(textures[heldItemId], -6, -18, 18, 18);
+            }
         }
         ctx.restore();
     }

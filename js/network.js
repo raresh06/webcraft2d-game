@@ -1072,7 +1072,9 @@ export async function fetchFriendsProfiles(friendTags = []) {
                 skinData: profile.skinData || null,
                 lastLogin: profile.lastLogin || 0,
                 lastActive: lastActiveTime,
-                isOnline: isOnline
+                isOnline: isOnline,
+                profileCustomization: profile.profileCustomization || null,
+                unlockedCosmetics: profile.unlockedCosmetics || []
             });
         } else {
             results.push({
@@ -1082,11 +1084,99 @@ export async function fetchFriendsProfiles(friendTags = []) {
                 skinData: null,
                 lastLogin: 0,
                 lastActive: 0,
-                isOnline: false
+                isOnline: false,
+                profileCustomization: null,
+                unlockedCosmetics: []
             });
         }
     }
     return results;
+}
+
+export function listenToFriendsProfiles(friendTags = [], onUpdate) {
+    if (!Array.isArray(friendTags) || friendTags.length === 0 || typeof onUpdate !== 'function') {
+        return () => {};
+    }
+    const unsubs = [];
+    const profilesMap = new Map();
+    if (window.fbDb && window.fbModules && window.fbModules.onSnapshot && window.fbModules.doc) {
+        const { doc, onSnapshot } = window.fbModules;
+        for (const tag of friendTags) {
+            const normTag = normalizeWebcraftTag(tag);
+            try {
+                const ref = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', normTag);
+                const unsub = onSnapshot(ref, (snap) => {
+                    if (snap && snap.exists()) {
+                        const data = snap.data();
+                        const now = Date.now();
+                        const lastActiveTime = data.lastActive || data.lastLogin || 0;
+                        const isOnline = (data.isOnline === true) && (now - lastActiveTime < 60 * 1000);
+                        const profileObj = {
+                            tag: data.tag || `@${normTag}`,
+                            normalizedTag: normTag,
+                            username: data.username || normTag,
+                            skinData: data.skinData || null,
+                            lastLogin: data.lastLogin || 0,
+                            lastActive: lastActiveTime,
+                            isOnline: isOnline,
+                            profileCustomization: data.profileCustomization || null,
+                            unlockedCosmetics: data.unlockedCosmetics || []
+                        };
+                        profilesMap.set(normTag, profileObj);
+                        onUpdate(profileObj, Array.from(profilesMap.values()));
+                    }
+                }, (err) => {
+                    console.warn(`Realtime friend listener error for @${normTag}:`, err);
+                });
+                unsubs.push(unsub);
+            } catch(e) {}
+        }
+    }
+    return () => {
+        unsubs.forEach(fn => { try { fn(); } catch(e) {} });
+    };
+}
+
+export async function saveProfileCustomizationToCloud(customization, unlockedCosmetics = null) {
+    const rawProfile = localStorage.getItem('webcraft_user_profile');
+    if (!rawProfile) return false;
+    let profile = null;
+    try { profile = JSON.parse(rawProfile); } catch(e) { return false; }
+    if (!profile || profile.isGuest) return false;
+
+    profile.profileCustomization = { ...(profile.profileCustomization || {}), ...customization };
+    if (Array.isArray(unlockedCosmetics)) {
+        profile.unlockedCosmetics = Array.from(new Set([...(profile.unlockedCosmetics || []), ...unlockedCosmetics]));
+    }
+    try {
+        localStorage.setItem('webcraft_user_profile', JSON.stringify(profile));
+    } catch(e) {}
+
+    await initFirebaseSdk();
+    if (window.fbDb && window.fbModules) {
+        try {
+            const { doc, setDoc } = window.fbModules;
+            const normTag = normalizeWebcraftTag(profile.normalizedTag || profile.tag);
+            if (normTag) {
+                const accRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', normTag);
+                await setDoc(accRef, {
+                    profileCustomization: profile.profileCustomization,
+                    unlockedCosmetics: profile.unlockedCosmetics || []
+                }, { merge: true });
+            }
+            if (profile.uid) {
+                const userRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'user_profiles', profile.uid);
+                await setDoc(userRef, {
+                    profileCustomization: profile.profileCustomization,
+                    unlockedCosmetics: profile.unlockedCosmetics || []
+                }, { merge: true });
+            }
+            return true;
+        } catch(e) {
+            console.warn("Failed saving profile customization to Firestore", e);
+        }
+    }
+    return false;
 }
 
 // =============================================================================
@@ -2875,5 +2965,7 @@ try { if (typeof fetchClosedBetaConfig !== "undefined") window.fetchClosedBetaCo
 try { if (typeof setClosedBetaLockState !== "undefined") window.setClosedBetaLockState = setClosedBetaLockState; } catch(e) {}
 try { if (typeof syncSign !== "undefined") window.syncSign = syncSign; } catch(e) {}
 try { if (typeof syncSignDelete !== "undefined") window.syncSignDelete = syncSignDelete; } catch(e) {}
+try { if (typeof listenToFriendsProfiles !== "undefined") window.listenToFriendsProfiles = listenToFriendsProfiles; } catch(e) {}
+try { if (typeof saveProfileCustomizationToCloud !== "undefined") window.saveProfileCustomizationToCloud = saveProfileCustomizationToCloud; } catch(e) {}
 
 

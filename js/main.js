@@ -137,7 +137,6 @@ export function setGameState(newState) {
 try { if (typeof window !== 'undefined') window.setGameState = setGameState; } catch(e) {}
 
 export function setMainIsBackgroundBuildMode(mode) {
-    isBackgroundBuildMode = mode;
     if (typeof window !== 'undefined') window.isBackgroundBuildMode = mode;
     if (typeof setEngineIsBackgroundBuildMode === 'function') setEngineIsBackgroundBuildMode(mode);
 }
@@ -182,6 +181,26 @@ export function updateTutorialUI() {}
 export function updateArmorUI() { if (typeof window !== 'undefined' && typeof window.updateArmorUI === 'function' && window.updateArmorUI !== updateArmorUI) return window.updateArmorUI(); }
 export function updateHudArmorBar() { if (typeof window !== 'undefined' && typeof window.updateHudArmorBar === 'function' && window.updateHudArmorBar !== updateHudArmorBar) return window.updateHudArmorBar(); }
 export function saveCurrentWorld() { if (typeof window !== 'undefined' && typeof window.saveCurrentWorld === 'function' && window.saveCurrentWorld !== saveCurrentWorld) return window.saveCurrentWorld(); }
+export function quitToMenu() {
+    if (typeof UI !== 'undefined' && typeof UI.quitToMenu === 'function') return UI.quitToMenu();
+    if (typeof window !== 'undefined' && typeof window.quitToMenu === 'function' && window.quitToMenu !== quitToMenu) return window.quitToMenu();
+}
+try { if (typeof window !== 'undefined') window.quitToMenu = quitToMenu; } catch(e) {}
+export function cycleAutosaveInterval() {
+    if (typeof UI !== 'undefined' && typeof UI.cycleAutosaveInterval === 'function') return UI.cycleAutosaveInterval();
+    if (typeof window !== 'undefined' && typeof window.cycleAutosaveInterval === 'function' && window.cycleAutosaveInterval !== cycleAutosaveInterval) return window.cycleAutosaveInterval();
+}
+try { if (typeof window !== 'undefined') window.cycleAutosaveInterval = cycleAutosaveInterval; } catch(e) {}
+export function openShop(tab = 'cosmetics') {
+    if (typeof UI !== 'undefined' && typeof UI.openShop === 'function') return UI.openShop(tab);
+    if (typeof window !== 'undefined' && typeof window.openShop === 'function' && window.openShop !== openShop) return window.openShop(tab);
+}
+try { if (typeof window !== 'undefined') window.openShop = openShop; } catch(e) {}
+export function openProfileEditor() {
+    if (typeof UI !== 'undefined' && typeof UI.openProfileEditor === 'function') return UI.openProfileEditor();
+    if (typeof window !== 'undefined' && typeof window.openProfileEditor === 'function' && window.openProfileEditor !== openProfileEditor) return window.openProfileEditor();
+}
+try { if (typeof window !== 'undefined') window.openProfileEditor = openProfileEditor; } catch(e) {}
 export function showToast(msg, duration) { if (typeof window !== 'undefined' && typeof window.showToast === 'function' && window.showToast !== showToast) return window.showToast(msg, duration); }
 export function checkAutosave() { if (typeof window !== 'undefined' && typeof window.checkAutosave === 'function' && window.checkAutosave !== checkAutosave) return window.checkAutosave(); }
 export function isActionActive(action) { if (typeof window !== 'undefined' && typeof window.isActionActive === 'function' && window.isActionActive !== isActionActive) return window.isActionActive(action); return false; }
@@ -3466,6 +3485,13 @@ export async function bootGame() {
         tooltipEl = document.getElementById('item-tooltip') || document.getElementById('tooltip');
         initCanvasMouseListeners();
         initJukeboxFileInput();
+        const quitBtn = document.getElementById('btn-quit-to-menu');
+        if (quitBtn) {
+            quitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                quitToMenu();
+            });
+        }
     }
     if (typeof initCanvases === 'function') initCanvases();
     if (typeof loadSavedSettings === 'function') loadSavedSettings();

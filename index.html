@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%235c8b32'/><rect x='2' y='6' width='12' height='8' fill='%23866043'/></svg>">
     <script>
         try {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
@@ -962,12 +963,78 @@
                 <span id="menu-splash" class="mc-splash">Multiplayer!</span>
             </div>
             
-            <div id="main-menu-buttons" class="flex flex-col gap-2 w-[260px]">
+            <div id="main-menu-buttons" class="flex flex-col gap-2 w-[280px] items-center">
+                <!-- 3 Big Primary Action Buttons with Original Dimensions -->
                 <button id="btn-main-singleplayer" class="mc-btn" onclick="openWorldsMenu()">Singleplayer</button>
                 <button id="btn-main-multiplayer" class="mc-btn disabled-construction-btn" onclick="handleUnderConstruction('Multiplayer')" title="Multiplayer is currently Under Construction">Multiplayer</button>
-                <button id="btn-main-achievements" class="mc-btn" onclick="openAchievements('sp')">Achievements</button>
-                <button id="btn-main-tutorial" class="mc-btn" onclick="openTutorialModal()">How to Play</button>
                 <button id="btn-main-settings" class="mc-btn" onclick="openSettings()">Settings</button>
+
+                <!-- Sub-Actions Row: 4 Small Square Icon Boxes Below -->
+                <div class="menu-icon-row">
+                    <button id="btn-main-achievements" class="mc-btn menu-icon-box" onclick="openAchievements('sp')" title="Achievements" aria-label="Achievements">
+                        <svg viewBox="0 0 16 16" width="24" height="24" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <rect x="2" y="3" width="12" height="4" fill="#d97706"/>
+                            <rect x="3" y="4" width="10" height="2" fill="#171b20"/>
+                            <rect x="4" y="2" width="8" height="6" fill="#fbbf24"/>
+                            <rect x="5" y="3" width="6" height="4" fill="#fef08a"/>
+                            <rect x="5" y="8" width="6" height="2" fill="#d97706"/>
+                            <rect x="6" y="8" width="4" height="2" fill="#f59e0b"/>
+                            <rect x="7" y="10" width="2" height="2" fill="#d97706"/>
+                            <rect x="5" y="12" width="6" height="2" fill="#92400e"/>
+                            <rect x="4" y="14" width="8" height="1" fill="#78350f"/>
+                            <rect x="5" y="14" width="6" height="1" fill="#f59e0b"/>
+                            <rect x="7" y="4" width="2" height="2" fill="#10b981"/>
+                            <rect x="7" y="4" width="1" height="1" fill="#6ee7b7"/>
+                        </svg>
+                    </button>
+                    <button id="btn-main-tutorial" class="mc-btn menu-icon-box" onclick="openTutorialModal()" title="How to Play" aria-label="How to Play">
+                        <svg viewBox="0 0 16 16" width="24" height="24" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <rect x="2" y="2" width="11" height="12" fill="#451a03"/>
+                            <rect x="3" y="3" width="9" height="10" fill="#78350f"/>
+                            <rect x="4" y="4" width="7" height="8" fill="#fef3c7"/>
+                            <rect x="5" y="5" width="5" height="1" fill="#92400e"/>
+                            <rect x="5" y="7" width="5" height="1" fill="#92400e"/>
+                            <rect x="5" y="9" width="3" height="1" fill="#92400e"/>
+                            <rect x="7" y="2" width="2" height="12" fill="#f59e0b"/>
+                            <rect x="7" y="13" width="1" height="2" fill="#d97706"/>
+                            <rect x="8" y="13" width="1" height="2" fill="#fbbf24"/>
+                            <rect x="11" y="7" width="2" height="2" fill="#f59e0b"/>
+                            <rect x="11" y="7" width="1" height="1" fill="#fef08a"/>
+                        </svg>
+                    </button>
+                    <button id="btn-main-shop" class="mc-btn menu-icon-box" onclick="openShop()" title="Shop" aria-label="Shop">
+                        <svg viewBox="0 0 16 16" width="24" height="24" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <rect x="1" y="2" width="14" height="2" fill="#b91c1c"/>
+                            <rect x="1" y="4" width="2" height="2" fill="#ef4444"/>
+                            <rect x="3" y="4" width="2" height="2" fill="#f8fafc"/>
+                            <rect x="5" y="4" width="2" height="2" fill="#ef4444"/>
+                            <rect x="7" y="4" width="2" height="2" fill="#f8fafc"/>
+                            <rect x="9" y="4" width="2" height="2" fill="#ef4444"/>
+                            <rect x="11" y="4" width="2" height="2" fill="#f8fafc"/>
+                            <rect x="13" y="4" width="2" height="2" fill="#ef4444"/>
+                            <rect x="2" y="6" width="1" height="4" fill="#78350f"/>
+                            <rect x="13" y="6" width="1" height="4" fill="#78350f"/>
+                            <rect x="1" y="10" width="14" height="2" fill="#92400e"/>
+                            <rect x="2" y="12" width="12" height="3" fill="#78350f"/>
+                            <rect x="3" y="13" width="10" height="1" fill="#451a03"/>
+                            <rect x="6" y="6" width="4" height="4" fill="#d97706"/>
+                            <rect x="7" y="6" width="2" height="4" fill="#fbbf24"/>
+                            <rect x="7" y="7" width="2" height="2" fill="#fef08a"/>
+                        </svg>
+                    </button>
+                    <button id="btn-main-news" class="mc-btn menu-icon-box" onclick="openWhatsNew()" title="What's New" aria-label="What's New">
+                        <svg viewBox="0 0 16 16" width="24" height="24" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <rect x="2" y="2" width="12" height="12" fill="#94a3b8"/>
+                            <rect x="3" y="3" width="10" height="10" fill="#f8fafc"/>
+                            <rect x="4" y="4" width="8" height="2" fill="#1e293b"/>
+                            <rect x="4" y="7" width="3" height="3" fill="#3b82f6"/>
+                            <rect x="4" y="7" width="1" height="1" fill="#93c5fd"/>
+                            <rect x="8" y="7" width="4" height="1" fill="#64748b"/>
+                            <rect x="8" y="9" width="3" height="1" fill="#64748b"/>
+                            <rect x="4" y="11" width="8" height="1" fill="#64748b"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <p class="menu-version" id="game-version-label"><a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v0.1.5</p>
@@ -979,17 +1046,6 @@
             <canvas id="player-preview-canvas" width="110" height="220"></canvas>
             <button id="btn-main-skin" class="menu-skin-preview-button" onclick="openSkins()" title="Change Skin" aria-label="Change Skin">Change</button>
         </div>
-        <button id="btn-main-news" class="menu-news-button flex items-center justify-center !p-0" type="button" onclick="openWhatsNew()" title="Read What's New" aria-label="Read What's New">
-            <svg viewBox="0 0 16 16" width="22" height="22" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                <rect x="2" y="2" width="12" height="12" fill="#94a3b8"/>
-                <rect x="3" y="3" width="10" height="10" fill="#f8fafc"/>
-                <rect x="4" y="4" width="8" height="2" fill="#1e293b"/>
-                <rect x="4" y="7" width="3" height="3" fill="#3b82f6"/>
-                <rect x="8" y="7" width="4" height="1" fill="#64748b"/>
-                <rect x="8" y="9" width="3" height="1" fill="#64748b"/>
-                <rect x="4" y="11" width="8" height="1" fill="#64748b"/>
-            </svg>
-        </button>
     </div>
 
     <!-- Webcraft User Profile & Account Modal (Welcome & Customization Flow) -->
@@ -1296,10 +1352,10 @@
     </div>
 
     <!-- Profile Details & Account Management Modal -->
-    <div id="profile-details-modal" class="menu-overlay profile-details-modal hidden z-[270]" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
-        <div class="profile-details-panel !max-w-[480px]">
+    <div id="profile-details-modal" class="menu-overlay profile-details-modal hidden" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+        <div class="profile-details-panel">
             <!-- Header -->
-            <div class="flex justify-between items-center pb-2 border-b-2 border-[#3b4752] mb-2.5">
+            <div class="flex justify-between items-center pb-2 border-b-2 border-[#3b4752] mb-2">
                 <div class="flex items-center gap-2 text-left min-w-0">
                     <h2 id="profile-modal-title" class="font-['VT323'] text-2xl font-bold text-amber-400 tracking-wider m-0 drop-shadow-[1px_1px_0_#000] leading-none whitespace-nowrap">PLAYER PROFILE</h2>
                     <span class="credits-version-badge !text-xs !py-0.5 !px-1.5 !tracking-wider leading-none whitespace-nowrap flex-shrink-0">PLAYER CARD</span>
@@ -1364,13 +1420,12 @@
                         <rect x="11" y="6" width="5" height="4" fill="#f6c8a7" />
                         <!-- Alex Eye -->
                         <rect x="12" y="7" width="2" height="1" fill="#ffffff" />
-                        <rect x="12" y="7" width="1" height="1" fill="#15803d" />
-                        <rect x="14" y="7" width="2" height="1" fill="#ffffff" />
-                        <rect x="15" y="7" width="1" height="1" fill="#15803d" />
+                        <rect x="13" y="7" width="1" height="1" fill="#15803d" />
+                        <rect x="15" y="7" width="1" height="1" fill="#ffffff" />
                         <!-- Alex Mouth -->
-                        <rect x="13" y="9" width="2" height="1" fill="#d97706" />
+                        <rect x="13" y="9" width="2" height="1" fill="#b45309" />
                         <!-- Alex Shirt -->
-                        <rect x="11" y="10" width="7" height="6" fill="#4d7c0f" />
+                        <rect x="11" y="10" width="6" height="6" fill="#15803d" />
                         <rect x="13" y="10" width="2" height="2" fill="#f6c8a7" />
                     </svg>
                     <span>Friends</span>
@@ -1392,27 +1447,44 @@
 
             <!-- TAB 1: Profile Overview View -->
             <div id="profile-view-overview">
-                <!-- Profile Identity Header Card -->
-                <div class="flex items-center gap-3.5 p-3 bg-[#13171d] border-2 border-[#333e49] mb-3 shadow-inner">
-                    <div class="profile-avatar-frame !w-20 !h-20 flex-shrink-0 border-2 border-amber-400/80 bg-[#1e2732] p-1">
-                        <canvas id="profile-details-head-canvas" width="80" height="80" class="profile-head-art !w-full !h-full"></canvas>
-                    </div>
-                    <div class="flex-1 min-w-0 text-left">
-                        <div class="flex items-center gap-2">
-                            <span id="profile-details-name" class="text-3xl font-bold text-white truncate font-['VT323'] leading-none">Player</span>
-                            <span id="profile-details-type-badge" class="profile-tag-pill text-xs">ONLINE</span>
+                <!-- Profile Identity Header Card with Discord-Style Banner -->
+                <div id="profile-identity-card" class="relative overflow-hidden p-3 bg-[#13171d] border-2 border-[#333e49] mb-2 shadow-inner">
+                    <!-- Custom Profile Banner at Top -->
+                    <div id="profile-overview-banner" class="w-full h-16 -mt-3 -mx-3 mb-2 bg-[#181e24] relative overflow-hidden border-b-2 border-[#333e49]"></div>
+                    <div class="flex items-center gap-3.5 relative z-10">
+                        <div id="profile-overview-avatar-frame" class="profile-avatar-frame !w-20 !h-20 flex-shrink-0 border-2 border-amber-400/80 bg-[#1e2732] p-1 relative">
+                            <canvas id="profile-details-head-canvas" width="80" height="80" class="profile-head-art !w-full !h-full"></canvas>
+                            <div id="profile-details-crown-icon" class="hidden absolute -top-3 left-1/2 -translate-x-1/2 pointer-events-none">
+                                <svg viewBox="0 0 16 8" width="22" height="11" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="0" y="2" width="16" height="6" fill="#fbbf24"/>
+                                    <rect x="0" y="0" width="3" height="3" fill="#fbbf24"/>
+                                    <rect x="6.5" y="0" width="3" height="3" fill="#fbbf24"/>
+                                    <rect x="13" y="0" width="3" height="3" fill="#fbbf24"/>
+                                    <rect x="1" y="1" width="1" height="1" fill="#ef4444"/>
+                                    <rect x="7.5" y="1" width="1" height="1" fill="#38bdf8"/>
+                                    <rect x="14" y="1" width="1" height="1" fill="#ef4444"/>
+                                </svg>
+                            </div>
                         </div>
-                        <div id="profile-details-tag-row" class="flex items-center gap-2 mt-1">
-                            <span id="profile-details-tag" class="text-amber-400 font-bold font-['VT323'] text-xl leading-none">@tag</span>
-                            <button type="button" id="profile-copy-tag-btn" class="copy-tag-pill" onclick="copyPlayerTag()" title="Copy Webcraft Tag">Copy</button>
+                        <div class="flex-1 min-w-0 text-left">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span id="profile-details-title-badge" class="hidden text-xs font-bold px-1.5 py-0.5 border font-['VT323']"></span>
+                                <span id="profile-details-name" class="text-3xl font-bold text-white truncate font-['VT323'] leading-none">Player</span>
+                                <span id="profile-details-type-badge" class="profile-tag-pill text-xs">ONLINE</span>
+                            </div>
+                            <div id="profile-details-tag-row" class="flex items-center gap-2 mt-1">
+                                <span id="profile-details-tag" class="text-amber-400 font-bold font-['VT323'] text-xl leading-none">@tag</span>
+                                <button type="button" id="profile-copy-tag-btn" class="copy-tag-pill" onclick="copyPlayerTag()" title="Copy Webcraft Tag">Copy</button>
+                            </div>
+                            <div id="profile-details-bio-display" class="text-sm text-[#a0b0be] italic font-['VT323'] mt-1 truncate hidden"></div>
+                            <div id="profile-details-email" class="text-xs text-[#8a9ba8] truncate mt-1 font-mono">player@example.com</div>
+                            <div id="profile-details-created" class="text-xs text-[#a0b0be] font-['VT323'] text-base mt-0.5">Crafter since: Today</div>
                         </div>
-                        <div id="profile-details-email" class="text-xs text-[#8a9ba8] truncate mt-1 font-mono">player@example.com</div>
-                        <div id="profile-details-created" class="text-xs text-[#a0b0be] font-['VT323'] text-base mt-0.5">Member since: Today</div>
                     </div>
                 </div>
 
                 <!-- Connection & Network Telemetry Bar (3-bar WiFi) -->
-                <div class="flex items-center justify-between p-2.5 px-3 bg-[#182029] border-2 border-[#2b3540] mb-3 text-left">
+                <div class="flex items-center justify-between p-2 px-3 bg-[#182029] border-2 border-[#2b3540] mb-2 text-left">
                     <div class="flex items-center gap-2.5">
                         <svg id="profile-wifi-icon" viewBox="0 0 16 14" width="18" height="16" style="image-rendering: pixelated; shape-rendering: crispEdges;" class="flex-shrink-0">
                             <!-- Bar 1 (Short) -->
@@ -1436,28 +1508,28 @@
                     </div>
                 </div>
 
-                <!-- Stats Overview Grid (2x2) -->
-                <div class="grid grid-cols-2 gap-2 mb-3 text-left">
+                <!-- Stats Overview Grid (4 Columns on Wider Box, compact) -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 text-left">
                     <!-- Emerald Bank -->
-                    <div class="p-2.5 bg-[#171d24] border-2 border-[#2b353f]">
-                        <div class="text-[#8e9fae] text-base uppercase font-['VT323'] leading-none">Emerald Balance</div>
-                        <div class="flex items-center gap-1.5 mt-1">
-                            <svg class="emerald-pixel-art inline flex-shrink-0" viewBox="0 0 16 16" width="18" height="18">
+                    <div class="p-2 bg-[#171d24] border-2 border-[#2b353f]">
+                        <div class="text-[#8e9fae] text-sm uppercase font-['VT323'] leading-none">Emeralds</div>
+                        <div class="flex items-center gap-1 mt-1">
+                            <svg class="emerald-pixel-art inline flex-shrink-0" viewBox="0 0 16 16" width="16" height="16">
                                 <rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/>
                                 <rect x="3" y="3" width="10" height="10" fill="#17c858"/>
                                 <rect x="4" y="4" width="8" height="1" fill="#46f381"/>
                                 <rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/>
                                 <rect x="5" y="3" width="3" height="2" fill="#ffffff"/>
                             </svg>
-                            <span id="profile-details-emeralds" class="text-emerald-400 font-bold text-3xl font-['VT323'] leading-none">0</span>
+                            <span id="profile-details-emeralds" class="text-emerald-400 font-bold text-2xl font-['VT323'] leading-none">0</span>
                         </div>
                     </div>
 
                     <!-- Achievements Completed -->
-                    <div class="p-2.5 bg-[#171d24] border-2 border-[#2b353f]">
-                        <div class="text-[#8e9fae] text-base uppercase font-['VT323'] leading-none">Achievements</div>
-                        <div class="flex items-center gap-1.5 mt-1">
-                            <svg viewBox="0 0 16 16" width="18" height="18" class="flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                    <div class="p-2 bg-[#171d24] border-2 border-[#2b353f]">
+                        <div class="text-[#8e9fae] text-sm uppercase font-['VT323'] leading-none">Achievements</div>
+                        <div class="flex items-center gap-1 mt-1">
+                            <svg viewBox="0 0 16 16" width="16" height="16" class="flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                                 <rect x="3" y="1" width="10" height="2" fill="#f59e0b"/>
                                 <rect x="2" y="3" width="12" height="7" fill="#d97706"/>
                                 <rect x="5" y="10" width="6" height="3" fill="#b45309"/>
@@ -1469,32 +1541,70 @@
                     </div>
 
                     <!-- Equipped Skin Name -->
-                    <div class="p-2.5 bg-[#171d24] border-2 border-[#2b353f]">
-                        <div class="text-[#8e9fae] text-base uppercase font-['VT323'] leading-none">Equipped Skin</div>
-                        <div class="flex items-center gap-1.5 mt-1 truncate">
+                    <div class="p-2 bg-[#171d24] border-2 border-[#2b353f]">
+                        <div class="text-[#8e9fae] text-sm uppercase font-['VT323'] leading-none">Equipped Skin</div>
+                        <div class="flex items-center gap-1 mt-1 truncate">
                             <svg viewBox="0 0 16 16" width="16" height="16" class="flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                                 <rect x="2" y="2" width="12" height="3" fill="#0284c7"/>
                                 <rect x="5" y="2" width="6" height="2" fill="#1e293b"/>
                                 <rect x="1" y="4" width="14" height="4" fill="#38bdf8"/>
                                 <rect x="3" y="4" width="10" height="8" fill="#0ea5e9"/>
                             </svg>
-                            <span id="profile-details-skin-status" class="text-cyan-400 font-bold text-2xl font-['VT323'] leading-none truncate">Active</span>
+                            <span id="profile-details-skin-status" class="text-cyan-400 font-bold text-xl font-['VT323'] leading-none truncate">Active</span>
                         </div>
                     </div>
 
                     <!-- Engine Platform / Version -->
-                    <div class="p-2.5 bg-[#171d24] border-2 border-[#2b353f]">
-                        <div class="text-[#8e9fae] text-base uppercase font-['VT323'] leading-none">Engine Version</div>
-                        <div class="flex items-center gap-1.5 mt-1">
-                            <span class="text-purple-400 font-bold text-2xl font-['VT323'] leading-none">Beta v0.1.5</span>
+                    <div class="p-2 bg-[#171d24] border-2 border-[#2b353f]">
+                        <div class="text-[#8e9fae] text-sm uppercase font-['VT323'] leading-none">Version</div>
+                        <div class="flex items-center gap-1 mt-1">
+                            <span class="text-purple-400 font-bold text-xl font-['VT323'] leading-none">Beta v0.1.5</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Profile Actions -->
-                <div class="auth-actions-group">
-                    <button type="button" class="mc-btn auth-primary-btn !h-11 !text-xl flex items-center justify-center gap-2" onclick="closeProfileDetailsModal(); openSkins();">
-                        <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                <!-- Profile Actions (Organized, uniform height, consistent tight gap) -->
+                <div class="profile-actions-group">
+                    <!-- Row 1: Primary Feature Actions -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btn-open-profile-editor" type="button" class="mc-btn auth-primary-btn profile-action-btn" onclick="openProfileEditor()">
+                            <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering: pixelated; shape-rendering: crispEdges;" class="flex-shrink-0">
+                                <rect x="2" y="12" width="2" height="2" fill="#d97706"/>
+                                <rect x="4" y="10" width="2" height="2" fill="#fbbf24"/>
+                                <rect x="6" y="8" width="2" height="2" fill="#fbbf24"/>
+                                <rect x="8" y="6" width="2" height="2" fill="#fde047"/>
+                                <rect x="10" y="4" width="2" height="2" fill="#fde047"/>
+                                <rect x="12" y="2" width="2" height="2" fill="#ffffff"/>
+                            </svg>
+                            <span>Edit Profile</span>
+                        </button>
+                        <button type="button" class="mc-btn auth-secondary-btn profile-action-btn" onclick="closeProfileDetailsModal(); openShop('cosmetics');">
+                            <!-- Main Menu Shop Awning SVG -->
+                            <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering: pixelated; shape-rendering: crispEdges;" class="flex-shrink-0">
+                                <rect x="1" y="2" width="14" height="2" fill="#b91c1c"/>
+                                <rect x="1" y="4" width="2" height="2" fill="#ef4444"/>
+                                <rect x="3" y="4" width="2" height="2" fill="#f8fafc"/>
+                                <rect x="5" y="4" width="2" height="2" fill="#ef4444"/>
+                                <rect x="7" y="4" width="2" height="2" fill="#f8fafc"/>
+                                <rect x="9" y="4" width="2" height="2" fill="#ef4444"/>
+                                <rect x="11" y="4" width="2" height="2" fill="#f8fafc"/>
+                                <rect x="13" y="4" width="2" height="2" fill="#ef4444"/>
+                                <rect x="2" y="6" width="1" height="4" fill="#78350f"/>
+                                <rect x="13" y="6" width="1" height="4" fill="#78350f"/>
+                                <rect x="1" y="10" width="14" height="2" fill="#92400e"/>
+                                <rect x="2" y="12" width="12" height="3" fill="#78350f"/>
+                                <rect x="3" y="13" width="10" height="1" fill="#451a03"/>
+                                <rect x="6" y="6" width="4" height="4" fill="#d97706"/>
+                                <rect x="7" y="6" width="2" height="4" fill="#fbbf24"/>
+                                <rect x="7" y="7" width="2" height="2" fill="#fef08a"/>
+                            </svg>
+                            <span>Astral Shop</span>
+                        </button>
+                    </div>
+
+                    <!-- Row 2: Secondary Feature Action -->
+                    <button type="button" class="mc-btn auth-secondary-btn profile-action-btn !w-full" onclick="closeProfileDetailsModal(); openSkins();">
+                        <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering: pixelated; shape-rendering: crispEdges;" class="flex-shrink-0">
                             <rect x="2" y="2" width="12" height="3" fill="#0284c7"/>
                             <rect x="5" y="2" width="6" height="2" fill="#1e293b"/>
                             <rect x="1" y="4" width="14" height="4" fill="#38bdf8"/>
@@ -1502,11 +1612,13 @@
                         </svg>
                         <span>Change Character Skin</span>
                     </button>
-                    <div class="grid grid-cols-2 gap-2 mt-1">
-                        <button id="profile-auth-action-btn" type="button" class="mc-btn auth-secondary-btn !h-10 !text-xl flex items-center justify-center gap-1.5" onclick="handleProfileAuthAction()">
+
+                    <!-- Row 3: Navigation & Auth Actions -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="profile-auth-action-btn" type="button" class="mc-btn auth-secondary-btn profile-action-btn" onclick="handleProfileAuthAction()">
                             <span id="profile-auth-action-label">Sign Out</span>
                         </button>
-                        <button type="button" class="mc-btn auth-secondary-btn !h-10 !text-xl flex items-center justify-center" onclick="closeProfileDetailsModal()">
+                        <button type="button" class="mc-btn auth-secondary-btn profile-action-btn" onclick="closeProfileDetailsModal()">
                             <span>Back to Menu</span>
                         </button>
                     </div>
@@ -1593,6 +1705,488 @@
                     <button type="button" class="mc-btn auth-secondary-btn !h-10 !text-xl flex items-center justify-center" onclick="closeProfileDetailsModal()">
                         <span>Back to Menu</span>
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discord-Style Profile Editor Modal -->
+    <div id="profile-editor-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="profile-editor-title">
+        <div class="vault-modal-wrapper select-none">
+            <section class="profile-editor-panel select-none">
+                <!-- Modal Header -->
+                <div class="flex justify-between items-center pb-2.5 mb-2 border-b-2 border-[#46515a] flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">✏️</span>
+                        <div>
+                            <h2 id="profile-editor-title" class="screen-title text-2xl sm:text-3xl font-bold text-[#ffd447] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide leading-none">EDIT WEBCRAFT PROFILE</h2>
+                            <div class="text-xs sm:text-sm text-cyan-300 font-['VT323'] tracking-wider mt-0.5">Customize Player Card • Real-Time Live Preview • Cloud Sync</div>
+                        </div>
+                    </div>
+                    <button class="modal-close-red-btn" type="button" onclick="closeProfileEditor()" title="Close (Esc)" aria-label="Close">X</button>
+                </div>
+
+                <!-- Modal Body (Split View: Settings on Left, Live Card Display on Right) -->
+                <div class="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 bg-[#12161b] border-2 border-[#1a2128]">
+                    
+                    <!-- Left Column: Customization Controls (Scrollable) -->
+                    <div class="w-full md:w-3/5 p-3 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col gap-2.5 border-b-2 md:border-b-0 md:border-r-2 border-[#20252b]">
+                        
+                        <!-- Setting Card 1: Title Plate -->
+                        <div class="editor-setting-card">
+                            <div class="editor-setting-header">
+                                <span class="editor-setting-title gold">
+                                    <span>👑</span>
+                                    <span>TITLE PLATE &amp; PREFIX</span>
+                                </span>
+                                <span class="editor-setting-hint">Choose unlocked title badge</span>
+                            </div>
+                            <div class="mt-1">
+                                <label for="editor-title-select" class="sr-only">Equipped Title</label>
+                                <select id="editor-title-select" class="mc-input-select" onchange="handleProfileEditorChange()">
+                                    <!-- Populated dynamically by UI -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Setting Card 2: Nameplate Color -->
+                        <div class="editor-setting-card">
+                            <div class="editor-setting-header">
+                                <span class="editor-setting-title cyan">
+                                    <span>✨</span>
+                                    <span>NAMEPLATE COLOR</span>
+                                </span>
+                                <span class="editor-setting-hint">Display name text color</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 mt-1 flex-wrap">
+                                <div class="mc-swatch-box" id="editor-name-swatches">
+                                    <button type="button" class="mc-swatch-btn" data-color="#ffffff" style="background-color: #ffffff;" onclick="setEditorNameColor('#ffffff')" title="Classic White"></button>
+                                    <button type="button" class="mc-swatch-btn" data-color="#38bdf8" style="background-color: #38bdf8;" onclick="setEditorNameColor('#38bdf8')" title="Diamond Cyan"></button>
+                                    <button type="button" class="mc-swatch-btn" data-color="#4ade80" style="background-color: #4ade80;" onclick="setEditorNameColor('#4ade80')" title="Emerald Green"></button>
+                                    <button type="button" class="mc-swatch-btn" data-color="#fb923c" style="background-color: #fb923c;" onclick="setEditorNameColor('#fb923c')" title="Nether Orange"></button>
+                                    <button type="button" class="mc-swatch-btn" data-color="#c084fc" style="background-color: #c084fc;" onclick="setEditorNameColor('#c084fc')" title="Astral Violet"></button>
+                                    <button type="button" class="mc-swatch-btn" data-color="#ffd34d" style="background-color: #ffd34d;" onclick="setEditorNameColor('#ffd34d')" title="Imperial Gold"></button>
+                                    <button type="button" class="mc-swatch-btn" data-color="#f43f5e" style="background-color: #f43f5e;" onclick="setEditorNameColor('#f43f5e')" title="Rose Red"></button>
+                                </div>
+                                <div class="mc-color-custom-wrap">
+                                    <span class="text-sm font-['VT323'] text-gray-300">Custom:</span>
+                                    <input type="color" id="editor-name-color-picker" class="mc-color-custom-input" value="#ffffff" onchange="handleProfileEditorChange()" title="Pick custom color">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Setting Card 3: Avatar Silhouette & Decorative Frame -->
+                        <div class="editor-setting-card">
+                            <div class="editor-setting-header">
+                                <span class="editor-setting-title emerald">
+                                    <span>🛡️</span>
+                                    <span>AVATAR FRAME &amp; SILHOUETTE</span>
+                                </span>
+                                <span class="editor-setting-hint">Border frame, crowns &amp; rings</span>
+                            </div>
+                            <div class="mt-1">
+                                <label for="editor-frame-select" class="sr-only">Equipped Frame</label>
+                                <select id="editor-frame-select" class="mc-input-select" onchange="handleProfileEditorChange()">
+                                    <!-- Populated dynamically by UI -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Setting Card 4: Profile Banner & Tint -->
+                        <div class="editor-setting-card">
+                            <div class="editor-setting-header">
+                                <span class="editor-setting-title purple">
+                                    <span>🌌</span>
+                                    <span>PROFILE BANNER</span>
+                                </span>
+                                <span class="editor-setting-hint">Pixel motif &amp; backdrop tint</span>
+                            </div>
+                            <div class="flex flex-col gap-2 mt-1">
+                                <div>
+                                    <label for="editor-banner-pattern-select" class="text-xs text-gray-400 font-['VT323'] block mb-1">Pattern Motif:</label>
+                                    <select id="editor-banner-pattern-select" class="mc-input-select" onchange="handleProfileEditorChange()">
+                                        <!-- Populated dynamically by UI -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-400 font-['VT323'] block mb-1">Banner Background Tint:</label>
+                                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                                        <div class="mc-swatch-box" id="editor-banner-swatches">
+                                            <button type="button" class="mc-swatch-btn" data-color="#181e24" style="background-color: #181e24;" onclick="setEditorBannerColor('#181e24')" title="Deepslate"></button>
+                                            <button type="button" class="mc-swatch-btn" data-color="#0f291a" style="background-color: #0f291a;" onclick="setEditorBannerColor('#0f291a')" title="Lush Forest"></button>
+                                            <button type="button" class="mc-swatch-btn" data-color="#0c1222" style="background-color: #0c1222;" onclick="setEditorBannerColor('#0c1222')" title="Midnight Sky"></button>
+                                            <button type="button" class="mc-swatch-btn" data-color="#2b0d0d" style="background-color: #2b0d0d;" onclick="setEditorBannerColor('#2b0d0d')" title="Nether Magma"></button>
+                                            <button type="button" class="mc-swatch-btn" data-color="#1b0c2e" style="background-color: #1b0c2e;" onclick="setEditorBannerColor('#1b0c2e')" title="Astral Void"></button>
+                                            <button type="button" class="mc-swatch-btn" data-color="#2e210c" style="background-color: #2e210c;" onclick="setEditorBannerColor('#2e210c')" title="Golden Horizon"></button>
+                                        </div>
+                                        <div class="mc-color-custom-wrap">
+                                            <span class="text-sm font-['VT323'] text-gray-300">Custom:</span>
+                                            <input type="color" id="editor-banner-color-picker" class="mc-color-custom-input" value="#181e24" onchange="handleProfileEditorChange()" title="Pick custom banner color">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Setting Card 5: Player Card Border Theme -->
+                        <div class="editor-setting-card">
+                            <div class="editor-setting-header">
+                                <span class="editor-setting-title orange">
+                                    <span>📜</span>
+                                    <span>PLAYER CARD THEME</span>
+                                </span>
+                                <span class="editor-setting-hint">Card background &amp; border styling</span>
+                            </div>
+                            <div class="mt-1">
+                                <label for="editor-theme-select" class="sr-only">Card Theme</label>
+                                <select id="editor-theme-select" class="mc-input-select" onchange="handleProfileEditorChange()">
+                                    <!-- Populated dynamically by UI -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Setting Card 6: About Me / Status Bio -->
+                        <div class="editor-setting-card">
+                            <div class="editor-setting-header">
+                                <span class="editor-setting-title gold">
+                                    <span>💬</span>
+                                    <span>ABOUT ME / BIO</span>
+                                </span>
+                                <span id="editor-bio-char-count" class="tutorial-card-desc text-xs font-bold text-amber-300 font-['VT323'] bg-black/50 px-2 py-0.5 border border-[#333e49]">0 / 120</span>
+                            </div>
+                            <div class="mt-1">
+                                <label for="editor-bio-input" class="sr-only">Bio Slogan</label>
+                                <textarea id="editor-bio-input" class="mc-input-textarea h-16" maxlength="120" placeholder="Write a short quote, slogan or bio for your player card..." oninput="handleProfileEditorChange()"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Astral Emporium Promo -->
+                        <div class="editor-promo-box">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl flex-shrink-0">💎</span>
+                                <div>
+                                    <div class="text-[#c084fc] font-['VT323'] text-xl font-bold leading-tight">Unlock More Cosmetics!</div>
+                                    <div class="text-purple-300 font-['VT323'] text-sm leading-tight">Frames, halos, crowns, banners &amp; themes at the Emporium.</div>
+                                </div>
+                            </div>
+                            <button type="button" class="mc-btn auth-primary-btn !h-9 !w-auto !px-3 !text-lg whitespace-nowrap" onclick="closeProfileEditor(); openShop('cosmetics');">
+                                Visit Shop
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column: Live Real-Time Card Preview -->
+                    <div class="w-full md:w-2/5 p-4 flex flex-col items-center justify-between bg-[#0e1216] overflow-y-auto overflow-x-hidden custom-scrollbar">
+                        <div class="w-full flex flex-col items-center">
+                            <div class="w-full text-center mb-3 flex items-center justify-center gap-2">
+                                <span class="text-sm font-bold text-cyan-300 uppercase tracking-widest font-['VT323']">✦ LIVE CARD PREVIEW ✦</span>
+                                <span class="live-preview-pulse-dot"></span>
+                            </div>
+
+                            <!-- The Live Preview Card Case -->
+                            <div id="editor-preview-card" class="discord-card-preview card-theme-slate w-full max-w-[340px] shadow-2xl relative select-none">
+                                <!-- Top Banner Preview -->
+                                <div id="editor-preview-banner" class="discord-card-banner banner-pattern-slate w-full relative">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                </div>
+
+                                <!-- Card Body Area with Overlapping Avatar -->
+                                <div class="discord-card-body px-4 pb-4 pt-0 relative">
+                                    <div class="discord-card-avatar-wrap mb-2 relative inline-block">
+                                        <div id="editor-preview-avatar-frame" class="avatar-frame-wrapper avatar-frame-classic relative">
+                                            <div id="editor-preview-crown-badge" class="avatar-crown-element hidden">👑</div>
+                                            <canvas id="editor-preview-avatar-canvas" width="60" height="60" class="pixelated block bg-[#181c24]"></canvas>
+                                            <div class="discord-avatar-status online" title="Online in Webcraft"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Title Plate Badge -->
+                                    <div class="mb-1">
+                                        <span id="editor-preview-title-badge" class="profile-title-badge">[Crafter]</span>
+                                    </div>
+
+                                    <!-- Player Name & Tag -->
+                                    <div class="mb-2 text-left">
+                                        <div id="editor-preview-username" class="text-white font-['VT323'] text-2xl font-bold leading-tight truncate">Player</div>
+                                        <div id="editor-preview-tag" class="text-amber-400 font-['VT323'] text-base font-bold leading-none mt-0.5">@Player</div>
+                                    </div>
+
+                                    <div class="h-0.5 bg-gray-700/60 my-2"></div>
+
+                                    <!-- Bio / About Me Section -->
+                                    <div class="text-left mb-3">
+                                        <div class="text-xs uppercase text-gray-400 font-bold font-['VT323'] tracking-wider mb-0.5">ABOUT ME</div>
+                                        <div id="editor-preview-bio" class="text-gray-200 font-['VT323'] text-lg leading-snug break-words">Mining across dimensions.</div>
+                                    </div>
+
+                                    <!-- Crafter Since / Planar Tier -->
+                                    <div class="text-left bg-black/50 p-2.5 border-2 border-[#2b3644] flex items-center justify-between shadow-inner">
+                                        <div>
+                                            <div class="text-xs uppercase text-gray-400 font-bold font-['VT323'] tracking-wider leading-none">CRAFTER SINCE</div>
+                                            <div id="editor-preview-member-since" class="text-amber-300 font-['VT323'] text-lg leading-none mt-1">Webcraft Beta</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-xs uppercase text-purple-400 font-bold font-['VT323'] tracking-wider leading-none">PLANAR TIER</div>
+                                            <div id="editor-preview-astral-tier" class="text-purple-300 font-['VT323'] text-lg font-bold leading-none mt-1 flex items-center gap-1 justify-end">
+                                                <span>✦</span>
+                                                <span id="editor-preview-astral-val">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center text-xs text-gray-400 font-['VT323'] mt-3 px-2">
+                            This card is live-synced and rendered in real time for friends and multiplayer peers.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer Controls -->
+                <div class="bg-[#171b20] px-4 py-3 border-t-4 border-[#080a0c] flex items-center justify-between flex-shrink-0">
+                    <button type="button" class="mc-btn auth-secondary-btn !h-10 !w-auto !px-4 !text-xl" onclick="resetProfileEditor()">
+                        <span>Reset Defaults</span>
+                    </button>
+                    <div class="flex items-center gap-3">
+                        <button type="button" class="mc-btn auth-secondary-btn !h-10 !w-auto !px-4 !text-xl" onclick="closeProfileEditor()">
+                            <span>Cancel</span>
+                        </button>
+                        <button id="editor-save-btn" type="button" class="mc-btn auth-primary-btn !h-10 !w-auto !px-6 !text-xl flex items-center justify-center gap-2" onclick="saveProfileEditorChanges()">
+                            <span>💾</span>
+                            <span>Save Changes</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Unified Astral Shop Modal -->
+    <div id="unified-shop-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="shop-modal-title">
+        <div class="vault-modal-wrapper select-none">
+            <section class="shop-panel select-none">
+                <!-- Shop Header -->
+                <div class="flex justify-between items-center pb-2.5 mb-2.5 border-b-2 border-[#46515a] flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#171226] border-2 border-[#a855f7] shadow-md flex items-center justify-center p-1 flex-shrink-0">
+                            <img id="shop-header-gem-img" class="pixelated w-8 h-8 object-contain" alt="Astral Gem" />
+                        </div>
+                        <div>
+                            <h2 id="shop-modal-title" class="screen-title text-2xl sm:text-3xl md:text-4xl font-bold text-[#c084fc] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide leading-none">The Astral Emporium</h2>
+                            <div class="text-xs sm:text-sm text-cyan-300 font-['VT323'] tracking-wider mt-0.5">Profile Cosmetics • Astral Gem Exchange • Atlas Outpost</div>
+                        </div>
+                    </div>
+                    <!-- Right header tools: Balance chips & Close button -->
+                    <div class="flex items-center gap-3">
+                        <div class="hidden sm:flex items-center gap-2 bg-[#12161c] border-2 border-[#333a41] px-2.5 py-1 shadow-inner">
+                            <div class="flex items-center gap-1.5" title="Astral Gems">
+                                <span class="text-purple-300 font-bold font-['VT323'] text-xl leading-none" id="shop-astral-count">0</span>
+                                <svg class="pixel-art-icon w-4 h-4" viewBox="0 0 16 16" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <polygon points="8,1 15,8 8,15 1,8" fill="#c084fc" />
+                                    <polygon points="8,4 12,8 8,12 4,8" fill="#ffffff" />
+                                </svg>
+                            </div>
+                            <span class="text-gray-600 font-['VT323']">|</span>
+                            <div class="flex items-center gap-1.5" title="Mined Emeralds">
+                                <span class="text-emerald-400 font-bold font-['VT323'] text-xl leading-none" id="shop-emeralds-count">0</span>
+                                <svg class="pixel-art-icon w-4 h-4" viewBox="0 0 16 16" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <polygon points="8,1 14,5 14,11 8,15 2,11 2,5" fill="#10b981" />
+                                    <polygon points="8,3 12,6 12,10 8,13 4,10 4,6" fill="#34d399" />
+                                </svg>
+                            </div>
+                        </div>
+                        <button class="modal-close-red-btn" type="button" onclick="closeShop()" title="Close (Esc)" aria-label="Close">X</button>
+                    </div>
+                </div>
+
+                <!-- Main Navigation Tabs UP TOP (Achievements & Atlas Market Style) -->
+                <div class="shop-tab-container grid grid-cols-3 gap-2 w-full mb-2.5 flex-shrink-0" id="shop-tab-container">
+                    <button id="shop-main-tab-cosmetics-btn" class="ach-tab-btn shop-tab-btn active" onclick="switchShopTab('cosmetics')" aria-label="Profile Cosmetics">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="7" y="1" width="2" height="6" fill="#facc15" />
+                                    <rect x="5" y="3" width="6" height="2" fill="#facc15" />
+                                    <rect x="7" y="9" width="2" height="6" fill="#c084fc" />
+                                    <rect x="5" y="11" width="6" height="2" fill="#c084fc" />
+                                    <rect x="2" y="7" width="12" height="2" fill="#38bdf8" />
+                                    <rect x="7" y="7" width="2" height="2" fill="#ffffff" />
+                                </svg>
+                            </span>
+                            <span class="shop-tab-title font-['VT323'] text-xl">Cosmetics</span>
+                        </div>
+                        <span class="ach-tab-count">27</span>
+                    </button>
+                    <button id="shop-main-tab-exchange-btn" class="ach-tab-btn shop-tab-btn" onclick="switchShopTab('exchange')" aria-label="Astral Exchange">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="7" y="1" width="2" height="2" fill="#f3e8ff"/>
+                                    <rect x="5" y="3" width="6" height="2" fill="#e9d5ff"/>
+                                    <rect x="4" y="5" width="8" height="6" fill="#a855f7"/>
+                                    <rect x="6" y="6" width="4" height="4" fill="#faf5ff"/>
+                                    <rect x="5" y="11" width="6" height="2" fill="#7e22ce"/>
+                                    <rect x="7" y="13" width="2" height="2" fill="#581c87"/>
+                                </svg>
+                            </span>
+                            <span class="shop-tab-title font-['VT323'] text-xl">Exchange</span>
+                        </div>
+                        <span class="ach-tab-count">3 Tiers</span>
+                    </button>
+                    <button id="shop-main-tab-atlas-btn" class="ach-tab-btn shop-tab-btn" onclick="switchShopTab('atlas')" aria-label="Atlas Outpost">
+                        <div class="ach-tab-label-group">
+                            <span class="ach-tab-icon" aria-hidden="true">
+                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="2" y="4" width="12" height="10" fill="#7e22ce"/>
+                                    <rect x="3" y="5" width="10" height="8" fill="#a855f7"/>
+                                    <rect x="5" y="2" width="6" height="3" fill="#c084fc"/>
+                                    <rect x="7" y="7" width="2" height="3" fill="#facc15"/>
+                                </svg>
+                            </span>
+                            <span class="shop-tab-title font-['VT323'] text-xl">Outpost</span>
+                        </div>
+                        <span class="ach-tab-count">10 Wares</span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: Profile Cosmetics Pane -->
+                <div id="shop-pane-cosmetics" class="shop-content-pane flex-1 flex flex-col overflow-hidden min-h-0">
+                    <!-- Category Filter Sub-Pills (Achievement Tier Style) -->
+                    <div class="flex gap-1.5 mb-2 overflow-x-auto py-1 px-0.5 flex-shrink-0" id="shop-cosmetics-filters">
+                        <button id="cosmetics-filter-all" class="shop-filter-btn active" onclick="filterShopCosmetics('all')">All (27)</button>
+                        <button id="cosmetics-filter-frame" class="shop-filter-btn" onclick="filterShopCosmetics('frame')">Frames (8)</button>
+                        <button id="cosmetics-filter-banner" class="shop-filter-btn" onclick="filterShopCosmetics('banner')">Banners (7)</button>
+                        <button id="cosmetics-filter-title" class="shop-filter-btn" onclick="filterShopCosmetics('title')">Titles (7)</button>
+                        <button id="cosmetics-filter-theme" class="shop-filter-btn" onclick="filterShopCosmetics('theme')">Themes (5)</button>
+                    </div>
+
+                    <!-- Cosmetics Cards Grid (Kael Atlas Market Style 3-Column Grid) -->
+                    <div id="shop-cosmetics-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 overflow-y-auto custom-scrollbar flex-1 min-h-0 p-1">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Astral Exchange Pane -->
+                <div id="shop-pane-exchange" class="shop-content-pane flex-1 flex flex-col overflow-y-auto custom-scrollbar min-h-0 hidden">
+                    <div class="bg-[#171b20] border border-[#333a41] p-2 mb-2 text-[#aebac2] font-['VT323'] text-lg text-center flex-shrink-0">
+                        <span>Transmute mined emeralds into rare cosmic Astral Gems at planar conversion rates.</span>
+                    </div>
+                    <div id="shop-exchange-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1 items-stretch">
+                        <!-- Populated with .exchange-card format -->
+                    </div>
+                </div>
+
+                <!-- Tab 3: Atlas Outpost Pane -->
+                <div id="shop-pane-atlas" class="shop-content-pane flex-1 flex flex-col overflow-hidden min-h-0 hidden">
+                    <div class="bg-[#171b20] border border-[#333a41] p-2 mb-2 text-[#aebac2] font-['VT323'] text-lg text-center flex-shrink-0">
+                        <span class="text-purple-300">Kael's Planar Oddities:</span> Relics, cosmic gear, flora, and dimensional matter.
+                    </div>
+                    <div id="shop-atlas-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 overflow-y-auto custom-scrollbar flex-1 min-h-0 p-1">
+                        <!-- Populated with .atlas-market-card format -->
+                    </div>
+                </div>
+
+                <!-- Bottom Status Bar -->
+                <div class="mt-2 pt-2 border-t-2 border-[#46515a] flex justify-between items-center flex-shrink-0 text-xs text-[#8292a0] font-['VT323']">
+                    <span>✦ Purchases require a Webcraft account • Saved to Cloud Profile • Press [Esc] to exit</span>
+                    <button type="button" class="text-amber-400 hover:underline cursor-pointer text-sm" onclick="closeShop(); openProfileEditor();">Open Profile Customizer ➔</button>
+                </div>
+            </section>
+
+            <!-- External Bottom Currency Box (Matches Atlas Market & Emerald Vault) -->
+            <div class="vault-bottom-currency-box select-none">
+                <!-- Standard Emeralds Balance Card -->
+                <div class="vault-balance-card standard">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="achievement-icon-frame !w-10 !h-10 flex-shrink-0">
+                            <img id="shop-bottom-emerald-img" class="pixelated w-7 h-7 object-contain" alt="Emerald" />
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-wider leading-none vault-stat-green truncate">Standard Emeralds</div>
+                            <div class="text-xs sm:text-sm font-['VT323'] leading-tight vault-stat-sub text-[#94a3b8] truncate">Mined Wealth &amp; Challenges</div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-2">
+                        <div id="shop-bottom-emerald-count" class="text-2xl sm:text-3xl font-bold font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000] vault-stat-green">0</div>
+                        <div class="text-xs sm:text-sm font-['VT323'] font-semibold vault-badge-green flex items-center justify-end gap-1">
+                            <span>BALANCE</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Astral Gems Balance Card -->
+                <div class="vault-balance-card astral">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="achievement-icon-frame !w-10 !h-10 flex-shrink-0">
+                            <img id="shop-bottom-astral-img" class="pixelated w-7 h-7 object-contain" alt="Astral Gem" />
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-wider leading-none vault-stat-purple truncate">Astral Gems</div>
+                            <div class="text-xs sm:text-sm font-['VT323'] leading-tight vault-stat-sub text-[#94a3b8] truncate">Cosmetics &amp; Planar Relics</div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-2">
+                        <div id="shop-bottom-astral-count" class="text-2xl sm:text-3xl font-bold font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000] vault-stat-purple">0</div>
+                        <div class="text-xs sm:text-sm font-['VT323'] font-semibold vault-badge-purple flex items-center justify-end gap-1">
+                            <span>BALANCE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Friend Profile Inspector Modal -->
+    <div id="friend-profile-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md z-[350] flex items-center justify-center p-2 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="friend-modal-title">
+        <div class="friend-modal-container w-full max-w-[380px] bg-[#20252b] border-4 border-[#333a41] shadow-[0_0_50px_rgba(0,0,0,0.95)] select-none">
+            <!-- Header -->
+            <div class="bg-[#171b20] px-3 py-2 border-b-2 border-[#0e1216] flex justify-between items-center">
+                <span id="friend-modal-title" class="text-xl font-bold text-amber-300 font-['VT323']">Player Profile</span>
+                <button class="modal-close-red-btn" type="button" onclick="closeFriendProfileModal()" title="Close">X</button>
+            </div>
+            <!-- Card Body -->
+            <div id="friend-modal-card" class="discord-card-preview card-theme-slate w-full relative">
+                <!-- Banner -->
+                <div id="friend-modal-banner" class="discord-card-banner banner-pattern-slate h-20 w-full relative">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
+                <!-- Content -->
+                <div class="px-4 pb-4 pt-0 relative">
+                    <div class="discord-card-avatar-wrap -mt-8 mb-2 relative inline-block">
+                        <div id="friend-modal-avatar-frame" class="avatar-frame-wrapper avatar-frame-classic relative">
+                            <div id="friend-modal-crown-badge" class="avatar-crown-element hidden">👑</div>
+                            <canvas id="friend-modal-avatar-canvas" width="56" height="56" class="pixelated block bg-[#181c24]"></canvas>
+                            <div id="friend-modal-status-dot" class="discord-avatar-status online"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-1">
+                        <span id="friend-modal-title-badge" class="profile-title-badge">[Crafter]</span>
+                    </div>
+
+                    <div class="mb-2 text-left">
+                        <div id="friend-modal-username" class="text-white font-['VT323'] text-2xl font-bold leading-tight truncate">Friend</div>
+                        <div id="friend-modal-tag" class="text-amber-400 font-['VT323'] text-base font-bold leading-none mt-0.5">@Friend</div>
+                    </div>
+
+                    <div class="h-0.5 bg-gray-700/60 my-2"></div>
+
+                    <div class="text-left mb-3">
+                        <div class="text-xs uppercase text-gray-400 font-bold font-['VT323'] tracking-wider mb-0.5">ABOUT ME</div>
+                        <div id="friend-modal-bio" class="text-gray-200 font-['VT323'] text-lg leading-snug break-words">Mining across dimensions.</div>
+                    </div>
+
+                    <!-- Footer Buttons -->
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-700/50">
+                        <button type="button" class="friend-btn-remove !px-3 !py-1" id="friend-modal-remove-btn">
+                            Remove Friend
+                        </button>
+                        <button type="button" class="mc-btn auth-secondary-btn !h-8 !w-auto !px-4 !text-lg" onclick="closeFriendProfileModal()">
+                            Close
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1907,6 +2501,10 @@
                     <div class="settings-row" id="settings-row-difficulty">
                         <span class="settings-label">Difficulty</span>
                         <button class="mc-btn" id="btn-settings-difficulty" onclick="cycleWorldDifficulty()">Normal</button>
+                    </div>
+                    <div class="settings-row" id="settings-row-autosave">
+                        <span class="settings-label">Autosave Interval</span>
+                        <button class="mc-btn" id="btn-settings-autosave" onclick="cycleAutosaveInterval()">1 Minute</button>
                     </div>
                     <div class="settings-row">
                         <span class="settings-label">Auto-Jump</span>
