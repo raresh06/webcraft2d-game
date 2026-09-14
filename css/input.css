@@ -3280,6 +3280,82 @@
             display: inline-flex; align-items: center; justify-content: center; line-height: 1; white-space: nowrap; flex-shrink: 0;
             overflow: hidden; text-overflow: ellipsis;
         }
+        #fabulous-settings-modal .mc-btn {
+            color: #ffffff !important;
+            text-shadow: 2px 2px 0 #080a0c !important;
+            background-color: #333a41 !important;
+            border: 2px solid #111820 !important;
+            border-top-color: #69737b !important;
+            border-left-color: #69737b !important;
+            border-right-color: #080a0c !important;
+            border-bottom-color: #080a0c !important;
+        }
+        #fabulous-settings-modal .mc-btn:hover {
+            background-color: #46515a !important;
+            border-top-color: #aebac2 !important;
+            border-left-color: #aebac2 !important;
+            color: #ffffff !important;
+        }
+        #fabulous-settings-modal .mc-btn.is-on {
+            background-color: #205c36 !important;
+            border-color: #111820 !important;
+            border-top-color: #4ade80 !important;
+            border-left-color: #4ade80 !important;
+            border-right-color: #0b2b16 !important;
+            border-bottom-color: #0b2b16 !important;
+            color: #ffffff !important;
+            text-shadow: 2px 2px 0 #080a0c !important;
+        }
+        #fabulous-settings-modal .mc-btn.is-on:hover {
+            background-color: #276f41 !important;
+            border-top-color: #86efac !important;
+            border-left-color: #86efac !important;
+            color: #ffffff !important;
+        }
+        #fabulous-settings-modal .mc-btn.is-off {
+            background-color: #2b3138 !important;
+            border-color: #111820 !important;
+            border-top-color: #525f6a !important;
+            border-left-color: #525f6a !important;
+            border-right-color: #080a0c !important;
+            border-bottom-color: #080a0c !important;
+            color: #ffffff !important;
+            text-shadow: 2px 2px 0 #080a0c !important;
+            opacity: 0.85;
+        }
+        #fabulous-settings-modal .mc-btn.is-off:hover {
+            background-color: #38404a !important;
+            border-top-color: #7b8b99 !important;
+            border-left-color: #7b8b99 !important;
+            color: #ffffff !important;
+            opacity: 1;
+        }
+        #fabulous-presets-bar .settings-tab-btn {
+            color: #ffffff !important;
+            text-shadow: 2px 2px 0 #080a0c !important;
+        }
+        #fabulous-presets-bar .settings-tab-btn.active {
+            background: #946800 !important;
+            border-color: #ffd34d !important;
+            border-top-color: #ffe580 !important;
+            border-left-color: #ffe580 !important;
+            border-right-color: #080a0c !important;
+            border-bottom-color: #080a0c !important;
+            box-shadow: inset 0 0 0 2px #ffd34d, inset 0 0 8px rgba(255,211,77,0.3) !important;
+            color: #ffffff !important;
+            text-shadow: 2px 2px 0 #080a0c !important;
+        }
+        #fabulous-settings-modal .settings-label {
+            color: #ffffff !important;
+            text-shadow: 2px 2px 0 #080a0c !important;
+        }
+        #fabulous-settings-modal .fabulous-option-desc,
+        #fabulous-settings-modal .settings-row span:not(.settings-label) {
+            color: #f1f5f9 !important;
+            text-shadow: 1px 1px 0 #080a0c !important;
+            font-size: 16px !important;
+            line-height: 1.2 !important;
+        }
 
         /* Controls Subnav Tabs & Gamepad Controller Styling */
         .controls-subtab-btn {
@@ -6318,6 +6394,13 @@ html.closed-beta-pending #boot-loading-screen {
 }
 #friend-profile-modal.hidden {
   display: none !important;
+}
+
+.friend-modal-container {
+  width: min(360px, calc(100vw - 32px)) !important;
+  max-width: 360px !important;
+  box-sizing: border-box !important;
+  margin: auto !important;
 }
 
 .shop-panel, .profile-editor-panel {
