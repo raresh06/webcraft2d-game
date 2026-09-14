@@ -2239,7 +2239,7 @@
                     </button>
                     <button id="shop-main-tab-atlas-btn" class="ach-tab-btn shop-tab-btn" onclick="switchShopTab('atlas')" aria-label="Atlas Outpost">
                         <div class="ach-tab-label-group">
-                            <span class="ach-tab-icon" aria-hidden="true">
+                            <span class="ach-tab-icon" id="shop-atlas-tab-icon" aria-hidden="true">
                                 <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                                     <rect x="2" y="4" width="12" height="10" fill="#7e22ce"/>
                                     <rect x="3" y="5" width="10" height="8" fill="#a855f7"/>
@@ -2249,7 +2249,7 @@
                             </span>
                             <span class="shop-tab-title font-['VT323'] text-xl">Outpost</span>
                         </div>
-                        <span class="ach-tab-count">10 Wares</span>
+                        <span class="ach-tab-count" id="shop-atlas-tab-count">10 Wares</span>
                     </button>
                 </div>
 
@@ -2282,7 +2282,7 @@
 
                 <!-- Tab 3: Atlas Outpost Pane -->
                 <div id="shop-pane-atlas" class="shop-content-pane flex-1 flex flex-col overflow-hidden min-h-0 hidden">
-                    <div class="bg-[#171b20] border border-[#333a41] p-2 mb-2 text-[#aebac2] font-['VT323'] text-lg text-center flex-shrink-0">
+                    <div id="shop-atlas-header" class="bg-[#171b20] border border-[#333a41] p-2 mb-2 text-[#aebac2] font-['VT323'] text-lg text-center flex-shrink-0">
                         <span class="text-purple-300">Kael's Planar Oddities:</span> Relics, cosmic gear, flora, and dimensional matter.
                     </div>
                     <div id="shop-atlas-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 overflow-y-auto custom-scrollbar flex-1 min-h-0 p-1">
@@ -2342,7 +2342,7 @@
 
     <!-- Friend Profile Inspector Modal -->
     <div id="friend-profile-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md z-[350] flex items-center justify-center p-2 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="friend-modal-title">
-        <div class="friend-modal-container w-full max-w-[380px] bg-[#20252b] border-4 border-[#333a41] shadow-[0_0_50px_rgba(0,0,0,0.95)] select-none">
+        <div class="friend-modal-container bg-[#20252b] border-4 border-[#333a41] shadow-[0_0_50px_rgba(0,0,0,0.95)] select-none" style="width: min(360px, calc(100vw - 32px)); max-width: 360px;">
             <!-- Header -->
             <div class="bg-[#171b20] px-3 py-2 border-b-2 border-[#0e1216] flex justify-between items-center">
                 <span id="friend-modal-title" class="text-xl font-bold text-amber-300 font-['VT323']">Player Profile</span>
@@ -2798,8 +2798,8 @@
                         <div class="flex items-center gap-1.5">
                             <button class="mc-btn" id="btn-toggle-graphics" onclick="toggleGraphics()">ADVANCED</button>
                             <button class="mc-btn !inline-flex !items-center !justify-center gap-1.5 !px-3 !py-0 !h-[34px] !min-w-[80px] !text-lg" id="btn-customize-fabulous" onclick="openFabulousSettingsModal()" style="display: none;" title="Customize Fabulous Graphics settings & atmospheric options">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" class="flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges; display: block;" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M6 0h4v2h1v1h1v1h2v2h2v4h-2v2h-2v1h-1v1h-1v2H6v-2H5v-1H4v-1H2v-2H0V6h2V4h2V3h1V2h1V0zm0 6h4v4H6V6z"/>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges; display: block;" aria-hidden="true">
+                                    <path d="M6 0h4v4h-4z M6 12h4v4h-4z M0 6h6v4h-6z M10 6h6v4h-6z M3 4h10v2h-10z M3 10h10v2h-10z M2 1h2v1h-2z M1 2h3v1h-3z M2 3h3v1h-3z M12 1h2v1h-2z M12 2h3v1h-3z M11 3h3v1h-3z M2 12h3v1h-3z M1 13h3v1h-3z M2 14h2v1h-2z M11 12h3v1h-3z M12 13h3v1h-3z M12 14h2v1h-2z"/>
                                 </svg>
                                 <span class="leading-none select-none" style="display: inline-block; line-height: 1;">SETTINGS</span>
                             </button>
@@ -3177,106 +3177,106 @@
                     <div class="settings-row">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Atmospheric sky & terrain tint grading">Biome Color Grading</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Atmospheric sky & terrain tint grading</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Atmospheric sky & terrain tint grading</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-colorGrading" onclick="toggleFabulousOption('colorGrading')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-colorGrading" onclick="toggleFabulousOption('colorGrading')">ON</button>
                     </div>
 
                     <!-- 2. Volumetric Biome Fog -->
                     <div class="settings-row">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Drifting mist in snow, swamp & rainforests">Volumetric Biome Fog</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Drifting mist in snow & rainforests</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Drifting mist in snow & rainforests</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-volumetricFog" onclick="toggleFabulousOption('volumetricFog')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-volumetricFog" onclick="toggleFabulousOption('volumetricFog')">ON</button>
                     </div>
 
                     <!-- 3. Crepuscular God Rays -->
                     <div class="settings-row">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Sunbeams radiating through forest canopy">Crepuscular God Rays</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Sunbeams through forest canopy</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Sunbeams through forest canopy</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-godRays" onclick="toggleFabulousOption('godRays')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-godRays" onclick="toggleFabulousOption('godRays')">ON</button>
                     </div>
 
                     <!-- 4. Cinematic Vignette -->
                     <div class="settings-row">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Corner shadow depth vignette">Cinematic Vignette</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Corner shadow depth vignette</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Corner shadow depth vignette</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-vignette" onclick="toggleFabulousOption('vignette')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-vignette" onclick="toggleFabulousOption('vignette')">ON</button>
                     </div>
 
                     <!-- 5. Desert Heat Shimmer -->
                     <div class="settings-row">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Heat distortion waves under desert sun">Desert Heat Shimmer</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Heat waves in hot desert sun</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Heat waves in hot desert sun</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-heatShimmer" onclick="toggleFabulousOption('heatShimmer')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-heatShimmer" onclick="toggleFabulousOption('heatShimmer')">ON</button>
                     </div>
 
                     <!-- 6. Foliage Wind Sway -->
                     <div class="settings-row">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Wind shear on grass, flowers & crops">Foliage Wind Sway</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Wind shear on grass, flowers & crops</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Wind shear on grass, flowers & crops</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-foliageSway" onclick="toggleFabulousOption('foliageSway')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-foliageSway" onclick="toggleFabulousOption('foliageSway')">ON</button>
                     </div>
 
                     <!-- 7. Wind Breeze Gusts -->
                     <div class="settings-row">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Air streaks sweeping over meadows">Wind Breeze Gusts</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Air streaks sweeping over meadows</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Air streaks sweeping over meadows</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-windBreeze" onclick="toggleFabulousOption('windBreeze')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-windBreeze" onclick="toggleFabulousOption('windBreeze')">ON</button>
                     </div>
 
                     <!-- 8. Water Shimmer & Waves -->
                     <div class="settings-row">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Wave specular glints & caustics">Water Shimmer & Waves</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Wave specular glints & caustics</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Wave specular glints & caustics</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-waterEffects" onclick="toggleFabulousOption('waterEffects')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-waterEffects" onclick="toggleFabulousOption('waterEffects')">ON</button>
                     </div>
 
                     <!-- 9. Ambient Particles -->
                     <div class="settings-row">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Leaves, fireflies & dandelion fluff">Ambient Particles</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Leaves, fireflies & spores</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Leaves, fireflies & spores</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-ambientParticles" onclick="toggleFabulousOption('ambientParticles')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-ambientParticles" onclick="toggleFabulousOption('ambientParticles')">ON</button>
                     </div>
 
                     <!-- 10. Lava Radiance & Embers -->
                     <div class="settings-row">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Dynamic lava light & fiery sparks">Lava Radiance & Embers</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Dynamic lava light & fiery sparks</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Dynamic lava light & fiery sparks</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-lavaGlow" onclick="toggleFabulousOption('lavaGlow')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-lavaGlow" onclick="toggleFabulousOption('lavaGlow')">ON</button>
                     </div>
 
                     <!-- 11. Light Bloom Aura -->
                     <div class="settings-row" style="grid-column: 1 / -1;">
                         <div class="flex flex-col min-w-0 pr-2">
                             <span class="settings-label" title="Soft radiant bloom on light sources & torches">Torch & Light Bloom Aura</span>
-                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Soft radiant bloom on torches & lamps</span>
+                            <span class="fabulous-option-desc font-['VT323'] truncate">Soft radiant bloom on torches & lamps</span>
                         </div>
-                        <button type="button" class="mc-btn" id="btn-fab-opt-bloomAura" onclick="toggleFabulousOption('bloomAura')">ON</button>
+                        <button type="button" class="mc-btn is-on" id="btn-fab-opt-bloomAura" onclick="toggleFabulousOption('bloomAura')">ON</button>
                     </div>
                 </div>
             </div>
 
             <!-- Footer Actions (Exact Settings Design Language) -->
             <div class="mt-3 pt-2 border-t-2 border-[#46515a] flex justify-between items-center">
-                <button type="button" class="mc-btn !w-44 !py-1 !text-2xl !m-0 bg-gray-600 hover:bg-gray-500 text-white" onclick="resetFabulousDefaults()">Reset Defaults</button>
+                <button type="button" class="mc-btn !w-44 !py-1 !text-2xl !m-0 !bg-[#3d454e] hover:!bg-[#4c5661] !border-t-[#788591] !border-l-[#788591] !border-b-[#080a0c] !border-r-[#080a0c] !text-white" onclick="resetFabulousDefaults()">Reset Defaults</button>
                 <button type="button" class="mc-btn !w-44 !py-1 !text-2xl !m-0 !bg-green-600 !border-t-green-400 !border-l-green-400 !border-b-green-800 !border-r-green-800 !text-white" onclick="closeFabulousSettingsModal()">Done</button>
             </div>
         </section>

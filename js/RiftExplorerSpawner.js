@@ -14,7 +14,7 @@ import { showKaelArrivalBanner, showKaelDepartureBanner } from './ui.js';
 class RiftExplorerSpawnerManager {
     constructor() {
         this.lastCheckedDay = 0;
-        this.nextArrivalDay = 2;
+        this.nextArrivalDay = 14;
         this.nextArrivalDayTime = 0.20;
         this.activeExplorer = null;
         this.hasSpawnedInitial = false;
@@ -28,20 +28,14 @@ class RiftExplorerSpawnerManager {
         this.hasSpawnedInitial = true;
         this.activeExplorer = null;
         this.lastArrivalDay = 0;
-        // Does NOT always spawn in the beginning!
-        // 25% chance of arriving later on Day 1 (afternoon), otherwise arrives Day 2, 3, or 4
-        if (Math.random() < 0.25) {
-            this.nextArrivalDay = 1;
-            this.nextArrivalDayTime = 0.28 + Math.random() * 0.15; // Afternoon of Day 1
-        } else {
-            this.nextArrivalDay = Math.floor(Math.random() * 3) + 2; // Day 2, 3, or 4
-            this.nextArrivalDayTime = 0.10 + Math.random() * 0.30;
-        }
+        // Kael always spawns in each world, arriving on Day 14 (late game stage)
+        this.nextArrivalDay = 14;
+        this.nextArrivalDayTime = 0.20;
     }
 
     reset() {
         this.lastCheckedDay = 0;
-        this.nextArrivalDay = 2;
+        this.nextArrivalDay = 14;
         this.nextArrivalDayTime = 0.20;
         this.activeExplorer = null;
         this.hasSpawnedInitial = false;
@@ -83,11 +77,11 @@ class RiftExplorerSpawnerManager {
             return;
         }
 
-        // If legacy world was not initialized, schedule first arrival for a future day
+        // If legacy world was not initialized, schedule first arrival for Day 14 (or next day if already past Day 14)
         if (!this.hasSpawnedInitial) {
             this.hasSpawnedInitial = true;
-            this.nextArrivalDay = currentDayCount + Math.floor(Math.random() * 3) + 1;
-            this.nextArrivalDayTime = 0.15 + Math.random() * 0.25;
+            this.nextArrivalDay = Math.max(14, currentDayCount + 1);
+            this.nextArrivalDayTime = 0.20;
             return;
         }
 

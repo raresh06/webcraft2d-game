@@ -3107,6 +3107,26 @@ export function initJukeboxFileInput() {
                 const dbgEl = document.getElementById('debug-info');
                 if (dbgEl) {
                     const curGraphicsMode = (typeof window !== 'undefined' && window.graphicsMode) ? window.graphicsMode : graphicsMode;
+                    let kaelStatus = 'Day 14';
+                    const spawner = (typeof window !== 'undefined' && window.RiftExplorerSpawner) ? window.RiftExplorerSpawner : (typeof RiftExplorerSpawner !== 'undefined' ? RiftExplorerSpawner : null);
+                    if (spawner) {
+                        if (spawner.activeExplorer && !spawner.activeExplorer.isDeparted) {
+                            kaelStatus = 'Present in World';
+                        } else {
+                            const nextDay = spawner.nextArrivalDay !== undefined ? spawner.nextArrivalDay : 14;
+                            const diff = nextDay - dayCount;
+                            if (diff > 1) {
+                                kaelStatus = `Day ${nextDay} (in ${diff} days)`;
+                            } else if (diff === 1) {
+                                kaelStatus = `Day ${nextDay} (in 1 day)`;
+                            } else if (diff === 0) {
+                                kaelStatus = `Day ${nextDay} (Arriving Today!)`;
+                            } else {
+                                kaelStatus = `Day ${nextDay} (Imminent)`;
+                            }
+                        }
+                    }
+
                     dbgEl.innerText = 
                         `Webcraft2D (${GAME_VERSION})\n` +
                         `Graphics: ${curGraphicsMode === 'fabulous' ? 'Fabulous (Shaders & VFX)' : (curGraphicsMode === 'advanced' ? 'Advanced' : 'Base')}\n` +
@@ -3121,7 +3141,8 @@ export function initJukeboxFileInput() {
                         `Multiplayer: ${isMultiplayer ? currentMpRoom : 'Local'}\n` +
                         `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Pigeons:${pigeons}, Bad:${hostiles})\n` +
                         `Target: ${targetBlockName}\n` +
-                        `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%) | Day Scale: ${typeof getDayDifficultyMultiplier === 'function' ? getDayDifficultyMultiplier().toFixed(2) : 1}x (Hunger: ${typeof getDayHungerDrainMultiplier === 'function' ? getDayHungerDrainMultiplier().toFixed(2) : 1}x)`;
+                        `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%) | Day Scale: ${typeof getDayDifficultyMultiplier === 'function' ? getDayDifficultyMultiplier().toFixed(2) : 1}x (Hunger: ${typeof getDayHungerDrainMultiplier === 'function' ? getDayHungerDrainMultiplier().toFixed(2) : 1}x)\n` +
+                        `Kael: ${kaelStatus}`;
                 }
             }
         } catch (loopErr) {

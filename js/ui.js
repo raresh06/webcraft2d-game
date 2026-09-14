@@ -6939,6 +6939,26 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const bAstral = document.getElementById('shop-bottom-astral-count');
         if (bAstral) bAstral.innerText = astral;
 
+        // Check Kael encounter status for Outpost category gating
+        const talked = typeof hasPlayerTalkedToKael === 'function' ? hasPlayerTalkedToKael() : false;
+        const atlasTabCount = document.getElementById('shop-atlas-tab-count');
+        const atlasTabBtn = document.getElementById('shop-main-tab-atlas-btn');
+        if (atlasTabCount) {
+            atlasTabCount.innerText = talked ? '10 Wares' : 'Locked';
+            if (talked) {
+                atlasTabCount.className = 'ach-tab-count';
+            } else {
+                atlasTabCount.className = 'ach-tab-count !text-amber-400 !border-amber-600/60 !bg-amber-950/60';
+            }
+        }
+        if (atlasTabBtn) {
+            if (!talked) {
+                atlasTabBtn.setAttribute('title', 'Locked: Speak with Kael on Day 14 to unlock');
+            } else {
+                atlasTabBtn.removeAttribute('title');
+            }
+        }
+
         switchShopTab(initialTab);
     }
 
@@ -6949,12 +6969,37 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function switchShopTab(tab) {
         currentShopTab = tab;
+        const talked = typeof hasPlayerTalkedToKael === 'function' ? hasPlayerTalkedToKael() : false;
+
+        // Update Outpost tab badge and visual indicator
+        const atlasTabCount = document.getElementById('shop-atlas-tab-count');
+        const atlasTabBtn = document.getElementById('shop-main-tab-atlas-btn');
+        if (atlasTabCount) {
+            atlasTabCount.innerText = talked ? '10 Wares' : 'Locked';
+            if (talked) {
+                atlasTabCount.className = 'ach-tab-count';
+            } else {
+                atlasTabCount.className = 'ach-tab-count !text-amber-400 !border-amber-600/60 !bg-amber-950/60';
+            }
+        }
+        if (atlasTabBtn) {
+            if (!talked) {
+                atlasTabBtn.setAttribute('title', 'Locked: Speak with Kael on Day 14 to unlock');
+            } else {
+                atlasTabBtn.removeAttribute('title');
+            }
+        }
+
         ['cosmetics', 'exchange', 'atlas'].forEach(t => {
             const btn = document.getElementById(`shop-main-tab-${t}-btn`);
             const pane = document.getElementById(`shop-pane-${t}`);
             if (btn) btn.classList.toggle('active', t === tab);
             if (pane) pane.classList.toggle('hidden', t !== tab);
         });
+
+        if (tab === 'atlas' && !talked) {
+            showToast("Planar Outpost locked: Meet Kael (arrives Day 14) to unlock wares.", 4000);
+        }
 
         if (tab === 'cosmetics') {
             renderShopCosmetics(currentCosmeticsFilter);
@@ -7237,7 +7282,52 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     function renderShopAtlasOutpost() {
         const grid = document.getElementById('shop-atlas-grid');
+        const header = document.getElementById('shop-atlas-header');
         if (!grid) return;
+
+        const talked = typeof hasPlayerTalkedToKael === 'function' ? hasPlayerTalkedToKael() : false;
+        if (!talked) {
+            if (header) header.style.display = 'none';
+            grid.className = 'flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto custom-scrollbar';
+            grid.innerHTML = `
+                <div class="w-full max-w-md bg-[#171b20] border-2 border-[#46515a] shadow-[inset_0_0_24px_rgba(0,0,0,0.8),_4px_4px_0_rgba(0,0,0,0.4)] p-6 text-center flex flex-col items-center justify-center gap-3 my-auto select-none">
+                    <div class="w-16 h-16 flex items-center justify-center bg-purple-950/70 border-2 border-purple-500/60 shadow-[0_0_16px_rgba(168,85,247,0.35)]">
+                        <svg viewBox="0 0 16 16" width="36" height="36" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <rect x="5" y="2" width="6" height="5" fill="#c084fc"/>
+                            <rect x="7" y="4" width="2" height="3" fill="#171b20"/>
+                            <rect x="3" y="7" width="10" height="8" fill="#7e22ce"/>
+                            <rect x="4" y="8" width="8" height="6" fill="#a855f7"/>
+                            <rect x="7" y="10" width="2" height="2" fill="#facc15"/>
+                            <rect x="7" y="12" width="2" height="1" fill="#facc15"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl sm:text-3xl font-bold font-['VT323'] text-amber-400 tracking-wider m-0 drop-shadow-[2px_2px_0_#080a0c]">
+                        PLANAR OUTPOST LOCKED
+                    </h3>
+                    <div class="px-2.5 py-0.5 bg-amber-950/70 border border-amber-500/60 text-amber-300 font-['VT323'] text-sm uppercase tracking-widest">
+                        First Interaction Required
+                    </div>
+                    <p class="text-gray-200 font-['VT323'] text-xl leading-snug max-w-sm m-0 drop-shadow-[1px_1px_0_#000]">
+                        You have not met <span class="text-purple-300 font-bold">Kael, The Atlas Explorer</span> in this world yet!
+                    </p>
+                    <div class="bg-[#101317] border border-[#2c333a] p-3 text-left w-full mt-1">
+                        <p class="text-gray-300 font-['VT323'] text-base leading-normal m-0">
+                            ✦ Kael arrives through a planar rift on <strong class="text-amber-300 font-bold">Day 14</strong>.
+                        </p>
+                        <p class="text-gray-400 font-['VT323'] text-base leading-normal m-0 mt-1">
+                            ✦ Find and speak with Kael to establish contact and reveal his Outpost wares.
+                        </p>
+                    </div>
+                    <span class="text-xs text-purple-300/80 font-['VT323'] tracking-wider mt-1">
+                        Shop contents are hidden until planar contact is made.
+                    </span>
+                </div>
+            `;
+            return;
+        }
+
+        if (header) header.style.display = '';
+        grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 overflow-y-auto custom-scrollbar flex-1 min-h-0 p-1';
 
         const catalog = (typeof window !== 'undefined' && window.ATLAS_CATALOG) ? window.ATLAS_CATALOG : (typeof ATLAS_CATALOG !== 'undefined' ? ATLAS_CATALOG : []);
         const astralGems = typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0;
@@ -7335,6 +7425,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function purchaseAtlasWareFromShop(wareId) {
+        if (typeof hasPlayerTalkedToKael === 'function' && !hasPlayerTalkedToKael()) {
+            showToast("Planar Outpost locked: Meet Kael on Day 14 first.");
+            return;
+        }
         if (typeof window !== 'undefined' && window.AtlasTradeManager && typeof window.AtlasTradeManager.buyItem === 'function') {
             window.AtlasTradeManager.buyItem(wareId);
             const astralCount = document.getElementById('shop-astral-count');
@@ -8409,7 +8503,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 } else {
                     RiftExplorerSpawner.loadState({
                         hasSpawnedInitial: true,
-                        nextArrivalDay: (dayCount || 1) + 2
+                        nextArrivalDay: Math.max(14, (dayCount || 1) + 1)
                     });
                 }
                 const activeAtlas = entities.find(e => e instanceof AtlasExplorer && !e.isDeparted);
@@ -9547,7 +9641,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (btn) {
                 const isOn = !!curCfg[key];
                 btn.innerText = isOn ? "ON" : "OFF";
-                btn.className = "mc-btn";
+                btn.className = isOn ? "mc-btn is-on" : "mc-btn is-off";
             }
         });
     }
