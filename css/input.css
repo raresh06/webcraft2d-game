@@ -3665,7 +3665,7 @@
         .toast { background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border: 2px solid #555; border-radius: 4px; font-size: 20px; text-shadow: 1px 1px 0 #000; box-shadow: 0 4px 6px rgba(0,0,0,0.5); animation: fadeinout 3s forwards; }
         @keyframes fadeinout { 0% { opacity: 0; transform: translateY(10px); } 10% { opacity: 1; transform: translateY(0); } 90% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-10px); } }
 
-        .whats-new-panel, #kick-modal > div, .skin-library, #pause-menu > section, #death-menu > section, .publish-mp-panel {
+        .whats-new-panel, #kick-modal > div, .skin-library, #pause-menu > section, .publish-mp-panel {
             background-color: #20252b !important;
             background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 5px) !important;
             border: 4px solid !important; border-top-color: #aebac2 !important; border-left-color: #aebac2 !important;
@@ -3678,11 +3678,11 @@
         .skin-library { color: #f2f6f8; }
         .skin-card { background: #333a41; border-top-color: #69737b; border-left-color: #69737b; border-right-color: #111820; border-bottom-color: #111820; border-radius: 0; }
         .skin-add { background: #171b20; border-color: #69737b; }
-        #pause-menu, #death-menu { gap: 8px; }
-        #pause-menu > section, #death-menu > section { width: min(460px, calc(100vw - 28px)); padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        #pause-menu { gap: 8px; }
+        #pause-menu > section { width: min(460px, calc(100vw - 28px)); padding: 20px; display: flex; flex-direction: column; align-items: center; }
         #pause-menu > section { gap: 8px; }
-        #pause-menu .mc-title, #death-menu .mc-title { margin: 0 0 16px; font-size: 64px; text-align: center; }
-        #pause-menu .mc-btn, #death-menu .mc-btn { width: 100%; margin: 0; }
+        #pause-menu .mc-title { margin: 0 0 16px; font-size: 64px; text-align: center; }
+        #pause-menu .mc-btn { width: 100%; margin: 0; }
             .screen-title { font-family: 'VT323', monospace !important; font-size: 56px !important; font-weight: bold !important; line-height: 1 !important; letter-spacing: 0 !important; text-align: center !important; color: var(--mc-accent-color) !important; text-shadow: 3px 3px 0 #080a0c !important; }
             @media (max-width: 480px) { .screen-title { font-size: 48px !important; } }
             #worlds-menu > .worlds-panel { width: min(760px, calc(100vw - 28px)); max-height: 88vh; box-sizing: border-box; padding: 18px; background-color: #20252b !important; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 5px) !important; border: 4px solid !important; border-top-color: #aebac2 !important; border-left-color: #aebac2 !important; border-right-color: #080a0c !important; border-bottom-color: #080a0c !important; box-shadow: inset 0 0 0 2px #2a3036, 7px 7px 0 rgba(0,0,0,0.45) !important; display: flex; flex-direction: column; align-items: center; }
@@ -4311,7 +4311,8 @@
 #main-menu { z-index: 40 !important; }
 #worlds-menu { z-index: 50 !important; }
 #skins-menu, #achievements-menu, #settings-menu { z-index: 60 !important; }
-#pause-menu, #death-menu { z-index: 80 !important; }
+#pause-menu { z-index: 80 !important; }
+#death-menu { z-index: 150 !important; }
 #world-map-modal { z-index: 180 !important; }
 #multiplayer-modal { z-index: 200 !important; }
 #new-world-modal, #create-room-modal, #join-room-modal, #publish-multiplayer-modal,
@@ -6584,6 +6585,122 @@ html.closed-beta-pending #boot-loading-screen {
   left: 0;
   bottom: 0;
   width: 4px;
+}
+
+/* Classic Minecraft Full-Screen Death Screen */
+#death-menu {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(90, 0, 0, 0.85) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 150 !important;
+}
+#death-menu.hidden {
+  display: none !important;
+}
+#death-menu h1.screen-title {
+  font-family: 'VT323', monospace !important;
+  font-size: clamp(64px, 10vw, 96px) !important;
+  color: #ef4444 !important;
+  text-shadow: 4px 4px 0 #000, 0 0 24px rgba(239,68,68,0.5) !important;
+  margin: 0 0 6px !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+#death-menu #death-subtitle {
+  font-family: 'VT323', monospace !important;
+  font-size: clamp(24px, 4vw, 32px) !important;
+  color: #ffffff !important;
+  text-shadow: 2px 2px 0 #000 !important;
+  margin: 0 0 28px !important;
+  text-align: center !important;
+}
+.death-actions-wrapper {
+  width: min(380px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.death-actions-wrapper .mc-btn {
+  width: 100% !important;
+  margin: 0 !important;
+  font-size: 26px !important;
+  padding: 10px 16px !important;
+  font-family: 'VT323', monospace !important;
+}
+#respawn-keep-items-btn {
+  background: #3b0764 !important;
+  color: #f3e8ff !important;
+  border: 3px solid !important;
+  border-top-color: #c084fc !important;
+  border-left-color: #c084fc !important;
+  border-right-color: #1e0538 !important;
+  border-bottom-color: #1e0538 !important;
+  box-shadow: inset 0 0 0 1px #6b21a8, 0 0 22px rgba(168, 85, 247, 0.45) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+#respawn-keep-items-btn:hover:not(:disabled) {
+  background: #581c87 !important;
+  border-top-color: #e9d5ff !important;
+  border-left-color: #e9d5ff !important;
+  box-shadow: inset 0 0 0 1px #9333ea, 0 0 28px rgba(192, 132, 252, 0.65) !important;
+  transform: translateY(-1px);
+}
+#respawn-keep-items-btn:active:not(:disabled) {
+  background: #2e1065 !important;
+  transform: translateY(1px);
+}
+#respawn-keep-items-btn:disabled, #respawn-keep-items-btn.disabled {
+  opacity: 0.50 !important;
+  filter: grayscale(0.85) !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+}
+.death-emerald-cost-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #170729;
+  border: 1.5px solid #c084fc;
+  color: #f5d0fe;
+  padding: 1px 7px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  box-shadow: inset 0 0 6px rgba(192, 132, 252, 0.35);
+  margin-left: 6px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+#respawn-btn {
+  background-color: #b91c1c !important;
+  color: #ffffff !important;
+  border: 3px solid !important;
+  border-top-color: #ef4444 !important;
+  border-left-color: #ef4444 !important;
+  border-right-color: #450a0a !important;
+  border-bottom-color: #450a0a !important;
+}
+#respawn-btn:hover {
+  background-color: #dc2626 !important;
+  border-top-color: #f87171 !important;
+  border-left-color: #f87171 !important;
 }
 
 

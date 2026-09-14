@@ -29,7 +29,8 @@ import {
     Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon, Parrot,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
-    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable, dismountAllShoulderParrots,
+    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable, sanitizeTreeWoodCollision, dismountAllShoulderParrots,
+    setEngineNonCollidableTreeWood,
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
@@ -79,6 +80,7 @@ export {
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
+    setEngineNonCollidableTreeWood,
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
@@ -842,6 +844,16 @@ export function initJukeboxFileInput() {
             return;
         }
 
+        const isSignActive = (typeof UI !== 'undefined' && UI.isSignEditorOpen) || (typeof window !== 'undefined' && window.isSignEditorOpen) || (document.getElementById('sign-edit-modal') && !document.getElementById('sign-edit-modal').classList.contains('hidden'));
+        if (isSignActive) {
+            if (isEscape) {
+                e.preventDefault();
+                if (typeof UI.closeSignEditor === 'function') UI.closeSignEditor(true);
+                else if (typeof window.closeSignEditor === 'function') window.closeSignEditor(true);
+            }
+            return;
+        }
+
         // Ignore hotkeys when typing into search or text inputs
         if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
             if (isEscape) {
@@ -872,11 +884,12 @@ export function initJukeboxFileInput() {
             return;
         }
         if (STATE === 'PLAYING') {
-            const chatKey = (KEYBINDS['chat'] || 't').toLowerCase();
-            const mapKey = (KEYBINDS['map'] || 'm').toLowerCase();
-            const invKey = (KEYBINDS['inventory'] || 'e').toLowerCase();
-            const dropKey = (KEYBINDS['drop'] || 'q').toLowerCase();
-            const debugKey = (KEYBINDS['debug'] || 'f3').toLowerCase();
+            const activeKeybinds = (typeof UI !== 'undefined' && UI.KEYBINDS) ? UI.KEYBINDS : ((typeof window !== 'undefined' && window.KEYBINDS) ? window.KEYBINDS : {});
+            const chatKey = (activeKeybinds['chat'] || 't').toLowerCase();
+            const mapKey = (activeKeybinds['map'] || 'm').toLowerCase();
+            const invKey = (activeKeybinds['inventory'] || 'e').toLowerCase();
+            const dropKey = (activeKeybinds['drop'] || 'q').toLowerCase();
+            const debugKey = (activeKeybinds['debug'] || 'f3').toLowerCase();
 
             if (isMultiplayer && (k === chatKey || k === '/') && !isInventoryOpen && !isWorldMapOpen) {
                 e.preventDefault();
@@ -921,8 +934,10 @@ export function initJukeboxFileInput() {
                 }
                 return;
             }
-            if (k === debugKey) {
-                e.preventDefault(); toggleDebug();
+            if (k === debugKey || e.code === 'F3' || k === 'f3') {
+                e.preventDefault();
+                if (typeof UI !== 'undefined' && typeof UI.toggleDebug === 'function') UI.toggleDebug();
+                else if (typeof window !== 'undefined' && typeof window.toggleDebug === 'function') window.toggleDebug();
             }
             else if (k === invKey || k === 'e') {
                 const atlasDialogueModal = document.getElementById('atlas-dialogue-modal');
@@ -2579,7 +2594,13 @@ export function initJukeboxFileInput() {
     }
 
     export function startGameplay() {
-        ensureTreeWoodNonCollidable();
+        if (typeof window !== 'undefined' && window.nonCollidableTreeWood && window.nonCollidableTreeWood.size > 0) {
+            if (typeof setEngineNonCollidableTreeWood === 'function') setEngineNonCollidableTreeWood(window.nonCollidableTreeWood);
+        } else if (typeof ensureTreeWoodNonCollidable === 'function') {
+            ensureTreeWoodNonCollidable();
+        }
+        if (typeof sanitizeTreeWoodCollision === 'function') sanitizeTreeWoodCollision();
+        else if (typeof window !== 'undefined' && typeof window.sanitizeTreeWoodCollision === 'function') window.sanitizeTreeWoodCollision();
         recoverUnqueuedSaplings();
         document.getElementById('main-menu').classList.add('hidden');
         document.getElementById('worlds-menu').classList.add('hidden'); 
@@ -2856,11 +2877,19 @@ export function initJukeboxFileInput() {
         handleContinuousPlacingLogic();
         clouds.forEach(c => c.update());
         
-        for (let i = 0; i < particles.length; i++) {
+        for (let i = particles.length - 1; i >= 0; i--) {
             if (particles[i].alive) particles[i].update();
+            if (!particles[i].alive) particles.splice(i, 1);
         }
-        for (let i = 0; i < noteParticles.length; i++) {
+        if (particles.length > 400) {
+            particles.splice(0, particles.length - 400);
+        }
+        for (let i = noteParticles.length - 1; i >= 0; i--) {
             if (noteParticles[i].alive) noteParticles[i].update();
+            if (!noteParticles[i].alive) noteParticles.splice(i, 1);
+        }
+        if (noteParticles.length > 100) {
+            noteParticles.splice(0, noteParticles.length - 100);
         }
         if (typeof jukebox !== 'undefined' && jukebox.isPlaying && jukebox.getActiveJukebox()) {
             const aj = jukebox.getActiveJukebox();
@@ -3085,7 +3114,9 @@ export function initJukeboxFileInput() {
                 if (typeof drawWorld === 'function') drawWorld();
             }
 
-            if(showDebug && STATE === 'PLAYING' && frameCount % 10 === 0 && player) {
+            const curShowDebug = (typeof window !== 'undefined' && window.showDebug !== undefined) ? window.showDebug : showDebug;
+            const dbgEl = document.getElementById('debug-info');
+            if(curShowDebug && STATE === 'PLAYING' && player && (frameCount % 10 === 0 || (dbgEl && dbgEl.innerText === 'Debug Screen'))) {
                 let px = player.x / TILE_SIZE;
                 let py = WORLD_HEIGHT - (player.y + player.height) / TILE_SIZE;
                 let gx = Math.floor(mouse.worldX / TILE_SIZE); let gy = Math.floor(mouse.worldY / TILE_SIZE);
@@ -3104,7 +3135,6 @@ export function initJukeboxFileInput() {
                 let isSnowy = typeof getSnowBiomeRatio === 'function' ? getSnowBiomeRatio(debugGridX, 8) > 0.35 : false;
                 let biome = (caveSkyOpacity > 0.4 && playerFeetGridY > surfaceY + CAVE_SKY_START_TILES) ? 'Underground' : (isSnowy ? 'Snowy Biome' : 'Plains Surface');
 
-                const dbgEl = document.getElementById('debug-info');
                 if (dbgEl) {
                     const curGraphicsMode = (typeof window !== 'undefined' && window.graphicsMode) ? window.graphicsMode : graphicsMode;
                     let kaelStatus = 'Day 14';

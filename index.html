@@ -842,21 +842,57 @@
     </div>
 
     <!-- Sign Edit Modal (Minecraft Wooden Sign Editor) -->
-    <div id="sign-edit-modal" class="menu-overlay hidden bg-black/75 backdrop-blur-sm z-[320] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="sign-edit-title">
-        <div class="flex flex-col items-center select-none animate-scale-up" style="max-width: 360px; width: 100%;">
-            <h2 id="sign-edit-title" class="text-2xl sm:text-3xl font-bold text-amber-200 drop-shadow-[2px_2px_0_#000] mb-3 font-['VT323'] tracking-wide">Edit Sign Message</h2>
-            
-            <!-- Minecraft Sign Wooden Board -->
-            <div class="relative w-full max-w-[320px] bg-[#9a7444] border-4 border-[#523d21] shadow-[4px_4px_0_#000] p-4 flex flex-col items-center gap-1.5" style="background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 2px, transparent 2px, transparent 8px);">
-                <input id="sign-line-0" type="text" maxlength="24" class="sign-input-line w-full text-center font-['VT323'] text-xl text-black bg-transparent border-b border-black/20 focus:border-black focus:outline-none placeholder-amber-900/40" placeholder="" autocomplete="off" spellcheck="false" />
-                <input id="sign-line-1" type="text" maxlength="24" class="sign-input-line w-full text-center font-['VT323'] text-xl text-black bg-transparent border-b border-black/20 focus:border-black focus:outline-none placeholder-amber-900/40" placeholder="" autocomplete="off" spellcheck="false" />
-                <input id="sign-line-2" type="text" maxlength="24" class="sign-input-line w-full text-center font-['VT323'] text-xl text-black bg-transparent border-b border-black/20 focus:border-black focus:outline-none placeholder-amber-900/40" placeholder="" autocomplete="off" spellcheck="false" />
-                <input id="sign-line-3" type="text" maxlength="24" class="sign-input-line w-full text-center font-['VT323'] text-xl text-black bg-transparent border-b border-black/20 focus:border-black focus:outline-none placeholder-amber-900/40" placeholder="" autocomplete="off" spellcheck="false" />
+    <div id="sign-edit-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-sm z-[320] flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="sign-edit-title" onclick="if (event.target === this) closeSignEditor(true);">
+        <div class="flex flex-col items-center select-none animate-scale-up" style="max-width: 440px; width: 100%;" onclick="event.stopPropagation();">
+            <div class="flex items-center justify-between w-full mb-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📜</span>
+                    <h2 id="sign-edit-title" class="text-2xl sm:text-3xl font-bold text-amber-200 drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide">Edit Sign Board</h2>
+                </div>
+                <button type="button" class="text-gray-400 hover:text-white font-bold text-xl px-2 py-0.5 bg-black/40 hover:bg-black/70 border border-gray-600 rounded cursor-pointer" onclick="closeSignEditor(false)" title="Cancel">✕</button>
             </div>
-            <!-- Sign Post Graphic -->
-            <div class="w-6 h-10 bg-[#7c562c] border-x-2 border-b-2 border-[#523d21] shadow-[2px_2px_0_#000]"></div>
+            
+            <!-- Minecraft Oak Sign Board Frame -->
+            <div class="relative w-full bg-[#9a7444] border-4 border-[#523d21] shadow-[6px_6px_0_#000] p-3 sm:p-4 flex flex-col gap-2" style="background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 8px), linear-gradient(180deg, #a7804d 0%, #8d6738 100%);">
+                <!-- Line 0 -->
+                <div id="sign-row-0" class="sign-line-row flex items-center gap-2 px-2 py-1 bg-black/10 border-2 border-transparent transition-colors rounded cursor-text" onclick="focusSignLine(0)">
+                    <span class="sign-line-num text-xs font-mono font-bold text-amber-900/70 bg-amber-200/50 px-1.5 py-0.5 rounded select-none">1</span>
+                    <input id="sign-line-0" type="text" maxlength="24" class="sign-input-line flex-1 text-center font-['VT323'] text-2xl text-[#2a1708] font-bold bg-transparent outline-none placeholder-amber-950/35 tracking-wide caret-[#2a1708]" placeholder="Line 1..." autocomplete="off" spellcheck="false" />
+                    <span id="sign-count-0" class="sign-char-count text-xs font-mono font-bold text-amber-900/60 select-none w-8 text-right">0/24</span>
+                </div>
+                <!-- Line 1 -->
+                <div id="sign-row-1" class="sign-line-row flex items-center gap-2 px-2 py-1 bg-black/10 border-2 border-transparent transition-colors rounded cursor-text" onclick="focusSignLine(1)">
+                    <span class="sign-line-num text-xs font-mono font-bold text-amber-900/70 bg-amber-200/50 px-1.5 py-0.5 rounded select-none">2</span>
+                    <input id="sign-line-1" type="text" maxlength="24" class="sign-input-line flex-1 text-center font-['VT323'] text-2xl text-[#2a1708] font-bold bg-transparent outline-none placeholder-amber-950/35 tracking-wide caret-[#2a1708]" placeholder="Line 2..." autocomplete="off" spellcheck="false" />
+                    <span id="sign-count-1" class="sign-char-count text-xs font-mono font-bold text-amber-900/60 select-none w-8 text-right">0/24</span>
+                </div>
+                <!-- Line 2 -->
+                <div id="sign-row-2" class="sign-line-row flex items-center gap-2 px-2 py-1 bg-black/10 border-2 border-transparent transition-colors rounded cursor-text" onclick="focusSignLine(2)">
+                    <span class="sign-line-num text-xs font-mono font-bold text-amber-900/70 bg-amber-200/50 px-1.5 py-0.5 rounded select-none">3</span>
+                    <input id="sign-line-2" type="text" maxlength="24" class="sign-input-line flex-1 text-center font-['VT323'] text-2xl text-[#2a1708] font-bold bg-transparent outline-none placeholder-amber-950/35 tracking-wide caret-[#2a1708]" placeholder="Line 3..." autocomplete="off" spellcheck="false" />
+                    <span id="sign-count-2" class="sign-char-count text-xs font-mono font-bold text-amber-900/60 select-none w-8 text-right">0/24</span>
+                </div>
+                <!-- Line 3 -->
+                <div id="sign-row-3" class="sign-line-row flex items-center gap-2 px-2 py-1 bg-black/10 border-2 border-transparent transition-colors rounded cursor-text" onclick="focusSignLine(3)">
+                    <span class="sign-line-num text-xs font-mono font-bold text-amber-900/70 bg-amber-200/50 px-1.5 py-0.5 rounded select-none">4</span>
+                    <input id="sign-line-3" type="text" maxlength="24" class="sign-input-line flex-1 text-center font-['VT323'] text-2xl text-[#2a1708] font-bold bg-transparent outline-none placeholder-amber-950/35 tracking-wide caret-[#2a1708]" placeholder="Line 4..." autocomplete="off" spellcheck="false" />
+                    <span id="sign-count-3" class="sign-char-count text-xs font-mono font-bold text-amber-900/60 select-none w-8 text-right">0/24</span>
+                </div>
+            </div>
 
-            <button type="button" class="mc-btn !w-36 !py-1 !text-2xl mt-3 font-['VT323']" onclick="closeSignEditor(true)">Done</button>
+            <!-- Sign Post Graphic -->
+            <div class="w-8 h-8 bg-[#7c562c] border-x-4 border-b-4 border-[#523d21] shadow-[2px_2px_0_#000]"></div>
+
+            <!-- Helper Navigation Hint -->
+            <div class="text-center text-sm font-['VT323'] text-amber-200/80 mt-1 mb-2">
+                <span>Enter or ↓ : Next Line &bull; ↑ : Prev Line &bull; Esc : Done</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-3 w-full justify-center">
+                <button type="button" class="mc-btn !w-32 !py-1 !text-2xl !bg-[#333a41] !text-gray-300 hover:!bg-[#46515a] font-['VT323']" onclick="closeSignEditor(false)">Cancel</button>
+                <button type="button" class="mc-btn !w-40 !py-1 !text-2xl !bg-[#2e7d32] hover:!bg-[#388e3c] !text-white font-['VT323'] shadow-[inset_0_-2px_0_rgba(0,0,0,0.3)]" onclick="closeSignEditor(true)">Done</button>
+            </div>
         </div>
     </div>
 
@@ -3810,13 +3846,26 @@
         </section>
     </div>
 
-    <div id="death-menu" class="menu-overlay hidden bg-red-900/90 backdrop-blur-md z-[150]">
-        <section>
-        <h1 class="screen-title mc-title !text-red-500 mb-1">You Died!</h1>
-        <p id="death-subtitle" class="text-white text-2xl mb-6 font-bold drop-shadow">Game Over</p>
-        <button id="respawn-btn" class="mc-btn mb-3 !bg-red-700 !text-white hover:!bg-red-600" onclick="respawn()">Respawn</button>
-        <button class="mc-btn !bg-gray-400 !text-black" onclick="quitToMenu()">Disconnect / Quit</button>
-        </section>
+    <div id="death-menu" class="menu-overlay hidden fixed inset-0 z-[150] flex flex-col items-center justify-center p-4 select-none">
+        <h1 class="screen-title mb-2">You Died!</h1>
+        <p id="death-subtitle">Game Over</p>
+
+        <div class="death-actions-wrapper">
+            <!-- Astral Respawn Option (Keep Inventory for 1 Astral Emerald) -->
+            <div id="death-astral-container" class="w-full hidden">
+                <button id="respawn-keep-items-btn" type="button" class="mc-btn" onclick="respawnWithAstralProtection()">
+                    <span id="death-astral-gem-icon" class="inline-block w-6 h-6 flex-shrink-0"></span>
+                    <span>Respawn & Keep Items</span>
+                    <span class="death-emerald-cost-badge">1 ✦</span>
+                </button>
+                <div id="death-astral-balance-text" class="text-base font-['VT323'] text-[#d8b4fe] flex items-center justify-center gap-1 mt-1">
+                    <span>Available: <strong id="death-astral-balance-count" class="text-yellow-300 font-mono">0</strong> Astral Emeralds</span>
+                </div>
+            </div>
+
+            <button id="respawn-btn" class="mc-btn" onclick="respawn(false)">Respawn</button>
+            <button class="mc-btn !bg-[#333a41] !text-gray-300 hover:!bg-[#46515a]" onclick="quitToMenu()">Disconnect / Quit</button>
+        </div>
     </div>
 
     <!-- Background Building Mode Warm Orange Glow Overlay -->
