@@ -234,7 +234,7 @@ export function getMaxAnimals() {
         return fpsCap === 0 ? "Unlimited" : `${fpsCap} FPS`;
     }
 
-    export const LIGHT_SCALE = 0.5;
+    export const LIGHT_SCALE = 1.0;
     export let canvas = typeof document !== 'undefined' ? document.getElementById('gameCanvas') : null;
     export let ctx = canvas ? canvas.getContext('2d', { alpha: false }) : null;
     export let menuBgCanvas = typeof document !== 'undefined' ? document.getElementById('menuBgCanvas') : null;
@@ -3081,6 +3081,29 @@ export function getMaxAnimals() {
         textures[id] = tempCanvas;
     }
     Object.values(IDS).forEach(id => { if (id !== IDS.AIR) generateTexture(id); });
+
+    // Pre-rendered subterranean cavern wall backdrop textures
+    export const cachedCavernWallStone = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const cachedCavernWallDirt = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const cachedCavernWallSand = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+
+    export function initCavernWallTextures() {
+        if (typeof document === 'undefined') return;
+        const prepareWall = (targetCanvas, baseTex, darkTint) => {
+            if (!targetCanvas || !baseTex) return;
+            targetCanvas.width = 16;
+            targetCanvas.height = 16;
+            const wCtx = targetCanvas.getContext('2d');
+            wCtx.imageSmoothingEnabled = false;
+            wCtx.drawImage(baseTex, 0, 0, 16, 16);
+            wCtx.fillStyle = darkTint;
+            wCtx.fillRect(0, 0, 16, 16);
+        };
+        if (textures[IDS.STONE]) prepareWall(cachedCavernWallStone, textures[IDS.STONE], 'rgba(4, 4, 8, 0.78)');
+        if (textures[IDS.DIRT]) prepareWall(cachedCavernWallDirt, textures[IDS.DIRT], 'rgba(7, 5, 4, 0.75)');
+        if (textures[IDS.SAND]) prepareWall(cachedCavernWallSand, textures[IDS.SAND], 'rgba(12, 9, 6, 0.72)');
+    }
+    initCavernWallTextures();
 
     export const largeChestTexture = typeof document !== 'undefined' ? document.createElement('canvas') : null;
     if (largeChestTexture) {
@@ -12350,6 +12373,25 @@ export const SKIN_H = 32;
             for (let y = startRow; y <= endRow; y++) {
                 let block = world[x][y];
                 if (block === IDS.AIR) {
+                    // Cavern backdrop: prevent blue sky / parallax mountains from showing inside subterranean caves
+                    const hasPlayerBg = bgWorld && bgWorld[x] && bgWorld[x][y] !== IDS.AIR && bgWorld[x][y] !== undefined;
+                    if (!hasPlayerBg && x >= 0 && x < WORLD_WIDTH) {
+                        const surfY = (surfaceHeights && surfaceHeights[x] !== undefined) ? surfaceHeights[x] : getWorldSurfaceY(x);
+                        const topSolidY = getWorldSurfaceY(x);
+                        if (y >= surfY && (topSolidY < y || y >= surfY + 2)) {
+                            let drawY = Math.round(y * TILE_SIZE - camY);
+                            let cavernWall = cachedCavernWallStone;
+                            if (worldBiomes && worldBiomes[x] === 'desert') {
+                                cavernWall = cachedCavernWallSand || cachedCavernWallStone;
+                            } else if (y < surfY + 4) {
+                                cavernWall = cachedCavernWallDirt || cachedCavernWallStone;
+                            }
+                            if (cavernWall) {
+                                ctx.drawImage(cavernWall, drawX, drawY, TILE_SIZE, TILE_SIZE);
+                            }
+                        }
+                    }
+
                     // Natural Ambient Occlusion (AO) on cave ceilings, overhangs, walls, and inner corners
                     if (advancedGraphics && y > 0 && y >= surfaceHeights[x]) {
                         const hasCeiling = world[x][y - 1] !== undefined && isSolidWorldBlock(x, y - 1, world[x][y - 1]);
@@ -12894,20 +12936,87 @@ export const SKIN_H = 32;
         else if (timeOfDay > 0.90) surfaceDarkness = 0.8 - ((timeOfDay - 0.90) * 8);
         surfaceDarkness = Math.max(0, Math.min(0.85, surfaceDarkness));
 
-        // Depth darkness: Smoothly scales darker as you descend into deep underground caves
-        let ambientDarkness = Math.max(surfaceDarkness, caveSkyOpacity * 0.94);
-
-        if (ambientDarkness > 0) {
-            lightCtx.fillStyle = `rgba(0, 0, 15, ${ambientDarkness})`;
+        // Base surface night darkness fill across screen
+        if (surfaceDarkness > 0) {
+            lightCtx.fillStyle = `rgba(0, 0, 15, ${surfaceDarkness})`;
             lightCtx.fillRect(0, 0, lightCanvas.width, lightCanvas.height);
+        }
+
+        // Terraria-style subterranean depth shadow gradient
+        // Envelops subterranean blocks and caves in intense atmospheric darkness unless lit by light sources
+        const subDarkness = 0.988;
+        const depthSteps = [0.55, 0.90, 0.97];
+
+        for (let x = startCol; x <= endCol; x++) {
+            let drawX = x * TILE_SIZE - camX;
+            let drawW = TILE_SIZE;
+
+            let surfY = Math.floor(WORLD_HEIGHT / 2);
+            if (x >= 0 && x < WORLD_WIDTH) {
+                const natSurfY = (surfaceHeights && surfaceHeights[x] !== undefined) ? surfaceHeights[x] : getWorldSurfaceY(x);
+                const topSolidY = getWorldSurfaceY(x);
+                surfY = Math.max(natSurfY, topSolidY);
+            }
+
+            // Depth transition rows from surfY to surfY + 2
+            for (let d = 0; d < 3; d++) {
+                let gy = surfY + d;
+                if (gy >= startRow && gy <= endRow) {
+                    let dAlpha = surfaceDarkness + (subDarkness - surfaceDarkness) * depthSteps[d];
+
+                    // Soften darkness if this is an open cave mouth bordering exterior daylight horizontally
+                    if (x >= 0 && x < WORLD_WIDTH && world[x]?.[gy] === IDS.AIR) {
+                        const leftAir = x > 0 && world[x - 1]?.[gy] === IDS.AIR && gy < Math.max(surfaceHeights[x - 1] || surfY, getWorldSurfaceY(x - 1));
+                        const rightAir = x < WORLD_WIDTH - 1 && world[x + 1]?.[gy] === IDS.AIR && gy < Math.max(surfaceHeights[x + 1] || surfY, getWorldSurfaceY(x + 1));
+                        if (leftAir || rightAir) {
+                            dAlpha = Math.max(surfaceDarkness, dAlpha - 0.40);
+                        }
+                    }
+
+                    if (dAlpha > surfaceDarkness) {
+                        let drawY = gy * TILE_SIZE - camY;
+                        lightCtx.fillStyle = `rgba(0, 0, 6, ${dAlpha})`;
+                        lightCtx.fillRect(drawX, drawY, drawW, TILE_SIZE);
+                    }
+                }
+            }
+
+            // Deep subterranean shadow rows (surfY + 3 downward to endRow)
+            let deepStartRow = Math.max(startRow, surfY + 3);
+            if (deepStartRow <= endRow) {
+                let uniformStartRow = deepStartRow;
+                for (let gy = deepStartRow; gy <= Math.min(endRow, deepStartRow + 2); gy++) {
+                    if (x >= 0 && x < WORLD_WIDTH && world[x]?.[gy] === IDS.AIR) {
+                        const leftAir = x > 0 && world[x - 1]?.[gy] === IDS.AIR && gy < Math.max(surfaceHeights[x - 1] || surfY, getWorldSurfaceY(x - 1));
+                        const rightAir = x < WORLD_WIDTH - 1 && world[x + 1]?.[gy] === IDS.AIR && gy < Math.max(surfaceHeights[x + 1] || surfY, getWorldSurfaceY(x + 1));
+                        if (leftAir || rightAir) {
+                            let dAlpha = Math.max(surfaceDarkness, subDarkness - 0.35);
+                            let drawY = gy * TILE_SIZE - camY;
+                            lightCtx.fillStyle = `rgba(0, 0, 6, ${dAlpha})`;
+                            lightCtx.fillRect(drawX, drawY, drawW, TILE_SIZE);
+                            uniformStartRow = gy + 1;
+                        }
+                    }
+                }
+
+                if (uniformStartRow <= endRow) {
+                    let deepY0 = uniformStartRow * TILE_SIZE - camY;
+                    let deepY1 = (endRow + 1) * TILE_SIZE - camY;
+                    let deepH = deepY1 - deepY0;
+                    if (deepH > 0) {
+                        lightCtx.fillStyle = `rgba(0, 0, 6, ${subDarkness})`;
+                        lightCtx.fillRect(drawX, deepY0, drawW, deepH);
+                    }
+                }
+            }
         }
 
         lightCtx.globalCompositeOperation = 'destination-out';
         
         function drawLight(worldX, worldY, radius, intensity) {
-            let drawX = (worldX - camera.x) * LIGHT_SCALE;
-            let drawY = (worldY - camera.y) * LIGHT_SCALE;
-            let r = radius * LIGHT_SCALE;
+            let drawX = Math.round(worldX - camX);
+            let drawY = Math.round(worldY - camY);
+            let r = Math.round(radius);
             if (drawX < -r || drawX > lightCanvas.width + r || drawY < -r || drawY > lightCanvas.height + r) return;
             lightCtx.globalAlpha = intensity;
             lightCtx.drawImage(cachedTorchLightCanvas, drawX - r, drawY - r, r * 2, r * 2);
@@ -12967,9 +13076,7 @@ export const SKIN_H = 32;
             lightCtx.globalAlpha = 1.0;
         }
         ctx.globalCompositeOperation = 'source-over';
-        ctx.imageSmoothingEnabled = true;
-        ctx.drawImage(lightCanvas, 0, 0, canvas.width, canvas.height);
-        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(lightCanvas, 0, 0);
 
         if (advancedGraphics) {
             ctx.save();
@@ -12979,8 +13086,8 @@ export const SKIN_H = 32;
             for (let i = 0; i < visibleLightSources.length; i++) {
                 const ls = visibleLightSources[i];
                 if (ls.type === 'torch') {
-                    let gx = ls.x - camera.x;
-                    let gy = ls.y - camera.y;
+                    let gx = Math.round(ls.x - camX);
+                    let gy = Math.round(ls.y - camY);
                     ctx.drawImage(cachedTorchGlowCanvas, gx - glowR, gy - glowR, glowD, glowD);
                     ctx.fillStyle = 'rgba(255, 235, 160, 0.34)';
                     ctx.fillRect(Math.floor(gx - 3), Math.floor(gy - 3), 6, 6);
@@ -13979,3 +14086,7 @@ try { if (typeof worldBiomes !== "undefined") window.worldBiomes = worldBiomes; 
 try { if (typeof signs !== "undefined") window.signs = signs; } catch(e) {}
 try { if (typeof setEngineSigns !== "undefined") window.setEngineSigns = setEngineSigns; } catch(e) {}
 try { if (typeof deliverLeafDecayItem !== "undefined") window.deliverLeafDecayItem = deliverLeafDecayItem; } catch(e) {}
+try { if (typeof cachedCavernWallStone !== "undefined") window.cachedCavernWallStone = cachedCavernWallStone; } catch(e) {}
+try { if (typeof cachedCavernWallDirt !== "undefined") window.cachedCavernWallDirt = cachedCavernWallDirt; } catch(e) {}
+try { if (typeof cachedCavernWallSand !== "undefined") window.cachedCavernWallSand = cachedCavernWallSand; } catch(e) {}
+try { if (typeof initCavernWallTextures !== "undefined") window.initCavernWallTextures = initCavernWallTextures; } catch(e) {}

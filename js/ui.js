@@ -5698,9 +5698,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 const d = new Date(currentUserProfile.createdAt);
                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                 createdEl.innerText = `Crafter since: ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+                createdEl.innerText = `${months[d.getMonth()]} ${d.getFullYear()}`;
             } else {
                 createdEl.innerText = isGuest ? 'Session Started: Today' : `Crafter since: Beta v${DISPLAY_VERSION}`;
+                createdEl.innerText = isGuest ? 'Today' : `Beta v${DISPLAY_VERSION}`;
             }
+        }
+
+        const astralValEl = document.getElementById('profile-details-astral-val');
+        if (astralValEl) {
+            astralValEl.innerText = (typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0).toLocaleString();
         }
 
         // Emeralds
@@ -5730,20 +5737,32 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
 
         // Profile Customization Visuals (Banner, Frame, Crown, Title Badge, Name Color, Bio)
+        // Profile Customization Visuals (Theme, Banner, Frame, Crown, Status, Title Badge, Name Color, Bio)
         const cust = getPlayerCustomization();
+        const themeItem = getCosmeticItem(cust.cardTheme) || getCosmeticItem('theme_slate');
         const bannerItem = getCosmeticItem(cust.bannerPattern) || getCosmeticItem('banner_slate');
         const frameItem = getCosmeticItem(cust.avatarFrame) || getCosmeticItem('frame_classic');
         const titleItem = getCosmeticItem(cust.titlePlate) || getCosmeticItem('title_novice');
 
+        // 1. Card Theme
+        const cardEl = document.getElementById('profile-identity-card');
+        if (cardEl) {
+            cardEl.className = `discord-card-preview ${themeItem.themeClass} w-full relative mb-2.5 shadow-2xl select-none`;
+        }
+
+        // 2. Banner
         const bannerEl = document.getElementById('profile-overview-banner');
         if (bannerEl) {
             bannerEl.className = `w-full h-16 -mt-3 -mx-3 mb-2.5 ${bannerItem.bannerClass} relative overflow-hidden border-b-2 border-[#333e49]`;
+            bannerEl.className = `discord-card-banner ${bannerItem.bannerClass} w-full relative`;
             bannerEl.style.backgroundColor = cust.bannerColor || bannerItem.color || '#181e24';
         }
 
+        // 3. Avatar Frame & Crown & Status Dot
         const avatarFrameEl = document.getElementById('profile-overview-avatar-frame');
         if (avatarFrameEl) {
             avatarFrameEl.className = `profile-avatar-frame !w-20 !h-20 flex-shrink-0 ${frameItem.frameClass} bg-[#1e2732] p-1 relative`;
+            avatarFrameEl.className = `avatar-frame-wrapper ${frameItem.frameClass} relative`;
         }
 
         const crownEl = document.getElementById('profile-details-crown-icon');
@@ -5751,10 +5770,50 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             crownEl.classList.toggle('hidden', frameItem.id !== 'frame_crown');
         }
 
+        const statusDot = document.getElementById('profile-details-status-dot');
+        if (statusDot) {
+            statusDot.className = isGuest ? 'discord-avatar-status offline' : 'discord-avatar-status online';
+            statusDot.title = isGuest ? 'Guest Session' : 'Online in Webcraft';
+        }
+
+        // 4. Draw Crisp Player Head on 60x60 Canvas
+        const headCanvas = document.getElementById('profile-details-head-canvas');
+        if (headCanvas && typeof drawPlayerHead === 'function') {
+            const ctx = headCanvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, 60, 60);
+
+            const skinCanvas = (typeof window !== 'undefined' && window.skinCanvasObj) ? window.skinCanvasObj : skinCanvasObj;
+            if (skinCanvas) {
+                drawPlayerHead(ctx, skinCanvas, 0, 0, 60);
+            } else {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 16;
+                tempCanvas.height = 32;
+                const tCtx = tempCanvas.getContext('2d');
+                const imgData = tCtx.createImageData(16, 32);
+                const activeSkin = (typeof getSkinSaveData === 'function' ? getSkinSaveData() : null) || (typeof playerSkinData !== 'undefined' ? playerSkinData : null);
+                if (activeSkin) {
+                    for (let i = 0; i < 16 * 32; i++) {
+                        const c = activeSkin[i] || '#00000000';
+                        const rgb = hexToRgb(c);
+                        imgData.data[i * 4] = rgb.r;
+                        imgData.data[i * 4 + 1] = rgb.g;
+                        imgData.data[i * 4 + 2] = rgb.b;
+                        imgData.data[i * 4 + 3] = (c === '#00000000' || !c) ? 0 : 255;
+                    }
+                    tCtx.putImageData(imgData, 0, 0);
+                    drawPlayerHead(ctx, tempCanvas, 0, 0, 60);
+                }
+            }
+        }
+
+        // 5. Title Plate
         const titleBadgeEl = document.getElementById('profile-details-title-badge');
         if (titleBadgeEl) {
             if (titleItem.id !== 'title_novice') {
                 titleBadgeEl.classList.remove('hidden');
+                titleBadgeEl.className = 'profile-title-badge';
                 titleBadgeEl.innerText = titleItem.prefixTag || titleItem.name;
                 titleBadgeEl.style.borderColor = titleItem.nameColor;
                 titleBadgeEl.style.color = titleItem.nameColor;
@@ -5763,10 +5822,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
         }
 
+        // 6. Name Color
         if (nameEl) {
             nameEl.style.color = cust.nameColor || titleItem.nameColor || '#ffffff';
         }
 
+        // 7. Bio
         const bioDisplayEl = document.getElementById('profile-details-bio-display');
         if (bioDisplayEl) {
             if (cust.bio && cust.bio.trim()) {
@@ -5775,6 +5836,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             } else {
                 bioDisplayEl.classList.add('hidden');
             }
+            bioDisplayEl.innerText = (cust.bio && cust.bio.trim()) ? cust.bio.trim() : 'Mining across dimensions.';
         }
 
         // Upgrade or Sign out action button
