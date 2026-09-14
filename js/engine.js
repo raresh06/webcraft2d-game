@@ -193,6 +193,7 @@ export function syncFluidState() { if (typeof window !== 'undefined' && typeof w
 export function syncLocalPlayerState(immediate) { if (typeof window !== 'undefined' && typeof window.syncLocalPlayerState === 'function' && window.syncLocalPlayerState !== syncLocalPlayerState) return window.syncLocalPlayerState(immediate); }
 export function broadcastDataPacket(packet) { if (typeof window !== 'undefined' && typeof window.broadcastDataPacket === 'function' && window.broadcastDataPacket !== broadcastDataPacket) return window.broadcastDataPacket(packet); }
 export function deleteWorld(id, prompt) { if (typeof window !== 'undefined' && typeof window.deleteWorld === 'function' && window.deleteWorld !== deleteWorld) return window.deleteWorld(id, prompt); }
+export function setupDeathScreen() { if (typeof window !== 'undefined' && typeof window.setupDeathScreen === 'function') return window.setupDeathScreen(); }
 export function spawnDroppedItem(itemId, x, y, count = 1) {
     let dropId = `drop_${(typeof window !== 'undefined' && window.user?.uid) || 'local'}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const DropClass = (typeof ItemDrop !== 'undefined') ? ItemDrop : (typeof window !== 'undefined' ? window.ItemDrop : null);
@@ -1382,10 +1383,97 @@ export function getMaxAnimals() {
     }
     export let surfaceHeights = [];
     export let nonCollidableTreeWood = new Set();
+    export function setEngineNonCollidableTreeWood(newSet) {
+        nonCollidableTreeWood = (newSet instanceof Set) ? newSet : new Set(newSet || []);
+        if (typeof window !== 'undefined') {
+            window.nonCollidableTreeWood = nonCollidableTreeWood;
+        }
+        return nonCollidableTreeWood;
+    }
+    try { if (typeof window !== 'undefined') window.setEngineNonCollidableTreeWood = setEngineNonCollidableTreeWood; } catch(e) {}
+
     export function isWoodPartOfTree(wx, wy) {
         if (!world || !world[wx]) return false;
         const b = world[wx][wy];
         if (b !== IDS.WOOD && b !== IDS.JUNGLE_WOOD) return false;
+
+        // Check adjacent crafted blocks (doors, chests, furnaces, crafting tables, beds, stairs, ladders, glass)
+        const neighbors = [
+            world[wx - 1]?.[wy], world[wx + 1]?.[wy],
+            world[wx]?.[wy - 1], world[wx]?.[wy + 1]
+        ];
+        for (let i = 0; i < neighbors.length; i++) {
+            const nb = neighbors[i];
+            if (nb === IDS.PLANKS || nb === IDS.JUNGLE_PLANKS || nb === IDS.GLASS || nb === IDS.PRISM_GLASS ||
+                nb === IDS.CHEST || nb === IDS.FURNACE || nb === IDS.CRAFTING_TABLE || nb === IDS.BED ||
+                nb === IDS.WOODEN_STAIRS || nb === IDS.WOODEN_STAIRS_RIGHT ||
+                (nb >= IDS.DOOR && nb <= IDS.DOOR_OPEN_TOP) || (nb >= IDS.JUNGLE_DOOR && nb <= IDS.JUNGLE_DOOR_OPEN_TOP)) {
+                return false;
+            }
+        }
+
+        // Horizontal run check:
+        // Natural trees have trunk width 1 or 2 (giant jungle), plus at most 1 branch arm on a side (total width <= 3).
+        // A player-constructed floor, bridge, or roof has a horizontal run of >= 4 blocks.
+        let horizRun = 1;
+        let lx = wx - 1;
+        while (lx >= 0 && (world[lx]?.[wy] === IDS.WOOD || world[lx]?.[wy] === IDS.JUNGLE_WOOD || world[lx]?.[wy] === IDS.PLANKS || world[lx]?.[wy] === IDS.JUNGLE_PLANKS)) {
+            horizRun++;
+            lx--;
+        }
+        let rx = wx + 1;
+        while (rx < WORLD_WIDTH && (world[rx]?.[wy] === IDS.WOOD || world[rx]?.[wy] === IDS.JUNGLE_WOOD || world[rx]?.[wy] === IDS.PLANKS || world[rx]?.[wy] === IDS.JUNGLE_PLANKS)) {
+            horizRun++;
+            rx++;
+        }
+        if (horizRun >= 4) return false;
+
+        // Wood placed on leaves is only a player platform if horizRun >= 2 without a trunk beneath it
+        const below = world[wx]?.[wy + 1];
+        if ((below === IDS.LEAVES || below === IDS.JUNGLE_LEAVES) && horizRun >= 2) {
+            const hasTrunkUnderNeighbor = (world[wx - 1]?.[wy] === IDS.WOOD && world[wx - 1]?.[wy + 1] === IDS.WOOD) ||
+                                          (world[wx + 1]?.[wy] === IDS.WOOD && world[wx + 1]?.[wy + 1] === IDS.WOOD) ||
+                                          (world[wx - 1]?.[wy] === IDS.JUNGLE_WOOD && world[wx - 1]?.[wy + 1] === IDS.JUNGLE_WOOD) ||
+                                          (world[wx + 1]?.[wy] === IDS.JUNGLE_WOOD && world[wx + 1]?.[wy + 1] === IDS.JUNGLE_WOOD);
+            if (!hasTrunkUnderNeighbor) return false;
+        }
+
+        // Ground connectivity check:
+        // Natural ground types: DIRT, GRASS, STONE, SAND, PODZOL, SNOW.
+        const isNaturalGround = (blk) => (
+            blk === IDS.DIRT || blk === IDS.GRASS || blk === IDS.STONE ||
+            blk === IDS.SAND || blk === IDS.PODZOL || blk === IDS.SNOW
+        );
+
+        let reachesGround = false;
+        const colsToCheck = [wx];
+        if (world[wx - 1]?.[wy] === IDS.WOOD || world[wx - 1]?.[wy] === IDS.JUNGLE_WOOD) colsToCheck.push(wx - 1);
+        if (world[wx + 1]?.[wy] === IDS.WOOD || world[wx + 1]?.[wy] === IDS.JUNGLE_WOOD) colsToCheck.push(wx + 1);
+
+        for (let c = 0; c < colsToCheck.length; c++) {
+            const cx = colsToCheck[c];
+            const startY = (cx === wx) ? wy + 1 : wy;
+            let colOk = true;
+            let foundGround = false;
+            for (let cy = startY; cy < Math.min(WORLD_HEIGHT, wy + 26); cy++) {
+                const cb = world[cx]?.[cy];
+                if (isNaturalGround(cb)) {
+                    foundGround = true;
+                    break;
+                }
+                if (cb !== IDS.WOOD && cb !== IDS.JUNGLE_WOOD) {
+                    colOk = false;
+                    break;
+                }
+            }
+            if (foundGround && colOk) {
+                reachesGround = true;
+                break;
+            }
+        }
+        if (!reachesGround) return false;
+
+        // Leaf canopy proximity check (leaves within 4 horizontal, 16 vertical blocks)
         for (let dx = -4; dx <= 4; dx++) {
             for (let dy = -16; dy <= 4; dy++) {
                 const nx = wx + dx;
@@ -1398,6 +1486,35 @@ export function getMaxAnimals() {
         }
         return false;
     }
+
+    export function sanitizeTreeWoodCollision() {
+        if (!nonCollidableTreeWood || nonCollidableTreeWood.size === 0 || !world || !world.length) return;
+        const toRemove = [];
+        for (const cell of nonCollidableTreeWood) {
+            const sep = cell.indexOf('_');
+            if (sep === -1) { toRemove.push(cell); continue; }
+            const x = parseInt(cell.slice(0, sep), 10);
+            const y = parseInt(cell.slice(sep + 1), 10);
+            if (isNaN(x) || isNaN(y) || x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) {
+                toRemove.push(cell);
+                continue;
+            }
+            const b = world[x]?.[y];
+            if (b !== IDS.WOOD && b !== IDS.JUNGLE_WOOD) {
+                toRemove.push(cell);
+                continue;
+            }
+            // If not part of a natural tree trunk (e.g. treehouse platform, floor, wall, crafted block neighbor), heal it!
+            if (!isWoodPartOfTree(x, y)) {
+                toRemove.push(cell);
+            }
+        }
+        for (let i = 0; i < toRemove.length; i++) {
+            nonCollidableTreeWood.delete(toRemove[i]);
+        }
+        if (typeof window !== 'undefined') window.nonCollidableTreeWood = nonCollidableTreeWood;
+    }
+
     export function ensureTreeWoodNonCollidable() {
         if (!world || !world.length) return;
         for (let x = 0; x < WORLD_WIDTH; x++) {
@@ -1409,6 +1526,7 @@ export function getMaxAnimals() {
                 }
             }
         }
+        sanitizeTreeWoodCollision();
     }
     export let leafDecayQueue = new Map();
     export let treeDecayClusters = new Map();
@@ -3303,6 +3421,7 @@ export function getMaxAnimals() {
     initCavernWallTextures();
 
     export const largeChestTexture = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const largeChestImage = typeof Image !== 'undefined' ? new Image() : (largeChestTexture || {});
     if (largeChestTexture) {
         largeChestTexture.width = 32; largeChestTexture.height = 16;
         const largeChestCtx = largeChestTexture.getContext('2d');
@@ -3319,9 +3438,15 @@ export function getMaxAnimals() {
                 largeChestCtx.fillRect(x, y, 1, 1);
             }
         }
-        largeChestTexture.src = largeChestTexture.toDataURL ? largeChestTexture.toDataURL() : '';
+        largeChestTexture.complete = true;
+        if (largeChestTexture.toDataURL) {
+            const dataUrl = largeChestTexture.toDataURL();
+            largeChestTexture.src = dataUrl;
+            if (typeof Image !== 'undefined' && largeChestImage instanceof Image) {
+                largeChestImage.src = dataUrl;
+            }
+        }
     }
-    export const largeChestImage = largeChestTexture;
 
     export const furnaceLitTexture = typeof document !== 'undefined' ? document.createElement('canvas') : null;
     if (furnaceLitTexture) {
@@ -3998,7 +4123,8 @@ export const SKIN_H = 32;
         if (block === IDS.WHEAT_STAGE_1 || block === IDS.WHEAT_STAGE_2 || block === IDS.WHEAT_STAGE_3 || block === IDS.WHEAT_STAGE_4) return false;
         if (block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP || block === IDS.JUNGLE_DOOR_OPEN || block === IDS.JUNGLE_DOOR_OPEN_TOP) return false;
         if (block === IDS.WOOD || block === IDS.JUNGLE_WOOD) {
-            return !nonCollidableTreeWood.has(`${x}_${y}`);
+            const activeTreeWood = (typeof window !== 'undefined' && window.nonCollidableTreeWood) ? window.nonCollidableTreeWood : nonCollidableTreeWood;
+            return !activeTreeWood.has(`${x}_${y}`);
         }
         return true;
     }
@@ -4023,19 +4149,32 @@ export const SKIN_H = 32;
     export function getFluidKey(x, y) { return `${x}_${y}`; }
 
     export function getChestKey(x, y) { return `${x}_${y}`; }
+    export function isChestPairedWithLeft(cx, cy) {
+        if (cx <= 0 || !world || !world[cx - 1] || world[cx - 1][cy] !== IDS.CHEST) return false;
+        return !isChestPairedWithLeft(cx - 1, cy);
+    }
     export function getChestGroup(x, y) {
-        const neighbors = [[x, y], [x - 1, y], [x + 1, y]].filter(([cx, cy]) => world[cx]?.[cy] === IDS.CHEST);
-        const key = neighbors.map(([cx, cy]) => getChestKey(cx, cy)).sort()[0];
-        const existingGroups = neighbors.map(([cx, cy]) => chests.get(getChestKey(cx, cy))).filter(Boolean);
-        if (!chests.has(key) && existingGroups.length) {
-            const mergedItems = existingGroups.flatMap(group => group.items).slice(0, 54);
-            chests.set(key, { items: mergedItems.length ? mergedItems : new Array(neighbors.length > 1 ? 54 : 27).fill(null) });
-            neighbors.forEach(([cx, cy]) => { const neighborKey = getChestKey(cx, cy); if (neighborKey !== key) chests.delete(neighborKey); });
+        let neighbors = [[x, y]];
+        if (isChestPairedWithLeft(x, y)) {
+            neighbors = [[x - 1, y], [x, y]];
+        } else if (x < WORLD_WIDTH - 1 && world[x + 1]?.[y] === IDS.CHEST) {
+            neighbors = [[x, y], [x + 1, y]];
         }
-        if (!chests.has(key)) chests.set(key, { items: new Array(neighbors.length > 1 ? 54 : 27).fill(null) });
+        const key = neighbors.map(([cx, cy]) => getChestKey(cx, cy)).sort()[0];
+        const targetSize = neighbors.length > 1 ? 54 : 27;
+        const existingGroups = neighbors.map(([cx, cy]) => chests.get(getChestKey(cx, cy))).filter(Boolean);
+        if (existingGroups.length > 1) {
+            const mergedItems = existingGroups.flatMap(group => group.items || []).slice(0, 54);
+            chests.set(key, { items: mergedItems.length ? mergedItems : new Array(54).fill(null) });
+            neighbors.forEach(([cx, cy]) => { const neighborKey = getChestKey(cx, cy); if (neighborKey !== key) chests.delete(neighborKey); });
+        } else if (!chests.has(key) && existingGroups.length === 1) {
+            chests.set(key, { items: existingGroups[0].items ? [...existingGroups[0].items] : new Array(targetSize).fill(null) });
+        }
+        if (!chests.has(key)) chests.set(key, { items: new Array(targetSize).fill(null) });
         const chest = chests.get(key);
-        if (neighbors.length > 1 && chest.items.length !== 54) chest.items.length = 54;
-        return { key, chest, size: neighbors.length > 1 ? 54 : 27 };
+        while (chest.items.length < targetSize) chest.items.push(null);
+        if (chest.items.length > targetSize) chest.items.length = targetSize;
+        return { key, chest, size: targetSize };
     }
     export function syncChest(key) {
         if (!isMultiplayer) return;
@@ -4172,19 +4311,64 @@ export const SKIN_H = 32;
         const toRemove = [];
         const toSolidify = [];
 
-        // Snapshot existing entries
-        const entries = Array.from(fluids.entries());
-
         const pTileX = Math.floor((player?.x || 0) / TILE_SIZE);
         const pTileY = Math.floor((player?.y || 0) / TILE_SIZE);
+
+        // Prune off-screen wake keys so fluidWakeQueue can never retain dormant offscreen cells
+        if (fluidWakeQueue.size > 0 && player) {
+            for (const wakeKey of fluidWakeQueue) {
+                const sep = wakeKey.indexOf('_');
+                const wx = parseInt(wakeKey.slice(0, sep), 10);
+                if (Math.abs(wx - pTileX) > 80) {
+                    fluidWakeQueue.delete(wakeKey);
+                }
+            }
+        }
+        if (!waterTick && !lavaTick && fluidWakeQueue.size === 0) return;
+
+        let entries;
+        if (!waterTick && !lavaTick) {
+            // Wake-only tick: only process explicitly awake nearby cells!
+            entries = [];
+            let count = 0;
+            for (const key of fluidWakeQueue) {
+                const fl = fluids.get(key);
+                if (fl) {
+                    entries.push([key, fl]);
+                    count++;
+                    if (count >= 128) break; // Rate limit wake bursts per physics step
+                }
+            }
+            fluidWakeQueue.clear();
+        } else {
+            // Periodic tick: only snapshot fluids within 80 tiles horizontally of player
+            entries = [];
+            for (const [key, fl] of fluids) {
+                let fx = fl.x;
+                if (fx === undefined) {
+                    const sep = key.indexOf('_');
+                    fx = parseInt(key.slice(0, sep), 10);
+                    fl.x = fx;
+                    fl.y = parseInt(key.slice(sep + 1), 10);
+                }
+                if (player && Math.abs(fx - pTileX) > 80) {
+                    fluidWakeQueue.delete(key);
+                    continue;
+                }
+                entries.push([key, fl]);
+            }
+        }
+
         for (let i = 0; i < entries.length; i++) {
             const [key, fluid] = entries[i];
-            const sep = key.indexOf('_');
-            const x = parseInt(key.slice(0, sep), 10);
-            const y = parseInt(key.slice(sep + 1), 10);
+            const x = fluid.x !== undefined ? fluid.x : parseInt(key.slice(0, key.indexOf('_')), 10);
+            const y = fluid.y !== undefined ? fluid.y : parseInt(key.slice(key.indexOf('_') + 1), 10);
 
             // Proximity culling: Only simulate active fluid flow within 80 tiles horizontally of player
-            if (player && Math.abs(x - pTileX) > 80) continue;
+            if (player && Math.abs(x - pTileX) > 80) {
+                fluidWakeQueue.delete(key);
+                continue;
+            }
             const isWaterCell = fluid.type === IDS.WATER;
             const isLavaCell = fluid.type === IDS.LAVA;
             const isAwake = fluidWakeQueue.has(key);
@@ -4593,11 +4777,16 @@ export const SKIN_H = 32;
             this.itemId = id; this.count = count; this.dropId = dropId;
             this.vx = (Math.random() - 0.5) * 2; this.vy = -3;
             this.isGrounded = false;
+            this.life = 6000; // 5-minute lifespan
+            this.alive = true;
         }
 
         update() {
+            if (!this.alive) return;
             this.applyPhysics();
             if (this.isGrounded) this.vx *= 0.8;
+            this.life--;
+            if (this.life <= 0) this.alive = false;
         }
 
         draw(ctx, camX, camY) {
@@ -5371,12 +5560,12 @@ export const SKIN_H = 32;
 
             this.applyPhysics();
 
-            // Shoulder parrots dismount if player enters water or falls/jumps violently
+            // Shoulder parrots dismount if player walks, enters water, or falls/jumps violently
             if (this.leftShoulderParrot || this.rightShoulderParrot) {
                 const px = Math.floor((this.x + this.width / 2) / TILE_SIZE);
                 const py = Math.floor((this.y + this.height - 2) / TILE_SIZE);
                 const inWater = isWater(px, py) || isWater(px, py - 1);
-                if (inWater || this.vy > 4.5 || this.vy < -5.5) {
+                if (inWater || this.vy > 4.5 || this.vy < -5.5 || Math.abs(this.vx) > 0.4) {
                     dismountAllShoulderParrots();
                 }
             }
@@ -5475,7 +5664,7 @@ export const SKIN_H = 32;
             if (this.health <= 0) {
                 this.health = 0; this.isDead = true; this.poisonTimer = 0;
                 if (typeof toggleBackgroundBuildMode === 'function') toggleBackgroundBuildMode(false);
-                if (!keepInventory || diff.permadeath) {
+                if (diff.permadeath) {
                     inventory.fill(null);
                     equippedArmor.fill(null);
                     updateArmorUI();
@@ -5484,13 +5673,19 @@ export const SKIN_H = 32;
                 if (isMultiplayer && window.user && currentMpRoom) {
                     syncLocalPlayerState(true);
                 }
-                if(diff.permadeath && !isMultiplayer) {
+                if (diff.permadeath && !isMultiplayer) {
                     deleteWorld(currentWorldId, false);
                     const sub = document.getElementById('death-subtitle'); if (sub) sub.innerText = "Hardcore Mode: World Deleted!";
                     const rBtn = document.getElementById('respawn-btn'); if (rBtn) rBtn.classList.add('hidden');
+                    const aCont = document.getElementById('death-astral-container'); if (aCont) aCont.classList.add('hidden');
                 } else {
                     const sub = document.getElementById('death-subtitle'); if (sub) sub.innerText = "Game Over";
                     const rBtn = document.getElementById('respawn-btn'); if (rBtn) rBtn.classList.remove('hidden');
+                    if (typeof setupDeathScreen === 'function') {
+                        setupDeathScreen();
+                    } else if (typeof window !== 'undefined' && typeof window.setupDeathScreen === 'function') {
+                        window.setupDeathScreen();
+                    }
                 }
                 const dMenu = document.getElementById('death-menu'); if (dMenu) dMenu.classList.remove('hidden');
                 const hud = document.getElementById('hud'); if (hud) hud.style.display = 'none';
@@ -6415,39 +6610,42 @@ export const SKIN_H = 32;
             }
         }
 
-        findNearbyTreeLeaf(searchRadiusTiles = 16) {
+        findNearbyTreeLeaf(searchRadiusTiles = 12) {
             const activeWorld = this.getActiveWorld();
             if (!activeWorld) return null;
             const curWorldW = activeWorld.length;
             const curWorldH = activeWorld[0]?.length || WORLD_HEIGHT;
             const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
             const curGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
-            const candidates = [];
 
-            const minX = Math.max(2, curGx - searchRadiusTiles);
-            const maxX = Math.min(curWorldW - 3, curGx + searchRadiusTiles);
-            const minY = Math.max(2, curGy - 14);
-            const maxY = Math.min(curWorldH - 3, curGy + 14);
+            const radX = Math.min(10, searchRadiusTiles);
+            const radY = 8;
+            const minX = Math.max(2, curGx - radX);
+            const maxX = Math.min(curWorldW - 3, curGx + radX);
+            const minY = Math.max(2, curGy - radY);
+            const maxY = Math.min(curWorldH - 3, curGy + radY);
+
+            let bestSpot = null;
+            let bestDistSq = Infinity;
 
             for (let x = minX; x <= maxX; x++) {
                 if (!activeWorld[x]) continue;
                 for (let y = minY; y <= maxY; y++) {
                     if (activeWorld[x][y] === IDS.LEAVES || activeWorld[x][y] === IDS.JUNGLE_LEAVES) {
                         if (activeWorld[x][y - 1] === IDS.AIR) {
-                            candidates.push({ x, y });
+                            const dx = x - curGx;
+                            const dy = y - curGy;
+                            const distSq = dx * dx + dy * dy;
+                            if (distSq < bestDistSq) {
+                                bestDistSq = distSq;
+                                bestSpot = { x, y };
+                                if (distSq < 16) return bestSpot;
+                            }
                         }
                     }
                 }
             }
-
-            if (candidates.length === 0) return null;
-            candidates.sort((a, b) => {
-                const distA = Math.hypot(a.x - curGx, a.y - curGy);
-                const distB = Math.hypot(b.x - curGx, b.y - curGy);
-                return distA - distB;
-            });
-            const pickIdx = Math.min(candidates.length - 1, Math.floor(Math.random() * Math.min(3, candidates.length)));
-            return candidates[pickIdx];
+            return bestSpot;
         }
 
         update() {
@@ -7050,38 +7248,43 @@ export const SKIN_H = 32;
             }
         }
 
-        findNearbyTreeLeaf(searchRadiusTiles = 16) {
+        findNearbyTreeLeaf(searchRadiusTiles = 12) {
             const activeWorld = this.getActiveWorld();
             if (!activeWorld) return null;
             const curWorldW = activeWorld.length;
             const curWorldH = activeWorld[0]?.length || WORLD_HEIGHT;
             const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
             const curGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
-            const candidates = [];
 
-            const minX = Math.max(2, curGx - searchRadiusTiles);
-            const maxX = Math.min(curWorldW - 3, curGx + searchRadiusTiles);
-            const minY = Math.max(2, curGy - 14);
-            const maxY = Math.min(curWorldH - 3, curGy + 14);
+            const radX = Math.min(10, searchRadiusTiles);
+            const radY = 8;
+            const minX = Math.max(2, curGx - radX);
+            const maxX = Math.min(curWorldW - 3, curGx + radX);
+            const minY = Math.max(2, curGy - radY);
+            const maxY = Math.min(curWorldH - 3, curGy + radY);
+
+            let bestSpot = null;
+            let bestDistSq = Infinity;
 
             for (let x = minX; x <= maxX; x++) {
                 if (!activeWorld[x]) continue;
                 for (let y = minY; y <= maxY; y++) {
                     const block = activeWorld[x][y];
                     if (block === IDS.JUNGLE_LEAVES || block === IDS.LEAVES) {
-                        if (activeWorld[x][y - 1] === IDS.AIR) candidates.push({ x, y });
+                        if (activeWorld[x][y - 1] === IDS.AIR) {
+                            const dx = x - curGx;
+                            const dy = y - curGy;
+                            const distSq = dx * dx + dy * dy;
+                            if (distSq < bestDistSq) {
+                                bestDistSq = distSq;
+                                bestSpot = { x, y };
+                                if (distSq < 16) return bestSpot;
+                            }
+                        }
                     }
                 }
             }
-
-            if (candidates.length === 0) return null;
-            candidates.sort((a, b) => {
-                const distA = Math.hypot(a.x - curGx, a.y - curGy);
-                const distB = Math.hypot(b.x - curGx, b.y - curGy);
-                return distA - distB;
-            });
-            const pickIdx = Math.min(candidates.length - 1, Math.floor(Math.random() * Math.min(3, candidates.length)));
-            return candidates[pickIdx];
+            return bestSpot;
         }
 
         interact(curPlayer, inv, slotIdx) {
@@ -7228,32 +7431,89 @@ export const SKIN_H = 32;
                 const px = Math.floor((curPlayer.x + curPlayer.width / 2) / TILE_SIZE);
                 const py = Math.floor((curPlayer.y + curPlayer.height - 2) / TILE_SIZE);
                 const isPlayerInWater = isWater(px, py) || isWater(px, py - 1);
+                const isPlayerAFK = curPlayer.isGrounded && Math.abs(curPlayer.vx) < 0.25 && !isPlayerInWater && Math.abs(curPlayer.vy) < 0.8;
 
-                if (!isPlayerInWater && Math.abs(curPlayer.vy) < 2 && pDist < 32) {
-                    if (!curPlayer.leftShoulderParrot) {
-                        curPlayer.leftShoulderParrot = this;
-                        this.isMounted = true;
-                        this.mountedShoulder = 'left';
-                        playSound('parrot_chirp', { vol: 0.6 });
-                        return;
-                    } else if (!curPlayer.rightShoulderParrot && curPlayer.leftShoulderParrot !== this) {
-                        curPlayer.rightShoulderParrot = this;
-                        this.isMounted = true;
-                        this.mountedShoulder = 'right';
-                        playSound('parrot_chirp', { vol: 0.6 });
-                        return;
+                // Stuck / Left Behind Teleportation Detection:
+                if (this.stuckTimer === undefined) this.stuckTimer = 0;
+                if (this.lastCheckPos === undefined) this.lastCheckPos = { x: this.x, y: this.y, timer: 0 };
+
+                this.lastCheckPos.timer++;
+                if (this.lastCheckPos.timer >= 40) {
+                    const distMoved = Math.hypot(this.x - this.lastCheckPos.x, this.y - this.lastCheckPos.y);
+                    if (distMoved < 16 && pDist > 90) {
+                        this.stuckTimer += 40;
+                    } else {
+                        this.stuckTimer = 0;
                     }
+                    this.lastCheckPos = { x: this.x, y: this.y, timer: 0 };
                 }
 
-                if (pDist > 48) {
+                // If parrot is stuck behind blocks or left behind for a few blocks (distance > 240px or stuck > 60 frames)
+                if (pDist > 240 || this.stuckTimer >= 60) {
+                    const teleportSide = (curPlayer.vx > 0.1 || (curPlayer.facingRight ?? true)) ? -1 : 1;
+                    this.x = curPlayer.x + teleportSide * 20;
+                    this.y = curPlayer.y - 14;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.state = 'flying';
+                    this.flightTimer = 300;
+                    this.isGrounded = false;
+                    this.stuckTimer = 0;
+                    this.lastCheckPos = { x: this.x, y: this.y, timer: 0 };
+                    for (let i = 0; i < 6; i++) {
+                        particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, this.getFeatherParticleColor()));
+                    }
+                    playSound('parrot_chirp', { vol: 0.5 });
+                }
+
+                // Shoulder Perching: When player is AFK / idle on the ground, sit on shoulder!
+                // When player walks, player dismounts parrot and parrot flies alongside
+                if (isPlayerAFK) {
+                    const hasOpenShoulder = (!curPlayer.leftShoulderParrot || (!curPlayer.rightShoulderParrot && curPlayer.leftShoulderParrot !== this));
+                    if (hasOpenShoulder) {
+                        if (pDist < 52) {
+                            if (!curPlayer.leftShoulderParrot) {
+                                curPlayer.leftShoulderParrot = this;
+                                this.isMounted = true;
+                                this.mountedShoulder = 'left';
+                                this.state = 'ground';
+                                this.vx = 0;
+                                this.vy = 0;
+                                playSound('parrot_chirp', { vol: 0.6 });
+                                return;
+                            } else if (!curPlayer.rightShoulderParrot && curPlayer.leftShoulderParrot !== this) {
+                                curPlayer.rightShoulderParrot = this;
+                                this.isMounted = true;
+                                this.mountedShoulder = 'right';
+                                this.state = 'ground';
+                                this.vx = 0;
+                                this.vy = 0;
+                                playSound('parrot_chirp', { vol: 0.6 });
+                                return;
+                            }
+                        }
+
+                        // Steer toward player's shoulder
+                        if (this.state !== 'flying') {
+                            this.state = 'flying';
+                            this.flightTimer = 200;
+                            this.vy = -2.8;
+                            this.isGrounded = false;
+                        }
+                        this.flyTargetX = curPlayer.x + (curPlayer.leftShoulderParrot ? 14 : -14);
+                        this.flyTargetY = curPlayer.y - 12;
+                    }
+                } else {
+                    // Player is moving / in water / airborne: fly alongside the player at head/shoulder height
                     if (this.state !== 'flying') {
                         this.state = 'flying';
                         this.flightTimer = 300;
                         this.vy = -3;
                         this.isGrounded = false;
                     }
-                    this.flyTargetX = curPlayer.x + (this.x < curPlayer.x ? -24 : 24);
-                    this.flyTargetY = curPlayer.y - 8;
+                    const walkDir = Math.abs(curPlayer.vx) > 0.1 ? (curPlayer.vx > 0 ? -1 : 1) : (this.x < curPlayer.x ? -1 : 1);
+                    this.flyTargetX = curPlayer.x + walkDir * 24;
+                    this.flyTargetY = curPlayer.y - 12;
                 }
             }
 
@@ -7385,8 +7645,15 @@ export const SKIN_H = 32;
                     this.flyTargetY = curPlayer.y - 10;
                     this.targetLeaf = null;
                 } else if (this.isTamed && !this.isSitting && curPlayer && !curPlayer.isDead) {
-                    this.flyTargetX = curPlayer.x + (this.x < curPlayer.x ? -20 : 20);
-                    this.flyTargetY = curPlayer.y - 12;
+                    const isPlayerAFK = curPlayer.isGrounded && Math.abs(curPlayer.vx) < 0.25;
+                    if (isPlayerAFK) {
+                        this.flyTargetX = curPlayer.x + (curPlayer.leftShoulderParrot ? 14 : -14);
+                        this.flyTargetY = curPlayer.y - 12;
+                    } else {
+                        const walkDir = Math.abs(curPlayer.vx) > 0.1 ? (curPlayer.vx > 0 ? -1 : 1) : (this.x < curPlayer.x ? -1 : 1);
+                        this.flyTargetX = curPlayer.x + walkDir * 24;
+                        this.flyTargetY = curPlayer.y - 12;
+                    }
                     this.targetLeaf = null;
                 } else if (this.targetLeaf) {
                     this.flyTargetX = this.targetLeaf.x * TILE_SIZE + (TILE_SIZE - this.width) / 2;
@@ -9082,6 +9349,7 @@ export const SKIN_H = 32;
         const biomes = worldBiomes;
         const rawSurfaceHeights = new Array(WORLD_WIDTH);
         nonCollidableTreeWood = new Set();
+        if (typeof window !== 'undefined') window.nonCollidableTreeWood = nonCollidableTreeWood;
         let lastTreeX = -10;
 
         // Guaranteed Biome Distribution & Mountain Corner Rule:
@@ -9690,7 +9958,10 @@ export const SKIN_H = 32;
         }
 
         ensureTreeWoodNonCollidable();
+        if (typeof window !== 'undefined') window.nonCollidableTreeWood = nonCollidableTreeWood;
+        setEngineNonCollidableTreeWood(nonCollidableTreeWood);
         ensureDesertScorpions();
+        if (fluidWakeQueue) fluidWakeQueue.clear();
     }
 
     export function spawnAnimals(count = 1, nearPlayerBias = 0.35) {
@@ -10254,6 +10525,7 @@ export const SKIN_H = 32;
     }
 
     export function updateTreeLeafDecay() {
+        let decayedCount = 0;
         for (let [key, val] of leafDecayQueue) {
             let delay = typeof val === 'object' && val !== null ? val.delay : val;
             const clusterId = typeof val === 'object' && val !== null ? val.clusterId : null;
@@ -10279,6 +10551,11 @@ export const SKIN_H = 32;
                     leafDecayQueue.set(key, delay);
                 }
                 continue;
+            }
+
+            decayedCount++;
+            if (decayedCount > 16) {
+                break;
             }
 
             if (isLeafConnectedToWood(x, y, 5)) {
@@ -10710,7 +10987,20 @@ export const SKIN_H = 32;
     }
 
     export function processDroppedItems() {
-        for (let drop of droppedItems) drop.update();
+        for (let i = droppedItems.length - 1; i >= 0; i--) {
+            const drop = droppedItems[i];
+            if (!drop || !drop.alive) {
+                droppedItems.splice(i, 1);
+                continue;
+            }
+            drop.update();
+            if (!drop.alive) {
+                droppedItems.splice(i, 1);
+            }
+        }
+        if (droppedItems.length > 120) {
+            droppedItems.splice(0, droppedItems.length - 120);
+        }
         let pickup = droppedItems.find(drop => Math.hypot(player.x + player.width / 2 - (drop.x + drop.width / 2), player.y + player.height / 2 - (drop.y + drop.height / 2)) < TILE_SIZE * 0.9 && drop.count > 0);
         if (!pickup) return;
         if (!isMultiplayer || isMultiplayerAuthority()) {
@@ -11955,43 +12245,42 @@ export const SKIN_H = 32;
                 targetR = 255; targetG = 175; targetB = 45; targetA = 0.16;
             }
         } else if (activeBiome === 'jungle') {
-            // Tropical Jungle: Rich lush emerald-jade canopy grade with warm humidity mist
+            // Tropical Jungle: Rich lush canopy with warm natural sunlight
             if (timeOfDay >= 0.58 && timeOfDay < 0.68) {
-                // Tropical Sunset: warm mango amber with humid glow
-                targetR = 255; targetG = 145; targetB = 35; targetA = 0.20;
-                targetFog = 0.25;
+                // Tropical Sunset: warm golden amber
+                targetR = 255; targetG = 160; targetB = 60; targetA = 0.07;
+                targetFog = 0.0;
             } else if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
-                // Rainforest Night: deep moonlit indigo-teal
-                targetR = 12; targetG = 45; targetB = 68; targetA = 0.17;
-                targetFog = 0.18;
+                // Rainforest Night: deep moonlit night
+                targetR = 15; targetG = 25; targetB = 50; targetA = 0.06;
+                targetFog = 0.0;
             } else {
-                // Daytime: vibrant tropical emerald-jade canopy filtering
-                targetR = 34; targetG = 197; targetB = 94; targetA = 0.17;
-                targetFog = 0.22;
+                // Daytime: clear natural sunlight with subtle warm tropical canopy filter
+                targetR = 230; targetG = 240; targetB = 215; targetA = 0.03;
+                targetFog = 0.0;
             }
         } else if (activeBiome === 'forest') {
-            // Plain Woods: Rich lush emerald canopy grade with golden sun accents
             if (timeOfDay >= 0.58 && timeOfDay < 0.68) {
-                targetR = 255; targetG = 155; targetB = 60; targetA = 0.18;
+                targetR = 255; targetG = 165; targetB = 70; targetA = 0.06;
             } else if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
-                targetR = 18; targetG = 38; targetB = 84; targetA = 0.15;
+                targetR = 15; targetG = 25; targetB = 55; targetA = 0.05;
             } else {
-                targetR = 75; targetG = 215; targetB = 95; targetA = 0.14;
+                targetR = 240; targetG = 245; targetB = 220; targetA = 0.02;
             }
         } else if (activeBiome === 'mountains') {
             if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
-                targetR = 16; targetG = 28; targetB = 68; targetA = 0.13;
+                targetR = 16; targetG = 28; targetB = 68; targetA = 0.08;
             } else {
-                targetR = 155; targetG = 190; targetB = 250; targetA = 0.11;
+                targetR = 180; targetG = 210; targetB = 255; targetA = 0.04;
             }
         } else {
             // Open Plains: Warm sun-drenched golden-meadow tint
             if (timeOfDay >= 0.58 && timeOfDay < 0.68) {
-                targetR = 255; targetG = 160; targetB = 65; targetA = 0.18;
+                targetR = 255; targetG = 170; targetB = 75; targetA = 0.06;
             } else if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
-                targetR = 20; targetG = 42; targetB = 90; targetA = 0.15;
+                targetR = 18; targetG = 30; targetB = 60; targetA = 0.05;
             } else {
-                targetR = 145; targetG = 225; targetB = 85; targetA = 0.13;
+                targetR = 255; targetG = 245; targetB = 220; targetA = 0.02;
             }
         }
 
@@ -12018,8 +12307,8 @@ export const SKIN_H = 32;
 
     export function drawSnowFog(targetCtx, w, h, camX) {
         if (!fabulousGraphics || !fabulousConfig.volumetricFog || currentFogDensity <= 0.01 || w <= 0 || h <= 0) return;
+        if (cachedActiveBiome !== 'snow' && cachedActiveBiome !== 'mountains') return;
         targetCtx.save();
-        const isJungle = cachedActiveBiome === 'jungle';
         const layers = [
             { speed: 0.8, alpha: 0.28, yOffset: 0.15, hRatio: 0.7 },
             { speed: 1.4, alpha: 0.22, yOffset: 0.35, hRatio: 0.65 },
@@ -12028,19 +12317,12 @@ export const SKIN_H = 32;
 
         for (let l = 0; l < layers.length; l++) {
             const layer = layers[l];
-            const a = layer.alpha * currentFogDensity * (isJungle ? 0.70 : 1.0);
+            const a = layer.alpha * currentFogDensity;
             const fogGrad = targetCtx.createLinearGradient(0, h * layer.yOffset, 0, h * (layer.yOffset + layer.hRatio));
-            if (isJungle) {
-                fogGrad.addColorStop(0, `rgba(180, 245, 205, 0)`);
-                fogGrad.addColorStop(0.3, `rgba(160, 240, 195, ${a.toFixed(3)})`);
-                fogGrad.addColorStop(0.7, `rgba(140, 235, 180, ${(a * 1.15).toFixed(3)})`);
-                fogGrad.addColorStop(1, `rgba(180, 245, 205, 0)`);
-            } else {
-                fogGrad.addColorStop(0, `rgba(230, 245, 255, 0)`);
-                fogGrad.addColorStop(0.3, `rgba(225, 242, 255, ${a.toFixed(3)})`);
-                fogGrad.addColorStop(0.7, `rgba(215, 238, 255, ${(a * 1.2).toFixed(3)})`);
-                fogGrad.addColorStop(1, `rgba(230, 245, 255, 0)`);
-            }
+            fogGrad.addColorStop(0, `rgba(230, 245, 255, 0)`);
+            fogGrad.addColorStop(0.3, `rgba(225, 242, 255, ${a.toFixed(3)})`);
+            fogGrad.addColorStop(0.7, `rgba(215, 238, 255, ${(a * 1.2).toFixed(3)})`);
+            fogGrad.addColorStop(1, `rgba(230, 245, 255, 0)`);
 
             targetCtx.fillStyle = fogGrad;
             targetCtx.fillRect(0, h * layer.yOffset, w, h * layer.hRatio);
@@ -12115,11 +12397,11 @@ export const SKIN_H = 32;
             tilt = Math.sin((timeOfDay - 0.79) * Math.PI * 3) * 0.20;
         }
 
-        const numRays = (activeBiome === 'jungle') ? 6 : 5;
+        const numRays = (activeBiome === 'jungle') ? 4 : 3;
         const baseSpacing = w / (numRays - 1);
         const parallaxOffset = (camX * 0.12) % baseSpacing;
         const pixelStep = 8;
-        const sliceHeight = 16;
+        const sliceHeight = 48;
 
         for (let i = 0; i < numRays; i++) {
             const rayPulse = Math.sin(frameCount * 0.016 + i * 1.5) * 0.5 + 0.5;
@@ -12134,7 +12416,7 @@ export const SKIN_H = 32;
 
             if (isSunset) {
                 baseAlpha = (0.018 + rayPulse * 0.012) * skyClear;
-                r = (activeBiome === 'jungle') ? 255 : 255;
+                r = 255;
                 g = (activeBiome === 'jungle') ? 175 : 165;
                 b = (activeBiome === 'jungle') ? 70 : 80;
             } else if (isSunrise) {
@@ -12142,8 +12424,8 @@ export const SKIN_H = 32;
                 r = 255; g = 210; b = 130;
             } else if (isDaytime) {
                 if (activeBiome === 'jungle') {
-                    baseAlpha = (0.024 + rayPulse * 0.012) * skyClear;
-                    r = 230; g = 255; b = 145; // Tropical canopy sunbeams
+                    baseAlpha = (0.020 + rayPulse * 0.010) * skyClear;
+                    r = 245; g = 250; b = 210;
                 } else {
                     baseAlpha = ((activeBiome === 'forest' ? 0.018 : 0.014) + rayPulse * 0.008) * skyClear;
                     r = 245; g = 250; b = 190;
@@ -12551,156 +12833,185 @@ export const SKIN_H = 32;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        let startCol = Math.floor(camX / TILE_SIZE);
-        let endCol = startCol + Math.ceil(canvas.width / TILE_SIZE) + 1;
-        let startRow = Math.max(0, Math.floor(camY / TILE_SIZE));
-        let endRow = Math.min(WORLD_HEIGHT - 1, startRow + Math.ceil(canvas.height / TILE_SIZE) + 1);
+        let startCol = Math.floor(camX / TILE_SIZE) - 1;
+        let endCol = Math.floor(camX / TILE_SIZE) + Math.ceil(canvas.width / TILE_SIZE) + 2;
+        let startRow = Math.max(0, Math.floor(camY / TILE_SIZE) - 1);
+        let endRow = Math.min(WORLD_HEIGHT - 1, Math.floor(camY / TILE_SIZE) + Math.ceil(canvas.height / TILE_SIZE) + 2);
 
         const visibleLightSources = [];
 
+        // -------------------------------------------------------------------------
+        // PASS 1: BACKGROUND LAYER & SUBTERRANEAN CAVERN WALLS
+        // Rendered across all visible columns BEFORE any foreground tiles are drawn
+        // -------------------------------------------------------------------------
         for (let x = startCol; x <= endCol; x++) {
             let drawX = Math.round(x * TILE_SIZE - camX);
             // Infinite ocean bounds masking for cutoff fix
             if (x < 0 || x >= WORLD_WIDTH) {
-                for(let y = startRow; y <= endRow; y++) {
-                    if (y >= Math.floor(WORLD_HEIGHT/2)) {
+                for (let y = startRow; y <= endRow; y++) {
+                    if (y >= Math.floor(WORLD_HEIGHT / 2)) {
                         let drawY = Math.round(y * TILE_SIZE - camY);
                         // Sea level
-                        ctx.fillStyle = (y === Math.floor(WORLD_HEIGHT/2)) ? 'rgba(30, 144, 255, 0.7)' : 'rgba(20, 100, 200, 0.9)';
+                        ctx.fillStyle = (y === Math.floor(WORLD_HEIGHT / 2)) ? 'rgba(30, 144, 255, 0.7)' : 'rgba(20, 100, 200, 0.9)';
                         ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
                         // Sand floor
-                        if (y > Math.floor(WORLD_HEIGHT/2) + 10) {
+                        if (y > Math.floor(WORLD_HEIGHT / 2) + 10) {
                             ctx.fillStyle = '#e6cc80';
                             ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
                         }
                     }
                 }
-                continue; 
+                continue;
             }
-            
-            // Draw background blocks (darker depth tone)
-            if (bgWorld && bgWorld[x]) {
-                for (let y = startRow; y <= endRow; y++) {
+
+            const colSurfY = (surfaceHeights && surfaceHeights[x] !== undefined) ? surfaceHeights[x] : getWorldSurfaceY(x);
+            const isDesertCol = (worldBiomes && worldBiomes[x] === 'desert');
+
+            for (let y = startRow; y <= endRow; y++) {
+                let drawY = Math.round(y * TILE_SIZE - camY);
+                let hasPlayerBg = false;
+
+                // 1. Player-placed background blocks (darker depth tone)
+                if (bgWorld && bgWorld[x]) {
                     let bgBlock = bgWorld[x][y];
                     if (bgBlock !== undefined && bgBlock !== IDS.AIR && textures[bgBlock]) {
-                        let drawY = Math.round(y * TILE_SIZE - camY);
+                        hasPlayerBg = true;
                         ctx.drawImage(textures[bgBlock], drawX, drawY, TILE_SIZE, TILE_SIZE);
                         ctx.fillStyle = 'rgba(0, 0, 0, 0.48)';
                         ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
                     }
                 }
+
+                // 2. Subterranean Cavern Wall backdrop:
+                // If there is no player-placed background wall and we are below the surface (caves),
+                // draw natural cavern wall behind air, vines, ladders, torches, doors, chests, or non-opaque blocks.
+                if (!hasPlayerBg && x >= 0 && x < WORLD_WIDTH && y > colSurfY) {
+                    const fgBlock = world[x]?.[y];
+                    const isSolidOpaqueTerrain = fgBlock === IDS.STONE || fgBlock === IDS.DIRT || fgBlock === IDS.COBBLESTONE ||
+                        fgBlock === IDS.GRASS || fgBlock === IDS.SAND || fgBlock === IDS.SNOW || fgBlock === IDS.COAL_ORE ||
+                        fgBlock === IDS.IRON_ORE || fgBlock === IDS.GOLD_ORE || fgBlock === IDS.DIAMOND_ORE || fgBlock === IDS.EMERALD_ORE ||
+                        fgBlock === IDS.OBSIDIAN || fgBlock === IDS.WOOD || fgBlock === IDS.PLANKS || fgBlock === IDS.JUNGLE_WOOD ||
+                        fgBlock === IDS.JUNGLE_PLANKS || fgBlock === IDS.WOOL;
+
+                    if (!isSolidOpaqueTerrain) {
+                        let cavernWall = cachedCavernWallStone;
+                        if (isDesertCol) {
+                            cavernWall = cachedCavernWallSand || cachedCavernWallStone;
+                        } else if (y < colSurfY + 4) {
+                            cavernWall = cachedCavernWallDirt || cachedCavernWallStone;
+                        }
+                        if (cavernWall) {
+                            ctx.drawImage(cavernWall, drawX, drawY, TILE_SIZE, TILE_SIZE);
+                        }
+                    }
+                }
+
+                // 3. Natural Ambient Occlusion (AO) on cave ceilings, overhangs, walls, and inner corners
+                if (advancedGraphics && y > 0 && y >= colSurfY && (world[x]?.[y] === IDS.AIR || isClimbableBlock(world[x]?.[y]))) {
+                    const hasCeiling = world[x][y - 1] !== undefined && isSolidWorldBlock(x, y - 1, world[x][y - 1]);
+                    const hasLeftWall = x > 0 && world[x - 1]?.[y] !== undefined && isSolidWorldBlock(x - 1, y, world[x - 1][y]);
+                    const hasRightWall = x < WORLD_WIDTH - 1 && world[x + 1]?.[y] !== undefined && isSolidWorldBlock(x + 1, y, world[x + 1][y]);
+
+                    if (hasCeiling || hasLeftWall || hasRightWall) {
+                        if (hasCeiling && cachedCeilingAO) {
+                            ctx.drawImage(cachedCeilingAO, drawX, drawY, TILE_SIZE, 8);
+                        }
+                        if (hasLeftWall && cachedLeftWallAO) {
+                            ctx.drawImage(cachedLeftWallAO, drawX, drawY, 8, TILE_SIZE);
+                        }
+                        if (hasRightWall && cachedRightWallAO) {
+                            ctx.drawImage(cachedRightWallAO, drawX + TILE_SIZE - 8, drawY, 8, TILE_SIZE);
+                        }
+                        if (hasCeiling && hasLeftWall && cachedCornerAOTopLeft) {
+                            ctx.drawImage(cachedCornerAOTopLeft, drawX, drawY, 12, 12);
+                        }
+                        if (hasCeiling && hasRightWall && cachedCornerAOTopRight) {
+                            ctx.drawImage(cachedCornerAOTopRight, drawX + TILE_SIZE - 12, drawY, 12, 12);
+                        }
+                    }
+                }
             }
+        }
+
+        // -------------------------------------------------------------------------
+        // PASS 2: FOREGROUND BLOCKS
+        // Rendered on top of the completed background and cavern wall layer
+        // -------------------------------------------------------------------------
+        for (let x = startCol; x <= endCol; x++) {
+            if (x < 0 || x >= WORLD_WIDTH) continue;
+            let drawX = Math.round(x * TILE_SIZE - camX);
 
             for (let y = startRow; y <= endRow; y++) {
-                let block = world[x][y];
-                if (block === IDS.AIR) {
-                    // Cavern backdrop: prevent blue sky / parallax mountains from showing inside subterranean caves
-                    const hasPlayerBg = bgWorld && bgWorld[x] && bgWorld[x][y] !== IDS.AIR && bgWorld[x][y] !== undefined;
-                    if (!hasPlayerBg && x >= 0 && x < WORLD_WIDTH) {
-                        const surfY = (surfaceHeights && surfaceHeights[x] !== undefined) ? surfaceHeights[x] : getWorldSurfaceY(x);
-                        const topSolidY = getWorldSurfaceY(x);
-                        if (y >= surfY && (topSolidY < y || y >= surfY + 2)) {
-                            let drawY = Math.round(y * TILE_SIZE - camY);
-                            let cavernWall = cachedCavernWallStone;
-                            if (worldBiomes && worldBiomes[x] === 'desert') {
-                                cavernWall = cachedCavernWallSand || cachedCavernWallStone;
-                            } else if (y < surfY + 4) {
-                                cavernWall = cachedCavernWallDirt || cachedCavernWallStone;
-                            }
-                            if (cavernWall) {
-                                ctx.drawImage(cavernWall, drawX, drawY, TILE_SIZE, TILE_SIZE);
-                            }
-                        }
-                    }
+                let block = world[x]?.[y];
+                if (block === undefined || block === IDS.AIR) continue;
 
-                    // Natural Ambient Occlusion (AO) on cave ceilings, overhangs, walls, and inner corners
-                    if (advancedGraphics && y > 0 && y >= surfaceHeights[x]) {
-                        const hasCeiling = world[x][y - 1] !== undefined && isSolidWorldBlock(x, y - 1, world[x][y - 1]);
-                        const hasLeftWall = x > 0 && world[x - 1]?.[y] !== undefined && isSolidWorldBlock(x - 1, y, world[x - 1][y]);
-                        const hasRightWall = x < WORLD_WIDTH - 1 && world[x + 1]?.[y] !== undefined && isSolidWorldBlock(x + 1, y, world[x + 1][y]);
-                        
-                        if (hasCeiling || hasLeftWall || hasRightWall) {
-                            let drawY = Math.round(y * TILE_SIZE - camY);
-                            if (hasCeiling && cachedCeilingAO) {
-                                ctx.drawImage(cachedCeilingAO, drawX, drawY, TILE_SIZE, 8);
-                            }
-                            if (hasLeftWall && cachedLeftWallAO) {
-                                ctx.drawImage(cachedLeftWallAO, drawX, drawY, 8, TILE_SIZE);
-                            }
-                            if (hasRightWall && cachedRightWallAO) {
-                                ctx.drawImage(cachedRightWallAO, drawX + TILE_SIZE - 8, drawY, 8, TILE_SIZE);
-                            }
-                            if (hasCeiling && hasLeftWall && cachedCornerAOTopLeft) {
-                                ctx.drawImage(cachedCornerAOTopLeft, drawX, drawY, 12, 12);
-                            }
-                            if (hasCeiling && hasRightWall && cachedCornerAOTopRight) {
-                                ctx.drawImage(cachedCornerAOTopRight, drawX + TILE_SIZE - 12, drawY, 12, 12);
-                            }
-                        }
-                    }
-                    continue;
-                }
-                if (block !== undefined) {
-                    let drawY = Math.round(y * TILE_SIZE - camY);
-                    
-                    if (block === IDS.BED) {
-                        if (!isBedRenderStart(x, y)) continue;
-                        let bedLength = getBedLength(x, y);
-                        if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE * bedLength, TILE_SIZE);
-                    } else if (block === IDS.CHEST) {
-                        const hasChestLeft = x > 0 && world[x - 1]?.[y] === IDS.CHEST;
-                        const hasChestRight = x < WORLD_WIDTH - 1 && world[x + 1]?.[y] === IDS.CHEST;
-                        if (hasChestLeft) continue;
-                        if (hasChestRight) {
-                            if (largeChestImage.complete) ctx.drawImage(largeChestImage, drawX, drawY, TILE_SIZE * 2, TILE_SIZE);
+                let drawY = Math.round(y * TILE_SIZE - camY);
+
+                if (block === IDS.BED) {
+                    if (!isBedRenderStart(x, y)) continue;
+                    let bedLength = getBedLength(x, y);
+                    if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE * bedLength, TILE_SIZE);
+                } else if (block === IDS.CHEST) {
+                    const isPairedLeft = isChestPairedWithLeft(x, y);
+                    if (isPairedLeft) continue;
+
+                    const hasChestRight = x < WORLD_WIDTH - 1 && world[x + 1]?.[y] === IDS.CHEST;
+                    if (hasChestRight) {
+                        const doubleTex = (largeChestTexture && (largeChestTexture.width || largeChestTexture.complete)) ? largeChestTexture :
+                                          (largeChestImage && (largeChestImage.width || largeChestImage.complete)) ? largeChestImage : null;
+                        if (doubleTex) {
+                            ctx.drawImage(doubleTex, drawX, drawY, TILE_SIZE * 2, TILE_SIZE);
                         } else if (textures[block]) {
                             ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
+                            ctx.drawImage(textures[block], drawX + TILE_SIZE, drawY, TILE_SIZE, TILE_SIZE);
                         }
-                    } else if (block === IDS.TORCH) {
-                        visibleLightSources.push({ x: x * TILE_SIZE + TILE_SIZE/2, y: y * TILE_SIZE + TILE_SIZE/2, type: 'torch', gridX: x, gridY: y });
-                        let bottomSolid = (y < WORLD_HEIGHT-1 && world[x][y+1] !== IDS.AIR && world[x][y+1] !== IDS.TORCH);
-                        let leftSolid = (x > 0 && world[x-1][y] !== IDS.AIR && world[x-1][y] !== IDS.TORCH);
-                        let rightSolid = (x < WORLD_WIDTH-1 && world[x+1][y] !== IDS.AIR && world[x+1][y] !== IDS.TORCH);
-
-                        ctx.save(); ctx.translate(drawX + TILE_SIZE/2, drawY + TILE_SIZE/2);
-                        if (!bottomSolid) {
-                            if (leftSolid) { ctx.translate(-TILE_SIZE/3, TILE_SIZE/6); ctx.rotate(Math.PI / 5); } 
-                            else if (rightSolid) { ctx.translate(TILE_SIZE/3, TILE_SIZE/6); ctx.rotate(-Math.PI / 5); }
-                        }
-                        if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE);
-                        ctx.restore();
-                    } else if (((fabulousGraphics && fabulousConfig.foliageSway) || (!fabulousGraphics && advancedGraphics)) && (
-                        block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || 
-                        block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || 
-                        block === IDS.SAPLING ||
-                        block === IDS.WHEAT_STAGE_1 || block === IDS.WHEAT_STAGE_2 || 
-                        block === IDS.WHEAT_STAGE_3 || block === IDS.WHEAT_STAGE_4
-                    )) {
-                        // Gentle meadow & crop wind sway anchored to soil
-                        let swayFactor = 0.035;
-                        if (block === IDS.TALL_GRASS) swayFactor = 0.045;
-                        else if (block === IDS.WHEAT_STAGE_1) swayFactor = 0.018; // subtle sprout sway
-                        else if (block === IDS.WHEAT_STAGE_2) swayFactor = 0.028; // vegetative blade sway
-                        else if (block === IDS.WHEAT_STAGE_3) swayFactor = 0.042; // tall stalk sway
-                        else if (block === IDS.WHEAT_STAGE_4) swayFactor = 0.052; // heavy ripe grain heads nodding
-
-                        const sway = Math.sin(frameCount * 0.045 + x * 0.7) * 2.0;
-                        ctx.save();
-                        ctx.translate(drawX + TILE_SIZE / 2, drawY + TILE_SIZE);
-                        ctx.transform(1, 0, sway * swayFactor, 1, 0, 0); // shear sway anchored from bottom soil
-                        if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE / 2, -TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                        ctx.restore();
-                    } else if (block === IDS.FURNACE) {
-                        const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
-                        const isLit = liveFurnaces.some(f => f.x === x && f.y === y && f.burnTime > 0);
-                        const furnaceTex = (isLit && textures.furnace_lit) ? textures.furnace_lit : textures[IDS.FURNACE];
-                        if (furnaceTex) ctx.drawImage(furnaceTex, drawX, drawY, TILE_SIZE, TILE_SIZE);
-                        if (isLit) {
-                            visibleLightSources.push({ x: x * TILE_SIZE + TILE_SIZE/2, y: y * TILE_SIZE + TILE_SIZE/2, type: 'torch', gridX: x, gridY: y });
-                        }
-                    } else {
-                        if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
+                    } else if (textures[block]) {
+                        ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
                     }
+                } else if (block === IDS.TORCH) {
+                    visibleLightSources.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2, type: 'torch', gridX: x, gridY: y });
+                    let bottomSolid = (y < WORLD_HEIGHT - 1 && world[x][y + 1] !== IDS.AIR && world[x][y + 1] !== IDS.TORCH);
+                    let leftSolid = (x > 0 && world[x - 1][y] !== IDS.AIR && world[x - 1][y] !== IDS.TORCH);
+                    let rightSolid = (x < WORLD_WIDTH - 1 && world[x + 1][y] !== IDS.AIR && world[x + 1][y] !== IDS.TORCH);
+
+                    ctx.save();
+                    ctx.translate(drawX + TILE_SIZE / 2, drawY + TILE_SIZE / 2);
+                    if (!bottomSolid) {
+                        if (leftSolid) { ctx.translate(-TILE_SIZE / 3, TILE_SIZE / 6); ctx.rotate(Math.PI / 5); }
+                        else if (rightSolid) { ctx.translate(TILE_SIZE / 3, TILE_SIZE / 6); ctx.rotate(-Math.PI / 5); }
+                    }
+                    if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE / 2, -TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+                    ctx.restore();
+                } else if (((fabulousGraphics && fabulousConfig.foliageSway) || (!fabulousGraphics && advancedGraphics)) && (
+                    block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS ||
+                    block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW ||
+                    block === IDS.SAPLING ||
+                    block === IDS.WHEAT_STAGE_1 || block === IDS.WHEAT_STAGE_2 ||
+                    block === IDS.WHEAT_STAGE_3 || block === IDS.WHEAT_STAGE_4
+                )) {
+                    let swayFactor = 0.035;
+                    if (block === IDS.TALL_GRASS) swayFactor = 0.045;
+                    else if (block === IDS.WHEAT_STAGE_1) swayFactor = 0.018;
+                    else if (block === IDS.WHEAT_STAGE_2) swayFactor = 0.028;
+                    else if (block === IDS.WHEAT_STAGE_3) swayFactor = 0.042;
+                    else if (block === IDS.WHEAT_STAGE_4) swayFactor = 0.052;
+
+                    const sway = Math.sin(frameCount * 0.045 + x * 0.7) * 2.0;
+                    ctx.save();
+                    ctx.translate(drawX + TILE_SIZE / 2, drawY + TILE_SIZE);
+                    ctx.transform(1, 0, sway * swayFactor, 1, 0, 0);
+                    if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE / 2, -TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    ctx.restore();
+                } else if (block === IDS.FURNACE) {
+                    const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
+                    const isLit = liveFurnaces.some(f => f.x === x && f.y === y && f.burnTime > 0);
+                    const furnaceTex = (isLit && textures.furnace_lit) ? textures.furnace_lit : textures[IDS.FURNACE];
+                    if (furnaceTex) ctx.drawImage(furnaceTex, drawX, drawY, TILE_SIZE, TILE_SIZE);
+                    if (isLit) {
+                        visibleLightSources.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2, type: 'torch', gridX: x, gridY: y });
+                    }
+                } else {
+                    if (textures[block]) ctx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
                 }
             }
         }
@@ -12712,25 +13023,19 @@ export const SKIN_H = 32;
         const visibleWater = [];
         const visibleLava = [];
 
-        fluids.forEach((fluid, key) => {
-            let fluidX = fluid.x;
-            let fluidY = fluid.y;
-            if (fluidX === undefined) {
-                const sep = key.indexOf('_');
-                fluidX = parseInt(key.slice(0, sep), 10);
-                fluidY = parseInt(key.slice(sep + 1), 10);
-                fluid.x = fluidX;
-                fluid.y = fluidY;
+        for (let fx = startCol; fx <= endCol; fx++) {
+            if (fx < 0 || fx >= WORLD_WIDTH) continue;
+            for (let fy = startRow; fy <= endRow; fy++) {
+                const fluid = getFluid(fx, fy);
+                if (!fluid) continue;
+                const drawX = Math.floor(fx * TILE_SIZE - camera.x);
+                const drawY = Math.floor(fy * TILE_SIZE - camera.y);
+                const entry = { fluid, fluidX: fx, fluidY: fy, drawX, drawY };
+                visibleFluids.push(entry);
+                if (fluid.type === IDS.WATER) visibleWater.push(entry);
+                else if (fluid.type === IDS.LAVA) visibleLava.push(entry);
             }
-            const drawX = Math.floor(fluidX * TILE_SIZE - camera.x);
-            const drawY = Math.floor(fluidY * TILE_SIZE - camera.y);
-            if (drawX > canvas.width || drawX + TILE_SIZE < 0 || drawY > canvas.height || drawY + TILE_SIZE < 0) return;
-
-            const entry = { fluid, fluidX, fluidY, drawX, drawY };
-            visibleFluids.push(entry);
-            if (fluid.type === IDS.WATER) visibleWater.push(entry);
-            else if (fluid.type === IDS.LAVA) visibleLava.push(entry);
-        });
+        }
 
         // 1. RENDER WATER (Translucent, wavy connected surface, sloping quads, caustics & waterfalls)
         if (visibleWater.length > 0) {
@@ -14356,3 +14661,5 @@ try { if (typeof loadFabulousConfig !== "undefined") window.loadFabulousConfig =
 try { if (typeof getFabulousParticleBudget !== "undefined") window.getFabulousParticleBudget = getFabulousParticleBudget; } catch(e) {}
 try { if (typeof menuBackgroundRendered !== "undefined") window.menuBackgroundRendered = menuBackgroundRendered; } catch(e) {}
 try { if (typeof dismissBootLoadingScreen !== "undefined") window.dismissBootLoadingScreen = dismissBootLoadingScreen; } catch(e) {}
+try { if (typeof sanitizeTreeWoodCollision !== "undefined") window.sanitizeTreeWoodCollision = sanitizeTreeWoodCollision; } catch(e) {}
+try { if (typeof isChestPairedWithLeft !== "undefined") window.isChestPairedWithLeft = isChestPairedWithLeft; } catch(e) {}

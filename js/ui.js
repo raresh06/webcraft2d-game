@@ -2,7 +2,8 @@ import {
     IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, currentWorldSize,
     Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot, AtlasExplorer,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
-    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
+    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable, sanitizeTreeWoodCollision,
+    setEngineNonCollidableTreeWood,
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY, getActiveBiomeAt, isNonSurfaceBlock,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
@@ -1275,10 +1276,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (match) {
                 const addQty = data.count || 1;
                 q.progress = Math.min(q.target, q.progress + addQty);
-                if (q.progress >= q.target) {
+                if (q.progress >= q.target && !q.completed) {
                     q.completed = true;
-                    showToast(`✦ Daily Challenge Complete: ${q.title}! ✦`);
-                    playSound('quest_complete');
+                    showQuestCompletionBanner(q);
                 }
                 changed = true;
             }
@@ -1288,6 +1288,54 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             saveDailyQuestsState(state);
             renderDailyQuestsUI();
         }
+    }
+
+    export function showQuestCompletionBanner(quest) {
+        let container = document.getElementById('achievement-toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'achievement-toast quest-complete-toast';
+
+        const iconFrame = document.createElement('div');
+        iconFrame.className = 'achievement-icon-frame quest-toast-icon-frame';
+        const emeraldTextureSrc = (typeof textures !== 'undefined' && textures && textures[IDS?.EMERALD]?.src) || '';
+        if (emeraldTextureSrc) {
+            const img = document.createElement('img');
+            img.src = emeraldTextureSrc;
+            img.className = 'w-7 h-7 pixelated object-contain';
+            iconFrame.appendChild(img);
+        } else {
+            iconFrame.innerHTML = '<span class="text-emerald-400 font-bold text-xl">✦</span>';
+        }
+        toast.appendChild(iconFrame);
+
+        const content = document.createElement('div');
+        content.className = 'flex flex-col min-w-0';
+
+        const header = document.createElement('span');
+        header.className = "text-base text-[#4ade80] font-bold font-['VT323'] tracking-wide leading-none uppercase";
+        header.innerText = `Challenge Complete! (+${quest.reward} Emeralds)`;
+        content.appendChild(header);
+
+        const title = document.createElement('span');
+        title.className = "text-2xl text-white font-bold font-['VT323'] text-shadow truncate leading-tight";
+        title.innerText = quest.title;
+        content.appendChild(title);
+
+        toast.appendChild(content);
+        container.appendChild(toast);
+
+        if (typeof playSound === 'function') {
+            playSound('quest_complete', { vol: 1.0 });
+        }
+
+        setTimeout(() => {
+            toast.classList.add('dismissing');
+            setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, 360);
+        }, 4500);
     }
 
     export function claimDailyQuestReward(questId) {
@@ -1395,7 +1443,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (isClaimed) {
                 actionBtn = `<span class="text-sm font-bold text-[#6fa386] font-['VT323'] bg-[#141d17] border border-[#1f402b] px-2.5 py-1">✓ CLAIMED</span>`;
             } else if (isDone) {
-                actionBtn = `<button type="button" class="mc-btn !w-auto !px-3 !py-1 !text-xl !bg-[#10b981] hover:!bg-[#059669] !text-white flex items-center gap-1.5 shadow-md" onclick="claimDailyQuestReward('${q.id}')">${emeraldTextureSrc ? `<img src="${emeraldTextureSrc}" class="w-4 h-4 pixelated object-contain inline-block" alt="" />` : '✦'} CLAIM +${q.reward}</button>`;
+                actionBtn = `<button type="button" class="quest-claim-btn" onclick="claimDailyQuestReward('${q.id}')">${emeraldTextureSrc ? `<img src="${emeraldTextureSrc}" class="w-4 h-4 pixelated object-contain inline-block" alt="" />` : '✦'} CLAIM +${q.reward}</button>`;
             } else {
                 actionBtn = `<span class="text-base font-bold text-[#4eed99] font-['VT323'] bg-[#101316] border border-[#2b3542] px-2.5 py-1 flex items-center gap-1.5">${emeraldTextureSrc ? `<img src="${emeraldTextureSrc}" class="w-4 h-4 pixelated object-contain inline-block" alt="" />` : ''} +${q.reward}</span>`;
             }
@@ -2179,9 +2227,32 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     // --- Minecraft Sign Board System ---
     let activeSignCoord = null;
+    export let isSignEditorOpen = false;
+
+    export function focusSignLine(idx) {
+        const input = document.getElementById(`sign-line-${idx}`);
+        if (input) {
+            input.focus();
+            const len = input.value.length;
+            input.setSelectionRange(len, len);
+        }
+    }
+
+    export function updateSignLineCounter(idx) {
+        const input = document.getElementById(`sign-line-${idx}`);
+        const countEl = document.getElementById(`sign-count-${idx}`);
+        if (input && countEl) {
+            countEl.textContent = `${input.value.length}/24`;
+        }
+    }
 
     export function openSignEditor(gx, gy, isNew = false) {
         activeSignCoord = { x: gx, y: gy };
+        isSignEditorOpen = true;
+        if (typeof window !== 'undefined') window.isSignEditorOpen = true;
+        keys = {};
+        if (typeof window !== 'undefined') window.keys = {};
+
         const modal = document.getElementById('sign-edit-modal');
         if (!modal) return;
 
@@ -2193,15 +2264,29 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const input = document.getElementById(`sign-line-${i}`);
             if (input) {
                 input.value = lines[i] || '';
+                updateSignLineCounter(i);
                 if (!input.dataset.listenerAttached) {
                     input.dataset.listenerAttached = 'true';
+                    input.addEventListener('input', () => {
+                        updateSignLineCounter(i);
+                    });
                     input.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter') {
                             e.preventDefault();
                             if (i < 3) {
-                                document.getElementById(`sign-line-${i + 1}`)?.focus();
+                                focusSignLine(i + 1);
                             } else {
                                 closeSignEditor(true);
+                            }
+                        } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            if (i < 3) {
+                                focusSignLine(i + 1);
+                            }
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            if (i > 0) {
+                                focusSignLine(i - 1);
                             }
                         } else if (e.key === 'Escape') {
                             e.preventDefault();
@@ -2215,17 +2300,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
         setTimeout(() => {
+            focusSignLine(0);
             const first = document.getElementById('sign-line-0');
-            if (first) {
-                first.focus();
+            if (first && isNew) {
                 first.select();
             }
         }, 50);
     }
 
     export function closeSignEditor(save = true) {
+        isSignEditorOpen = false;
+        if (typeof window !== 'undefined') window.isSignEditorOpen = false;
+
         const modal = document.getElementById('sign-edit-modal');
         if (!modal || modal.classList.contains('hidden')) return;
+
+        if (document.activeElement && (document.activeElement.classList.contains('sign-input-line') || (document.activeElement.id && document.activeElement.id.startsWith('sign-line-')))) {
+            document.activeElement.blur();
+        }
 
         if (save && activeSignCoord) {
             const lines = [];
@@ -7786,6 +7878,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof window !== 'undefined' && window.surfaceHeights) surfaceHeights = window.surfaceHeights;
         if (typeof setEngineWorld === 'function') setEngineWorld(world);
         if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights(surfaceHeights);
+        if (typeof window !== 'undefined' && window.nonCollidableTreeWood) {
+            nonCollidableTreeWood = window.nonCollidableTreeWood;
+        }
+        if (typeof setEngineNonCollidableTreeWood === 'function') {
+            setEngineNonCollidableTreeWood(nonCollidableTreeWood);
+        }
         
         const spawn = getInitialSpawnPoint();
         if (!player) player = (typeof window !== 'undefined' && window.player) ? window.player : new Player(spawn.x, spawn.y);
@@ -8464,8 +8562,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             openedChest = null;
             fallingBlocks = [];
             activeProjectiles = [];
-            nonCollidableTreeWood = new Set(data.treeWoodCells || []);
-            ensureTreeWoodNonCollidable();
+            if (data.treeWoodCells && Array.isArray(data.treeWoodCells) && data.treeWoodCells.length > 0) {
+                nonCollidableTreeWood = new Set(data.treeWoodCells);
+            } else {
+                nonCollidableTreeWood = new Set();
+                ensureTreeWoodNonCollidable();
+                if (typeof window !== 'undefined' && window.nonCollidableTreeWood) {
+                    nonCollidableTreeWood = window.nonCollidableTreeWood;
+                }
+            }
+            if (typeof setEngineNonCollidableTreeWood === 'function') setEngineNonCollidableTreeWood(nonCollidableTreeWood);
+            if (typeof window !== 'undefined') window.nonCollidableTreeWood = nonCollidableTreeWood;
+            if (typeof sanitizeTreeWoodCollision === 'function') sanitizeTreeWoodCollision();
+            else if (typeof window !== 'undefined' && typeof window.sanitizeTreeWoodCollision === 'function') window.sanitizeTreeWoodCollision();
             entities = (data.entities || []).filter(e => !e.isDeparted).map(e => {
                 let inst;
                 if (e.type === 'Pig') inst = new Pig(e.x, e.y);
@@ -9308,6 +9417,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 if (typeof window !== 'undefined') window.entities = [];
                 if (typeof setEngineEntities === 'function') setEngineEntities([]);
 
+                if (typeof particles !== 'undefined' && Array.isArray(particles)) particles.length = 0;
+                if (typeof window !== 'undefined' && Array.isArray(window.particles)) window.particles.length = 0;
+                if (typeof noteParticles !== 'undefined' && Array.isArray(noteParticles)) noteParticles.length = 0;
+                if (typeof window !== 'undefined' && Array.isArray(window.noteParticles)) window.noteParticles.length = 0;
+                if (typeof droppedItems !== 'undefined' && Array.isArray(droppedItems)) droppedItems.length = 0;
+                if (typeof window !== 'undefined' && Array.isArray(window.droppedItems)) window.droppedItems.length = 0;
+                if (typeof fluidWakeQueue !== 'undefined' && fluidWakeQueue && typeof fluidWakeQueue.clear === 'function') fluidWakeQueue.clear();
+
                 if (typeof RiftExplorerSpawner !== 'undefined') {
                     RiftExplorerSpawner.activeExplorer = null;
                 }
@@ -9422,7 +9539,114 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
     }
 
-    export function respawn() {
+    export function setupDeathScreen() {
+        const container = document.getElementById('death-astral-container');
+        const respawnKeepBtn = document.getElementById('respawn-keep-items-btn');
+        const balanceCountEl = document.getElementById('death-astral-balance-count');
+        const gemIconEl = document.getElementById('death-astral-gem-icon');
+
+        if (!container) return;
+
+        const isHardcore = (typeof diff !== 'undefined' && diff && diff.permadeath) ||
+                           (typeof currentDifficulty !== 'undefined' && currentDifficulty === 'hardcore');
+        const keepInvActive = (typeof keepInventory !== 'undefined' && keepInventory) ||
+                              (typeof window !== 'undefined' && window.keepInventory);
+
+        if (isHardcore || keepInvActive) {
+            container.classList.add('hidden');
+            return;
+        }
+
+        const profileEmeralds = (typeof getPlayerAstralEmeralds === 'function') ? getPlayerAstralEmeralds() : 0;
+        let invEmeralds = 0;
+        const curInv = (typeof inventory !== 'undefined' && Array.isArray(inventory)) ? inventory : (typeof window !== 'undefined' && Array.isArray(window.inventory) ? window.inventory : []);
+        const emeraldId = (typeof IDS !== 'undefined' && IDS.ASTRAL_EMERALD) ? IDS.ASTRAL_EMERALD : 165;
+        for (const item of curInv) {
+            if (item && item.id === emeraldId) {
+                invEmeralds += (item.count || 1);
+            }
+        }
+        const totalAstral = profileEmeralds + invEmeralds;
+
+        container.classList.remove('hidden');
+
+        if (balanceCountEl) {
+            balanceCountEl.innerText = totalAstral.toLocaleString();
+        }
+
+        if (gemIconEl) {
+            const tex = (typeof textures !== 'undefined' && textures && textures[emeraldId]) ? textures[emeraldId] : null;
+            if (tex && tex.src) {
+                gemIconEl.innerHTML = `<img src="${tex.src}" class="w-6 h-6 pixelated inline-block object-contain" alt="Astral Emerald" />`;
+            } else {
+                gemIconEl.innerHTML = `<span class="text-purple-300 font-bold text-lg">✦</span>`;
+            }
+        }
+
+        if (respawnKeepBtn) {
+            if (totalAstral >= 1) {
+                respawnKeepBtn.removeAttribute('disabled');
+                respawnKeepBtn.classList.remove('disabled', 'opacity-50', 'pointer-events-none', 'cursor-not-allowed', 'filter', 'grayscale');
+                respawnKeepBtn.title = "Respawn immediately and retain all your items and equipped armor!";
+            } else {
+                respawnKeepBtn.setAttribute('disabled', 'true');
+                respawnKeepBtn.classList.add('disabled', 'opacity-50', 'pointer-events-none', 'cursor-not-allowed', 'filter', 'grayscale');
+                respawnKeepBtn.title = "You need at least 1 Astral Emerald (from balance or inventory) to keep items.";
+            }
+        }
+    }
+
+    export function respawnWithAstralProtection() {
+        const isHardcore = (typeof diff !== 'undefined' && diff && diff.permadeath) ||
+                           (typeof currentDifficulty !== 'undefined' && currentDifficulty === 'hardcore');
+        if (isHardcore) return;
+
+        const profileEmeralds = (typeof getPlayerAstralEmeralds === 'function') ? getPlayerAstralEmeralds() : 0;
+        let invEmeralds = 0;
+        const curInv = (typeof inventory !== 'undefined' && Array.isArray(inventory)) ? inventory : (typeof window !== 'undefined' && Array.isArray(window.inventory) ? window.inventory : []);
+        const emeraldId = (typeof IDS !== 'undefined' && IDS.ASTRAL_EMERALD) ? IDS.ASTRAL_EMERALD : 165;
+        let invSlotIndex = -1;
+        for (let i = 0; i < curInv.length; i++) {
+            const item = curInv[i];
+            if (item && item.id === emeraldId) {
+                invEmeralds += (item.count || 1);
+                if (invSlotIndex === -1) invSlotIndex = i;
+            }
+        }
+
+        const totalAstral = profileEmeralds + invEmeralds;
+        if (totalAstral < 1) {
+            if (typeof showToast === 'function') {
+                showToast("You need 1 Astral Emerald to keep your items!", "warning");
+            }
+            return;
+        }
+
+        // Deduct 1 Astral Emerald:
+        if (profileEmeralds >= 1) {
+            if (typeof addPlayerAstralEmeralds === 'function') {
+                addPlayerAstralEmeralds(-1);
+            }
+        } else if (invSlotIndex !== -1) {
+            const slotItem = curInv[invSlotIndex];
+            if (slotItem.count > 1) {
+                slotItem.count--;
+            } else {
+                curInv[invSlotIndex] = null;
+            }
+        }
+
+        if (typeof playSound === 'function') {
+            playSound('astral_exchange', { vol: 1.0 });
+        }
+        if (typeof showToast === 'function') {
+            showToast("✦ Astral Protection active: All items and armor retained! ✦", "success");
+        }
+
+        respawn(true);
+    }
+
+    export function respawn(keepItems = false) {
         const deathMenu = document.getElementById('death-menu');
         if (deathMenu) deathMenu.classList.add('hidden');
         const hud = document.getElementById('hud');
@@ -9430,6 +9654,23 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         const curPlayer = player || (typeof window !== 'undefined' && window.player);
         if (!curPlayer) return;
+
+        const keepInvActive = (typeof keepInventory !== 'undefined' && keepInventory) ||
+                              (typeof window !== 'undefined' && window.keepInventory);
+        if (!keepItems && !keepInvActive) {
+            if (typeof inventory !== 'undefined' && Array.isArray(inventory)) {
+                inventory.fill(null);
+            }
+            if (typeof equippedArmor !== 'undefined' && Array.isArray(equippedArmor)) {
+                equippedArmor.fill(null);
+            }
+            if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
+            if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
+            if (typeof window !== 'undefined') {
+                window.inventory = inventory;
+                window.equippedArmor = equippedArmor;
+            }
+        }
 
         const spawn = (typeof getInitialSpawnPoint === 'function') ? getInitialSpawnPoint() : { x: 50 * TILE_SIZE, y: 50 * TILE_SIZE };
         curPlayer.x = spawn.x;
@@ -9885,10 +10126,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
     export function getFuelValue(id) {
         if (id === IDS.COAL) return 1600;
-        if (id === IDS.WOOD || id === IDS.PLANKS) return 300;
-        if (id === IDS.STICK) return 100;
+        if (id === IDS.LAVA_BUCKET) return 20000;
+        if (id === IDS.WOOD || id === IDS.PLANKS || id === IDS.JUNGLE_WOOD || id === IDS.JUNGLE_PLANKS) return 300;
+        if (id === IDS.CHEST || id === IDS.CRAFTING_TABLE || id === IDS.DOOR || id === IDS.JUNGLE_DOOR ||
+            id === IDS.WOODEN_STAIRS || id === IDS.WOODEN_STAIRS_RIGHT || id === IDS.WOODEN_STAIRS_LEFT) return 300;
+        if (id === IDS.STICK || id === IDS.LADDER || id === IDS.SIGN) return 100;
         if (id === IDS.WOOD_PICKAXE || id === IDS.WOOD_AXE || id === IDS.WOOD_SWORD || id === IDS.WOOD_SHOVEL || id === IDS.WOOD_HOE) return 200;
-        if (id === IDS.SAPLING) return 100;
+        if (id === IDS.SAPLING || id === IDS.JUNGLE_SAPLING || id === IDS.BAMBOO) return 100;
         return 0;
     }
 
@@ -13514,6 +13758,11 @@ try { if (typeof getTier2AstralIllustration !== "undefined") window.getTier2Astr
 try { if (typeof getTier3AstralIllustration !== "undefined") window.getTier3AstralIllustration = getTier3AstralIllustration; } catch(e) {}
 try { if (typeof openSignEditor !== "undefined") window.openSignEditor = openSignEditor; } catch(e) {}
 try { if (typeof closeSignEditor !== "undefined") window.closeSignEditor = closeSignEditor; } catch(e) {}
+try { if (typeof isSignEditorOpen !== "undefined") window.isSignEditorOpen = isSignEditorOpen; } catch(e) {}
+try { if (typeof focusSignLine !== "undefined") window.focusSignLine = focusSignLine; } catch(e) {}
+try { if (typeof updateSignLineCounter !== "undefined") window.updateSignLineCounter = updateSignLineCounter; } catch(e) {}
+try { if (typeof setupDeathScreen !== "undefined") window.setupDeathScreen = setupDeathScreen; } catch(e) {}
+try { if (typeof respawnWithAstralProtection !== "undefined") window.respawnWithAstralProtection = respawnWithAstralProtection; } catch(e) {}
 try { if (typeof regenerateLostWorld !== "undefined") window.regenerateLostWorld = regenerateLostWorld; } catch(e) {}
 try { if (typeof showKaelArrivalBanner !== "undefined") window.showKaelArrivalBanner = showKaelArrivalBanner; } catch(e) {}
 try { if (typeof showKaelDepartureBanner !== "undefined") window.showKaelDepartureBanner = showKaelDepartureBanner; } catch(e) {}

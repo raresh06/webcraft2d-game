@@ -1432,7 +1432,7 @@ if (typeof window !== 'undefined') {
         nonCollidableTreeWood.delete(`${x}_${y}`);
         if (newId !== IDS.AIR || wasSolid) removeFluid(x, y);
         world[x][y] = newId;
-        if (newId === IDS.WOOD && treeTrunk) nonCollidableTreeWood.add(`${x}_${y}`);
+        if ((newId === IDS.WOOD || newId === IDS.JUNGLE_WOOD) && treeTrunk) nonCollidableTreeWood.add(`${x}_${y}`);
         if (newId === IDS.AIR) {
             const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
             if (liveSigns) liveSigns.delete(`${x}_${y}`);
