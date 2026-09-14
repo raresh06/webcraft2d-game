@@ -35,6 +35,112 @@ export function setEngineGraphicsMode(mode) {
     }
 }
 
+// Granular Fabulous Graphics Configuration Schema & Presets
+export const DEFAULT_FABULOUS_CONFIG = {
+    colorGrading: true,        // Biome ambient color grading
+    volumetricFog: true,       // Multi-layer snow & rainforest fog
+    godRays: true,             // Crepuscular sunbeams through foliage
+    vignette: true,            // Cinematic corner vignette
+    heatShimmer: true,         // Desert atmospheric heat waves
+    foliageSway: true,         // Wind sway on grass, crops, saplings, flowers
+    windBreeze: true,          // Animated wind breeze gusts
+    waterEffects: true,        // Fluid surface ripples & specular glints
+    ambientParticles: true,    // Fireflies, leaves, snow, dust, spores
+    lavaGlow: true,            // Dynamic lava illumination & rising embers
+    bloomAura: true,           // Radiant celestial and torch bloom
+    preset: 'high'             // 'low' | 'medium' | 'high' | 'custom'
+};
+
+export const FABULOUS_PRESETS = {
+    low: {
+        colorGrading: true,
+        volumetricFog: false,
+        godRays: false,
+        vignette: true,
+        heatShimmer: false,
+        foliageSway: false,
+        windBreeze: false,
+        waterEffects: false,
+        ambientParticles: false,
+        lavaGlow: true,
+        bloomAura: false,
+        preset: 'low'
+    },
+    medium: {
+        colorGrading: true,
+        volumetricFog: true,
+        godRays: true,
+        vignette: true,
+        heatShimmer: false,
+        foliageSway: true,
+        windBreeze: false,
+        waterEffects: true,
+        ambientParticles: true,
+        lavaGlow: true,
+        bloomAura: true,
+        preset: 'medium'
+    },
+    high: {
+        colorGrading: true,
+        volumetricFog: true,
+        godRays: true,
+        vignette: true,
+        heatShimmer: true,
+        foliageSway: true,
+        windBreeze: true,
+        waterEffects: true,
+        ambientParticles: true,
+        lavaGlow: true,
+        bloomAura: true,
+        preset: 'high'
+    }
+};
+
+export function loadFabulousConfig() {
+    let cfg = { ...DEFAULT_FABULOUS_CONFIG };
+    if (typeof localStorage !== 'undefined') {
+        try {
+            const raw = localStorage.getItem('swc_fabulous_config');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (typeof parsed === 'object' && parsed !== null) {
+                    cfg = { ...cfg, ...parsed };
+                }
+            }
+        } catch (e) {}
+    }
+    return cfg;
+}
+
+export let fabulousConfig = loadFabulousConfig();
+
+export function setFabulousConfig(newConfig) {
+    fabulousConfig = { ...fabulousConfig, ...newConfig };
+    if (typeof localStorage !== 'undefined') {
+        try {
+            localStorage.setItem('swc_fabulous_config', JSON.stringify(fabulousConfig));
+        } catch (e) {}
+    }
+    if (typeof window !== 'undefined') {
+        window.fabulousConfig = fabulousConfig;
+    }
+    return fabulousConfig;
+}
+
+export function applyFabulousPreset(presetName) {
+    if (FABULOUS_PRESETS[presetName]) {
+        return setFabulousConfig(FABULOUS_PRESETS[presetName]);
+    }
+    return fabulousConfig;
+}
+
+export function getFabulousParticleBudget() {
+    if (!fabulousGraphics || !fabulousConfig.ambientParticles) return 0;
+    if (fabulousConfig.preset === 'low') return 0;
+    if (fabulousConfig.preset === 'medium') return 25;
+    return 55;
+}
+
 export function setEngineSetting(key, val) {
     if (key === 'showClouds') showClouds = val;
     else if (key === 'showDebug') showDebug = val;
@@ -226,12 +332,29 @@ export function getMaxAnimals() {
     export let currentFps = 60;
     export let frameDeltaMs = 16.6;
 
-    export const FPS_CAP_OPTIONS = [60, 120, 0, 30];
+    export const FPS_CAP_OPTIONS = [60, 90, 120, 144, 240, 0, 30];
     export let fpsCap = typeof localStorage !== 'undefined' ? parseInt(localStorage.getItem('swc_fps_cap') || '60', 10) : 60;
     if (!FPS_CAP_OPTIONS.includes(fpsCap)) fpsCap = 60;
 
-    export function getFpsCapText() {
-        return fpsCap === 0 ? "Unlimited" : `${fpsCap} FPS`;
+    export function setEngineFpsCap(newCap) {
+        if (FPS_CAP_OPTIONS.includes(newCap)) {
+            fpsCap = newCap;
+        } else {
+            fpsCap = 60;
+        }
+        if (typeof localStorage !== 'undefined') {
+            try {
+                localStorage.setItem('swc_fps_cap', String(fpsCap));
+            } catch (e) {}
+        }
+        if (typeof window !== 'undefined') {
+            window.fpsCap = fpsCap;
+        }
+        return fpsCap;
+    }
+
+    export function getFpsCapText(cap = fpsCap) {
+        return cap === 0 ? "Unlimited" : `${cap} FPS`;
     }
 
     export const LIGHT_SCALE = 1.0;
@@ -338,20 +461,68 @@ export function getMaxAnimals() {
         }
     }
 
-    // Pre-rendered reusable light falloff stamp (GPU texture blit)
-    export const cachedTorchLightCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-    if (cachedTorchLightCanvas) {
-        cachedTorchLightCanvas.width = 256;
-        cachedTorchLightCanvas.height = 256;
-        const torchLightCtx = cachedTorchLightCanvas.getContext('2d');
-        const tGrad = torchLightCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
-        tGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-        tGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        torchLightCtx.fillStyle = tGrad;
-        torchLightCtx.beginPath();
-        torchLightCtx.arc(128, 128, 128, 0, Math.PI * 2);
-        torchLightCtx.fill();
+    // 4x4 Bayer Dither Matrix for retro stepped pixel-art gradient transitions
+    const BAYER_4X4 = [
+        [  0/16,  8/16,  2/16, 10/16 ],
+        [ 12/16,  4/16, 14/16,  6/16 ],
+        [  3/16, 11/16,  1/16,  9/16 ],
+        [ 15/16,  7/16, 13/16,  5/16 ]
+    ];
+
+    // Pre-rendered Light Stamp: normal bright smooth circle with subtle pixel-art edge
+    export function generatePixelArtLightStamp(size = 256) {
+        if (typeof document === 'undefined') return null;
+        const c = document.createElement('canvas');
+        c.width = size;
+        c.height = size;
+        const ctx = c.getContext('2d');
+        if (!ctx) return c;
+
+        const imgData = ctx.createImageData(size, size);
+        const data = imgData.data;
+        const center = (size - 1) / 2;
+        const maxRadius = (size / 2) - 1;
+
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const dx = x - center;
+                const dy = y - center;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const u = dist / maxRadius;
+
+                if (u <= 1.0) {
+                    let alpha;
+                    if (u <= 0.80) {
+                        // Normal, smooth continuous gradient in the interior for maximum visibility like before
+                        alpha = Math.max(0, 1.0 - u);
+                    } else {
+                        // Subtle pixel-art stepped edge at the outer perimeter
+                        const t = (1.0 - u) / 0.20;
+                        const steps = 4;
+                        const scaled = t * steps;
+                        const band = Math.floor(scaled);
+                        const frac = scaled - band;
+                        const threshold = BAYER_4X4[y % 4][x % 4];
+                        const dithered = (frac > threshold) ? Math.min(steps, band + 1) : band;
+                        alpha = 0.20 * (dithered / steps);
+                    }
+
+                    if (alpha > 0.005) {
+                        const idx = (y * size + x) * 4;
+                        data[idx] = 255;
+                        data[idx + 1] = 255;
+                        data[idx + 2] = 255;
+                        data[idx + 3] = Math.round(alpha * 255);
+                    }
+                }
+            }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        return c;
     }
+
+    // Pre-rendered reusable light falloff stamp (256x256 high-resolution with smooth interior and pixel-art edge)
+    export const cachedTorchLightCanvas = typeof document !== 'undefined' ? generatePixelArtLightStamp(256) : null;
 
     // Pre-rendered reusable warm torch aura glow stamp
     export const cachedTorchGlowCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
@@ -364,6 +535,32 @@ export function getMaxAnimals() {
         gGrad.addColorStop(1, 'rgba(255, 82, 18, 0)');
         torchGlowCtx.fillStyle = gGrad;
         torchGlowCtx.fillRect(0, 0, 128, 128);
+    }
+
+    // Pre-rendered reusable radiant lava aura glow stamp
+    export const cachedLavaGlowCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedLavaGlowCanvas) {
+        cachedLavaGlowCanvas.width = 128;
+        cachedLavaGlowCanvas.height = 128;
+        const lavaGlowCtx = cachedLavaGlowCanvas.getContext('2d');
+        const lGrad = lavaGlowCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        lGrad.addColorStop(0, 'rgba(255, 110, 20, 0.36)');
+        lGrad.addColorStop(1, 'rgba(255, 60, 0, 0)');
+        lavaGlowCtx.fillStyle = lGrad;
+        lavaGlowCtx.fillRect(0, 0, 128, 128);
+    }
+
+    // Pre-rendered reusable bloom aura stamp
+    export const cachedBloomAuraCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedBloomAuraCanvas) {
+        cachedBloomAuraCanvas.width = 128;
+        cachedBloomAuraCanvas.height = 128;
+        const bloomCtx = cachedBloomAuraCanvas.getContext('2d');
+        const bGrad = bloomCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        bGrad.addColorStop(0, 'rgba(255, 230, 150, 0.22)');
+        bGrad.addColorStop(1, 'rgba(255, 160, 50, 0)');
+        bloomCtx.fillStyle = bGrad;
+        bloomCtx.fillRect(0, 0, 128, 128);
     }
 
     // Pre-rendered reusable screen vignette stamp for Fabulous Graphics
@@ -10858,6 +11055,20 @@ export const SKIN_H = 32;
     export let menuWorldSeed = (Math.random() * 0xffffffff) >>> 0;
     export let menuWorld = { terrain: [], surfaceHeights: [], blocks: [], trees: [], animals: [], fireflies: [], stars: [], width: 240 };
     export let menuWorldInitialized = false;
+    export let menuBackgroundRendered = false;
+
+    export function dismissBootLoadingScreen() {
+        if (typeof document === 'undefined') return;
+        const loader = document.getElementById('boot-loading-screen');
+        if (!loader || loader.classList.contains('dismissed')) return;
+        loader.classList.add('dismissed');
+        loader.style.opacity = '0';
+        loader.style.pointerEvents = 'none';
+        setTimeout(() => {
+            loader.style.display = 'none';
+            loader.classList.add('hidden');
+        }, 450);
+    }
     export let menuEntities = [];
     export let menuTime = 0.20 + Math.random() * 0.15;
     export let menuLastFrame = performance.now();
@@ -11368,6 +11579,12 @@ export const SKIN_H = 32;
         menuCtx.fillStyle = vignette;
         menuCtx.fillRect(0, 0, width, height);
         menuLastFrame = now;
+
+        if (!menuBackgroundRendered) {
+            menuBackgroundRendered = true;
+            if (typeof window !== 'undefined') window.menuBackgroundRendered = true;
+            dismissBootLoadingScreen();
+        }
     }
 
     export function getWorldSurfaceY(x) {
@@ -11679,8 +11896,14 @@ export const SKIN_H = 32;
     }
 
     export function initFabulousParticles() {
-        if (fabulousAmbientParticles.length > 0) return;
-        for (let i = 0; i < MAX_FABULOUS_PARTICLES; i++) {
+        const budget = getFabulousParticleBudget();
+        if (fabulousAmbientParticles.length >= budget) {
+            if (fabulousAmbientParticles.length > budget) {
+                fabulousAmbientParticles.length = budget;
+            }
+            return;
+        }
+        for (let i = fabulousAmbientParticles.length; i < budget; i++) {
             fabulousAmbientParticles.push({
                 x: Math.random() * 2000,
                 y: Math.random() * 1200,
@@ -11699,7 +11922,7 @@ export const SKIN_H = 32;
     export let cachedIsSnowy = false;
 
     export function updateBiomeAtmosphere() {
-        if (!fabulousGraphics || !player) {
+        if (!fabulousGraphics || !fabulousConfig.colorGrading || !player) {
             currentBiomeHue.a = 0;
             currentFogDensity = 0;
             return;
@@ -11786,7 +12009,7 @@ export const SKIN_H = 32;
     }
 
     export function drawBiomeGrading(targetCtx, w, h) {
-        if (!fabulousGraphics || currentBiomeHue.a <= 0.005 || w <= 0 || h <= 0) return;
+        if (!fabulousGraphics || !fabulousConfig.colorGrading || currentBiomeHue.a <= 0.005 || w <= 0 || h <= 0) return;
         targetCtx.save();
         targetCtx.fillStyle = `rgba(${Math.round(currentBiomeHue.r)}, ${Math.round(currentBiomeHue.g)}, ${Math.round(currentBiomeHue.b)}, ${currentBiomeHue.a.toFixed(3)})`;
         targetCtx.fillRect(0, 0, w, h);
@@ -11794,7 +12017,7 @@ export const SKIN_H = 32;
     }
 
     export function drawSnowFog(targetCtx, w, h, camX) {
-        if (!fabulousGraphics || currentFogDensity <= 0.01 || w <= 0 || h <= 0) return;
+        if (!fabulousGraphics || !fabulousConfig.volumetricFog || currentFogDensity <= 0.01 || w <= 0 || h <= 0) return;
         targetCtx.save();
         const isJungle = cachedActiveBiome === 'jungle';
         const layers = [
@@ -11826,7 +12049,7 @@ export const SKIN_H = 32;
     }
 
     export function drawVignette(targetCtx, w, h) {
-        if (!showVignette || (!fabulousGraphics && !advancedGraphics) || w <= 0 || h <= 0) return;
+        if (!showVignette || (!fabulousGraphics && !advancedGraphics) || (fabulousGraphics && !fabulousConfig.vignette) || w <= 0 || h <= 0) return;
         targetCtx.save();
         const maxDim = Math.hypot(w / 2, h / 2);
         const vigGrad = targetCtx.createRadialGradient(w / 2, h / 2, Math.max(1, maxDim * 0.42), w / 2, h / 2, Math.max(2, maxDim));
@@ -11841,7 +12064,7 @@ export const SKIN_H = 32;
     }
 
     export function drawDesertHeatShimmer(targetCtx, w, h, camX) {
-        if (!fabulousGraphics || caveSkyOpacity > 0.5 || w <= 0 || h <= 0 || !player) return;
+        if (!fabulousGraphics || !fabulousConfig.heatShimmer || caveSkyOpacity > 0.5 || w <= 0 || h <= 0 || !player) return;
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const activeBiome = getActiveBiomeAt(playerGridX);
         if (activeBiome !== 'desert' || timeOfDay < 0.08 || timeOfDay > 0.58) return;
@@ -11856,7 +12079,7 @@ export const SKIN_H = 32;
     }
 
     export function drawForestGodRays(targetCtx, w, h, camX, camY) {
-        if (!fabulousGraphics || caveSkyOpacity > 0.45 || w <= 0 || h <= 0 || !player) return;
+        if (!fabulousGraphics || !fabulousConfig.godRays || caveSkyOpacity > 0.45 || w <= 0 || h <= 0 || !player) return;
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const activeBiome = getActiveBiomeAt(playerGridX);
         if (activeBiome !== 'forest' && activeBiome !== 'plains' && activeBiome !== 'jungle') return;
@@ -11949,7 +12172,7 @@ export const SKIN_H = 32;
     }
 
     export function drawPlainsWindBreeze(targetCtx, w, h, camX, camY) {
-        if (!fabulousGraphics || caveSkyOpacity > 0.4 || w <= 0 || h <= 0 || !player) return;
+        if (!fabulousGraphics || !fabulousConfig.windBreeze || caveSkyOpacity > 0.4 || w <= 0 || h <= 0 || !player) return;
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const activeBiome = getActiveBiomeAt(playerGridX);
         if (activeBiome !== 'plains' && activeBiome !== 'forest') return;
@@ -11961,32 +12184,29 @@ export const SKIN_H = 32;
         for (let g = 0; g < numGusts; g++) {
             const gustSpeed = 1.4 + g * 0.5;
             const gustCycle = (frameCount * gustSpeed * 2.0 + g * 350) % (w + 600) - 300;
-            const startX = gustCycle;
-            const baseY = h * (0.55 + g * 0.12) + Math.sin(t + g * 2.0) * 18;
-            const gustLength = 180 + g * 60;
+            const startX = Math.floor(gustCycle);
+            const baseY = Math.floor(h * (0.55 + g * 0.12) + Math.sin(t + g * 2.0) * 18);
+            const numSegments = 6;
+            const segW = 28 + g * 8;
+            const barH = 3;
 
-            const breezeGrad = targetCtx.createLinearGradient(startX, baseY, startX + gustLength, baseY);
-            breezeGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-            breezeGrad.addColorStop(0.35, 'rgba(235, 255, 210, 0.08)');
-            breezeGrad.addColorStop(0.7, 'rgba(215, 250, 195, 0.06)');
-            breezeGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-            targetCtx.strokeStyle = breezeGrad;
-            targetCtx.lineWidth = 3 + g;
-            targetCtx.beginPath();
-            targetCtx.moveTo(startX, baseY);
-            targetCtx.bezierCurveTo(
-                startX + gustLength * 0.33, baseY - 8 + Math.sin(t * 2 + g) * 6,
-                startX + gustLength * 0.66, baseY + 8 - Math.cos(t * 2 + g) * 6,
-                startX + gustLength, baseY - 2
-            );
-            targetCtx.stroke();
+            for (let s = 0; s < numSegments; s++) {
+                const segX = Math.floor(startX + s * (segW + 6));
+                if (segX + segW < 0 || segX > w) continue;
+                const waveY = Math.floor(Math.sin(t * 2.2 + g + s * 0.45) * 5);
+                const drawY = Math.floor(baseY + waveY);
+                const fade = Math.sin((s / (numSegments - 1)) * Math.PI);
+                targetCtx.fillStyle = `rgba(235, 255, 215, ${(fade * 0.10).toFixed(3)})`;
+                targetCtx.fillRect(segX, drawY, segW, barH);
+            }
         }
         targetCtx.restore();
     }
 
     export function updateAndDrawFabulousParticles(targetCtx, camX, camY, w, h) {
-        if (!fabulousGraphics || w <= 0 || h <= 0 || !player) return;
+        if (!fabulousGraphics || !fabulousConfig.ambientParticles || w <= 0 || h <= 0 || !player) return;
+        const budget = getFabulousParticleBudget();
+        if (budget <= 0) return;
         initFabulousParticles();
 
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
@@ -11996,7 +12216,8 @@ export const SKIN_H = 32;
         const isNight = timeOfDay >= 0.68 && timeOfDay <= 0.90;
 
         targetCtx.save();
-        for (let i = 0; i < fabulousAmbientParticles.length; i++) {
+        const activeParticleCount = Math.min(fabulousAmbientParticles.length, budget);
+        for (let i = 0; i < activeParticleCount; i++) {
             const p = fabulousAmbientParticles[i];
             p.life--;
 
@@ -12448,7 +12669,7 @@ export const SKIN_H = 32;
                         }
                         if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE);
                         ctx.restore();
-                    } else if ((fabulousGraphics || advancedGraphics) && (
+                    } else if (((fabulousGraphics && fabulousConfig.foliageSway) || (!fabulousGraphics && advancedGraphics)) && (
                         block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || 
                         block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || 
                         block === IDS.SAPLING ||
@@ -12529,10 +12750,12 @@ export const SKIN_H = 32;
                     ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
 
                     // Gentle animated caustics (light refraction ribbons)
-                    const causticsOffset = Math.sin(fluidX * 0.7 + fluidY * 0.9 + animTick * 0.05) * 4;
-                    ctx.fillStyle = 'rgba(110, 195, 255, 0.20)';
-                    ctx.fillRect(drawX + 4 + causticsOffset, drawY + 8, 14, 2);
-                    ctx.fillRect(drawX + 14 - causticsOffset, drawY + 22, 12, 2);
+                    if (!fabulousGraphics || fabulousConfig.waterEffects) {
+                        const causticsOffset = Math.sin(fluidX * 0.7 + fluidY * 0.9 + animTick * 0.05) * 4;
+                        ctx.fillStyle = 'rgba(110, 195, 255, 0.20)';
+                        ctx.fillRect(drawX + 4 + causticsOffset, drawY + 8, 14, 2);
+                        ctx.fillRect(drawX + 14 - causticsOffset, drawY + 22, 12, 2);
+                    }
 
                     // Solid contact shading (connected border against floor / walls)
                     if (isSolidBelow) {
@@ -12610,12 +12833,14 @@ export const SKIN_H = 32;
                     ctx.fill();
 
                     // Wave surface highlight strip
-                    ctx.strokeStyle = 'rgba(215, 245, 255, 0.88)';
-                    ctx.lineWidth = 2.5;
-                    ctx.beginPath();
-                    ctx.moveTo(drawX, topYL);
-                    ctx.lineTo(drawX + TILE_SIZE, topYR);
-                    ctx.stroke();
+                    if (!fabulousGraphics || fabulousConfig.waterEffects) {
+                        ctx.strokeStyle = 'rgba(215, 245, 255, 0.88)';
+                        ctx.lineWidth = 2.5;
+                        ctx.beginPath();
+                        ctx.moveTo(drawX, topYL);
+                        ctx.lineTo(drawX + TILE_SIZE, topYR);
+                        ctx.stroke();
+                    }
 
                     // Shoreline foam / meniscus where water touches solid terrain banks
                     if (isSolidLeft) {
@@ -12689,8 +12914,10 @@ export const SKIN_H = 32;
                     const wave = Math.sin(fluidX * 0.5 + animTick * 0.06) * 1.2;
                     ctx.fillRect(drawX, Math.floor(cellTopY + wave), TILE_SIZE, 3);
                     
-                    // Random rising spark/smoke particle
-                    if (advancedGraphics && Math.random() < 0.015) {
+                    // Rising spark/smoke particles and embers
+                    if (fabulousGraphics && fabulousConfig.lavaGlow && Math.random() < 0.035) {
+                        spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 4, Math.random() < 0.5 ? '#ff4500' : '#ffaa00');
+                    } else if (advancedGraphics && Math.random() < 0.015) {
                         spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 4, '#ff4500');
                     }
                 }
@@ -13018,8 +13245,11 @@ export const SKIN_H = 32;
             let drawY = Math.round(worldY - camY);
             let r = Math.round(radius);
             if (drawX < -r || drawX > lightCanvas.width + r || drawY < -r || drawY > lightCanvas.height + r) return;
+            lightCtx.imageSmoothingEnabled = false;
             lightCtx.globalAlpha = intensity;
-            lightCtx.drawImage(cachedTorchLightCanvas, drawX - r, drawY - r, r * 2, r * 2);
+            if (cachedTorchLightCanvas) {
+                lightCtx.drawImage(cachedTorchLightCanvas, drawX - r, drawY - r, r * 2, r * 2);
+            }
         }
 
         furnaces.forEach(f => {
@@ -13043,7 +13273,7 @@ export const SKIN_H = 32;
             }
         }
 
-        if (fabulousGraphics) {
+        if (fabulousGraphics && fabulousConfig.lavaGlow) {
             for (let i = 0; i < visibleFluids.length; i++) {
                 const vf = visibleFluids[i];
                 if (vf.fluid && vf.fluid.type === IDS.LAVA && i % 2 === 0) {
@@ -13076,21 +13306,43 @@ export const SKIN_H = 32;
             lightCtx.globalAlpha = 1.0;
         }
         ctx.globalCompositeOperation = 'source-over';
+        ctx.imageSmoothingEnabled = false;
         ctx.drawImage(lightCanvas, 0, 0);
 
-        if (advancedGraphics) {
+        if (advancedGraphics || fabulousGraphics) {
             ctx.save();
+            ctx.imageSmoothingEnabled = false;
             ctx.globalCompositeOperation = 'lighter';
             const glowR = TILE_SIZE * 1.7;
             const glowD = glowR * 2;
             for (let i = 0; i < visibleLightSources.length; i++) {
                 const ls = visibleLightSources[i];
-                if (ls.type === 'torch') {
-                    let gx = Math.round(ls.x - camX);
-                    let gy = Math.round(ls.y - camY);
-                    ctx.drawImage(cachedTorchGlowCanvas, gx - glowR, gy - glowR, glowD, glowD);
+                let gx = Math.round(ls.x - camX);
+                let gy = Math.round(ls.y - camY);
+                if (gx < -glowR || gx > canvas.width + glowR || gy < -glowR || gy > canvas.height + glowR) continue;
+
+                if (ls.type === 'torch' || ls.type === 'player_torch' || ls.type === 'remote_torch') {
+                    if (cachedTorchGlowCanvas) ctx.drawImage(cachedTorchGlowCanvas, gx - glowR, gy - glowR, glowD, glowD);
                     ctx.fillStyle = 'rgba(255, 235, 160, 0.34)';
                     ctx.fillRect(Math.floor(gx - 3), Math.floor(gy - 3), 6, 6);
+                    if (fabulousGraphics && fabulousConfig.bloomAura && cachedBloomAuraCanvas) {
+                        const bR = Math.round(glowR * 1.45);
+                        ctx.drawImage(cachedBloomAuraCanvas, gx - bR, gy - bR, bR * 2, bR * 2);
+                    }
+                } else if (ls.type === 'furnace') {
+                    if (cachedTorchGlowCanvas) ctx.drawImage(cachedTorchGlowCanvas, gx - glowR, gy - glowR, glowD, glowD);
+                    if (fabulousGraphics && fabulousConfig.bloomAura && cachedBloomAuraCanvas) {
+                        const bR = Math.round(glowR * 1.35);
+                        ctx.drawImage(cachedBloomAuraCanvas, gx - bR, gy - bR, bR * 2, bR * 2);
+                    }
+                } else if (ls.type === 'lava' && (!fabulousGraphics || fabulousConfig.lavaGlow)) {
+                    if (cachedLavaGlowCanvas) {
+                        ctx.drawImage(cachedLavaGlowCanvas, gx - glowR, gy - glowR, glowD, glowD);
+                    }
+                    if (fabulousGraphics && fabulousConfig.bloomAura && cachedBloomAuraCanvas) {
+                        const bR = Math.round(glowR * 1.25);
+                        ctx.drawImage(cachedBloomAuraCanvas, gx - bR, gy - bR, bR * 2, bR * 2);
+                    }
                 }
             }
             ctx.restore();
@@ -13111,12 +13363,12 @@ export const SKIN_H = 32;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        if (showHeatShimmer) drawDesertHeatShimmer(ctx, canvas.width, canvas.height, camera.x);
-        drawForestGodRays(ctx, canvas.width, canvas.height, camera.x, camera.y);
-        drawPlainsWindBreeze(ctx, canvas.width, canvas.height, camera.x, camera.y);
-        updateAndDrawFabulousParticles(ctx, camera.x, camera.y, canvas.width, canvas.height);
-        if (showBiomeGrading) drawBiomeGrading(ctx, canvas.width, canvas.height);
-        if (showVignette) drawVignette(ctx, canvas.width, canvas.height);
+        if (showHeatShimmer && (!fabulousGraphics || fabulousConfig.heatShimmer)) drawDesertHeatShimmer(ctx, canvas.width, canvas.height, camera.x);
+        if (!fabulousGraphics || fabulousConfig.godRays) drawForestGodRays(ctx, canvas.width, canvas.height, camera.x, camera.y);
+        if (!fabulousGraphics || fabulousConfig.windBreeze) drawPlainsWindBreeze(ctx, canvas.width, canvas.height, camera.x, camera.y);
+        if (!fabulousGraphics || fabulousConfig.ambientParticles) updateAndDrawFabulousParticles(ctx, camera.x, camera.y, canvas.width, canvas.height);
+        if (showBiomeGrading && (!fabulousGraphics || fabulousConfig.colorGrading)) drawBiomeGrading(ctx, canvas.width, canvas.height);
+        if (showVignette && (!fabulousGraphics || fabulousConfig.vignette)) drawVignette(ctx, canvas.width, canvas.height);
 
         // Smoothly darken and illuminate orange frame in Background Build Mode
         const curBgModeForDarkness = (typeof window !== 'undefined' && window.isBackgroundBuildMode !== undefined) ? window.isBackgroundBuildMode : isBackgroundBuildMode;
@@ -14062,6 +14314,9 @@ try { if (typeof updateCachedVignette !== "undefined") window.updateCachedVignet
 try { if (typeof cachedLightVignette !== "undefined") window.cachedLightVignette = cachedLightVignette; } catch(e) {}
 try { if (typeof cachedTorchLightCanvas !== "undefined") window.cachedTorchLightCanvas = cachedTorchLightCanvas; } catch(e) {}
 try { if (typeof cachedTorchGlowCanvas !== "undefined") window.cachedTorchGlowCanvas = cachedTorchGlowCanvas; } catch(e) {}
+try { if (typeof cachedBloomAuraCanvas !== "undefined") window.cachedBloomAuraCanvas = cachedBloomAuraCanvas; } catch(e) {}
+try { if (typeof generatePixelArtLightStamp !== "undefined") window.generatePixelArtLightStamp = generatePixelArtLightStamp; } catch(e) {}
+try { if (typeof generatePixelArtGlowStamp !== "undefined") window.generatePixelArtGlowStamp = generatePixelArtGlowStamp; } catch(e) {}
 try { if (typeof cachedFabulousVignetteCanvas !== "undefined") window.cachedFabulousVignetteCanvas = cachedFabulousVignetteCanvas; } catch(e) {}
 try { if (typeof cachedSnowFogCanvas !== "undefined") window.cachedSnowFogCanvas = cachedSnowFogCanvas; } catch(e) {}
 try { if (typeof cachedSunGlowDayCanvas !== "undefined") window.cachedSunGlowDayCanvas = cachedSunGlowDayCanvas; } catch(e) {}
@@ -14090,3 +14345,14 @@ try { if (typeof cachedCavernWallStone !== "undefined") window.cachedCavernWallS
 try { if (typeof cachedCavernWallDirt !== "undefined") window.cachedCavernWallDirt = cachedCavernWallDirt; } catch(e) {}
 try { if (typeof cachedCavernWallSand !== "undefined") window.cachedCavernWallSand = cachedCavernWallSand; } catch(e) {}
 try { if (typeof initCavernWallTextures !== "undefined") window.initCavernWallTextures = initCavernWallTextures; } catch(e) {}
+try { if (typeof cachedLavaGlowCanvas !== "undefined") window.cachedLavaGlowCanvas = cachedLavaGlowCanvas; } catch(e) {}
+try { if (typeof setEngineFpsCap !== "undefined") window.setEngineFpsCap = setEngineFpsCap; } catch(e) {}
+try { if (typeof fabulousConfig !== "undefined") window.fabulousConfig = fabulousConfig; } catch(e) {}
+try { if (typeof DEFAULT_FABULOUS_CONFIG !== "undefined") window.DEFAULT_FABULOUS_CONFIG = DEFAULT_FABULOUS_CONFIG; } catch(e) {}
+try { if (typeof FABULOUS_PRESETS !== "undefined") window.FABULOUS_PRESETS = FABULOUS_PRESETS; } catch(e) {}
+try { if (typeof applyFabulousPreset !== "undefined") window.applyFabulousPreset = applyFabulousPreset; } catch(e) {}
+try { if (typeof setFabulousConfig !== "undefined") window.setFabulousConfig = setFabulousConfig; } catch(e) {}
+try { if (typeof loadFabulousConfig !== "undefined") window.loadFabulousConfig = loadFabulousConfig; } catch(e) {}
+try { if (typeof getFabulousParticleBudget !== "undefined") window.getFabulousParticleBudget = getFabulousParticleBudget; } catch(e) {}
+try { if (typeof menuBackgroundRendered !== "undefined") window.menuBackgroundRendered = menuBackgroundRendered; } catch(e) {}
+try { if (typeof dismissBootLoadingScreen !== "undefined") window.dismissBootLoadingScreen = dismissBootLoadingScreen; } catch(e) {}

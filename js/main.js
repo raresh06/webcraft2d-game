@@ -732,6 +732,7 @@ export function initJukeboxFileInput() {
                 if (overlayId === 'new-world-modal') { callClose('closeNewWorldModal'); return true; }
                 if (overlayId === 'create-room-modal' || overlayId === 'join-room-modal') { callClose('closeRoomDialogs'); return true; }
                 if (overlayId === 'world-map-modal' || isWorldMapOpen) { if (!callClose('toggleWorldMap', false)) topOverlay.classList.add('hidden'); return true; }
+                if (overlayId === 'fabulous-settings-modal') { callClose('closeFabulousSettingsModal'); return true; }
                 if (overlayId === 'settings-menu') { callClose('closeSettings'); return true; }
                 if (overlayId === 'achievements-modal') { callClose('closeAchievements'); return true; }
                 if (overlayId === 'whats-new-modal') { callClose('closeWhatsNew'); return true; }
@@ -3016,9 +3017,10 @@ export function initJukeboxFileInput() {
                 if (typeof resizeCanvases === 'function') resizeCanvases();
             }
 
-            if (fpsCap > 0) {
-                const minFrameDuration = 1000 / fpsCap;
-                if (lastRenderTime > 0 && now - lastRenderTime < minFrameDuration - 2.0) {
+            const curFpsCap = (typeof window !== 'undefined' && Number.isFinite(window.fpsCap)) ? window.fpsCap : fpsCap;
+            if (curFpsCap > 0) {
+                const minFrameDuration = 1000 / curFpsCap;
+                if (lastRenderTime > 0 && now - lastRenderTime < minFrameDuration - 1.0) {
                     return;
                 }
             }
@@ -3108,7 +3110,7 @@ export function initJukeboxFileInput() {
                     dbgEl.innerText = 
                         `Webcraft2D (${GAME_VERSION})\n` +
                         `Graphics: ${curGraphicsMode === 'fabulous' ? 'Fabulous (Shaders & VFX)' : (curGraphicsMode === 'advanced' ? 'Advanced' : 'Base')}\n` +
-                        `FPS: ${currentFps} (${frameDeltaMs.toFixed(1)} ms) | Cap: ${fpsCap === 0 ? 'Unlimited' : fpsCap}\n` +
+                        `FPS: ${currentFps} (${frameDeltaMs.toFixed(1)} ms) | Cap: ${curFpsCap === 0 ? 'Unlimited' : `${curFpsCap} FPS`}\n` +
                         `TPS: ${PHYSICS_TICK_RATE} (Fixed 60Hz)\n` +
                         `XYZ: ${px.toFixed(2)} / ${py.toFixed(2)} / 0.00\n` +
                         `RAM: ${typeof getMemoryUsageText === 'function' ? getMemoryUsageText() : 'N/A'}\n` +

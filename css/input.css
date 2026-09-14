@@ -2306,7 +2306,7 @@
             #settings-menu h1, #pause-menu h1, #loading-screen h1, #worlds-menu > .mc-title, #skins-title, #whats-new-title, #credits-title { color: var(--mc-accent-color) !important; margin-top: 12px !important; }
             #pause-menu h1 { margin-bottom: 16px !important; }
         #mp-room-list, #diff-desc, #worlds-list { border-radius: 0 !important; border-color: #46515a !important; background-color: #171b20 !important; box-shadow: inset 0 0 0 2px #080a0c; }
-        #settings-menu .mc-btn, #pause-menu .mc-btn, #death-menu .mc-btn { box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2), 3px 3px 0 rgba(0,0,0,0.3); }
+        #settings-menu .mc-btn, #fabulous-settings-modal .mc-btn, #pause-menu .mc-btn, #death-menu .mc-btn { box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2), 3px 3px 0 rgba(0,0,0,0.3); }
         #debug-info { border-radius: 0 !important; border-width: 3px !important; box-shadow: inset 0 0 0 2px #071b0b, 4px 4px 0 rgba(0,0,0,0.35) !important; }
         #toast-container .toast { border-radius: 0; border-color: #69737b; box-shadow: inset 0 0 0 2px #2a3036, 4px 4px 0 rgba(0,0,0,0.45); }
         /* Achievements Modal and In-game Banner */
@@ -3184,7 +3184,7 @@
         .world-badge-difficulty-hardcore { background: #4a148c; }
         .world-badge-version { background: #455a64; }
         .world-badge-version-invalid { background: #c62828; }
-        #settings-menu { background: rgba(0,0,0,0.78); }
+        #settings-menu, #fabulous-settings-modal { background: rgba(0,0,0,0.78); }
         .settings-panel {
             width: min(840px, calc(100vw - 32px)) !important; height: min(620px, calc(100vh - 32px)) !important; max-height: min(620px, calc(100vh - 32px)) !important;
             padding: 14px 18px !important; background-color: #20252b;
@@ -3212,7 +3212,7 @@
             text-shadow: none;
         }
         .settings-tab-content { display: none; flex-direction: column; gap: 10px; overflow-y: auto; padding: 2px 6px 6px 2px; }
-        .settings-tab-content.active { display: flex !important; flex: 1 1 0% !important; min-height: 0 !important; }
+        .settings-tab-content.active, .fabulous-tab-content, #fabulous-tab-content { display: flex !important; flex-direction: column !important; flex: 1 1 0% !important; min-height: 0 !important; gap: 10px; overflow-y: auto; padding: 2px 6px 6px 2px; }
         .settings-section-title { margin: 6px 0 4px; padding-bottom: 4px; border-bottom: 2px solid #46515a; color: var(--mc-accent-color); font-size: 24px; text-shadow: 2px 2px 0 #080a0c; }
         .settings-row {
             display: flex; align-items: center; justify-content: space-between; background: #171b20;
@@ -4242,6 +4242,15 @@
 #credits-modal, #whats-new-modal, #skin-upload-modal, #skin-owned-modal, #achievements-modal {
     z-index: 250 !important;
 }
+#fabulous-settings-modal {
+    z-index: 350 !important;
+}
+#btn-customize-fabulous {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
 #loading-screen, #singleplayer-loading, #multiplayer-loading-modal, #kick-modal {
     z-index: 500 !important;
 }
@@ -4255,8 +4264,60 @@ html.closed-beta-pending #closed-beta-modal {
     display: flex !important;
 }
 html.closed-beta-pending #main-menu,
-html.closed-beta-pending #game-intro {
+html.closed-beta-pending #game-intro,
+html.closed-beta-pending #boot-loading-screen {
     display: none !important;
+}
+
+#boot-loading-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 90000 !important;
+    background: #0a0b0e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.45s ease-out, visibility 0.45s ease-out;
+}
+
+#boot-loading-screen.dismissed {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+}
+
+@keyframes bootLoadingPulse {
+    0% {
+        width: 15%;
+        transform: translateX(0%);
+    }
+    50% {
+        width: 65%;
+        transform: translateX(30%);
+    }
+    100% {
+        width: 30%;
+        transform: translateX(200%);
+    }
+}
+
+.boot-loading-pulse-bar {
+    animation: bootLoadingPulse 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes bootDotsPulse {
+    0%, 20% { opacity: 0; }
+    40% { opacity: 0.33; }
+    60% { opacity: 0.66; }
+    80%, 100% { opacity: 1; }
+}
+
+.boot-loading-dots {
+    display: inline-block;
+    min-width: 24px;
+    text-align: left;
+    animation: bootDotsPulse 1.4s infinite steps(1);
 }
 
 @keyframes closedBetaShake {

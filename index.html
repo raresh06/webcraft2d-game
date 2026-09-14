@@ -78,6 +78,44 @@
         </div>
     </div>
 
+    <!-- Initial Boot Loading Screen: renders on first paint until menu background and shaders load -->
+    <div id="boot-loading-screen" role="status" aria-live="polite" aria-label="Loading Webcraft2D"
+        style="position: fixed; inset: 0; z-index: 90000; background: #0a0b0e; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; transition: opacity 0.45s ease-out, visibility 0.45s ease-out;">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; max-width: 440px; width: 90%; text-align: center;">
+            <!-- Game Title with 3D drop shadow -->
+            <div style="font-family: 'VT323', monospace; font-size: clamp(48px, 8vw, 64px); line-height: 1; font-weight: bold; color: #ffffff; text-shadow: 4px 4px 0 #000, -2px -2px 0 #222; letter-spacing: 2px;">
+                Webcraft<span style="color: #ffd700;">2D</span>
+            </div>
+
+            <!-- Animated Pixel Loading Track & Bar -->
+            <div style="width: 100%; max-width: 320px; height: 16px; background: #14171e; border: 3px solid #333a44; border-top-color: #46515a; border-left-color: #46515a; border-right-color: #080a0c; border-bottom-color: #080a0c; box-shadow: inset 2px 2px 0 #000, 2px 2px 0 rgba(0,0,0,0.5); position: relative; overflow: hidden; padding: 2px;">
+                <div id="boot-loading-bar-fill" class="boot-loading-pulse-bar" style="height: 100%; width: 45%; background: linear-gradient(90deg, #22c55e, #86efac); box-shadow: inset 0 2px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.3);"></div>
+            </div>
+
+            <!-- Status message -->
+            <div style="display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; font-size: 26px; color: #cbd5e1; text-shadow: 2px 2px 0 #000; letter-spacing: 1px;">
+                <span id="boot-loading-status-text">Loading Webcraft2D</span><span class="boot-loading-dots">...</span>
+            </div>
+
+            <!-- Subtitle -->
+            <div style="font-family: 'VT323', monospace; font-size: 18px; color: #64748b; letter-spacing: 1px;">
+                Generating world, shaders & textures
+            </div>
+        </div>
+    </div>
+    <script>
+        // Safety fallback: ensure boot loader never traps user if background takes long
+        setTimeout(function() {
+            var loader = document.getElementById('boot-loading-screen');
+            if (loader && !loader.classList.contains('dismissed')) {
+                loader.classList.add('dismissed');
+                loader.style.opacity = '0';
+                loader.style.pointerEvents = 'none';
+                setTimeout(function() { loader.style.display = 'none'; loader.classList.add('hidden'); }, 450);
+            }
+        }, 6500);
+    </script>
+
     <div id="shared-menu-bg" class="pointer-events-none z-0" style="position: fixed; inset: 0; width: 100vw; height: 100vh;">
         <canvas id="menuBgCanvas" style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
     </div>
@@ -1458,7 +1496,23 @@
                     <div class="discord-card-body px-4 pb-4 pt-0 relative">
                         <div class="discord-card-avatar-wrap mb-2 relative inline-block">
                             <div id="profile-overview-avatar-frame" class="avatar-frame-wrapper avatar-frame-classic relative">
-                                <div id="profile-details-crown-icon" class="avatar-crown-element hidden">👑</div>
+                                <div id="profile-details-crown-icon" class="avatar-crown-element hidden">
+                                    <svg class="pixel-crown-svg" width="24" height="18" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                        <rect x="1" y="10" width="14" height="2" fill="#080a0c"/>
+                                        <rect x="2" y="9" width="12" height="2" fill="#d97706"/>
+                                        <rect x="2" y="7" width="12" height="2" fill="#f59e0b"/>
+                                        <rect x="2" y="5" width="12" height="2" fill="#fbbf24"/>
+                                        <rect x="2" y="2" width="2" height="3" fill="#fbbf24"/>
+                                        <rect x="7" y="0" width="2" height="5" fill="#fbbf24"/>
+                                        <rect x="12" y="2" width="2" height="3" fill="#fbbf24"/>
+                                        <rect x="2" y="2" width="1" height="1" fill="#fef08a"/>
+                                        <rect x="7" y="0" width="1" height="1" fill="#fef08a"/>
+                                        <rect x="12" y="2" width="1" height="1" fill="#fef08a"/>
+                                        <rect x="4" y="7" width="2" height="2" fill="#ef4444"/>
+                                        <rect x="7" y="4" width="2" height="2" fill="#3b82f6"/>
+                                        <rect x="10" y="7" width="2" height="2" fill="#ef4444"/>
+                                    </svg>
+                                </div>
                                 <canvas id="profile-details-head-canvas" width="60" height="60" class="pixelated block bg-[#181c24]"></canvas>
                                 <div id="profile-details-status-dot" class="discord-avatar-status online" title="Online in Webcraft"></div>
                             </div>
@@ -1738,7 +1792,26 @@
                 <!-- Modal Header -->
                 <div class="flex justify-between items-center pb-2.5 mb-2 border-b-2 border-[#46515a] flex-shrink-0">
                     <div class="flex items-center gap-3">
-                        <span class="text-3xl">✏️</span>
+                        <svg class="pixel-art-icon flex-shrink-0" width="28" height="28" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                            <rect x="1" y="14" width="1" height="1" fill="#080a0c"/>
+                            <rect x="2" y="13" width="1" height="1" fill="#080a0c"/>
+                            <rect x="1" y="13" width="1" height="1" fill="#475569"/>
+                            <rect x="2" y="14" width="1" height="1" fill="#475569"/>
+                            <rect x="2" y="12" width="2" height="1" fill="#fde68a"/>
+                            <rect x="3" y="13" width="1" height="2" fill="#fde68a"/>
+                            <rect x="3" y="10" width="2" height="2" fill="#f59e0b"/>
+                            <rect x="5" y="8" width="2" height="2" fill="#f59e0b"/>
+                            <rect x="7" y="6" width="2" height="2" fill="#f59e0b"/>
+                            <rect x="9" y="4" width="2" height="2" fill="#f59e0b"/>
+                            <rect x="4" y="9" width="2" height="2" fill="#fbbf24"/>
+                            <rect x="6" y="7" width="2" height="2" fill="#fbbf24"/>
+                            <rect x="8" y="5" width="2" height="2" fill="#fbbf24"/>
+                            <rect x="10" y="3" width="2" height="2" fill="#fbbf24"/>
+                            <rect x="11" y="2" width="2" height="2" fill="#94a3b8"/>
+                            <rect x="12" y="3" width="1" height="2" fill="#64748b"/>
+                            <rect x="13" y="1" width="2" height="2" fill="#f472b6"/>
+                            <rect x="14" y="2" width="1" height="1" fill="#fb7185"/>
+                        </svg>
                         <div>
                             <h2 id="profile-editor-title" class="screen-title text-2xl sm:text-3xl font-bold text-[#ffd447] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide leading-none">EDIT WEBCRAFT PROFILE</h2>
                             <div class="text-xs sm:text-sm text-cyan-300 font-['VT323'] tracking-wider mt-0.5">Customize Player Card • Real-Time Live Preview • Cloud Sync</div>
@@ -1756,8 +1829,22 @@
                         <!-- Setting Card 1: Title Plate -->
                         <div class="editor-setting-card">
                             <div class="editor-setting-header">
-                                <span class="editor-setting-title gold">
-                                    <span>👑</span>
+                                <span class="editor-setting-title gold flex items-center gap-1.5">
+                                    <svg class="pixel-art-icon flex-shrink-0" width="18" height="14" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                        <rect x="1" y="10" width="14" height="2" fill="#080a0c"/>
+                                        <rect x="2" y="9" width="12" height="2" fill="#d97706"/>
+                                        <rect x="2" y="7" width="12" height="2" fill="#f59e0b"/>
+                                        <rect x="2" y="5" width="12" height="2" fill="#fbbf24"/>
+                                        <rect x="2" y="2" width="2" height="3" fill="#fbbf24"/>
+                                        <rect x="7" y="0" width="2" height="5" fill="#fbbf24"/>
+                                        <rect x="12" y="2" width="2" height="3" fill="#fbbf24"/>
+                                        <rect x="2" y="2" width="1" height="1" fill="#fef08a"/>
+                                        <rect x="7" y="0" width="1" height="1" fill="#fef08a"/>
+                                        <rect x="12" y="2" width="1" height="1" fill="#fef08a"/>
+                                        <rect x="4" y="7" width="2" height="2" fill="#ef4444"/>
+                                        <rect x="7" y="4" width="2" height="2" fill="#3b82f6"/>
+                                        <rect x="10" y="7" width="2" height="2" fill="#ef4444"/>
+                                    </svg>
                                     <span>TITLE PLATE &amp; PREFIX</span>
                                 </span>
                                 <span class="editor-setting-hint">Choose unlocked title badge</span>
@@ -1773,8 +1860,18 @@
                         <!-- Setting Card 2: Nameplate Color -->
                         <div class="editor-setting-card">
                             <div class="editor-setting-header">
-                                <span class="editor-setting-title cyan">
-                                    <span>✨</span>
+                                <span class="editor-setting-title cyan flex items-center gap-1.5">
+                                    <svg class="pixel-art-icon flex-shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                        <rect x="7" y="1" width="2" height="11" fill="#ffd34d"/>
+                                        <rect x="2" y="5" width="12" height="3" fill="#ffd34d"/>
+                                        <rect x="7" y="3" width="2" height="7" fill="#ffffff"/>
+                                        <rect x="4" y="6" width="8" height="1" fill="#ffffff"/>
+                                        <rect x="12" y="9" width="1" height="5" fill="#facc15"/>
+                                        <rect x="10" y="11" width="5" height="1" fill="#facc15"/>
+                                        <rect x="12" y="11" width="1" height="1" fill="#ffffff"/>
+                                        <rect x="2" y="10" width="1" height="4" fill="#facc15"/>
+                                        <rect x="1" y="11" width="3" height="1" fill="#facc15"/>
+                                    </svg>
                                     <span>NAMEPLATE COLOR</span>
                                 </span>
                                 <span class="editor-setting-hint">Display name text color</span>
@@ -1799,8 +1896,19 @@
                         <!-- Setting Card 3: Avatar Silhouette & Decorative Frame -->
                         <div class="editor-setting-card">
                             <div class="editor-setting-header">
-                                <span class="editor-setting-title emerald">
-                                    <span>🛡️</span>
+                                <span class="editor-setting-title emerald flex items-center gap-1.5">
+                                    <svg class="pixel-art-icon flex-shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                        <rect x="2" y="1" width="12" height="2" fill="#94a3b8"/>
+                                        <rect x="1" y="3" width="14" height="6" fill="#64748b"/>
+                                        <rect x="2" y="9" width="12" height="2" fill="#64748b"/>
+                                        <rect x="3" y="11" width="10" height="2" fill="#475569"/>
+                                        <rect x="5" y="13" width="6" height="2" fill="#334155"/>
+                                        <rect x="7" y="15" width="2" height="1" fill="#1e293b"/>
+                                        <rect x="4" y="4" width="8" height="6" fill="#10b981"/>
+                                        <rect x="5" y="5" width="6" height="4" fill="#34d399"/>
+                                        <rect x="7" y="3" width="2" height="8" fill="#f8fafc"/>
+                                        <rect x="5" y="6" width="6" height="2" fill="#f8fafc"/>
+                                    </svg>
                                     <span>AVATAR FRAME &amp; SILHOUETTE</span>
                                 </span>
                                 <span class="editor-setting-hint">Border frame, crowns &amp; rings</span>
@@ -1816,8 +1924,20 @@
                         <!-- Setting Card 4: Profile Banner & Tint -->
                         <div class="editor-setting-card">
                             <div class="editor-setting-header">
-                                <span class="editor-setting-title purple">
-                                    <span>🌌</span>
+                                <span class="editor-setting-title purple flex items-center gap-1.5">
+                                    <svg class="pixel-art-icon flex-shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                        <rect x="2" y="2" width="12" height="12" fill="#1e1035"/>
+                                        <rect x="3" y="4" width="3" height="2" fill="#c084fc"/>
+                                        <rect x="6" y="3" width="4" height="2" fill="#a855f7"/>
+                                        <rect x="10" y="4" width="3" height="3" fill="#38bdf8"/>
+                                        <rect x="7" y="6" width="3" height="3" fill="#f5d0fe"/>
+                                        <rect x="4" y="9" width="4" height="3" fill="#7e22ce"/>
+                                        <rect x="8" y="10" width="4" height="2" fill="#0284c7"/>
+                                        <rect x="11" y="8" width="2" height="2" fill="#c084fc"/>
+                                        <rect x="8" y="7" width="1" height="1" fill="#ffffff"/>
+                                        <rect x="4" y="5" width="1" height="1" fill="#ffffff"/>
+                                        <rect x="11" y="11" width="1" height="1" fill="#ffffff"/>
+                                    </svg>
                                     <span>PROFILE BANNER</span>
                                 </span>
                                 <span class="editor-setting-hint">Pixel motif &amp; backdrop tint</span>
@@ -1852,8 +1972,19 @@
                         <!-- Setting Card 5: Player Card Border Theme -->
                         <div class="editor-setting-card">
                             <div class="editor-setting-header">
-                                <span class="editor-setting-title orange">
-                                    <span>📜</span>
+                                <span class="editor-setting-title orange flex items-center gap-1.5">
+                                    <svg class="pixel-art-icon flex-shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                        <rect x="2" y="1" width="11" height="2" fill="#b45309"/>
+                                        <rect x="1" y="2" width="13" height="2" fill="#d97706"/>
+                                        <rect x="3" y="4" width="10" height="8" fill="#fef3c7"/>
+                                        <rect x="4" y="5" width="8" height="1" fill="#d97706"/>
+                                        <rect x="4" y="7" width="8" height="1" fill="#d97706"/>
+                                        <rect x="4" y="9" width="5" height="1" fill="#d97706"/>
+                                        <rect x="2" y="12" width="12" height="2" fill="#d97706"/>
+                                        <rect x="3" y="14" width="10" height="1" fill="#b45309"/>
+                                        <rect x="10" y="9" width="3" height="3" fill="#dc2626"/>
+                                        <rect x="11" y="10" width="1" height="1" fill="#fca5a5"/>
+                                    </svg>
                                     <span>PLAYER CARD THEME</span>
                                 </span>
                                 <span class="editor-setting-hint">Card background &amp; border styling</span>
@@ -1869,8 +2000,18 @@
                         <!-- Setting Card 6: About Me / Status Bio -->
                         <div class="editor-setting-card">
                             <div class="editor-setting-header">
-                                <span class="editor-setting-title gold">
-                                    <span>💬</span>
+                                <span class="editor-setting-title gold flex items-center gap-1.5">
+                                    <svg class="pixel-art-icon flex-shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                        <rect x="2" y="2" width="12" height="9" fill="#080a0c"/>
+                                        <rect x="3" y="3" width="10" height="7" fill="#f1f5f9"/>
+                                        <rect x="3" y="11" width="4" height="2" fill="#080a0c"/>
+                                        <rect x="4" y="10" width="3" height="2" fill="#f1f5f9"/>
+                                        <rect x="3" y="13" width="2" height="1" fill="#080a0c"/>
+                                        <rect x="4" y="12" width="1" height="1" fill="#f1f5f9"/>
+                                        <rect x="5" y="6" width="1" height="1" fill="#475569"/>
+                                        <rect x="7" y="6" width="1" height="1" fill="#475569"/>
+                                        <rect x="9" y="6" width="1" height="1" fill="#475569"/>
+                                    </svg>
                                     <span>ABOUT ME / BIO</span>
                                 </span>
                                 <span id="editor-bio-char-count" class="tutorial-card-desc text-xs font-bold text-amber-300 font-['VT323'] bg-black/50 px-2 py-0.5 border border-[#333e49]">0 / 120</span>
@@ -1884,7 +2025,22 @@
                         <!-- Astral Emporium Promo -->
                         <div class="editor-promo-box">
                             <div class="flex items-center gap-3">
-                                <span class="text-3xl flex-shrink-0">💎</span>
+                                <svg class="pixel-art-icon flex-shrink-0" width="28" height="28" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                    <rect x="4" y="2" width="8" height="1" fill="#0284c7"/>
+                                    <rect x="2" y="3" width="12" height="2" fill="#0284c7"/>
+                                    <rect x="5" y="3" width="6" height="2" fill="#38bdf8"/>
+                                    <rect x="7" y="3" width="2" height="2" fill="#e0f2fe"/>
+                                    <rect x="1" y="5" width="14" height="3" fill="#0284c7"/>
+                                    <rect x="3" y="5" width="10" height="3" fill="#38bdf8"/>
+                                    <rect x="6" y="5" width="4" height="2" fill="#bae6fd"/>
+                                    <rect x="2" y="8" width="12" height="2" fill="#0369a1"/>
+                                    <rect x="4" y="8" width="8" height="2" fill="#0284c7"/>
+                                    <rect x="3" y="10" width="10" height="2" fill="#075985"/>
+                                    <rect x="5" y="10" width="6" height="2" fill="#0284c7"/>
+                                    <rect x="5" y="12" width="6" height="2" fill="#0c4a6e"/>
+                                    <rect x="7" y="12" width="2" height="2" fill="#0369a1"/>
+                                    <rect x="7" y="14" width="2" height="1" fill="#0c4a6e"/>
+                                </svg>
                                 <div>
                                     <div class="text-[#c084fc] font-['VT323'] text-xl font-bold leading-tight">Unlock More Cosmetics!</div>
                                     <div class="text-purple-300 font-['VT323'] text-sm leading-tight">Frames, halos, crowns, banners &amp; themes at the Emporium.</div>
@@ -1916,7 +2072,23 @@
                                 <div class="discord-card-body px-4 pb-4 pt-0 relative">
                                     <div class="discord-card-avatar-wrap mb-2 relative inline-block">
                                         <div id="editor-preview-avatar-frame" class="avatar-frame-wrapper avatar-frame-classic relative">
-                                            <div id="editor-preview-crown-badge" class="avatar-crown-element hidden">👑</div>
+                                            <div id="editor-preview-crown-badge" class="avatar-crown-element hidden">
+                                                <svg class="pixel-crown-svg" width="24" height="18" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                                    <rect x="1" y="10" width="14" height="2" fill="#080a0c"/>
+                                                    <rect x="2" y="9" width="12" height="2" fill="#d97706"/>
+                                                    <rect x="2" y="7" width="12" height="2" fill="#f59e0b"/>
+                                                    <rect x="2" y="5" width="12" height="2" fill="#fbbf24"/>
+                                                    <rect x="2" y="2" width="2" height="3" fill="#fbbf24"/>
+                                                    <rect x="7" y="0" width="2" height="5" fill="#fbbf24"/>
+                                                    <rect x="12" y="2" width="2" height="3" fill="#fbbf24"/>
+                                                    <rect x="2" y="2" width="1" height="1" fill="#fef08a"/>
+                                                    <rect x="7" y="0" width="1" height="1" fill="#fef08a"/>
+                                                    <rect x="12" y="2" width="1" height="1" fill="#fef08a"/>
+                                                    <rect x="4" y="7" width="2" height="2" fill="#ef4444"/>
+                                                    <rect x="7" y="4" width="2" height="2" fill="#3b82f6"/>
+                                                    <rect x="10" y="7" width="2" height="2" fill="#ef4444"/>
+                                                </svg>
+                                            </div>
                                             <canvas id="editor-preview-avatar-canvas" width="60" height="60" class="pixelated block bg-[#181c24]"></canvas>
                                             <div class="discord-avatar-status online" title="Online in Webcraft"></div>
                                         </div>
@@ -1975,7 +2147,16 @@
                             <span>Cancel</span>
                         </button>
                         <button id="editor-save-btn" type="button" class="mc-btn auth-primary-btn !h-10 !w-auto !px-6 !text-xl flex items-center justify-center gap-2" onclick="saveProfileEditorChanges()">
-                            <span>💾</span>
+                            <svg class="pixel-art-icon flex-shrink-0" width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                <rect x="1" y="1" width="13" height="14" fill="#1e293b"/>
+                                <rect x="2" y="2" width="11" height="12" fill="#334155"/>
+                                <rect x="13" y="3" width="1" height="11" fill="#1e293b"/>
+                                <rect x="4" y="2" width="7" height="5" fill="#94a3b8"/>
+                                <rect x="8" y="3" width="2" height="3" fill="#1e293b"/>
+                                <rect x="3" y="8" width="9" height="5" fill="#f8fafc"/>
+                                <rect x="4" y="10" width="7" height="1" fill="#3b82f6"/>
+                                <rect x="4" y="12" width="5" height="1" fill="#94a3b8"/>
+                            </svg>
                             <span>Save Changes</span>
                         </button>
                     </div>
@@ -2177,7 +2358,23 @@
                 <div class="px-4 pb-4 pt-0 relative">
                     <div class="discord-card-avatar-wrap -mt-8 mb-2 relative inline-block">
                         <div id="friend-modal-avatar-frame" class="avatar-frame-wrapper avatar-frame-classic relative">
-                            <div id="friend-modal-crown-badge" class="avatar-crown-element hidden">👑</div>
+                            <div id="friend-modal-crown-badge" class="avatar-crown-element hidden">
+                                <svg class="pixel-crown-svg" width="24" height="18" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                    <rect x="1" y="10" width="14" height="2" fill="#080a0c"/>
+                                    <rect x="2" y="9" width="12" height="2" fill="#d97706"/>
+                                    <rect x="2" y="7" width="12" height="2" fill="#f59e0b"/>
+                                    <rect x="2" y="5" width="12" height="2" fill="#fbbf24"/>
+                                    <rect x="2" y="2" width="2" height="3" fill="#fbbf24"/>
+                                    <rect x="7" y="0" width="2" height="5" fill="#fbbf24"/>
+                                    <rect x="12" y="2" width="2" height="3" fill="#fbbf24"/>
+                                    <rect x="2" y="2" width="1" height="1" fill="#fef08a"/>
+                                    <rect x="7" y="0" width="1" height="1" fill="#fef08a"/>
+                                    <rect x="12" y="2" width="1" height="1" fill="#fef08a"/>
+                                    <rect x="4" y="7" width="2" height="2" fill="#ef4444"/>
+                                    <rect x="7" y="4" width="2" height="2" fill="#3b82f6"/>
+                                    <rect x="10" y="7" width="2" height="2" fill="#ef4444"/>
+                                </svg>
+                            </div>
                             <canvas id="friend-modal-avatar-canvas" width="56" height="56" class="pixelated block bg-[#181c24]"></canvas>
                             <div id="friend-modal-status-dot" class="discord-avatar-status online"></div>
                         </div>
@@ -2579,8 +2776,12 @@
                                         <input type="text" id="accent-hex-input" maxlength="7" value="#FFD34D" onchange="setCustomAccentColor(this.value)" oninput="if(this.value.length===7) setCustomAccentColor(this.value)" class="accent-hex-input" title="Hex Code">
                                     </div>
                                 </div>
-                                <button type="button" class="accent-reset-btn" onclick="resetAccentColor()">
-                                    <span>↺</span> RESET DEFAULT
+                                <button type="button" class="accent-reset-btn flex items-center justify-center gap-1" onclick="resetAccentColor()">
+                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                        <path d="M6 1v2a3 3 0 1 1-3 3H1a5 5 0 1 0 5-5z" fill="currentColor"/>
+                                        <polygon points="6,0 9,2.5 6,5" fill="currentColor"/>
+                                    </svg>
+                                    <span>RESET DEFAULT</span>
                                 </button>
                             </div>
                         </div>
@@ -2594,7 +2795,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div class="settings-row">
                         <span class="settings-label">Graphics Tier</span>
-                        <button class="mc-btn" id="btn-toggle-graphics" onclick="toggleGraphics()">ADVANCED</button>
+                        <div class="flex items-center gap-1.5">
+                            <button class="mc-btn" id="btn-toggle-graphics" onclick="toggleGraphics()">ADVANCED</button>
+                            <button class="mc-btn !inline-flex !items-center !justify-center gap-1.5 !px-3 !py-0 !h-[34px] !min-w-[80px] !text-lg" id="btn-customize-fabulous" onclick="openFabulousSettingsModal()" style="display: none;" title="Customize Fabulous Graphics settings & atmospheric options">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" class="flex-shrink-0" style="image-rendering: pixelated; shape-rendering: crispEdges; display: block;" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M6 0h4v2h1v1h1v1h2v2h2v4h-2v2h-2v1h-1v1h-1v2H6v-2H5v-1H4v-1H2v-2H0V6h2V4h2V3h1V2h1V0zm0 6h4v4H6V6z"/>
+                                </svg>
+                                <span class="leading-none select-none" style="display: inline-block; line-height: 1;">SETTINGS</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="settings-row">
                         <span class="settings-label">Framerate Limit</span>
@@ -2943,6 +3152,136 @@
         </section>
     </div>
 
+    <!-- Fabulous Graphics Customization Modal -->
+    <div id="fabulous-settings-modal" class="menu-overlay hidden backdrop-blur-sm z-[170]" role="dialog" aria-modal="true" aria-labelledby="fabulous-modal-title">
+        <section class="settings-panel select-none">
+            <!-- Modal Header -->
+            <h1 id="fabulous-modal-title" class="screen-title text-center">Fabulous Graphics</h1>
+
+            <!-- Quality Presets Bar (Styled as Settings Tab Bar) -->
+            <div class="settings-tabs-bar" id="fabulous-presets-bar">
+                <button type="button" class="settings-tab-btn" id="btn-fab-preset-low" onclick="selectFabulousPreset('low')">Low Preset</button>
+                <button type="button" class="settings-tab-btn" id="btn-fab-preset-medium" onclick="selectFabulousPreset('medium')">Medium Preset</button>
+                <button type="button" class="settings-tab-btn active" id="btn-fab-preset-high" onclick="selectFabulousPreset('high')">High Preset</button>
+                <button type="button" class="settings-tab-btn" id="btn-fab-preset-custom" onclick="selectFabulousPreset('custom')" style="display: none;">Custom Preset</button>
+            </div>
+
+            <!-- Scrollable 11 Options Grid (Always Visible & Scrollable) -->
+            <div class="fabulous-tab-content custom-scrollbar" id="fabulous-tab-content">
+                <div class="settings-section-title flex items-center justify-between">
+                    <span>Atmospheric & Shading Features</span>
+                    <span class="text-lg font-['VT323'] text-gray-400 font-normal">Active: <span id="fabulous-active-preset-badge" class="text-amber-400 font-bold uppercase">HIGH</span></span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <!-- 1. Biome Color Grading -->
+                    <div class="settings-row">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Atmospheric sky & terrain tint grading">Biome Color Grading</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Atmospheric sky & terrain tint grading</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-colorGrading" onclick="toggleFabulousOption('colorGrading')">ON</button>
+                    </div>
+
+                    <!-- 2. Volumetric Biome Fog -->
+                    <div class="settings-row">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Drifting mist in snow, swamp & rainforests">Volumetric Biome Fog</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Drifting mist in snow & rainforests</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-volumetricFog" onclick="toggleFabulousOption('volumetricFog')">ON</button>
+                    </div>
+
+                    <!-- 3. Crepuscular God Rays -->
+                    <div class="settings-row">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Sunbeams radiating through forest canopy">Crepuscular God Rays</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Sunbeams through forest canopy</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-godRays" onclick="toggleFabulousOption('godRays')">ON</button>
+                    </div>
+
+                    <!-- 4. Cinematic Vignette -->
+                    <div class="settings-row">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Corner shadow depth vignette">Cinematic Vignette</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Corner shadow depth vignette</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-vignette" onclick="toggleFabulousOption('vignette')">ON</button>
+                    </div>
+
+                    <!-- 5. Desert Heat Shimmer -->
+                    <div class="settings-row">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Heat distortion waves under desert sun">Desert Heat Shimmer</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Heat waves in hot desert sun</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-heatShimmer" onclick="toggleFabulousOption('heatShimmer')">ON</button>
+                    </div>
+
+                    <!-- 6. Foliage Wind Sway -->
+                    <div class="settings-row">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Wind shear on grass, flowers & crops">Foliage Wind Sway</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Wind shear on grass, flowers & crops</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-foliageSway" onclick="toggleFabulousOption('foliageSway')">ON</button>
+                    </div>
+
+                    <!-- 7. Wind Breeze Gusts -->
+                    <div class="settings-row">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Air streaks sweeping over meadows">Wind Breeze Gusts</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Air streaks sweeping over meadows</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-windBreeze" onclick="toggleFabulousOption('windBreeze')">ON</button>
+                    </div>
+
+                    <!-- 8. Water Shimmer & Waves -->
+                    <div class="settings-row">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Wave specular glints & caustics">Water Shimmer & Waves</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Wave specular glints & caustics</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-waterEffects" onclick="toggleFabulousOption('waterEffects')">ON</button>
+                    </div>
+
+                    <!-- 9. Ambient Particles -->
+                    <div class="settings-row">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Leaves, fireflies & dandelion fluff">Ambient Particles</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Leaves, fireflies & spores</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-ambientParticles" onclick="toggleFabulousOption('ambientParticles')">ON</button>
+                    </div>
+
+                    <!-- 10. Lava Radiance & Embers -->
+                    <div class="settings-row">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Dynamic lava light & fiery sparks">Lava Radiance & Embers</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Dynamic lava light & fiery sparks</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-lavaGlow" onclick="toggleFabulousOption('lavaGlow')">ON</button>
+                    </div>
+
+                    <!-- 11. Light Bloom Aura -->
+                    <div class="settings-row" style="grid-column: 1 / -1;">
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="settings-label" title="Soft radiant bloom on light sources & torches">Torch & Light Bloom Aura</span>
+                            <span class="text-xs text-[#8a99a8] font-['VT323'] text-sm leading-none truncate">Soft radiant bloom on torches & lamps</span>
+                        </div>
+                        <button type="button" class="mc-btn" id="btn-fab-opt-bloomAura" onclick="toggleFabulousOption('bloomAura')">ON</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Actions (Exact Settings Design Language) -->
+            <div class="mt-3 pt-2 border-t-2 border-[#46515a] flex justify-between items-center">
+                <button type="button" class="mc-btn !w-44 !py-1 !text-2xl !m-0 bg-gray-600 hover:bg-gray-500 text-white" onclick="resetFabulousDefaults()">Reset Defaults</button>
+                <button type="button" class="mc-btn !w-44 !py-1 !text-2xl !m-0 !bg-green-600 !border-t-green-400 !border-l-green-400 !border-b-green-800 !border-r-green-800 !text-white" onclick="closeFabulousSettingsModal()">Done</button>
+            </div>
+        </section>
+    </div>
+
     <div id="credits-modal" class="menu-overlay credits-modal hidden" role="dialog" aria-modal="true" aria-labelledby="credits-title">
         <section class="whats-new-panel credits-panel">
             <button class="modal-close-red-btn whats-new-close" type="button" onclick="closeCredits()" aria-label="Close Credits" title="Close">X</button>
@@ -2977,7 +3316,22 @@
 
                 <div class="credits-legal-box">
                     <div class="credits-legal-header">
-                        <span class="credits-legal-icon">⚖</span>
+                        <span class="credits-legal-icon inline-flex items-center justify-center">
+                            <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                <rect x="7" y="1" width="2" height="13" fill="#d97706"/>
+                                <rect x="5" y="14" width="6" height="2" fill="#b45309"/>
+                                <rect x="7" y="0" width="2" height="2" fill="#fbbf24"/>
+                                <rect x="1" y="2" width="14" height="2" fill="#f59e0b"/>
+                                <rect x="2" y="4" width="1" height="4" fill="#d97706"/>
+                                <rect x="5" y="4" width="1" height="4" fill="#d97706"/>
+                                <rect x="1" y="8" width="5" height="1" fill="#f59e0b"/>
+                                <rect x="2" y="9" width="3" height="1" fill="#d97706"/>
+                                <rect x="10" y="4" width="1" height="4" fill="#d97706"/>
+                                <rect x="13" y="4" width="1" height="4" fill="#d97706"/>
+                                <rect x="9" y="8" width="5" height="1" fill="#f59e0b"/>
+                                <rect x="10" y="9" width="3" height="1" fill="#d97706"/>
+                            </svg>
+                        </span>
                         <h3 class="credits-legal-title">Disclaimer & Legal Notice</h3>
                     </div>
                     <div class="credits-legal-body">
@@ -3616,7 +3970,11 @@
                             <span class="hud-music-badge text-emerald-400 font-['VT323'] text-base font-bold tracking-wider leading-none uppercase">JUKEBOX</span>
                         </div>
                         <button type="button" id="hud-music-eject-btn" class="hud-music-btn text-amber-400 hover:text-amber-300 font-bold text-sm leading-none px-1.5 py-0.5 rounded-none cursor-pointer flex items-center gap-1" title="Eject vinyl disc from Jukebox" aria-label="Eject vinyl">
-                            <span>⏏</span><span>EJECT</span>
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                <polygon points="5,1 9,6 1,6"/>
+                                <rect x="1" y="8" width="8" height="1.5"/>
+                            </svg>
+                            <span>EJECT</span>
                         </button>
                     </div>
                     <div class="hud-music-body flex flex-col gap-1 text-sm font-['VT323']">
@@ -3630,8 +3988,11 @@
                         </div>
                         <!-- Controls row: Play/Pause button + Time Readout -->
                         <div class="flex items-center justify-between text-xs text-gray-300 pt-0.5">
-                            <button type="button" id="hud-music-playpause-btn" class="hud-music-control-btn px-2 py-0.5 bg-[#2c333a] hover:bg-[#38434d] text-white border border-[#4a5763] rounded-none cursor-pointer text-xs font-bold leading-none">
-                                ▶ Play
+                            <button type="button" id="hud-music-playpause-btn" class="hud-music-control-btn px-2 py-0.5 bg-[#2c333a] hover:bg-[#38434d] text-white border border-[#4a5763] rounded-none cursor-pointer text-xs font-bold leading-none inline-flex items-center gap-1">
+                                <svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
+                                    <polygon points="2,1 9,5 2,9"/>
+                                </svg>
+                                <span>Play</span>
                             </button>
                             <span id="hud-music-time" class="text-amber-300 font-mono text-xs">0:00 / 0:00</span>
                         </div>

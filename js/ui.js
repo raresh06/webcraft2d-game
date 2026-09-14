@@ -15,12 +15,13 @@ import {
     setEngineAccentColor, drawTimeClock, drawPlayerHead,
     buildFullOffscreenMap, renderWorldMapLoop,
     setIsWorldMapOpen, setMapPan, setMapZoom,
-    generateMenuWorld, menuWorldInitialized, drawMenuBackground,
+    generateMenuWorld, menuWorldInitialized, drawMenuBackground, dismissBootLoadingScreen,
     setWorldDimensions, getMaxAnimals,
     getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
     TOOL_DURABILITY, ARMOR_DURABILITY, FPS_CAP_OPTIONS, diffDescriptions, DIFFICULTIES,
     LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS, getFpsCapText, signs, setEngineSigns,
-    worldBiomes, setEngineWorldBiomes
+    worldBiomes, setEngineWorldBiomes, setEngineFpsCap, fabulousConfig,
+    DEFAULT_FABULOUS_CONFIG, FABULOUS_PRESETS, applyFabulousPreset, setFabulousConfig
 } from './engine.js';
 
 import {
@@ -180,7 +181,7 @@ export let snowRegrowthQueue = new Map();
 export let isBackgroundBuildMode = false;
 export let keepInventory = false;
 export let editingSkinId = null;
-export let fpsCap = 60;
+export let fpsCap = typeof localStorage !== 'undefined' ? parseInt(localStorage.getItem('swc_fps_cap') || '60', 10) : 60;
 export const AUTOSAVE_INTERVALS = [
     { seconds: 30, ms: 30000, label: '30 Seconds' },
     { seconds: 60, ms: 60000, label: '1 Minute' },
@@ -2860,7 +2861,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const actions = document.createElement('div');
             actions.className = 'skin-card-actions';
             actions.innerHTML = `
-                <button class="skin-action edit" type="button" title="Edit skin" aria-label="Edit skin">✎</button>
+                <button class="skin-action edit" type="button" title="Edit skin" aria-label="Edit skin">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                        <rect x="1" y="13" width="2" height="2" fill="#334155"/>
+                        <rect x="2" y="11" width="2" height="2" fill="#fde68a"/>
+                        <rect x="4" y="9" width="2" height="2" fill="#fbbf24"/>
+                        <rect x="6" y="7" width="2" height="2" fill="#fbbf24"/>
+                        <rect x="8" y="5" width="2" height="2" fill="#fbbf24"/>
+                        <rect x="10" y="3" width="2" height="2" fill="#94a3b8"/>
+                        <rect x="12" y="1" width="2" height="2" fill="#f472b6"/>
+                    </svg>
+                </button>
                 <button class="skin-action upload" type="button" title="Upload to Skins Shop" aria-label="Upload to Skins Shop">
                     <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor">
                         <path d="M7 1h2v6h3v2h-2v5H6V9H4V7h3V1z" fill="#4eed99"/>
@@ -5957,7 +5968,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (frameItem.id === 'frame_crown') {
                 const crownEl = document.createElement('div');
                 crownEl.className = 'avatar-crown-element';
-                crownEl.innerText = '👑';
+                crownEl.innerHTML = `<svg class="pixel-crown-svg" width="24" height="18" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="1" y="10" width="14" height="2" fill="#080a0c"/><rect x="2" y="9" width="12" height="2" fill="#d97706"/><rect x="2" y="7" width="12" height="2" fill="#f59e0b"/><rect x="2" y="5" width="12" height="2" fill="#fbbf24"/><rect x="2" y="2" width="2" height="3" fill="#fbbf24"/><rect x="7" y="0" width="2" height="5" fill="#fbbf24"/><rect x="12" y="2" width="2" height="3" fill="#fbbf24"/><rect x="2" y="2" width="1" height="1" fill="#fef08a"/><rect x="7" y="0" width="1" height="1" fill="#fef08a"/><rect x="12" y="2" width="1" height="1" fill="#fef08a"/><rect x="4" y="7" width="2" height="2" fill="#ef4444"/><rect x="7" y="4" width="2" height="2" fill="#3b82f6"/><rect x="10" y="7" width="2" height="2" fill="#ef4444"/></svg>`;
                 frameWrapper.appendChild(crownEl);
             }
 
@@ -6503,7 +6514,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const titles = getCosmeticsByCategory(COSMETIC_CATEGORIES.TITLE);
             titleSelect.innerHTML = titles.map(t => {
                 const isOwned = unlocked.includes(t.id) || t.isDefault;
-                const statusTag = isOwned ? '✓' : `🔒 ${t.price}✦`;
+                const statusTag = isOwned ? 'OWNED' : `${t.price}✦`;
                 const label = t.prefixTag ? `${t.name} (${t.prefixTag})` : t.name;
                 return `<option value="${t.id}" ${!isOwned ? 'disabled' : ''} ${editorDraftCustomization.titlePlate === t.id ? 'selected' : ''}>
                     ${label} [${statusTag}]
@@ -6517,7 +6528,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const frames = getCosmeticsByCategory(COSMETIC_CATEGORIES.FRAME);
             frameSelect.innerHTML = frames.map(f => {
                 const isOwned = unlocked.includes(f.id) || f.isDefault;
-                const statusTag = isOwned ? '✓' : `🔒 ${f.price}✦`;
+                const statusTag = isOwned ? 'OWNED' : `${f.price}✦`;
                 return `<option value="${f.id}" ${!isOwned ? 'disabled' : ''} ${editorDraftCustomization.avatarFrame === f.id ? 'selected' : ''}>
                     ${f.name} [${statusTag}]
                 </option>`;
@@ -6530,7 +6541,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const banners = getCosmeticsByCategory(COSMETIC_CATEGORIES.BANNER);
             bannerSelect.innerHTML = banners.map(b => {
                 const isOwned = unlocked.includes(b.id) || b.isDefault;
-                const statusTag = isOwned ? '✓' : `🔒 ${b.price}✦`;
+                const statusTag = isOwned ? 'OWNED' : `${b.price}✦`;
                 return `<option value="${b.id}" ${!isOwned ? 'disabled' : ''} ${editorDraftCustomization.bannerPattern === b.id ? 'selected' : ''}>
                     ${b.name} [${statusTag}]
                 </option>`;
@@ -6543,7 +6554,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const themes = getCosmeticsByCategory(COSMETIC_CATEGORIES.THEME);
             themeSelect.innerHTML = themes.map(th => {
                 const isOwned = unlocked.includes(th.id) || th.isDefault;
-                const statusTag = isOwned ? '✓' : `🔒 ${th.price}✦`;
+                const statusTag = isOwned ? 'OWNED' : `${th.price}✦`;
                 return `<option value="${th.id}" ${!isOwned ? 'disabled' : ''} ${editorDraftCustomization.cardTheme === th.id ? 'selected' : ''}>
                     ${th.name} [${statusTag}]
                 </option>`;
@@ -6772,7 +6783,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const saveBtn = document.getElementById('editor-save-btn');
         if (saveBtn) {
             saveBtn.disabled = true;
-            saveBtn.innerHTML = '<span>⏳</span><span>Saving...</span>';
+            saveBtn.innerHTML = '<svg class="pixel-art-icon flex-shrink-0 animate-pulse" width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><rect x="2" y="1" width="12" height="2" fill="#d97706"/><rect x="2" y="13" width="12" height="2" fill="#d97706"/><path d="M3 3h10v2l-3 3 3 3v2H3v-2l3-3-3-3V3z" fill="#080a0c"/><path d="M4 4h8l-2 2H6L4 4z" fill="#fef08a"/><rect x="7" y="6" width="2" height="4" fill="#f59e0b"/><path d="M5 11h6l-1-1H6l-1 1z" fill="#fef08a"/></svg><span>Saving...</span>';
         }
 
         try {
@@ -6787,7 +6798,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         } finally {
             if (saveBtn) {
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = '<span>💾</span><span>Save Changes</span>';
+                saveBtn.innerHTML = '<svg class="pixel-art-icon flex-shrink-0" width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><rect x="1" y="1" width="13" height="14" fill="#1e293b"/><rect x="2" y="2" width="11" height="12" fill="#334155"/><rect x="13" y="3" width="1" height="11" fill="#1e293b"/><rect x="4" y="2" width="7" height="5" fill="#94a3b8"/><rect x="8" y="3" width="2" height="3" fill="#1e293b"/><rect x="3" y="8" width="9" height="5" fill="#f8fafc"/><rect x="4" y="10" width="7" height="1" fill="#3b82f6"/><rect x="4" y="12" width="5" height="1" fill="#94a3b8"/></svg><span>Save Changes</span>';
             }
         }
     }
@@ -7366,6 +7377,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             generateMenuWorld();
         }
         if (typeof drawMenuBackground === 'function') drawMenuBackground();
+        if (typeof dismissBootLoadingScreen === 'function') {
+            dismissBootLoadingScreen();
+        } else if (typeof window !== 'undefined' && typeof window.dismissBootLoadingScreen === 'function') {
+            window.dismissBootLoadingScreen();
+        }
         compileSkinCanvas();
         if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
         updateMainMenuProfileBadge();
@@ -7382,6 +7398,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             intro.classList.add('hidden');
             intro.setAttribute('aria-hidden', 'true');
             intro.style.pointerEvents = 'none';
+        }
+        if (typeof dismissBootLoadingScreen === 'function') {
+            dismissBootLoadingScreen();
+        } else if (typeof window !== 'undefined' && typeof window.dismissBootLoadingScreen === 'function') {
+            window.dismissBootLoadingScreen();
         }
         document.getElementById('main-menu').classList.add('intro-reveal');
         showMainMenu();
@@ -7413,6 +7434,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function startIntro() {
+        if (typeof dismissBootLoadingScreen === 'function') {
+            dismissBootLoadingScreen();
+        } else if (typeof window !== 'undefined' && typeof window.dismissBootLoadingScreen === 'function') {
+            window.dismissBootLoadingScreen();
+        }
         if (!introEnabled) { showMainMenu(); return; }
         introPhase = 0;
         introPhaseLockUntil = 0;
@@ -7593,7 +7619,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     ${!isCompatible ? '<span class="world-badge world-badge-version-invalid font-[\'VT323\']">INCOMPATIBLE</span>' : ''}
                     ${!hasSaveData ? '<span class="world-badge font-[\'VT323\'] bg-amber-700 text-amber-100" title="Save data missing">NO SAVE DATA</span>' : ''}
                 </div>
-                <p class="world-meta text-lg font-['VT323'] font-bold mt-0.5">${hasSaveData ? `Day ${w.dayCount || 1} • ` : '⚠️ Missing save data (click to repair or delete) • '}${new Date(w.lastPlayed).toLocaleString()}</p>
+                <p class="world-meta text-lg font-['VT323'] font-bold mt-0.5">${hasSaveData ? `Day ${w.dayCount || 1} • ` : '<span class="inline-flex items-center text-amber-400 align-middle mr-1"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><polygon points="7,1 13,12 1,12" fill="#f59e0b"/><rect x="6" y="4" width="2" height="4" fill="#080a0c"/><rect x="6" y="9" width="2" height="2" fill="#080a0c"/></svg></span>Missing save data (click to repair or delete) • '}${new Date(w.lastPlayed).toLocaleString()}</p>
             `;
             if (isCompatible) {
                 info.onclick = () => loadWorld(w.id);
@@ -8521,6 +8547,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     
     export function updateGraphicsButton() {
         const btn = document.getElementById('btn-toggle-graphics');
+        const custBtn = document.getElementById('btn-customize-fabulous');
+        if (custBtn) {
+            custBtn.style.display = (graphicsMode === 'fabulous') ? 'inline-flex' : 'none';
+        }
         if (!btn) return;
         if (graphicsMode === 'fabulous') {
             btn.innerHTML = '<span class="pixel-rainbow-text"><span>F</span><span>A</span><span>B</span><span>U</span><span>L</span><span>O</span><span>U</span><span>S</span></span>';
@@ -8572,27 +8602,27 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const curOpt = AUTOSAVE_INTERVALS.find(opt => opt.seconds === (autosaveInterval || 60)) || AUTOSAVE_INTERVALS[1];
             btnAutosave.innerText = curOpt.label;
         }
-        if (document.getElementById('btn-toggle-fps-cap')) document.getElementById('btn-toggle-fps-cap').innerText = getFpsCapText();
+        if (document.getElementById('btn-toggle-fps-cap')) {
+            if (typeof setEngineFpsCap === 'function') setEngineFpsCap(fpsCap);
+            document.getElementById('btn-toggle-fps-cap').innerText = getFpsCapText(fpsCap);
+        }
     }
 
     export function switchSettingsTab(tabName) {
+        const menu = document.getElementById('settings-menu');
+        const targetTab = (tabName === 'controller') ? 'controls' : tabName;
+        if (menu) {
+            menu.querySelectorAll('.settings-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === targetTab);
+            });
+            menu.querySelectorAll('.settings-tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === `settings-tab-${targetTab}`);
+            });
+        }
         if (tabName === 'controller') {
-            document.querySelectorAll('.settings-tab-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.tab === 'controls');
-            });
-            document.querySelectorAll('.settings-tab-content').forEach(content => {
-                content.classList.toggle('active', content.id === 'settings-tab-controls');
-            });
             switchControlsSubTab('gamepad');
             return;
         }
-
-        document.querySelectorAll('.settings-tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === tabName);
-        });
-        document.querySelectorAll('.settings-tab-content').forEach(content => {
-            content.classList.toggle('active', content.id === `settings-tab-${tabName}`);
-        });
         if (tabName === 'controls') {
             updateGamepadUI();
         } else {
@@ -9011,6 +9041,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
     export function closeSettings() { 
         stopGamepadUiMonitor();
+        closeFabulousSettingsModal();
         document.getElementById('settings-menu').classList.add('hidden'); 
         if (STATE === 'PAUSED' || settingsPreviousState === 'PAUSED' || (STATE === 'PLAYING' && settingsPreviousState !== 'MENU')) {
             document.getElementById('pause-menu').classList.remove('hidden');
@@ -9417,9 +9448,108 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (currentIndex === -1) currentIndex = 0;
         fpsCap = FPS_CAP_OPTIONS[(currentIndex + 1) % FPS_CAP_OPTIONS.length];
         localStorage.setItem('swc_fps_cap', String(fpsCap));
+        if (typeof setEngineFpsCap === 'function') {
+            setEngineFpsCap(fpsCap);
+        }
+        if (typeof window !== 'undefined') {
+            window.fpsCap = fpsCap;
+            if (typeof window.setEngineFpsCap === 'function') {
+                window.setEngineFpsCap(fpsCap);
+            }
+        }
         const btn = document.getElementById('btn-toggle-fps-cap');
-        if (btn) btn.innerText = getFpsCapText();
+        if (btn) btn.innerText = getFpsCapText(fpsCap);
         saveCurrentSettings();
+    }
+
+    export function openFabulousSettingsModal() {
+        const modal = document.getElementById('fabulous-settings-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        const tabContent = document.getElementById('fabulous-tab-content');
+        if (tabContent) {
+            tabContent.style.setProperty('display', 'flex', 'important');
+        }
+        renderFabulousSettingsUI();
+    }
+
+    export function closeFabulousSettingsModal() {
+        const modal = document.getElementById('fabulous-settings-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    export function selectFabulousPreset(presetName) {
+        if (typeof applyFabulousPreset === 'function') {
+            applyFabulousPreset(presetName);
+        } else if (typeof window !== 'undefined' && typeof window.applyFabulousPreset === 'function') {
+            window.applyFabulousPreset(presetName);
+        }
+        renderFabulousSettingsUI();
+    }
+
+    export function toggleFabulousOption(optionKey) {
+        const curCfg = (typeof window !== 'undefined' && window.fabulousConfig) ? window.fabulousConfig : fabulousConfig;
+        const currentVal = !!curCfg[optionKey];
+        const nextVal = !currentVal;
+        const patch = { [optionKey]: nextVal, preset: 'custom' };
+        if (typeof setFabulousConfig === 'function') {
+            setFabulousConfig(patch);
+        } else if (typeof window !== 'undefined' && typeof window.setFabulousConfig === 'function') {
+            window.setFabulousConfig(patch);
+        }
+        renderFabulousSettingsUI();
+    }
+
+    export function resetFabulousDefaults() {
+        selectFabulousPreset('high');
+    }
+
+    export function renderFabulousSettingsUI() {
+        const curCfg = (typeof window !== 'undefined' && window.fabulousConfig) ? window.fabulousConfig : fabulousConfig;
+        if (!curCfg) return;
+
+        // Ensure options tab content is visible
+        const tabContent = document.getElementById('fabulous-tab-content');
+        if (tabContent) {
+            tabContent.style.setProperty('display', 'flex', 'important');
+        }
+
+        // 1. Update active preset badge
+        const badge = document.getElementById('fabulous-active-preset-badge');
+        const activePreset = curCfg.preset || 'custom';
+        if (badge) {
+            badge.innerText = activePreset.toUpperCase();
+        }
+
+        // Highlight active preset tab button
+        const presets = ['low', 'medium', 'high', 'custom'];
+        presets.forEach(p => {
+            const pBtn = document.getElementById(`btn-fab-preset-${p}`);
+            if (pBtn) {
+                if (activePreset === p) {
+                    pBtn.classList.add('active');
+                    if (p === 'custom') pBtn.style.display = 'inline-flex';
+                } else {
+                    pBtn.classList.remove('active');
+                    if (p === 'custom') pBtn.style.display = 'none';
+                }
+            }
+        });
+
+        // 2. Update each of the 11 option buttons (standard mc-btn styling)
+        const optionKeys = [
+            'colorGrading', 'volumetricFog', 'godRays', 'vignette', 'heatShimmer',
+            'foliageSway', 'windBreeze', 'waterEffects', 'ambientParticles', 'lavaGlow', 'bloomAura'
+        ];
+
+        optionKeys.forEach(key => {
+            const btn = document.getElementById(`btn-fab-opt-${key}`);
+            if (btn) {
+                const isOn = !!curCfg[key];
+                btn.innerText = isOn ? "ON" : "OFF";
+                btn.className = "mc-btn";
+            }
+        });
     }
     export function toggleIntro() {
         introEnabled = !introEnabled;
@@ -10176,10 +10306,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         if (playPauseBtn) {
             if (isPlaying) {
-                playPauseBtn.innerHTML = '⏸ Pause';
+                playPauseBtn.innerHTML = '<span class="inline-flex items-center gap-1"><svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><rect x="1" y="1" width="3" height="8"/><rect x="6" y="1" width="3" height="8"/></svg><span>Pause</span></span>';
                 playPauseBtn.title = 'Pause music';
             } else {
-                playPauseBtn.innerHTML = '▶ Play';
+                playPauseBtn.innerHTML = '<span class="inline-flex items-center gap-1"><svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><polygon points="2,1 9,5 2,9"/></svg><span>Play</span></span>';
                 playPauseBtn.title = 'Play music';
             }
         }
@@ -13315,4 +13445,10 @@ try { if (typeof openFriendProfileModal !== "undefined") window.openFriendProfil
 try { if (typeof closeFriendProfileModal !== "undefined") window.closeFriendProfileModal = closeFriendProfileModal; } catch(e) {}
 try { if (typeof renderFriendsListRows !== "undefined") window.renderFriendsListRows = renderFriendsListRows; } catch(e) {}
 try { if (typeof getPlayerCustomization !== "undefined") window.getPlayerCustomization = getPlayerCustomization; } catch(e) {}
+try { if (typeof openFabulousSettingsModal !== "undefined") window.openFabulousSettingsModal = openFabulousSettingsModal; } catch(e) {}
+try { if (typeof closeFabulousSettingsModal !== "undefined") window.closeFabulousSettingsModal = closeFabulousSettingsModal; } catch(e) {}
+try { if (typeof selectFabulousPreset !== "undefined") window.selectFabulousPreset = selectFabulousPreset; } catch(e) {}
+try { if (typeof toggleFabulousOption !== "undefined") window.toggleFabulousOption = toggleFabulousOption; } catch(e) {}
+try { if (typeof resetFabulousDefaults !== "undefined") window.resetFabulousDefaults = resetFabulousDefaults; } catch(e) {}
+try { if (typeof renderFabulousSettingsUI !== "undefined") window.renderFabulousSettingsUI = renderFabulousSettingsUI; } catch(e) {}
 try { if (typeof getPlayerUnlockedCosmetics !== "undefined") window.getPlayerUnlockedCosmetics = getPlayerUnlockedCosmetics; } catch(e) {}
