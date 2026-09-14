@@ -1,25 +1,27 @@
 import {
-    IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT,
-    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow,
+    IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, currentWorldSize,
+    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot, AtlasExplorer,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
-    textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
+    textures, getPlayerCaveSkyOpacity, getWorldSurfaceY, getActiveBiomeAt, isNonSurfaceBlock,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
     setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
-    setEngineCropGrowthQueue,
+    setEngineCropGrowthQueue, setEngineSaplingGrowthQueue, setEngineDirtToGrassQueue, setEngineSnowRegrowthQueue,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
     setEngineIsBackgroundBuildMode, setMinimapShape, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex,
     setEngineAccentColor, drawTimeClock, drawPlayerHead,
     buildFullOffscreenMap, renderWorldMapLoop,
     setIsWorldMapOpen, setMapPan, setMapZoom,
-    generateMenuWorld, menuWorldInitialized, drawMenuBackground,
+    generateMenuWorld, menuWorldInitialized, drawMenuBackground, dismissBootLoadingScreen,
     setWorldDimensions, getMaxAnimals,
     getTotalArmorDefense, getArmorDamageReductionRatio, isArmor, getArmorSlotIndex, ensureArmorDurability,
     TOOL_DURABILITY, ARMOR_DURABILITY, FPS_CAP_OPTIONS, diffDescriptions, DIFFICULTIES,
-    LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS, getFpsCapText
+    LATEST_PATCH_NOTES, UPDATE_HISTORY_LOGS, getFpsCapText, signs, setEngineSigns,
+    worldBiomes, setEngineWorldBiomes, setEngineFpsCap, fabulousConfig,
+    DEFAULT_FABULOUS_CONFIG, FABULOUS_PRESETS, applyFabulousPreset, setFabulousConfig
 } from './engine.js';
 
 import {
@@ -28,10 +30,17 @@ import {
     addFriendByTag, sendFriendRequestByTag, fetchIncomingFriendRequests,
     acceptFriendRequestByTag, declineFriendRequestByTag,
     removeFriendByTag, fetchFriendsProfiles, validateWebcraftTag, normalizeWebcraftTag,
-    startPresenceHeartbeat, stopPresenceHeartbeat
+    startPresenceHeartbeat, stopPresenceHeartbeat,
+    syncSign, syncSignDelete,
+    saveProfileCustomizationToCloud, listenToFriendsProfiles
 } from './network.js';
+import {
+    COSMETIC_CATEGORIES, COSMETICS_CATALOG, getCosmeticItem, getCosmeticsByCategory,
+    getDefaultCustomization, isCosmeticUnlocked
+} from './cosmeticsCatalog.js';
 import * as Gamepad from './gamepad.js';
 import { jukebox, getAudioTrack, saveAudioTrack, deleteAudioTrack } from './jukebox.js';
+import { RiftExplorerSpawner } from './RiftExplorerSpawner.js';
 
 export const INVENTORY_SIZE = 28;
 export const SKIN_W = 16;
@@ -63,7 +72,7 @@ export let currentWorldId = null;
 export let selectedDiffChoice = 'normal';
 export let currentDifficulty = 'normal';
 export let settingsPreviousState = 'MENU';
-export let currentWorldSize = 'small';
+export { currentWorldSize };
 export let selectedWorldSizeChoice = 'small';
 export let selectedMpWorldSize = 'small';
 export let isMultiplayer = false;
@@ -172,7 +181,14 @@ export let snowRegrowthQueue = new Map();
 export let isBackgroundBuildMode = false;
 export let keepInventory = false;
 export let editingSkinId = null;
-export let fpsCap = 60;
+export let fpsCap = typeof localStorage !== 'undefined' ? parseInt(localStorage.getItem('swc_fps_cap') || '60', 10) : 60;
+export const AUTOSAVE_INTERVALS = [
+    { seconds: 30, ms: 30000, label: '30 Seconds' },
+    { seconds: 60, ms: 60000, label: '1 Minute' },
+    { seconds: 300, ms: 300000, label: '5 Minutes' },
+    { seconds: 600, ms: 600000, label: '10 Minutes' }
+];
+export let autosaveInterval = 60; // in seconds, default 1 minute
 export let lastFrameTime = 0;
 export let lastRenderTime = 0;
 export let whatsNewShownThisLoad = false;
@@ -248,9 +264,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 }
 
-    export const GAME_VERSION = '0.1.4';
-    export const DISPLAY_VERSION = '0.1.4 Patch 1';
-    export const GAME_BUILD = 'webcraft2d-beta-0.1.4';
+    export const GAME_VERSION = '0.1.5';
+    export const DISPLAY_VERSION = '0.1.5';
+    export const GAME_BUILD = 'webcraft2d-beta-0.1.5';
 
     export function updateVersionLabels() {
         const versionLabel = document.getElementById('game-version-label');
@@ -321,9 +337,26 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     setRandomSplashText();
 
-    export function showToast(msg, iconHtml = null) {
+    export function showToast(msg, iconOrDuration = null, maybeDuration = 3000) {
         const c = document.getElementById('toast-container');
         if (!c) return;
+
+        let iconHtml = null;
+        let duration = 3000;
+
+        if (typeof iconOrDuration === 'number') {
+            duration = iconOrDuration;
+        } else if (typeof iconOrDuration === 'string') {
+            if (/^\d+$/.test(iconOrDuration.trim())) {
+                duration = parseInt(iconOrDuration.trim(), 10);
+            } else {
+                iconHtml = iconOrDuration;
+                if (typeof maybeDuration === 'number') {
+                    duration = maybeDuration;
+                }
+            }
+        }
+
         const t = document.createElement('div');
         t.className = 'toast flex items-center gap-2.5';
         if (iconHtml) {
@@ -332,7 +365,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             t.innerText = msg;
         }
         c.appendChild(t);
-        setTimeout(() => { if(t.parentElement) t.remove(); }, 3000);
+        setTimeout(() => { if(t.parentElement) t.remove(); }, duration);
     }
 
 
@@ -588,6 +621,20 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 if (s.minimapShape !== undefined) { minimapShape = s.minimapShape; if (typeof window !== 'undefined') window.minimapShape = s.minimapShape; }
                 if (s.accentColor !== undefined) { currentAccentColor = s.accentColor; if (typeof window !== 'undefined') window.currentAccentColor = s.accentColor; }
                 if (s.accentName !== undefined) { currentAccentName = s.accentName; if (typeof window !== 'undefined') window.currentAccentName = s.accentName; }
+                if (s.autosaveInterval !== undefined) {
+                    autosaveInterval = Number(s.autosaveInterval);
+                } else {
+                    const legacyAs = localStorage.getItem('swc_autosave_interval');
+                    if (legacyAs) autosaveInterval = Number(legacyAs);
+                }
+                if (![30, 60, 300, 600].includes(autosaveInterval)) autosaveInterval = 60;
+                if (typeof window !== 'undefined') window.autosaveInterval = autosaveInterval;
+            } else {
+                const savedAs = localStorage.getItem('swc_autosave_interval');
+                if (savedAs && [30, 60, 300, 600].includes(Number(savedAs))) {
+                    autosaveInterval = Number(savedAs);
+                    if (typeof window !== 'undefined') window.autosaveInterval = autosaveInterval;
+                }
             }
 
             const savedGraphicsMode = localStorage.getItem('swc_graphics_mode') || (localStorage.getItem('swc_advanced_graphics') === 'false' ? 'base' : 'advanced');
@@ -637,8 +684,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 showBiomeGrading,
                 minimapShape,
                 accentColor: currentAccentColor,
-                accentName: currentAccentName
+                accentName: currentAccentName,
+                autosaveInterval: autosaveInterval
             }));
+            localStorage.setItem('swc_autosave_interval', String(autosaveInterval));
         } catch (e) {
             console.error('Failed to save settings', e);
         }
@@ -741,7 +790,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export let skinCanvasObj = (typeof document !== 'undefined') ? (window.skinCanvasObj || document.createElement('canvas')) : null;
     if (skinCanvasObj) { skinCanvasObj.width = SKIN_W; skinCanvasObj.height = SKIN_H; }
 
-    // Redesigned Advanced Default Skin to map neatly to limbs
+    // Classic Default Skin
     export function generateDefaultSkin() {
         if (!playerSkinData) playerSkinData = new Array(SKIN_W * SKIN_H).fill(null);
         playerSkinData.fill(null);
@@ -847,9 +896,89 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
 
-    // --- Emerald Currency & Lifetime Achievement Rewards ---
+    // --- Emerald & Astral Emerald Currency System ---
     export function getPixelEmeraldSvg(size = 14) {
+        if (typeof textures !== 'undefined' && textures && textures[IDS?.EMERALD]?.src) {
+            return `<img src="${textures[IDS.EMERALD].src}" class="pixelated inline-block object-contain" width="${size}" height="${size}" alt="Emerald" style="vertical-align: middle;" />`;
+        }
         return `<svg class="emerald-pixel-art" viewBox="0 0 16 16" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/><rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/><rect x="11" y="5" width="3" height="6" fill="#136d33"/><rect x="5" y="13" width="6" height="1" fill="#136d33"/><rect x="10" y="11" width="3" height="2" fill="#136d33"/><rect x="8" y="12" width="3" height="1" fill="#0e5326"/><rect x="5" y="2" width="6" height="1" fill="#1b9549"/><rect x="4" y="4" width="8" height="1" fill="#46f381"/><rect x="3" y="5" width="8" height="6" fill="#17c858"/><rect x="3" y="11" width="7" height="1" fill="#17c858"/><rect x="4" y="12" width="4" height="1" fill="#136d33"/><rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/><rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/><rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/><rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/></svg>`;
+    }
+
+    export function getPixelAstralEmeraldSvg(size = 14) {
+        if (typeof textures !== 'undefined' && textures && textures[IDS?.ASTRAL_EMERALD]?.src) {
+            return `<img src="${textures[IDS.ASTRAL_EMERALD].src}" class="pixelated inline-block object-contain" width="${size}" height="${size}" alt="Astral Emerald" style="vertical-align: middle;" />`;
+        }
+        return `<svg class="astral-emerald-pixel-art" viewBox="0 0 16 16" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="5" y="1" width="6" height="1" fill="#1e0836"/><rect x="4" y="2" width="1" height="1" fill="#1e0836"/><rect x="11" y="2" width="1" height="1" fill="#1e0836"/><rect x="3" y="3" width="1" height="1" fill="#1e0836"/><rect x="12" y="3" width="1" height="1" fill="#1e0836"/><rect x="2" y="4" width="1" height="1" fill="#1e0836"/><rect x="13" y="4" width="1" height="1" fill="#1e0836"/><rect x="1" y="5" width="1" height="6" fill="#1e0836"/><rect x="14" y="5" width="1" height="6" fill="#1e0836"/><rect x="2" y="11" width="1" height="1" fill="#1e0836"/><rect x="13" y="11" width="1" height="1" fill="#1e0836"/><rect x="3" y="12" width="1" height="1" fill="#1e0836"/><rect x="12" y="12" width="1" height="1" fill="#1e0836"/><rect x="4" y="13" width="1" height="1" fill="#1e0836"/><rect x="11" y="13" width="1" height="1" fill="#1e0836"/><rect x="5" y="14" width="6" height="1" fill="#1e0836"/><rect x="11" y="5" width="3" height="6" fill="#4c1d95"/><rect x="5" y="13" width="6" height="1" fill="#4c1d95"/><rect x="10" y="11" width="3" height="2" fill="#4c1d95"/><rect x="8" y="12" width="3" height="1" fill="#3b0764"/><rect x="5" y="2" width="6" height="1" fill="#6d28d9"/><rect x="4" y="4" width="8" height="1" fill="#c084fc"/><rect x="3" y="5" width="8" height="6" fill="#9333ea"/><rect x="3" y="11" width="7" height="1" fill="#9333ea"/><rect x="4" y="12" width="4" height="1" fill="#4c1d95"/><rect x="5" y="2" width="5" height="1" fill="#e9d5ff"/><rect x="4" y="3" width="3" height="1" fill="#e9d5ff"/><rect x="3" y="4" width="2" height="1" fill="#e9d5ff"/><rect x="2" y="5" width="1" height="3" fill="#e9d5ff"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#e9d5ff"/></svg>`;
+    }
+
+    export function getMiniPixelEmeraldHtml(size = 12) {
+        return `<svg class="inline-block align-middle pixelated" viewBox="0 0 10 10" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges; vertical-align: -1px;"><rect x="3" y="0" width="4" height="1" fill="#047857"/><rect x="1" y="1" width="2" height="1" fill="#047857"/><rect x="7" y="1" width="2" height="1" fill="#047857"/><rect x="0" y="2" width="1" height="6" fill="#047857"/><rect x="9" y="2" width="1" height="6" fill="#047857"/><rect x="1" y="8" width="2" height="1" fill="#047857"/><rect x="7" y="8" width="2" height="1" fill="#047857"/><rect x="3" y="9" width="4" height="1" fill="#047857"/><rect x="3" y="1" width="4" height="1" fill="#6ee7b7"/><rect x="2" y="2" width="2" height="2" fill="#ffffff"/><rect x="4" y="2" width="4" height="2" fill="#34d399"/><rect x="1" y="3" width="8" height="4" fill="#10b981"/><rect x="2" y="7" width="6" height="1" fill="#059669"/><rect x="3" y="8" width="4" height="1" fill="#047857"/></svg>`;
+    }
+
+    export function getMiniPixelAstralStarHtml(size = 12) {
+        return `<svg class="inline-block align-middle pixelated" viewBox="0 0 10 10" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges; vertical-align: -1px;"><rect x="4" y="0" width="2" height="10" fill="#c084fc"/><rect x="0" y="4" width="10" height="2" fill="#c084fc"/><rect x="3" y="3" width="4" height="4" fill="#a855f7"/><rect x="4" y="4" width="2" height="2" fill="#ffffff"/><rect x="2" y="2" width="1" height="1" fill="#f3e8ff"/><rect x="7" y="2" width="1" height="1" fill="#f3e8ff"/><rect x="2" y="7" width="1" height="1" fill="#f3e8ff"/><rect x="7" y="7" width="1" height="1" fill="#f3e8ff"/></svg>`;
+    }
+
+    export function syncCurrencyTextureImages() {
+        if (typeof textures === 'undefined' || !textures) return;
+        const emeraldSrc = textures[IDS?.EMERALD]?.src || '';
+        const astralSrc = textures[IDS?.ASTRAL_EMERALD]?.src || '';
+        const oreSrc = textures[IDS?.EMERALD_ORE]?.src || '';
+        const shardSrc = textures[IDS?.ASTRAL_SHARD]?.src || '';
+
+        // Main Menu Top Corner Badge
+        const mmEmerald = document.getElementById('main-menu-emerald-img');
+        if (mmEmerald && emeraldSrc) mmEmerald.src = emeraldSrc;
+        const mmAstral = document.getElementById('main-menu-astral-img');
+        if (mmAstral && astralSrc) mmAstral.src = astralSrc;
+
+        // In-game Pause Menu Badge
+        const pauseEmerald = document.getElementById('pause-emerald-img');
+        if (pauseEmerald && emeraldSrc) pauseEmerald.src = emeraldSrc;
+        const pauseAstral = document.getElementById('pause-astral-img');
+        if (pauseAstral && astralSrc) pauseAstral.src = astralSrc;
+
+        // Currency Hub / Vault Modal Header & Balances
+        const vaultHeaderEmerald = document.getElementById('vault-header-emerald-img');
+        if (vaultHeaderEmerald && emeraldSrc) vaultHeaderEmerald.src = emeraldSrc;
+        const vaultEmerald = document.getElementById('vault-emerald-img');
+        if (vaultEmerald && emeraldSrc) vaultEmerald.src = emeraldSrc;
+        const vaultAstral = document.getElementById('vault-astral-img');
+        if (vaultAstral && astralSrc) vaultAstral.src = astralSrc;
+
+        // Mining Quota Standalone Card
+        const vaultOre = document.getElementById('vault-ore-img');
+        if (vaultOre && oreSrc) vaultOre.src = oreSrc;
+
+        // Overview Guide Grid Cards
+        const vaultOverviewOre = document.getElementById('vault-overview-ore-img');
+        if (vaultOverviewOre && oreSrc) vaultOverviewOre.src = oreSrc;
+        const vaultOverviewAstral = document.getElementById('vault-overview-astral-img');
+        if (vaultOverviewAstral && astralSrc) vaultOverviewAstral.src = astralSrc;
+
+        // Atlas Market
+        const marketGem = document.getElementById('atlas-market-gem-img');
+        if (marketGem && astralSrc) marketGem.src = astralSrc;
+        const headerGem = document.getElementById('atlas-header-gem-img');
+        if (headerGem && astralSrc) headerGem.src = astralSrc;
+        const bottomGem = document.getElementById('atlas-bottom-astral-img');
+        if (bottomGem && astralSrc) bottomGem.src = astralSrc;
+
+        // Astral Infuser
+        const infuserHeaderGem = document.getElementById('infuser-header-gem-img');
+        if (infuserHeaderGem && shardSrc) infuserHeaderGem.src = shardSrc;
+
+        // Unified Astral Shop
+        const shopHeaderGem = document.getElementById('shop-header-gem-img');
+        if (shopHeaderGem && astralSrc) shopHeaderGem.src = astralSrc;
+        const shopBottomEmerald = document.getElementById('shop-bottom-emerald-img');
+        if (shopBottomEmerald && emeraldSrc) shopBottomEmerald.src = emeraldSrc;
+        const shopBottomAstral = document.getElementById('shop-bottom-astral-img');
+        if (shopBottomAstral && astralSrc) shopBottomAstral.src = astralSrc;
+    }
+
+    export function getPixelPadlockSvg(size = 12) {
+        return `<svg viewBox="0 0 12 12" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges; display: inline-block; vertical-align: middle;"><rect x="3" y="1" width="6" height="5" fill="#94a3b8"/><rect x="5" y="3" width="2" height="3" fill="#1e293b"/><rect x="2" y="5" width="8" height="6" fill="#f59e0b"/><rect x="5" y="7" width="2" height="2" fill="#78350f"/></svg>`;
     }
 
     export function getPlayerEmeralds() {
@@ -865,6 +994,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         try {
             const safeVal = Math.max(0, Math.floor(val));
             localStorage.setItem('swc_emeralds_v1', safeVal.toString());
+            if (currentUserProfile) {
+                currentUserProfile.emeralds = safeVal;
+                try { localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile)); } catch(e){}
+            }
             updateEmeraldsUI();
             return safeVal;
         } catch (e) {
@@ -875,6 +1008,35 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function addPlayerEmeralds(amt) {
         const current = getPlayerEmeralds();
         return setPlayerEmeralds(current + amt);
+    }
+
+    export function getPlayerAstralEmeralds() {
+        try {
+            const val = parseInt(localStorage.getItem('swc_astral_emeralds_v1'), 10);
+            return isNaN(val) || val < 0 ? 0 : val;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    export function setPlayerAstralEmeralds(val) {
+        try {
+            const safeVal = Math.max(0, Math.floor(val));
+            localStorage.setItem('swc_astral_emeralds_v1', safeVal.toString());
+            if (currentUserProfile) {
+                currentUserProfile.astralEmeralds = safeVal;
+                try { localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile)); } catch(e){}
+            }
+            updateEmeraldsUI();
+            return safeVal;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    export function addPlayerAstralEmeralds(amt) {
+        const current = getPlayerAstralEmeralds();
+        return setPlayerAstralEmeralds(current + amt);
     }
 
     export function getClaimedAchievementRewards() {
@@ -900,6 +1062,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function updateEmeraldsUI() {
         const emeralds = getPlayerEmeralds();
+        const astralEmeralds = getPlayerAstralEmeralds();
+
+        // Main Menu
         const mmEl = document.getElementById('main-menu-emeralds-count');
         if (mmEl) {
             mmEl.innerText = emeralds.toLocaleString();
@@ -907,6 +1072,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             void mmEl.offsetWidth;
             mmEl.classList.add('emerald-count-pulse');
         }
+        const mmAstralEl = document.getElementById('main-menu-astral-count');
+        if (mmAstralEl) {
+            mmAstralEl.innerText = astralEmeralds.toLocaleString();
+        }
+
+        // In-game Pause Menu Badge
+        const pauseEmeraldEl = document.getElementById('pause-emeralds-count');
+        if (pauseEmeraldEl) pauseEmeraldEl.innerText = emeralds.toLocaleString();
+        const pauseAstralEl = document.getElementById('pause-astral-count');
+        if (pauseAstralEl) pauseAstralEl.innerText = astralEmeralds.toLocaleString();
+
+        // Skins Shop
         const skinsEl = document.getElementById('skins-emeralds-count');
         if (skinsEl) {
             skinsEl.innerText = emeralds.toLocaleString();
@@ -914,6 +1091,1352 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             void skinsEl.offsetWidth;
             skinsEl.classList.add('emerald-count-pulse');
         }
+
+        // Vault Modal
+        const vaultStdEl = document.getElementById('vault-standard-count');
+        if (vaultStdEl) vaultStdEl.innerText = emeralds.toLocaleString();
+        const vaultAstralEl = document.getElementById('vault-astral-count');
+        if (vaultAstralEl) vaultAstralEl.innerText = astralEmeralds.toLocaleString();
+
+        const exchangeAvailEl = document.getElementById('vault-exchange-avail-emeralds');
+        if (exchangeAvailEl) exchangeAvailEl.innerText = emeralds.toLocaleString();
+
+        // Atlas Market
+        const marketAstralEl = document.getElementById('atlas-market-astral-count');
+        if (marketAstralEl) marketAstralEl.innerText = astralEmeralds.toLocaleString();
+        const bottomAstralEl = document.getElementById('atlas-bottom-astral-count');
+        if (bottomAstralEl) bottomAstralEl.innerText = astralEmeralds.toLocaleString();
+
+        // Sync texture images
+        syncCurrencyTextureImages();
+
+        // Dynamically update Astral Exchange tier affordability
+        if (typeof renderAstralExchangeUI === 'function') {
+            renderAstralExchangeUI();
+        }
+    }
+
+    // --- Mining Tracker ---
+    export function getDailyMinedEmeralds() {
+        try {
+            const todayUtc = new Date().toISOString().slice(0, 10);
+            const raw = localStorage.getItem('swc_daily_mined_v1');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.date === todayUtc) {
+                    return typeof parsed.count === 'number' ? parsed.count : 0;
+                }
+            }
+            return 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    export function recordDailyMinedEmerald() {
+        const todayUtc = new Date().toISOString().slice(0, 10);
+        const current = getDailyMinedEmeralds();
+        const next = current + 1;
+        try {
+            localStorage.setItem('swc_daily_mined_v1', JSON.stringify({ date: todayUtc, count: next }));
+            if (currentUserProfile) {
+                currentUserProfile.dailyMined = { date: todayUtc, count: next };
+                try { localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile)); } catch(e){}
+            }
+        } catch (e) {}
+        renderMiningTrackerUI();
+        return next;
+    }
+
+    export function renderMiningTrackerUI() {
+        const count = getDailyMinedEmeralds();
+        const fill = document.getElementById('vault-mining-progress-fill');
+        const label = document.getElementById('vault-mining-count-label');
+        if (fill) fill.style.width = Math.min(100, (count / 100) * 100) + '%';
+        if (label) label.innerText = `${count} / 100 Today`;
+
+        const guestNotice = document.getElementById('vault-guest-notice');
+        if (guestNotice) {
+            const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+            if (isGuest) guestNotice.classList.remove('hidden');
+            else guestNotice.classList.add('hidden');
+        }
+    }
+
+    // --- Daily Challenges System (Rotates every 24h UTC, <=150 Emerald cap) ---
+    export const DAILY_QUEST_POOL = [
+        { id: 'dq_mine_stone', title: 'Stone Mason', desc: 'Mine 25 Stone or Cobblestone blocks', target: 25, type: 'mine_block', blockIds: [IDS.STONE, IDS.COBBLESTONE], reward: 35 },
+        { id: 'dq_mine_coal', title: 'Fuel Gatherer', desc: 'Mine 10 Coal Ore veins', target: 10, type: 'mine_block', blockIds: [IDS.COAL_ORE], reward: 35 },
+        { id: 'dq_mine_iron', title: 'Iron Age', desc: 'Mine 8 Iron Ore blocks', target: 8, type: 'mine_block', blockIds: [IDS.IRON_ORE], reward: 40 },
+        { id: 'dq_mine_emerald', title: 'Gem Prospector', desc: 'Mine 2 Emerald Ore veins in crags or caverns', target: 2, type: 'mine_block', blockIds: [IDS.EMERALD_ORE], reward: 50 },
+        { id: 'dq_mine_diamond', title: 'Deep Brilliance', desc: 'Mine 1 Diamond Ore block in the depths', target: 1, type: 'mine_block', blockIds: [IDS.DIAMOND_ORE], reward: 50 },
+        { id: 'dq_chop_wood', title: 'Lumberjack', desc: 'Harvest 20 Wood Logs from trees', target: 20, type: 'mine_block', blockIds: [IDS.WOOD, IDS.JUNGLE_WOOD], reward: 35 },
+        { id: 'dq_craft_torches', title: 'Light in the Dark', desc: 'Craft 12 Torches to illuminate caves', target: 12, type: 'craft_item', itemIds: [IDS.TORCH], reward: 30 },
+        { id: 'dq_craft_table', title: 'Carpentry Basics', desc: 'Craft a Crafting Table', target: 1, type: 'craft_item', itemIds: [IDS.CRAFTING_TABLE], reward: 30 },
+        { id: 'dq_craft_chest', title: 'Safe Storage', desc: 'Craft 2 Wooden Chests', target: 2, type: 'craft_item', itemIds: [IDS.CHEST], reward: 35 },
+        { id: 'dq_craft_bread', title: 'Master Baker', desc: 'Bake 5 loaves of Bread', target: 5, type: 'craft_item', itemIds: [IDS.BREAD], reward: 40 },
+        { id: 'dq_craft_iron_pick', title: 'Heavy Duty', desc: 'Craft an Iron Pickaxe', target: 1, type: 'craft_item', itemIds: [IDS.IRON_PICKAXE], reward: 40 },
+        { id: 'dq_smelt_iron', title: 'Foundry Worker', desc: 'Smelt 6 Iron Ingots in a furnace', target: 6, type: 'smelt_item', itemIds: [IDS.IRON_INGOT], reward: 40 },
+        { id: 'dq_slay_monsters', title: 'Night Watchman', desc: 'Defeat 4 hostile monsters (Zombies or Creepers)', target: 4, type: 'slay_monster', mobTypes: ['Zombie', 'Creeper', 'Scorpion'], reward: 45 },
+        { id: 'dq_slay_creeper', title: 'Explosive Encounter', desc: 'Defeat 1 Creeper before it detonates', target: 1, type: 'slay_monster', mobTypes: ['Creeper'], reward: 45 },
+        { id: 'dq_slay_scorpion', title: 'Dune Purifier', desc: 'Defeat 2 Desert Scorpions', target: 2, type: 'slay_monster', mobTypes: ['Scorpion'], reward: 40 },
+        { id: 'dq_shear_sheep', title: 'Warm Wool', desc: 'Shear 3 sheep for soft wool', target: 3, type: 'shear_sheep', reward: 35 },
+        { id: 'dq_eat_food', title: 'Well Nourished', desc: 'Eat 4 food items to stay energized', target: 4, type: 'eat_food', reward: 30 },
+        { id: 'dq_plant_saplings', title: 'Reforestation', desc: 'Plant 4 tree saplings on fertile dirt', target: 4, type: 'plant_sapling', reward: 35 },
+        { id: 'dq_craft_bed', title: 'Sweet Dreams', desc: 'Craft a Bed using wool and planks', target: 1, type: 'craft_item', itemIds: [IDS.BED], reward: 35 },
+        { id: 'dq_harvest_melons', title: 'Jungle Delicacy', desc: 'Harvest 6 Melon Slices or blocks', target: 6, type: 'mine_block', blockIds: [IDS.MELON, IDS.SUNBURST_MELON], reward: 35 }
+    ];
+
+    export function getDailyQuestsState() {
+        const todayUtc = new Date().toISOString().slice(0, 10);
+        try {
+            const raw = localStorage.getItem('swc_daily_quests_v1');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.date === todayUtc && Array.isArray(parsed.quests)) {
+                    return parsed;
+                }
+            }
+        } catch (e) {}
+
+        // Deterministically generate 4 daily quests from today's date string
+        let seed = 0;
+        for (let i = 0; i < todayUtc.length; i++) {
+            seed = (seed * 31 + todayUtc.charCodeAt(i)) & 0xffffffff;
+        }
+
+        const seededRandom = () => {
+            seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+            return ((seed >>> 0) % 10000) / 10000;
+        };
+
+        const poolCopy = [...DAILY_QUEST_POOL];
+        for (let i = poolCopy.length - 1; i > 0; i--) {
+            const j = Math.floor(seededRandom() * (i + 1));
+            [poolCopy[i], poolCopy[j]] = [poolCopy[j], poolCopy[i]];
+        }
+
+        const selected = [];
+        let totalReward = 0;
+        for (const q of poolCopy) {
+            if (selected.length < 4 && (totalReward + q.reward <= 155 || selected.length < 3)) {
+                selected.push({
+                    id: q.id,
+                    title: q.title,
+                    desc: q.desc,
+                    target: q.target,
+                    type: q.type,
+                    blockIds: q.blockIds || null,
+                    itemIds: q.itemIds || null,
+                    mobTypes: q.mobTypes || null,
+                    reward: q.reward,
+                    progress: 0,
+                    completed: false,
+                    claimed: false
+                });
+                totalReward += q.reward;
+            }
+            if (selected.length >= 4) break;
+        }
+
+        const newState = { date: todayUtc, quests: selected };
+        try {
+            localStorage.setItem('swc_daily_quests_v1', JSON.stringify(newState));
+        } catch (e) {}
+        return newState;
+    }
+
+    export function saveDailyQuestsState(state) {
+        try {
+            localStorage.setItem('swc_daily_quests_v1', JSON.stringify(state));
+        } catch (e) {}
+    }
+
+    export function trackDailyQuestProgress(type, data = {}) {
+        const state = getDailyQuestsState();
+        if (!state || !Array.isArray(state.quests)) return;
+
+        let changed = false;
+        state.quests.forEach(q => {
+            if (q.completed) return;
+            if (q.type !== type) return;
+
+            let match = false;
+            if (type === 'mine_block') {
+                if (q.blockIds && q.blockIds.includes(data.blockId)) match = true;
+            } else if (type === 'craft_item' || type === 'smelt_item') {
+                if (q.itemIds && q.itemIds.includes(data.itemId)) match = true;
+            } else if (type === 'slay_monster') {
+                if (!q.mobTypes || q.mobTypes.includes(data.mobType)) match = true;
+            } else if (type === 'shear_sheep' || type === 'eat_food' || type === 'plant_sapling') {
+                match = true;
+            }
+
+            if (match) {
+                const addQty = data.count || 1;
+                q.progress = Math.min(q.target, q.progress + addQty);
+                if (q.progress >= q.target) {
+                    q.completed = true;
+                    showToast(`✦ Daily Challenge Complete: ${q.title}! ✦`);
+                    playSound('quest_complete');
+                }
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            saveDailyQuestsState(state);
+            renderDailyQuestsUI();
+        }
+    }
+
+    export function claimDailyQuestReward(questId) {
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        if (isGuest) {
+            showToast("✦ Sign in with a Webcraft account to claim Daily Challenge rewards! ✦");
+            return;
+        }
+
+        const state = getDailyQuestsState();
+        const quest = state.quests.find(q => q.id === questId);
+        if (!quest || !quest.completed || quest.claimed) return;
+
+        quest.claimed = true;
+        addPlayerEmeralds(quest.reward);
+        saveDailyQuestsState(state);
+        playSound('quest_complete');
+        showToast(`✦ Claimed +${quest.reward} Emeralds for "${quest.title}"! ✦`);
+        renderDailyQuestsUI();
+        updateEmeraldsUI();
+
+        // Check daily hustler achievement
+        const allClaimed = state.quests.every(q => q.claimed);
+        if (allClaimed) {
+            unlockAchievement('daily_hustler');
+            showToast("✦ Daily Hustler Unlocked! All daily quests finished! ✦");
+        }
+    }
+
+    export function getQuestCategorySvg(quest) {
+        if (!quest) return '';
+        const type = quest.type;
+        const qid = quest.id || '';
+
+        // If quest has explicit blockIds or itemIds with a loaded in-game texture, use it!
+        if (typeof textures !== 'undefined' && textures) {
+            if (quest.blockIds && quest.blockIds.length > 0 && textures[quest.blockIds[0]]?.src) {
+                return `<img src="${textures[quest.blockIds[0]].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            }
+            if (quest.itemIds && quest.itemIds.length > 0 && textures[quest.itemIds[0]]?.src) {
+                return `<img src="${textures[quest.itemIds[0]].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            }
+
+            // Categorical fallbacks using authentic in-game textures
+            if (type === 'mine_block') {
+                if (qid.includes('wood') || qid.includes('chop')) {
+                    if (textures[IDS?.DIAMOND_AXE]?.src) return `<img src="${textures[IDS.DIAMOND_AXE].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+                }
+                if (textures[IDS?.DIAMOND_PICKAXE]?.src) return `<img src="${textures[IDS.DIAMOND_PICKAXE].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'slay_monster') {
+                if (textures[IDS?.DIAMOND_SWORD]?.src) return `<img src="${textures[IDS.DIAMOND_SWORD].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'smelt_item') {
+                if (textures[IDS?.FURNACE]?.src) return `<img src="${textures[IDS.FURNACE].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'craft_item') {
+                if (textures[IDS?.CRAFTING_TABLE]?.src) return `<img src="${textures[IDS.CRAFTING_TABLE].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'eat_food') {
+                if (textures[IDS?.APPLE]?.src) return `<img src="${textures[IDS.APPLE].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'plant_sapling') {
+                if (textures[IDS?.SAPLING]?.src) return `<img src="${textures[IDS.SAPLING].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            } else if (type === 'shear_sheep') {
+                if (textures[IDS?.KINETIC_SHEARS]?.src) return `<img src="${textures[IDS.KINETIC_SHEARS].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+                if (textures[IDS?.WOOL]?.src) return `<img src="${textures[IDS.WOOL].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            }
+            if (textures[IDS?.EMERALD]?.src) {
+                return `<img src="${textures[IDS.EMERALD].src}" class="pixelated w-8 h-8 object-contain" alt="" />`;
+            }
+        }
+
+        // Default: Golden Star / Scroll SVG if textures not yet ready
+        return `<svg viewBox="0 0 16 16" width="26" height="26" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+            <rect x="3" y="2" width="10" height="12" fill="#fef3c7"/>
+            <rect x="4" y="3" width="8" height="10" fill="#fde68a"/>
+            <rect x="5" y="5" width="6" height="1" fill="#b45309"/>
+            <rect x="5" y="7" width="6" height="1" fill="#b45309"/>
+            <rect x="5" y="9" width="4" height="1" fill="#b45309"/>
+        </svg>`;
+    }
+
+    export function renderDailyQuestsUI() {
+        const container = document.getElementById('vault-quests-container');
+        if (!container) return;
+
+        const state = getDailyQuestsState();
+
+        // Update available unclaimed quest badge on tab
+        const unclaimedCount = state.quests.filter(q => q.completed && !q.claimed).length;
+        const badge = document.getElementById('vault-quests-available-badge');
+        if (badge) {
+            if (unclaimedCount > 0) {
+                badge.innerText = unclaimedCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        container.innerHTML = state.quests.map(q => {
+            const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
+            const isDone = q.completed;
+            const isClaimed = q.claimed;
+            const catSvg = getQuestCategorySvg(q);
+            const emeraldTextureSrc = (typeof textures !== 'undefined' && textures && textures[IDS?.EMERALD]?.src) || '';
+
+            let actionBtn = '';
+            if (isClaimed) {
+                actionBtn = `<span class="text-sm font-bold text-[#6fa386] font-['VT323'] bg-[#141d17] border border-[#1f402b] px-2.5 py-1">✓ CLAIMED</span>`;
+            } else if (isDone) {
+                actionBtn = `<button type="button" class="mc-btn !w-auto !px-3 !py-1 !text-xl !bg-[#10b981] hover:!bg-[#059669] !text-white flex items-center gap-1.5 shadow-md" onclick="claimDailyQuestReward('${q.id}')">${emeraldTextureSrc ? `<img src="${emeraldTextureSrc}" class="w-4 h-4 pixelated object-contain inline-block" alt="" />` : '✦'} CLAIM +${q.reward}</button>`;
+            } else {
+                actionBtn = `<span class="text-base font-bold text-[#4eed99] font-['VT323'] bg-[#101316] border border-[#2b3542] px-2.5 py-1 flex items-center gap-1.5">${emeraldTextureSrc ? `<img src="${emeraldTextureSrc}" class="w-4 h-4 pixelated object-contain inline-block" alt="" />` : ''} +${q.reward}</span>`;
+            }
+
+            return `
+                <div class="achievement-card flex items-center justify-between p-2.5 bg-[#171b20] border-2 border-[#333a41] shadow-sm ${isClaimed ? 'opacity-70' : ''}">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-11 h-11 bg-[#101316] border-2 border-[#2b3542] flex items-center justify-center p-1 flex-shrink-0 shadow-inner">
+                            ${catSvg}
+                        </div>
+                        <div class="flex-1 min-w-0 pr-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg sm:text-xl font-bold ${isDone ? 'text-[#4eed99]' : 'text-white'} font-['VT323'] leading-tight truncate">${q.title}</span>
+                            </div>
+                            <div class="text-sm text-[#95a5b5] font-['VT323'] leading-tight truncate">${q.desc}</div>
+                            <div class="flex items-center gap-2 mt-1.5">
+                                <div class="flex-1 bg-[#101316] h-3 border border-[#2b3542] relative overflow-hidden">
+                                    <div class="bg-[#10b981] h-full transition-all duration-300" style="width: ${pct}%;"></div>
+                                </div>
+                                <span class="text-xs text-[#cfd8dc] font-['VT323'] whitespace-nowrap font-mono min-w-[50px] text-right">${q.progress} / ${q.target}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        ${actionBtn}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // --- Astral Emerald Exchange Illustrations ---
+    export function getTier1AstralIllustration() {
+        return `<svg class="pixelated inline-block" viewBox="0 0 24 20" width="48" height="40" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+            <!-- Glow halo -->
+            <rect x="10" y="2" width="4" height="1" fill="#7e22ce" opacity="0.6"/>
+            <rect x="8" y="3" width="8" height="1" fill="#7e22ce" opacity="0.6"/>
+            <rect x="6" y="4" width="12" height="12" fill="#581c87" opacity="0.3"/>
+            <rect x="4" y="6" width="16" height="8" fill="#581c87" opacity="0.2"/>
+            <!-- Astral Gem Body -->
+            <rect x="11" y="3" width="2" height="1" fill="#e9d5ff"/>
+            <rect x="10" y="4" width="4" height="1" fill="#d8b4fe"/>
+            <rect x="9" y="5" width="6" height="2" fill="#c084fc"/>
+            <rect x="8" y="7" width="8" height="6" fill="#9333ea"/>
+            <rect x="9" y="13" width="6" height="2" fill="#7e22ce"/>
+            <rect x="10" y="15" width="4" height="1" fill="#6b21a8"/>
+            <rect x="11" y="16" width="2" height="1" fill="#4c1d95"/>
+            <!-- Inner facets & specular shine -->
+            <rect x="10" y="6" width="2" height="2" fill="#ffffff"/>
+            <rect x="12" y="7" width="2" height="3" fill="#e9d5ff"/>
+            <rect x="10" y="9" width="3" height="3" fill="#a855f7"/>
+            <rect x="13" y="11" width="2" height="2" fill="#6b21a8"/>
+            <rect x="9" y="11" width="2" height="2" fill="#581c87"/>
+            <!-- Sparkle 1 -->
+            <rect x="4" y="4" width="1" height="3" fill="#38bdf8"/>
+            <rect x="3" y="5" width="3" height="1" fill="#38bdf8"/>
+            <rect x="4" y="5" width="1" height="1" fill="#ffffff"/>
+            <!-- Sparkle 2 -->
+            <rect x="19" y="12" width="1" height="3" fill="#fbbf24"/>
+            <rect x="18" y="13" width="3" height="1" fill="#fbbf24"/>
+            <rect x="19" y="13" width="1" height="1" fill="#ffffff"/>
+        </svg>`;
+    }
+
+    export function getTier2AstralIllustration() {
+        return `<svg class="pixelated inline-block" viewBox="0 0 28 20" width="56" height="40" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+            <!-- Aura -->
+            <rect x="4" y="3" width="20" height="14" fill="#581c87" opacity="0.3"/>
+            <!-- Left Main Gem -->
+            <rect x="8" y="2" width="2" height="1" fill="#e9d5ff"/>
+            <rect x="7" y="3" width="4" height="2" fill="#c084fc"/>
+            <rect x="6" y="5" width="6" height="7" fill="#9333ea"/>
+            <rect x="7" y="12" width="4" height="2" fill="#6b21a8"/>
+            <rect x="8" y="14" width="2" height="1" fill="#4c1d95"/>
+            <rect x="7" y="5" width="2" height="2" fill="#ffffff"/>
+            <rect x="8" y="7" width="2" height="3" fill="#d8b4fe"/>
+            <!-- Right Smaller Twin Gem -->
+            <rect x="17" y="5" width="2" height="1" fill="#e9d5ff"/>
+            <rect x="16" y="6" width="4" height="2" fill="#c084fc"/>
+            <rect x="15" y="8" width="6" height="6" fill="#9333ea"/>
+            <rect x="16" y="14" width="4" height="2" fill="#6b21a8"/>
+            <rect x="17" y="16" width="2" height="1" fill="#4c1d95"/>
+            <rect x="16" y="8" width="2" height="2" fill="#ffffff"/>
+            <rect x="17" y="10" width="2" height="2" fill="#d8b4fe"/>
+            <!-- Resonance Energy Arc connecting crystals -->
+            <rect x="12" y="7" width="3" height="1" fill="#38bdf8"/>
+            <rect x="13" y="8" width="2" height="1" fill="#67e8f9"/>
+            <rect x="11" y="9" width="4" height="1" fill="#a5f3fc"/>
+            <rect x="12" y="10" width="3" height="1" fill="#38bdf8"/>
+            <!-- Cosmic Sparks -->
+            <rect x="2" y="8" width="1" height="2" fill="#fbbf24"/>
+            <rect x="1" y="8" width="3" height="1" fill="#fbbf24"/>
+            <rect x="24" y="4" width="1" height="3" fill="#38bdf8"/>
+            <rect x="23" y="5" width="3" height="1" fill="#38bdf8"/>
+            <rect x="24" y="5" width="1" height="1" fill="#ffffff"/>
+            <rect x="14" y="15" width="1" height="2" fill="#e9d5ff"/>
+        </svg>`;
+    }
+
+    export function getTier3AstralIllustration() {
+        return `<svg class="pixelated inline-block" viewBox="0 0 30 20" width="60" height="40" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+            <!-- Outer Cosmic Ring -->
+            <rect x="10" y="1" width="10" height="1" fill="#7e22ce"/>
+            <rect x="6" y="2" width="18" height="1" fill="#9333ea"/>
+            <rect x="4" y="3" width="22" height="2" fill="#a855f7"/>
+            <rect x="3" y="5" width="24" height="10" fill="#6b21a8"/>
+            <rect x="4" y="15" width="22" height="2" fill="#a855f7"/>
+            <rect x="6" y="17" width="18" height="1" fill="#9333ea"/>
+            <rect x="10" y="18" width="10" height="1" fill="#7e22ce"/>
+            <!-- Swirling Event Horizon Disc -->
+            <rect x="8" y="4" width="14" height="12" fill="#3b0764"/>
+            <rect x="7" y="6" width="16" height="8" fill="#1e1035"/>
+            <rect x="9" y="5" width="12" height="10" fill="#2e1065"/>
+            <rect x="11" y="6" width="8" height="8" fill="#4c1d95"/>
+            <!-- Planar Core Vortex -->
+            <rect x="12" y="7" width="6" height="6" fill="#c084fc"/>
+            <rect x="13" y="8" width="4" height="4" fill="#e9d5ff"/>
+            <rect x="14" y="9" width="2" height="2" fill="#ffffff"/>
+            <!-- Radial Dimensional Rift Flares -->
+            <rect x="14" y="0" width="2" height="3" fill="#38bdf8"/>
+            <rect x="14" y="17" width="2" height="3" fill="#38bdf8"/>
+            <rect x="1" y="9" width="3" height="2" fill="#fbbf24"/>
+            <rect x="26" y="9" width="3" height="2" fill="#fbbf24"/>
+            <!-- Celestial Orbiting Debris -->
+            <rect x="5" y="4" width="2" height="2" fill="#67e8f9"/>
+            <rect x="23" y="4" width="2" height="2" fill="#f472b6"/>
+            <rect x="5" y="14" width="2" height="2" fill="#fde047"/>
+            <rect x="23" y="14" width="2" height="2" fill="#38bdf8"/>
+        </svg>`;
+    }
+
+    // --- Astral Emerald Exchange ---
+    export function renderAstralExchangeUI() {
+        const container = document.getElementById('vault-exchange-cards-container');
+        if (!container) return;
+
+        const emeralds = getPlayerEmeralds();
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+
+        const availEl = document.getElementById('vault-exchange-avail-emeralds');
+        if (availEl) availEl.innerText = emeralds.toLocaleString();
+
+        const miniEmerald = getMiniPixelEmeraldHtml(12);
+        const miniAstral = getMiniPixelAstralStarHtml(12);
+        const starBadge = getMiniPixelAstralStarHtml(10);
+
+        const tiers = [
+            {
+                cost: 20,
+                gain: 1,
+                title: 'Starter Exchange',
+                subtitle: 'Standard 20:1 conversion rate',
+                note: 'Standard Trade',
+                illustration: getTier1AstralIllustration(),
+                ribbon: null,
+                ribbonClass: '',
+                cardClass: 'tier-1'
+            },
+            {
+                cost: 50,
+                gain: 3,
+                title: 'Bulk Exchange',
+                subtitle: `16.7 ${miniEmerald} each • Save 10 Emeralds`,
+                note: '16% Emerald Discount',
+                illustration: getTier2AstralIllustration(),
+                cardClass: 'tier-2'
+            },
+            {
+                cost: 100,
+                gain: 7,
+                title: 'Mega Exchange',
+                subtitle: `14.3 ${miniEmerald} each • Save 40 Emeralds!`,
+                note: 'Best Value Deal',
+                illustration: getTier3AstralIllustration(),
+                cardClass: 'tier-3'
+            }
+        ];
+
+        container.innerHTML = tiers.map(t => {
+            const canAfford = !isGuest && emeralds >= t.cost;
+            let btnHtml = '';
+            if (isGuest) {
+                btnHtml = `<button type="button" class="exchange-card-action-btn unaffordable" onclick="closeCurrencyHubModal(); openAuthProfileModal('credentials');">Sign In to Exchange</button>`;
+            } else if (canAfford) {
+                btnHtml = `<button type="button" class="exchange-card-action-btn affordable" onclick="performAstralExchange(${t.cost}, ${t.gain})">Exchange for +${t.gain} ${miniAstral}</button>`;
+            } else {
+                const diff = t.cost - emeralds;
+                btnHtml = `<button type="button" class="exchange-card-action-btn unaffordable" disabled title="Need ${diff} more Emeralds">Need ${diff} more ${miniEmerald}</button>`;
+            }
+
+            return `
+                <div class="exchange-card ${t.cardClass}">
+
+                    <!-- Top: Card Header -->
+                    <div class="exchange-card-header flex-shrink-0">
+                        <div class="text-2xl font-bold text-purple-200 font-['VT323'] leading-tight mb-0.5">${t.title}</div>
+                        <div class="text-xs text-purple-400 font-['VT323'] uppercase tracking-wider">${t.note}</div>
+                    </div>
+
+                    <!-- Center Body: Illustration + Centered Preview Box + Rate Subtitle -->
+                    <div class="exchange-card-center-body">
+                        <div class="exchange-card-illustration" title="${t.title}">
+                            ${t.illustration}
+                        </div>
+
+                        <div class="exchange-preview-box">
+                            <div class="flex items-center gap-1">
+                                <span class="text-emerald-400 font-bold font-['VT323'] text-2xl leading-none">${t.cost}</span>
+                                <span class="inline-flex items-center">${getPixelEmeraldSvg(16)}</span>
+                            </div>
+                            <span class="text-purple-400 font-bold text-sm px-1">➔</span>
+                            <div class="flex items-center gap-1">
+                                <span class="text-purple-300 font-bold font-['VT323'] text-2xl leading-none">+${t.gain}</span>
+                                <span class="inline-flex items-center">${getPixelAstralEmeraldSvg(16)}</span>
+                            </div>
+                        </div>
+
+                        <div class="text-xs text-purple-200/80 font-['VT323'] leading-tight text-center px-1">${t.subtitle}</div>
+                    </div>
+
+                    <!-- Bottom: Cleanly Placed Button Inside Card -->
+                    <div class="exchange-card-btn-wrap">
+                        ${btnHtml}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    export function performAstralExchange(emeraldCost, astralGain) {
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        if (isGuest) {
+            showToast("Registered account required for Astral Emerald Exchange!");
+            return;
+        }
+        const current = getPlayerEmeralds();
+        if (current < emeraldCost) {
+            showToast(`Not enough Emeralds! (${emeraldCost} needed, you have ${current})`);
+            return;
+        }
+        addPlayerEmeralds(-emeraldCost);
+        addPlayerAstralEmeralds(astralGain);
+        playSound('astral_exchange');
+        showToast(`Exchanged ${emeraldCost} Emeralds for +${astralGain} Astral Emerald${astralGain > 1 ? 's' : ''}!`);
+        unlockAchievement('astral_pioneer');
+        unlockAchievement('astral_exchange_master');
+        updateEmeraldsUI();
+        renderAstralExchangeUI();
+    }
+
+    // --- Live Daily UTC Reset Countdown Timer ---
+    let vaultCountdownTimer = null;
+
+    export function updateVaultResetCountdown() {
+        const el = document.getElementById('vault-reset-countdown');
+        if (!el) return;
+        const now = new Date();
+        const nextMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+        const diffMs = Math.max(0, nextMidnight.getTime() - now.getTime());
+        const totalSecs = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSecs / 3600).toString().padStart(2, '0');
+        const mins = Math.floor((totalSecs % 3600) / 60).toString().padStart(2, '0');
+        const secs = (totalSecs % 60).toString().padStart(2, '0');
+        el.innerText = `${hours}:${mins}:${secs}`;
+    }
+
+    // --- Currency Hub Modal Navigation ---
+    export function openCurrencyHubModal(tab = 'overview') {
+        const modal = document.getElementById('emerald-vault-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        switchVaultTab(tab);
+        updateEmeraldsUI();
+        renderMiningTrackerUI();
+        renderDailyQuestsUI();
+        renderAstralExchangeUI();
+
+        updateVaultResetCountdown();
+        if (vaultCountdownTimer) clearInterval(vaultCountdownTimer);
+        vaultCountdownTimer = setInterval(updateVaultResetCountdown, 1000);
+    }
+
+    export function closeCurrencyHubModal() {
+        const modal = document.getElementById('emerald-vault-modal');
+        if (modal) modal.classList.add('hidden');
+        if (vaultCountdownTimer) {
+            clearInterval(vaultCountdownTimer);
+            vaultCountdownTimer = null;
+        }
+    }
+
+    export function switchVaultTab(tab) {
+        ['overview', 'quests', 'exchange'].forEach(t => {
+            const btn = document.getElementById(`vault-tab-${t}-btn`);
+            const pane = document.getElementById(`vault-tab-${t}`);
+            if (btn) btn.classList.toggle('active', t === tab);
+            if (pane) pane.classList.toggle('hidden', t !== tab);
+        });
+        if (tab === 'quests') renderDailyQuestsUI();
+        if (tab === 'overview') renderMiningTrackerUI();
+        if (tab === 'exchange') renderAstralExchangeUI();
+    }
+
+    export function openAchievementsFromVault() {
+        closeCurrencyHubModal();
+        if (typeof openAchievements === 'function') openAchievements('sp');
+    }
+
+    // --- Kael The Atlas Explorer Dialogue System ---
+    let activeKaelEntity = null;
+    let currentKaelNode = 'start';
+    let hasTalkedToKael = false;
+
+    export function hasPlayerTalkedToKael() {
+        if (currentWorldId) {
+            try {
+                const val = localStorage.getItem('webcraft_kael_talked_' + currentWorldId);
+                if (val !== null) return val === 'true';
+            } catch (e) {}
+        }
+        return hasTalkedToKael;
+    }
+
+    export function setPlayerTalkedToKael(val = true) {
+        hasTalkedToKael = !!val;
+        if (currentWorldId) {
+            try {
+                localStorage.setItem('webcraft_kael_talked_' + currentWorldId, hasTalkedToKael ? 'true' : 'false');
+            } catch (e) {}
+        }
+    }
+
+    export const KAEL_DIALOGUES = {
+        start: {
+            speaker: "Kael:",
+            subtitle: "Planar Cartographer & Rift Walker",
+            text: "Greetings, traveler of the mortal surface. I am Kael, The Atlas Explorer.\n\nThe world fabric fractures where the stars bleed... Have you felt the cosmic ripples across this realm?",
+            options: [
+                { label: "Who are you and what are you doing here?", next: "who_are_you" },
+                { label: "What are these planar rifts you speak of?", next: "lore_rifts" },
+                { label: "What are Astral Emeralds and how do I get them?", next: "astral_emeralds" },
+                { label: "Show me your wares. [Open Astral Market]", action: "open_market" },
+                { label: "Farewell, traveler.", action: "close" }
+            ]
+        },
+        who_are_you: {
+            speaker: "Kael:",
+            subtitle: "Planar Cartographer & Rift Walker",
+            text: "I walk the corridors between dimensions, mapping forgotten realms and cosmic singularities.\n\nMy planar astrolabes require Astral Emeralds to pierce the void and chart the endless unknown.",
+            options: [
+                { label: "Tell me more about the rifts.", next: "lore_rifts" },
+                { label: "How do I acquire Astral Emeralds?", next: "astral_emeralds" },
+                { label: "Show me your wares. [Open Astral Market]", action: "open_market" },
+                { label: "Farewell.", action: "close" }
+            ]
+        },
+        lore_rifts: {
+            speaker: "Kael:",
+            subtitle: "Planar Cartographer & Rift Walker",
+            text: "A rift is a fracture where dimensional planes collide. They open every few planetary cycles, anchoring near mortal campfires and shelters.\n\nWhen the tear collapses, I must step back through the void to other horizons.",
+            options: [
+                { label: "Who are you again?", next: "who_are_you" },
+                { label: "What wares have you brought from beyond?", action: "open_market" },
+                { label: "Safe travels through the rift.", action: "close" }
+            ]
+        },
+        astral_emeralds: {
+            speaker: "Kael:",
+            subtitle: "Planar Cartographer & Rift Walker",
+            text: "Astral Emeralds are pure crystallized cosmic energy. You can trade standard emeralds for astral gems at the Astral Emerald Exchange in your Currency Hub, or gather them from otherworldly encounters.\n\nI accept only Astral Emeralds for my catalog.",
+            options: [
+                { label: "Show me what you offer. [Open Astral Market]", action: "open_market" },
+                { label: "I will gather more gems. Farewell.", action: "close" }
+            ]
+        }
+    };
+
+    export function drawKaelPortrait() {
+        const canvas = document.getElementById('atlas-portrait-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, 64, 64);
+
+        // 1. Subtle deep cosmic slate backdrop
+        ctx.fillStyle = '#141829';
+        ctx.fillRect(0, 0, 64, 64);
+
+        // Backdrop planar stars / motes
+        ctx.fillStyle = 'rgba(192, 132, 252, 0.4)';
+        ctx.fillRect(6, 8, 2, 2);
+        ctx.fillRect(54, 12, 2, 2);
+        ctx.fillRect(8, 48, 2, 2);
+        ctx.fillRect(56, 44, 2, 2);
+
+        // 2. Leather adventurer coat collar & shoulders
+        ctx.fillStyle = '#381c08'; // Deep shadowed leather
+        ctx.fillRect(6, 46, 52, 18);
+        ctx.fillStyle = '#5c2e0f'; // Warm tanned leather mantle
+        ctx.fillRect(10, 48, 44, 16);
+        ctx.fillStyle = '#7a3e15'; // Shoulder pads highlight
+        ctx.fillRect(8, 52, 10, 12);
+        ctx.fillRect(46, 52, 10, 12);
+
+        // 3. Indigo traveler tunic & celestial scarf
+        ctx.fillStyle = '#1e1b4b'; // Deep navy tunic
+        ctx.fillRect(22, 48, 20, 16);
+        ctx.fillStyle = '#312e81'; // Celestial scarf folds
+        ctx.fillRect(20, 50, 24, 6);
+        ctx.fillStyle = '#4338ca';
+        ctx.fillRect(24, 52, 16, 4);
+        // Golden compass / star pin on scarf
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(30, 51, 4, 4);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(31, 52, 2, 2);
+
+        // 4. Human neck
+        ctx.fillStyle = '#c68b59'; // Neck shadow
+        ctx.fillRect(26, 40, 12, 10);
+        ctx.fillStyle = '#dba075'; // Neck base
+        ctx.fillRect(28, 42, 8, 8);
+
+        // 5. Human face / head shape (matching player proportions)
+        ctx.fillStyle = '#c68b59'; // Chin / jawline outline
+        ctx.fillRect(18, 18, 28, 26);
+        ctx.fillStyle = '#e8b188'; // Human skin base tone
+        ctx.fillRect(20, 18, 24, 24);
+        ctx.fillStyle = '#f3c49e'; // Cheek and forehead highlight
+        ctx.fillRect(22, 20, 20, 12);
+        ctx.fillRect(24, 32, 16, 8);
+
+        // Human ears
+        ctx.fillStyle = '#dba075';
+        ctx.fillRect(16, 26, 4, 8);
+        ctx.fillRect(44, 26, 4, 8);
+        ctx.fillStyle = '#fbbf24'; // Small brass ear stud on left
+        ctx.fillRect(16, 31, 2, 2);
+
+        // 6. Windswept dark chestnut hair
+        ctx.fillStyle = '#26150a'; // Hair deep shadow
+        ctx.fillRect(16, 12, 32, 12);
+        ctx.fillRect(14, 18, 6, 14);
+        ctx.fillRect(44, 18, 6, 14);
+        ctx.fillStyle = '#4a2e1b'; // Hair main body
+        ctx.fillRect(18, 10, 28, 10);
+        ctx.fillRect(16, 14, 32, 6);
+        // Swept bangs across forehead
+        ctx.fillRect(20, 18, 12, 4);
+        ctx.fillRect(22, 22, 6, 3);
+        ctx.fillStyle = '#6e4428'; // Hair top highlight
+        ctx.fillRect(22, 9, 20, 4);
+
+        // 7. Brass explorer goggles pushed up on forehead
+        ctx.fillStyle = '#381c08'; // Leather goggle strap
+        ctx.fillRect(16, 16, 32, 3);
+        // Left brass goggle
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(22, 13, 8, 8);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(23, 14, 6, 6);
+        ctx.fillStyle = '#0284c7'; // Cyan lens
+        ctx.fillRect(24, 15, 4, 4);
+        ctx.fillStyle = '#ffffff'; // Glint
+        ctx.fillRect(24, 15, 2, 2);
+        // Right brass goggle
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(34, 13, 8, 8);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(35, 14, 6, 6);
+        ctx.fillStyle = '#0284c7'; // Cyan lens
+        ctx.fillRect(36, 15, 4, 4);
+        ctx.fillStyle = '#ffffff'; // Glint
+        ctx.fillRect(36, 15, 2, 2);
+
+        // 8. Human facial features
+        // Eyebrows
+        ctx.fillStyle = '#362012';
+        ctx.fillRect(23, 26, 6, 2);
+        ctx.fillRect(35, 26, 6, 2);
+
+        // Human Eyes (white sclera, dark pupil, celestial cyan/hazel iris)
+        // Left eye
+        ctx.fillStyle = '#ffffff'; // Sclera
+        ctx.fillRect(23, 29, 6, 4);
+        ctx.fillStyle = '#0284c7'; // Celestial cyan iris
+        ctx.fillRect(25, 29, 3, 4);
+        ctx.fillStyle = '#0f172a'; // Pupil
+        ctx.fillRect(26, 30, 2, 2);
+        ctx.fillStyle = '#ffffff'; // Eye specular reflection
+        ctx.fillRect(25, 29, 1, 1);
+
+        // Right eye
+        ctx.fillStyle = '#ffffff'; // Sclera
+        ctx.fillRect(35, 29, 6, 4);
+        ctx.fillStyle = '#0284c7'; // Celestial cyan iris
+        ctx.fillRect(36, 29, 3, 4);
+        ctx.fillStyle = '#0f172a'; // Pupil
+        ctx.fillRect(37, 30, 2, 2);
+        ctx.fillStyle = '#ffffff'; // Eye specular reflection
+        ctx.fillRect(36, 29, 1, 1);
+
+        // Nose
+        ctx.fillStyle = '#c68a5f';
+        ctx.fillRect(31, 31, 2, 5);
+        ctx.fillRect(29, 35, 6, 2);
+
+        // Warm traveler's smile
+        ctx.fillStyle = '#995832';
+        ctx.fillRect(29, 39, 6, 2);
+        ctx.fillStyle = '#c68a5f';
+        ctx.fillRect(30, 40, 4, 1);
+    }
+
+    export function openAtlasDialogue(explorerEntity) {
+        activeKaelEntity = explorerEntity;
+        currentKaelNode = 'start';
+        const modal = document.getElementById('atlas-dialogue-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        drawKaelPortrait();
+        renderKaelNode('start');
+        unlockAchievement('first_contact');
+    }
+
+    export function closeAtlasDialogue() {
+        setPlayerTalkedToKael(true);
+        const modal = document.getElementById('atlas-dialogue-modal');
+        if (modal) modal.classList.add('hidden');
+        activeKaelEntity = null;
+    }
+
+    export function renderKaelNode(nodeKey) {
+        const node = KAEL_DIALOGUES[nodeKey] || KAEL_DIALOGUES.start;
+        currentKaelNode = nodeKey;
+
+        const speakerEl = document.getElementById('atlas-dialogue-speaker');
+        if (speakerEl) speakerEl.innerText = node.speaker || 'Kael:';
+
+        const textEl = document.getElementById('atlas-speech-text');
+        if (textEl) textEl.innerText = node.text;
+
+        const optsContainer = document.getElementById('atlas-dialogue-options');
+        if (optsContainer) {
+            optsContainer.innerHTML = node.options.map((opt, idx) => `
+                <button type="button" class="atlas-floating-option-btn" onclick="handleAtlasDialogueChoice(${idx})">
+                    <span class="atlas-option-bullet">▶</span>
+                    <span class="atlas-option-label">${opt.label}</span>
+                </button>
+            `).join('');
+        }
+    }
+
+    export function handleAtlasDialogueChoice(choiceIndex) {
+        setPlayerTalkedToKael(true);
+        const node = KAEL_DIALOGUES[currentKaelNode] || KAEL_DIALOGUES.start;
+        const opt = node.options[choiceIndex];
+        if (!opt) return;
+
+        playSound('click');
+        if (opt.action === 'open_market') {
+            const targetKael = activeKaelEntity;
+            closeAtlasDialogue();
+            openAtlasMarket(targetKael);
+        } else if (opt.action === 'close') {
+            closeAtlasDialogue();
+        } else if (opt.next) {
+            renderKaelNode(opt.next);
+        }
+    }
+
+    // --- Atlas Market Controller ---
+    export let currentAtlasCategory = 'all';
+
+    export function switchAtlasCategory(category) {
+        currentAtlasCategory = category;
+        playSound('click', { isUI: true, vol: 0.8 });
+        const tabs = ['all', 'flora', 'relic', 'gear', 'planar'];
+        tabs.forEach(t => {
+            const btn = document.getElementById(`atlas-tab-${t}-btn`);
+            if (btn) {
+                if (t === category) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
+        });
+        renderAtlasMarketWares();
+    }
+
+    export function openAtlasMarket(explorerEntity) {
+        const modal = document.getElementById('atlas-market-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        currentAtlasCategory = 'all';
+        const tabs = ['all', 'flora', 'relic', 'gear', 'planar'];
+        tabs.forEach(t => {
+            const btn = document.getElementById(`atlas-tab-${t}-btn`);
+            if (btn) {
+                if (t === 'all') btn.classList.add('active');
+                else btn.classList.remove('active');
+            }
+        });
+        updateEmeraldsUI();
+        renderAtlasMarketWares();
+    }
+
+    export function closeAtlasMarket() {
+        const modal = document.getElementById('atlas-market-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = '';
+        }
+    }
+
+    export function renderAtlasMarketWares() {
+        try {
+            const grid = document.getElementById('atlas-market-grid');
+            if (!grid) return;
+
+            const catalog = (typeof window !== 'undefined' && window.ATLAS_CATALOG) ? window.ATLAS_CATALOG : (typeof ATLAS_CATALOG !== 'undefined' ? ATLAS_CATALOG : []);
+            const balance = getPlayerAstralEmeralds();
+
+            // Update tab count badges dynamically
+            const elAll = document.getElementById('atlas-tab-all-count');
+            if (elAll) elAll.innerText = catalog.length;
+            const elFlora = document.getElementById('atlas-tab-flora-count');
+            if (elFlora) elFlora.innerText = catalog.filter(i => i.category === 'flora').length;
+            const elRelic = document.getElementById('atlas-tab-relic-count');
+            if (elRelic) elRelic.innerText = catalog.filter(i => i.category === 'relic').length;
+            const elGear = document.getElementById('atlas-tab-gear-count');
+            if (elGear) elGear.innerText = catalog.filter(i => i.category === 'gear').length;
+            const elPlanar = document.getElementById('atlas-tab-planar-count');
+            if (elPlanar) elPlanar.innerText = catalog.filter(i => i.category === 'tiles' || i.category === 'material').length;
+
+            const filteredItems = catalog.filter(item => {
+                if (currentAtlasCategory === 'all') return true;
+                if (currentAtlasCategory === 'flora') return item.category === 'flora';
+                if (currentAtlasCategory === 'relic') return item.category === 'relic';
+                if (currentAtlasCategory === 'gear') return item.category === 'gear';
+                if (currentAtlasCategory === 'planar') return item.category === 'tiles' || item.category === 'material';
+                return true;
+            });
+
+            if (filteredItems.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center p-8 text-center text-[#8292a0] font-['VT323']">
+                        <span class="text-3xl mb-1 text-purple-300">No Wares In Category</span>
+                        <span class="text-base text-[#94a3b8]">Kael has no items in this planar category at the moment.</span>
+                    </div>
+                `;
+                return;
+            }
+
+            const astralSrc = (typeof textures !== 'undefined' && textures && textures[IDS?.ASTRAL_EMERALD]?.src) || '';
+
+            grid.innerHTML = filteredItems.map(item => {
+                const stock = (typeof window !== 'undefined' && window.AtlasTradeManager) ? window.AtlasTradeManager.getStock(item.id) : item.baseStock;
+                const canAfford = balance >= item.cost;
+                const inStock = stock > 0;
+                const isBuyable = canAfford && inStock;
+                const itemSrc = (typeof textures !== 'undefined' && textures && textures[item.itemId]?.src) || '';
+
+                let categoryName = 'Relic';
+                let categoryColor = '#c084fc';
+                if (item.category === 'flora') {
+                    categoryName = 'Exotic Flora';
+                    categoryColor = '#34d399';
+                } else if (item.category === 'relic') {
+                    categoryName = 'Audio Relic';
+                    categoryColor = '#f472b6';
+                } else if (item.category === 'gear') {
+                    categoryName = 'Cosmic Gear';
+                    categoryColor = '#fbbf24';
+                } else if (item.category === 'tiles') {
+                    categoryName = 'Planar Block';
+                    categoryColor = '#38bdf8';
+                } else if (item.category === 'material') {
+                    categoryName = 'Stellar Shard';
+                    categoryColor = '#a855f7';
+                }
+
+                let buttonLabel = 'Trade';
+                let buttonDisabledAttr = '';
+                let buttonStyleClass = '!bg-[#6d28d9] hover:!bg-[#7c3aed] !text-white';
+                if (!inStock) {
+                    buttonLabel = 'Sold Out';
+                    buttonDisabledAttr = 'disabled';
+                    buttonStyleClass = '!bg-[#2d353e] !text-[#64748b] opacity-60 cursor-not-allowed';
+                } else if (!canAfford) {
+                    const diff = item.cost - balance;
+                    buttonLabel = `Need ${diff} Astral`;
+                    buttonDisabledAttr = 'disabled';
+                    buttonStyleClass = '!bg-[#382645] !text-[#d8b4fe] opacity-80 cursor-not-allowed border-purple-800';
+                }
+
+                return `
+                    <div class="atlas-market-card flex flex-col justify-between">
+                        <div>
+                            <!-- Category Badge + Stock Indicator -->
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="atlas-ware-badge" style="background: ${categoryColor}18; color: ${categoryColor}; border: 1px solid ${categoryColor}66;">
+                                    ${categoryName}
+                                </span>
+                                ${inStock ? `
+                                    <span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-600/50 flex items-center gap-1 shadow-inner">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        <span>STOCK: ${stock}/${item.baseStock}</span>
+                                    </span>
+                                ` : `
+                                    <span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-red-400 bg-red-950/60 border border-red-600/50 shadow-inner">
+                                        SOLD OUT
+                                    </span>
+                                `}
+                            </div>
+
+                            <!-- Item Icon + Name + Description -->
+                            <div class="flex items-start gap-3 mb-2">
+                                <div class="atlas-item-icon-frame flex-shrink-0">
+                                    ${itemSrc ? `<img src="${itemSrc}" class="pixelated w-8 h-8 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" alt="${item.name}" />` : ''}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-lg sm:text-xl font-bold text-purple-200 font-['VT323'] leading-tight truncate drop-shadow-[1px_1px_0_#000]">${item.name}</div>
+                                    <p class="text-xs sm:text-sm text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-0.5 drop-shadow-[1px_1px_0_#000]">${item.description}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer: Astral Price + Action Button -->
+                        <div class="flex items-center justify-between pt-2 border-t border-[#2b3542] mt-auto">
+                            <div class="flex items-center gap-1.5 bg-[#12161b] px-2.5 py-1 border border-[#2b3542] shadow-inner">
+                                ${astralSrc ? `<img src="${astralSrc}" class="pixelated w-5 h-5 object-contain" alt="Astral Emerald" />` : ''}
+                                <span class="text-xl sm:text-2xl font-bold text-[#c084fc] font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000]">${item.cost}</span>
+                                <span class="text-[11px] text-purple-300 font-['VT323'] uppercase tracking-wider">ASTRAL</span>
+                            </div>
+                            <button class="mc-btn ${buttonStyleClass} !w-auto !min-w-[90px] !px-3 !py-1 !text-lg !font-['VT323']" 
+                                    onclick="window.AtlasTradeManager ? window.AtlasTradeManager.buyItem('${item.id}') : null" ${buttonDisabledAttr}>
+                                ${buttonLabel}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error('Error rendering Atlas Market wares:', err);
+        }
+    }
+
+    // --- Astral Infuser Station Controller ---
+    let infuserSlottedGear = null;
+    let infuserSlottedShard = null;
+
+    export const DIAMOND_TO_ASTRAL_MAP = {
+        [IDS.DIAMOND_SWORD]: IDS.ASTRAL_SWORD,
+        [IDS.DIAMOND_PICKAXE]: IDS.ASTRAL_PICKAXE,
+        [IDS.DIAMOND_AXE]: IDS.ASTRAL_AXE,
+        [IDS.DIAMOND_SHOVEL]: IDS.ASTRAL_SHOVEL,
+        [IDS.HELMET_DIAMOND]: IDS.ASTRAL_HELMET,
+        [IDS.CHESTPLATE_DIAMOND]: IDS.ASTRAL_CHESTPLATE,
+        [IDS.LEGGINGS_DIAMOND]: IDS.ASTRAL_LEGGINGS,
+        [IDS.BOOTS_DIAMOND]: IDS.ASTRAL_BOOTS
+    };
+
+    export function openAstralInfuser(x, y) {
+        infuserSlottedGear = null;
+        infuserSlottedShard = null;
+        const modal = document.getElementById('astral-infuser-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        renderInfuserUI();
+    }
+
+    export function closeAstralInfuser() {
+        const modal = document.getElementById('astral-infuser-modal');
+        if (modal) modal.classList.add('hidden');
+        infuserSlottedGear = null;
+        infuserSlottedShard = null;
+    }
+
+    // --- Minecraft Sign Board System ---
+    let activeSignCoord = null;
+
+    export function openSignEditor(gx, gy, isNew = false) {
+        activeSignCoord = { x: gx, y: gy };
+        const modal = document.getElementById('sign-edit-modal');
+        if (!modal) return;
+
+        const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : (typeof signs !== 'undefined' ? signs : null);
+        const signData = liveSigns ? liveSigns.get(`${gx}_${gy}`) : null;
+        const lines = signData?.lines || ['', '', '', ''];
+
+        for (let i = 0; i < 4; i++) {
+            const input = document.getElementById(`sign-line-${i}`);
+            if (input) {
+                input.value = lines[i] || '';
+                if (!input.dataset.listenerAttached) {
+                    input.dataset.listenerAttached = 'true';
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (i < 3) {
+                                document.getElementById(`sign-line-${i + 1}`)?.focus();
+                            } else {
+                                closeSignEditor(true);
+                            }
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            closeSignEditor(true);
+                        }
+                    });
+                }
+            }
+        }
+
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            const first = document.getElementById('sign-line-0');
+            if (first) {
+                first.focus();
+                first.select();
+            }
+        }, 50);
+    }
+
+    export function closeSignEditor(save = true) {
+        const modal = document.getElementById('sign-edit-modal');
+        if (!modal || modal.classList.contains('hidden')) return;
+
+        if (save && activeSignCoord) {
+            const lines = [];
+            for (let i = 0; i < 4; i++) {
+                const input = document.getElementById(`sign-line-${i}`);
+                lines.push(input ? input.value.slice(0, 24) : '');
+            }
+            const fullText = lines.join('\n').trimEnd();
+            const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : (typeof signs !== 'undefined' ? signs : null);
+            if (liveSigns) {
+                liveSigns.set(`${activeSignCoord.x}_${activeSignCoord.y}`, {
+                    text: fullText,
+                    lines: lines
+                });
+            }
+
+            if (typeof syncSign === 'function') {
+                syncSign(activeSignCoord.x, activeSignCoord.y, fullText, lines);
+            } else if (typeof window !== 'undefined' && typeof window.syncSign === 'function') {
+                window.syncSign(activeSignCoord.x, activeSignCoord.y, fullText, lines);
+            }
+
+            if (!isMultiplayer && typeof saveCurrentWorld === 'function') {
+                saveCurrentWorld();
+            }
+        }
+
+        activeSignCoord = null;
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+
+    export function renderInfuserUI() {
+        const gearSlot = document.getElementById('infuser-slot-gear');
+        const shardSlot = document.getElementById('infuser-slot-shard');
+        const outputSlot = document.getElementById('infuser-slot-output');
+        const statusText = document.getElementById('infuser-status-text');
+        const infuseBtn = document.getElementById('btn-astral-infuse');
+        const eligibleTray = document.getElementById('infuser-eligible-items');
+
+        if (gearSlot) {
+            if (infuserSlottedGear) {
+                const name = ID_NAMES[infuserSlottedGear.id] || 'Diamond Gear';
+                const gearSrc = (typeof textures !== 'undefined' && textures && textures[infuserSlottedGear.id]?.src) || '';
+                gearSlot.innerHTML = `
+                    <div class="flex flex-col items-center gap-0.5 p-1">
+                        ${gearSrc ? `<img src="${gearSrc}" class="w-8 h-8 pixelated object-contain" alt="${name}" />` : ''}
+                        <span class="text-[11px] text-cyan-300 font-['VT323'] text-center leading-none truncate max-w-[56px] font-bold">${name}</span>
+                    </div>
+                `;
+                gearSlot.classList.add('infuser-slot-active');
+            } else {
+                gearSlot.innerHTML = `<span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Empty Slot</span>`;
+                gearSlot.classList.remove('infuser-slot-active');
+            }
+        }
+
+        if (shardSlot) {
+            if (infuserSlottedShard) {
+                const shardSrc = (typeof textures !== 'undefined' && textures && textures[IDS.ASTRAL_SHARD]?.src) || '';
+                shardSlot.innerHTML = `
+                    <div class="flex flex-col items-center gap-0.5 p-1">
+                        ${shardSrc ? `<img src="${shardSrc}" class="w-8 h-8 pixelated object-contain" alt="Astral Shard" />` : ''}
+                        <span class="text-[11px] text-purple-300 font-['VT323'] text-center leading-none font-bold">Shard x1</span>
+                    </div>
+                `;
+                shardSlot.classList.add('infuser-slot-active');
+            } else {
+                shardSlot.innerHTML = `<span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Empty Slot</span>`;
+                shardSlot.classList.remove('infuser-slot-active');
+            }
+        }
+
+        let targetAstralId = null;
+        if (infuserSlottedGear && DIAMOND_TO_ASTRAL_MAP[infuserSlottedGear.id]) {
+            targetAstralId = DIAMOND_TO_ASTRAL_MAP[infuserSlottedGear.id];
+        }
+
+        if (outputSlot) {
+            if (targetAstralId && infuserSlottedShard) {
+                const outName = ID_NAMES[targetAstralId] || 'Astral Gear';
+                const outSrc = (typeof textures !== 'undefined' && textures && textures[targetAstralId]?.src) || '';
+                outputSlot.innerHTML = `
+                    <div class="flex flex-col items-center gap-0.5 p-1">
+                        ${outSrc ? `<img src="${outSrc}" class="w-8 h-8 pixelated object-contain" alt="${outName}" />` : ''}
+                        <span class="text-[11px] text-amber-300 font-['VT323'] text-center leading-none truncate max-w-[56px] font-bold">${outName}</span>
+                    </div>
+                `;
+            } else {
+                outputSlot.innerHTML = `<span class="text-gray-500 text-xs font-['VT323'] text-center px-1">Output</span>`;
+            }
+        }
+
+        const ready = infuserSlottedGear && infuserSlottedShard && targetAstralId;
+        if (infuseBtn) infuseBtn.disabled = !ready;
+
+        if (statusText) {
+            if (ready) {
+                statusText.innerHTML = `<span class="text-emerald-400 font-bold">✦ Ready to forge ${ID_NAMES[targetAstralId]}! (750 Durability, Astral Glint) ✦</span>`;
+            } else if (!infuserSlottedGear) {
+                statusText.innerText = "Select Diamond equipment from your backpack below.";
+            } else if (!infuserSlottedShard) {
+                statusText.innerText = "Select 1 Astral Shard to initiate planar infusion.";
+            }
+        }
+
+        if (eligibleTray) {
+            const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+            const eligible = [];
+            liveInv.forEach((slot, idx) => {
+                if (!slot) return;
+                if (DIAMOND_TO_ASTRAL_MAP[slot.id]) {
+                    eligible.push({ slotIndex: idx, item: slot, type: 'gear' });
+                } else if (slot.id === IDS.ASTRAL_SHARD) {
+                    eligible.push({ slotIndex: idx, item: slot, type: 'shard' });
+                }
+            });
+
+            if (eligible.length === 0) {
+                eligibleTray.innerHTML = `<span class="text-xs text-[#8292a0] font-['VT323']">No Diamond gear or Astral Shards found in backpack.</span>`;
+            } else {
+                eligibleTray.innerHTML = eligible.map(el => {
+                    const isSelected = (el.type === 'gear' && infuserSlottedGear?.slotIndex === el.slotIndex) ||
+                                       (el.type === 'shard' && infuserSlottedShard?.slotIndex === el.slotIndex);
+                    const name = ID_NAMES[el.item.id] || 'Item';
+                    const elSrc = (typeof textures !== 'undefined' && textures && textures[el.item.id]?.src) || '';
+                    return `
+                        <button type="button" class="eligible-chip ${isSelected ? 'border-amber-400 bg-[#251f33]' : ''} flex items-center gap-1.5" 
+                                onclick="handleEligibleItemClick(${el.slotIndex}, '${el.type}')">
+                            ${elSrc ? `<img src="${elSrc}" class="w-5 h-5 pixelated object-contain flex-shrink-0" alt="" />` : ''}
+                            <span class="text-xs ${el.type === 'gear' ? 'text-cyan-300' : 'text-purple-300'} font-['VT323']">
+                                ${name} ${el.item.count > 1 ? `(${el.item.count})` : ''}
+                            </span>
+                        </button>
+                    `;
+                }).join('');
+            }
+        }
+    }
+
+    export function handleEligibleItemClick(slotIndex, type) {
+        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+        const item = liveInv[slotIndex];
+        if (!item) return;
+
+        if (type === 'gear') {
+            if (DIAMOND_TO_ASTRAL_MAP[item.id]) {
+                infuserSlottedGear = { slotIndex, id: item.id, count: item.count, durability: item.durability };
+                playSound('click');
+            }
+        } else if (type === 'shard') {
+            if (item.id === IDS.ASTRAL_SHARD) {
+                infuserSlottedShard = { slotIndex, id: item.id, count: item.count };
+                playSound('click');
+            }
+        }
+        renderInfuserUI();
+    }
+
+    export function handleInfuserSlotClick(slotType) {
+        if (slotType === 'gear' && infuserSlottedGear) {
+            infuserSlottedGear = null;
+            playSound('click');
+            renderInfuserUI();
+        } else if (slotType === 'shard' && infuserSlottedShard) {
+            infuserSlottedShard = null;
+            playSound('click');
+            renderInfuserUI();
+        }
+    }
+
+    export function performAstralInfusion() {
+        if (!infuserSlottedGear || !infuserSlottedShard) return;
+        const targetAstralId = DIAMOND_TO_ASTRAL_MAP[infuserSlottedGear.id];
+        if (!targetAstralId) return;
+
+        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
+
+        const gearSlot = liveInv[infuserSlottedGear.slotIndex];
+        const shardSlot = liveInv[infuserSlottedShard.slotIndex];
+
+        if (!gearSlot || gearSlot.id !== infuserSlottedGear.id) {
+            showToast("Diamond gear was moved or is missing!");
+            infuserSlottedGear = null;
+            renderInfuserUI();
+            return;
+        }
+
+        if (!shardSlot || shardSlot.id !== IDS.ASTRAL_SHARD) {
+            showToast("Astral Shard was moved or is missing!");
+            infuserSlottedShard = null;
+            renderInfuserUI();
+            return;
+        }
+
+        gearSlot.count--;
+        if (gearSlot.count <= 0) liveInv[infuserSlottedGear.slotIndex] = null;
+
+        shardSlot.count--;
+        if (shardSlot.count <= 0) liveInv[infuserSlottedShard.slotIndex] = null;
+
+        giveItem(targetAstralId, 1);
+
+        playSound('infuser_forge');
+        showToast(`✦ Successfully infused ${ID_NAMES[targetAstralId]}! (750 Durability) ✦`);
+        unlockAchievement('void_technician');
+
+        infuserSlottedGear = null;
+        infuserSlottedShard = null;
+        renderInfuserUI();
+        if (typeof updateUI === 'function') updateUI();
     }
 
     export function initEmeraldSystem() {
@@ -1178,7 +2701,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             guestBtn.type = 'button';
             guestBtn.title = 'Guests cannot get skins from Skins Shop. Create an account or log in!';
             guestBtn.setAttribute('aria-label', 'Create account or log in to get skin');
-            guestBtn.innerHTML = `🔒 Login`;
+            guestBtn.innerHTML = `${getPixelPadlockSvg(12)} Login`;
             guestBtn.onclick = (e) => {
                 e.stopPropagation();
                 buyAndEquipGallerySkin(skin);
@@ -1338,7 +2861,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const actions = document.createElement('div');
             actions.className = 'skin-card-actions';
             actions.innerHTML = `
-                <button class="skin-action edit" type="button" title="Edit skin" aria-label="Edit skin">✎</button>
+                <button class="skin-action edit" type="button" title="Edit skin" aria-label="Edit skin">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                        <rect x="1" y="13" width="2" height="2" fill="#334155"/>
+                        <rect x="2" y="11" width="2" height="2" fill="#fde68a"/>
+                        <rect x="4" y="9" width="2" height="2" fill="#fbbf24"/>
+                        <rect x="6" y="7" width="2" height="2" fill="#fbbf24"/>
+                        <rect x="8" y="5" width="2" height="2" fill="#fbbf24"/>
+                        <rect x="10" y="3" width="2" height="2" fill="#94a3b8"/>
+                        <rect x="12" y="1" width="2" height="2" fill="#f472b6"/>
+                    </svg>
+                </button>
                 <button class="skin-action upload" type="button" title="Upload to Skins Shop" aria-label="Upload to Skins Shop">
                     <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor">
                         <path d="M7 1h2v6h3v2h-2v5H6V9H4V7h3V1z" fill="#4eed99"/>
@@ -1653,6 +3186,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 try {
                     const parsed = JSON.parse(saved);
                     if (Array.isArray(parsed) && parsed.length === SKIN_W * SKIN_H) {
+                        const isRecentAdventurer = parsed[19 * SKIN_W + 7] === '#ca8a04' || parsed[4 * SKIN_W + 7] === '#2b4d8a';
+                        if (isRecentAdventurer || !savedId || savedId === 'default') {
+                            playerSkinData = getDefaultSkinData();
+                            activeSkinId = 'default';
+                            localStorage.setItem('swc_active_skin_v1', 'default');
+                            localStorage.setItem('swc_skin_v5', JSON.stringify(playerSkinData));
+                            compileSkinCanvas();
+                            return;
+                        }
                         playerSkinData = parsed.slice(0, SKIN_W * SKIN_H);
                         const match = savedSkins.find(s => JSON.stringify(s.data) === JSON.stringify(playerSkinData));
                         activeSkinId = match ? match.id : 'default';
@@ -2164,24 +3706,29 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export const RECIPES = [
         { output: { id: IDS.BUCKET, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 3 }], reqTable: true, category: 'utility' },
-        { output: { id: IDS.JUKEBOX, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 8 }, { id: IDS.DIAMOND, count: 1 }], reqTable: true, category: 'utility' },
+        { output: { id: IDS.JUKEBOX, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 8 }, { id: IDS.DIAMOND, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.EMPTY_VINYL, count: 1 }, inputs: [{ id: IDS.COAL, count: 4 }, { id: IDS.IRON_INGOT, count: 1 }], reqTable: true, category: 'utility' },
         { output: { id: IDS.PLANKS, count: 4 }, inputs: [{ id: IDS.WOOD, count: 1 }], reqTable: false },
-        { output: { id: IDS.CHEST, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 8 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.PLANKS, count: 2 }], reqTable: false },
+        { output: { id: IDS.JUNGLE_PLANKS, count: 4 }, inputs: [{ id: IDS.JUNGLE_WOOD, count: 1 }], reqTable: false, category: 'blocks' },
+        { output: { id: IDS.CHEST, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 8 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 2 }], reqTable: false },
+        { output: { id: IDS.JUNGLE_DOOR, count: 1 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.SIGN, count: 3 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 6 }, { id: IDS.STICK, count: 1 }], reqTable: true, category: 'utility' },
+        { output: { id: IDS.MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
+        { output: { id: IDS.MELON, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.LADDER, count: 3 }, inputs: [{ id: IDS.STICK, count: 7 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.WOODEN_STAIRS, count: 4 }, inputs: [{ id: IDS.PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.WOODEN_STAIRS, count: 4 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 6 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.COBBLESTONE_STAIRS, count: 4 }, inputs: [{ id: IDS.COBBLESTONE, count: 6 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.TORCH, count: 4 }, inputs: [{ id: IDS.COAL, count: 1 }, { id: IDS.STICK, count: 1 }], reqTable: false },
-        { output: { id: IDS.CRAFTING_TABLE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 4 }], reqTable: false },
-        { output: { id: IDS.DOOR, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.CRAFTING_TABLE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 4 }], reqTable: false },
+        { output: { id: IDS.DOOR, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 6 }], reqTable: true, category: 'blocks' },
         { output: { id: IDS.FURNACE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 8 }], reqTable: true },
-        { output: { id: IDS.BED, count: 1 }, inputs: [{ id: IDS.WOOL, count: 3 }, { id: IDS.PLANKS, count: 3 }], reqTable: true },
-        { output: { id: IDS.WOOD_PICKAXE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.WOOD_SWORD, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
-        { output: { id: IDS.WOOD_AXE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.WOOD_SHOVEL, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.WOOD_HOE, count: 1 }, inputs: [{ id: IDS.PLANKS, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.BED, count: 1 }, inputs: [{ id: IDS.WOOL, count: 3 }, { id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 3 }], reqTable: true },
+        { output: { id: IDS.WOOD_PICKAXE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
+        { output: { id: IDS.WOOD_SWORD, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
+        { output: { id: IDS.WOOD_AXE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
+        { output: { id: IDS.WOOD_SHOVEL, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.WOOD_HOE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
         { output: { id: IDS.STONE_PICKAXE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
         { output: { id: IDS.STONE_SWORD, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
         { output: { id: IDS.STONE_AXE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
@@ -2220,7 +3767,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         { output: { id: IDS.HELMET_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 5 }], reqTable: true, category: 'armor' },
         { output: { id: IDS.CHESTPLATE_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 8 }], reqTable: true, category: 'armor' },
         { output: { id: IDS.LEGGINGS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 7 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.BOOTS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 4 }], reqTable: true, category: 'armor' }
+        { output: { id: IDS.BOOTS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 4 }], reqTable: true, category: 'armor' },
+        { output: { id: IDS.SUNBURST_MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
+        { output: { id: IDS.SUNBURST_MELON, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' }
     ];
 
     export const ACHIEVEMENTS = [
@@ -2304,6 +3853,32 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             iconItem: IDS.FLOWER_RED,
             badge: 'Easy',
             difficulty: 'Easy'
+        },
+        {
+            id: 'best_friends_forever',
+            title: 'Best Friends Forever',
+            description: 'Tame a colorful wild parrot with seeds in the jungle.',
+            iconItem: IDS.MELON_SEEDS,
+            badge: 'Easy',
+            difficulty: 'Easy'
+        },
+        {
+            id: 'first_contact',
+            title: 'First Contact',
+            description: 'Speak with Kael, The Atlas Explorer upon his planar rift arrival.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 10
+        },
+        {
+            id: 'sound_of_music',
+            title: 'Retro Grooves',
+            description: 'Insert and play a music disc in a Jukebox to fill the world with melodies.',
+            iconItem: IDS.JUKEBOX,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 10
         },
 
         // --- MEDIUM TIER ---
@@ -2403,6 +3978,78 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             badge: 'Medium',
             difficulty: 'Medium'
         },
+        {
+            id: 'astral_pioneer',
+            title: 'Astral Pioneer',
+            description: 'Acquire or exchange your very first Astral Emerald.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'gem_prospector',
+            title: 'Gem Prospector',
+            description: 'Discover and mine a natural Emerald Ore vein in the mountains or cavern depths.',
+            iconItem: IDS.EMERALD_ORE,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 25
+        },
+        {
+            id: 'jungle_explorer',
+            title: 'Deep Jungle Explorer',
+            description: 'Traverse the wild Jungle biome and harvest lush jungle wood or melons.',
+            iconItem: IDS.JUNGLE_WOOD,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'bamboo_forester',
+            title: 'Bamboo Forester',
+            description: 'Plant and cultivate a towering bamboo thicket.',
+            iconItem: IDS.BAMBOO,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'bird_whisperer',
+            title: 'Bird Whisperer',
+            description: 'Tame a wild jungle parrot with seeds to perch on your shoulder.',
+            iconItem: IDS.SEEDS,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 25
+        },
+        {
+            id: 'cosmic_merchant',
+            title: 'Planar Commerce',
+            description: 'Purchase a rare treasure from Kael in the Atlas Market.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 25
+        },
+        {
+            id: 'astral_infusion',
+            title: 'Celestial Forge',
+            description: 'Craft or place an Astral Infuser station to harness cosmic alchemy.',
+            iconItem: IDS.ASTRAL_INFUSER,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'void_nourishment',
+            title: 'Taste of the Cosmos',
+            description: 'Consume a radiant Void Berry harvested from celestial flora.',
+            iconItem: IDS.VOID_BERRY,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 15
+        },
 
         // --- HARD TIER ---
         {
@@ -2469,6 +4116,42 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             badge: 'Hard',
             difficulty: 'Hard'
         },
+        {
+            id: 'void_technician',
+            title: 'Void Technician',
+            description: 'Infuse Diamond equipment with an Astral Shard at the Astral Infuser station.',
+            iconItem: IDS.ASTRAL_PICKAXE,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 35
+        },
+        {
+            id: 'daily_hustler',
+            title: 'Daily Hustler',
+            description: 'Complete and claim all Daily Challenges in a single day.',
+            iconItem: IDS.CHEST,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 40
+        },
+        {
+            id: 'kinetic_shearing',
+            title: 'High-Frequency Shears',
+            description: 'Shear a sheep using high-tech Kinetic Shears for triple wool yields.',
+            iconItem: IDS.KINETIC_SHEARS,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 30
+        },
+        {
+            id: 'astral_exchange_master',
+            title: 'Vault Tycoon',
+            description: 'Exchange standard Emeralds for Astral Emeralds in the Astral Exchange Vault.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 35
+        },
 
         // --- MASTER TIER ---
         {
@@ -2518,6 +4201,23 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             iconItem: IDS.DIAMOND,
             badge: 'Master',
             difficulty: 'Master'
+        },
+        {
+            id: 'why_would_you_do_that',
+            title: 'Why Would You Do That?',
+            description: 'Defeated an innocent, sweet pigeon. They didn\'t even drop anything... was it worth it?',
+            iconItem: IDS.FEATHER,
+            badge: 'Master',
+            difficulty: 'Master'
+        },
+        {
+            id: 'astral_ascension',
+            title: 'Celestial Juggernaut',
+            description: 'Forge and equip a complete 4-piece set of Astral Armor (Helmet, Chest, Legs, Boots).',
+            iconItem: IDS.ASTRAL_CHESTPLATE,
+            badge: 'Master',
+            difficulty: 'Master',
+            emeraldReward: 50
         }
     ];
 
@@ -2697,6 +4397,137 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }, 4000);
     }
 
+    export function showKaelArrivalBanner() {
+        let container = document.getElementById('kael-banner-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'kael-banner-container';
+            document.body.appendChild(container);
+        }
+
+        const banner = document.createElement('div');
+        banner.className = 'kael-arrival-banner';
+
+        const iconFrame = document.createElement('div');
+        iconFrame.className = 'kael-relic-frame';
+        if (typeof textures !== 'undefined' && textures[IDS.ASTRAL_SHARD]) {
+            const img = document.createElement('img');
+            img.src = textures[IDS.ASTRAL_SHARD].src;
+            img.className = 'w-8 h-8 pixelated drop-shadow-[2px_2px_0_#000]';
+            iconFrame.appendChild(img);
+        } else {
+            iconFrame.innerHTML = `
+                <svg viewBox="0 0 24 24" width="28" height="28" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                    <rect x="10" y="2" width="4" height="2" fill="#fde047"/>
+                    <rect x="8" y="4" width="8" height="3" fill="#c084fc"/>
+                    <rect x="6" y="7" width="12" height="10" fill="#a855f7"/>
+                    <rect x="8" y="10" width="8" height="4" fill="#7e22ce"/>
+                    <rect x="9" y="17" width="6" height="3" fill="#6b21a8"/>
+                    <rect x="11" y="20" width="2" height="2" fill="#3b0764"/>
+                    <rect x="9" y="8" width="2" height="2" fill="#ffffff"/>
+                </svg>
+            `;
+        }
+        banner.appendChild(iconFrame);
+
+        const content = document.createElement('div');
+        content.className = 'flex flex-col min-w-0';
+
+        const header = document.createElement('span');
+        header.className = "kael-banner-header text-amber-300 font-bold font-['VT323'] tracking-widest leading-none drop-shadow-[2px_2px_0_#000] uppercase";
+        header.style.color = '#fde047';
+        header.innerText = 'PLANAR RIFT OPENED';
+        content.appendChild(header);
+
+        const title = document.createElement('span');
+        title.className = "kael-banner-title text-2xl sm:text-3xl text-white font-bold font-['VT323'] drop-shadow-[2px_2px_0_#000] truncate leading-tight";
+        title.style.color = '#ffffff';
+        title.innerText = 'Kael, The Atlas Explorer has arrived!';
+        content.appendChild(title);
+
+        const subtitle = document.createElement('span');
+        subtitle.className = "kael-banner-subtitle text-sm sm:text-base text-white font-['VT323'] drop-shadow-[1px_1px_0_#000] leading-none mt-0.5";
+        subtitle.style.color = '#ffffff';
+        subtitle.innerText = 'Seek the cosmic traveler before the rift collapses!';
+        content.appendChild(subtitle);
+
+        banner.appendChild(content);
+        container.appendChild(banner);
+
+        if (typeof playSound === 'function') {
+            playSound('portal_warp', { vol: 1.0 });
+        }
+
+        setTimeout(() => {
+            banner.classList.add('dismissing');
+            setTimeout(() => {
+                if (banner.parentElement) banner.remove();
+            }, 400);
+        }, 6500);
+    }
+
+    export function showKaelDepartureBanner() {
+        if (typeof closeAtlasDialogue === 'function') closeAtlasDialogue();
+        if (typeof closeAtlasMarket === 'function') closeAtlasMarket();
+
+        let container = document.getElementById('kael-banner-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'kael-banner-container';
+            document.body.appendChild(container);
+        }
+
+        const banner = document.createElement('div');
+        banner.className = 'kael-arrival-banner';
+
+        const iconFrame = document.createElement('div');
+        iconFrame.className = 'kael-relic-frame';
+        iconFrame.innerHTML = `
+            <svg viewBox="0 0 24 24" width="28" height="28" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                <rect x="4" y="2" width="16" height="20" fill="#1e1035"/>
+                <rect x="7" y="6" width="10" height="12" fill="#311042"/>
+                <rect x="10" y="9" width="4" height="6" fill="#6b21a8"/>
+                <rect x="11" y="11" width="2" height="2" fill="#38bdf8"/>
+            </svg>
+        `;
+        banner.appendChild(iconFrame);
+
+        const content = document.createElement('div');
+        content.className = 'flex flex-col min-w-0';
+
+        const header = document.createElement('span');
+        header.className = "kael-banner-header text-amber-400 font-bold font-['VT323'] tracking-widest leading-none drop-shadow-[2px_2px_0_#000] uppercase";
+        header.style.color = '#fbbf24';
+        header.innerText = 'PLANAR RIFT COLLAPSED';
+        content.appendChild(header);
+
+        const title = document.createElement('span');
+        title.className = "kael-banner-title text-2xl sm:text-3xl text-white font-bold font-['VT323'] drop-shadow-[2px_2px_0_#000] truncate leading-tight";
+        title.style.color = '#ffffff';
+        title.innerText = 'Kael has departed through the void.';
+        content.appendChild(title);
+
+        const subtitle = document.createElement('span');
+        subtitle.className = "kael-banner-subtitle text-sm sm:text-base text-white font-['VT323'] drop-shadow-[1px_1px_0_#000] leading-none mt-0.5";
+        subtitle.style.color = '#ffffff';
+        subtitle.innerText = 'The cosmic traveler will return on another day.';
+        content.appendChild(subtitle);
+
+        banner.appendChild(content);
+        container.appendChild(banner);
+
+        if (typeof playSound === 'function') {
+            playSound('portal_warp', { vol: 0.7 });
+        }
+
+        setTimeout(() => {
+            banner.classList.add('dismissing');
+            setTimeout(() => {
+                if (banner.parentElement) banner.remove();
+            }, 400);
+        }, 5000);
+    }
+
     export function openAchievements(initialTab = null) {
         if (initialTab) {
             currentAchievementsTab = initialTab;
@@ -2794,9 +4625,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (badge) badge.innerText = `${activeCount} / ${total} (${percent}%)`;
 
         const frag = document.createDocumentFragment();
-        const filteredList = selectedAchDifficultyFilter === 'all' 
+        const DIFFICULTY_ORDER = { 'Easy': 1, 'Medium': 2, 'Hard': 3, 'Master': 4 };
+        const rawList = selectedAchDifficultyFilter === 'all' 
             ? ACHIEVEMENTS 
             : ACHIEVEMENTS.filter(a => a.difficulty === selectedAchDifficultyFilter);
+
+        // Organize on difficulties: Easy -> Medium -> Hard -> Master
+        const filteredList = [...rawList].sort((a, b) => {
+            const orderA = DIFFICULTY_ORDER[a.difficulty] || 99;
+            const orderB = DIFFICULTY_ORDER[b.difficulty] || 99;
+            return orderA - orderB;
+        });
 
         filteredList.forEach(ach => {
             const unlockedAt = activeData[ach.id];
@@ -2861,7 +4700,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 statusRow.innerHTML = `<span class="text-green-400 font-bold">✓ Unlocked:</span> <span class="text-gray-300">${formatAchievementDate(unlockedAt)}</span> ${isClaimed ? `<span class="text-[#4eed99] font-bold ml-1 font-['VT323'] text-sm inline-flex items-center gap-0.5">[+${rewardAmt} ${getPixelEmeraldSvg(12)} Claimed]</span>` : ''}`;
             } else {
                 const guestNotice = isGuest ? ` <span class="text-amber-400 font-bold ml-1">(Guest - Log in to earn)</span>` : '';
-                statusRow.innerHTML = `<span class="text-gray-500 font-bold">🔒 Locked</span> <span class="text-gray-600">(${currentAchievementsTab === 'mp' ? 'Multiplayer' : 'Singleplayer'})</span>${guestNotice}`;
+                statusRow.innerHTML = `<span class="text-gray-500 font-bold inline-flex items-center gap-1">${getPixelPadlockSvg(12)} Locked</span> <span class="text-gray-600">(${currentAchievementsTab === 'mp' ? 'Multiplayer' : 'Singleplayer'})</span>${guestNotice}`;
             }
             info.appendChild(statusRow);
 
@@ -3058,6 +4897,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         ].includes(id);
     }
 
+    export function isVinyl(id) {
+        return id === IDS.EMPTY_VINYL || (typeof IDS.VINYL_DISC !== 'undefined' && id === IDS.VINYL_DISC);
+    }
+
+    export function isNonStackable(id) {
+        if (!id) return false;
+        if (isTool(id)) return true;
+        if (typeof isArmor === 'function' && isArmor(id)) return true;
+        if (isVinyl(id)) return true;
+        return false;
+    }
+
+    export function getItemMaxStack(id) {
+        return isNonStackable(id) ? 1 : 64;
+    }
+
     export function ensureToolDurability(item) {
         if (!item || !TOOL_DURABILITY[item.id]) return item;
         const maxDurability = TOOL_DURABILITY[item.id];
@@ -3102,17 +4957,26 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function giveItem(id, amount = 1) {
         const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
         let initialAmount = amount;
-        for (let i = 0; i < 27; i++) { 
-            if (liveInv[i] && liveInv[i].id === id && liveInv[i].count < 64 && !isTool(id)) {
-                let space = 64 - liveInv[i].count;
-                let add = Math.min(space, amount);
-                liveInv[i].count += add; amount -= add;
-                if (amount <= 0) break;
+        const maxStack = getItemMaxStack(id);
+        if (maxStack > 1) {
+            for (let i = 0; i < 27; i++) { 
+                if (liveInv[i] && liveInv[i].id === id && liveInv[i].count < maxStack) {
+                    let space = maxStack - liveInv[i].count;
+                    let add = Math.min(space, amount);
+                    liveInv[i].count += add; amount -= add;
+                    if (amount <= 0) break;
+                }
             }
         }
         if (amount > 0) {
             for (let i = 0; i < 27; i++) { 
-                if (!liveInv[i]) { liveInv[i] = { id: id, count: amount }; ensureToolDurability(liveInv[i]); amount = 0; break; }
+                if (!liveInv[i]) {
+                    let add = Math.min(maxStack, amount);
+                    liveInv[i] = { id: id, count: add };
+                    ensureToolDurability(liveInv[i]);
+                    amount -= add;
+                    if (amount <= 0) break;
+                }
             }
         }
         if (amount > 0 && STATE === 'PLAYING') {
@@ -3137,9 +5001,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function canFitItem(id, amount) {
         const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
         let capacity = 0;
+        const maxStack = getItemMaxStack(id);
         for (let i = 0; i < 27; i++) {
-            if (liveInv[i] && liveInv[i].id === id && !isTool(id)) capacity += Math.max(0, 64 - liveInv[i].count);
-            else if (!liveInv[i]) capacity += isTool(id) ? 1 : 64;
+            if (liveInv[i] && liveInv[i].id === id && maxStack > 1) capacity += Math.max(0, maxStack - liveInv[i].count);
+            else if (!liveInv[i]) capacity += maxStack;
             if (capacity >= amount) return true;
         }
         return false;
@@ -3172,19 +5037,58 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         return false;
     }
 
+    export function getRecipeInputCount(input) {
+        if (Array.isArray(input.ids)) {
+            let total = 0;
+            input.ids.forEach(id => {
+                total += getItemCount(id);
+            });
+            return total;
+        }
+        return getItemCount(input.id);
+    }
+
+    export function hasRecipeInput(input) {
+        return getRecipeInputCount(input) >= input.count;
+    }
+
+    export function consumeRecipeInput(input) {
+        if (Array.isArray(input.ids)) {
+            let remainingNeeded = input.count;
+            const inv = (typeof window !== 'undefined' && window.inventory) ? window.inventory : inventory;
+            for (let i = 0; i < inv.length; i++) {
+                const item = inv[i];
+                if (item && input.ids.includes(item.id)) {
+                    if (item.count <= remainingNeeded) {
+                        remainingNeeded -= item.count;
+                        inv[i] = null;
+                    } else {
+                        item.count -= remainingNeeded;
+                        remainingNeeded = 0;
+                    }
+                    if (remainingNeeded <= 0) break;
+                }
+            }
+            if (typeof setEngineInventory === 'function') setEngineInventory(inv);
+            if (typeof window !== 'undefined') window.inventory = inv;
+            return remainingNeeded <= 0;
+        }
+        return consumeItem(input.id, input.count);
+    }
 
     export function craftRecipe(recipeIndex) {
         const recipe = RECIPES[recipeIndex];
-        let canCraft = recipe.inputs.every(req => hasItem(req.id, req.count));
+        let canCraft = recipe.inputs.every(req => hasRecipeInput(req));
         const outputFits = canFitItem(recipe.output.id, recipe.output.count);
         if (canCraft && !outputFits && isMultiplayer && !isMultiplayerAuthority() && pendingDropRequest) return;
         if (canCraft) {
-            recipe.inputs.forEach(req => consumeItem(req.id, req.count));
+            recipe.inputs.forEach(req => consumeRecipeInput(req));
             if (!outputFits) {
                 dropItemForWorld(recipe.output.id, player.x + player.width / 2, player.y, recipe.output.count);
             } else {
                 giveItem(recipe.output.id, recipe.output.count);
             }
+            trackDailyQuestProgress('craft_item', { itemId: recipe.output.id, count: recipe.output.count });
             craftedItemsCount = (craftedItemsCount || 0) + 1;
             if (craftedItemsCount >= 20) unlockAchievement('master_crafter');
 
@@ -3200,6 +5104,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             else if (recipe.output.id === IDS.GOLD_PICKAXE || recipe.output.id === IDS.GOLD_SWORD || recipe.output.id === IDS.GOLD_AXE) unlockAchievement('shiny_bling');
             else if ([IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE].includes(recipe.output.id)) unlockAchievement('time_to_cultivate');
             else if (recipe.output.id === IDS.BREAD) unlockAchievement('bake_bread');
+            else if (recipe.output.id === IDS.ASTRAL_INFUSER) unlockAchievement('astral_infusion');
             if (isArmor(recipe.output.id)) {
                 unlockAchievement('suit_up');
                 if (recipe.output.id === IDS.HELMET_GOLD || recipe.output.id === IDS.CHESTPLATE_GOLD || recipe.output.id === IDS.LEGGINGS_GOLD || recipe.output.id === IDS.BOOTS_GOLD) {
@@ -3223,6 +5128,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         keepInventoryLabel.style.opacity = diffKey === 'hardcore' ? '0.55' : '1';
         if (diffKey === 'hardcore') keepInventoryInput.checked = false;
         updateNewWorldAchievementWarning();
+    }
+
+    export function selectWorldSize(size) {
+        selectedWorldSizeChoice = (size === 'big') ? 'big' : 'small';
+        if (typeof window !== 'undefined') {
+            window.selectedWorldSizeChoice = selectedWorldSizeChoice;
+        }
+        document.querySelectorAll('#world-size-selector button').forEach(btn => {
+            if (btn.dataset.size === selectedWorldSizeChoice) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
     }
 
     export function openWhatsNewOnce() {
@@ -3271,14 +5187,31 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             return;
         }
 
-        // 1. Beta 0.1.4 Patch 1 (Latest Release)
-        const vPatch1 = UPDATE_HISTORY_LOGS[0];
+        // 1. Beta 0.1.5 (Latest Release)
+        const v015 = UPDATE_HISTORY_LOGS[0];
+        if (v015) {
+            const art015 = document.createElement('article');
+            art015.className = 'news-entry is-newest';
+            art015.innerHTML = `
+                <div class="news-entry-header">
+                    <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${v015.title}</h3>
+                    <span class="news-badge" style="background: #16a34a; color: #fff;">0.1.5</span>
+                </div>
+                ${renderPatchNoteList(v015.items)}
+            `;
+            entriesRoot.appendChild(art015);
+        }
+
+        // 2. Beta 0.1.4 Patch 1
+        const vPatch1 = UPDATE_HISTORY_LOGS[1];
         if (vPatch1) {
             const artPatch1 = document.createElement('article');
-            artPatch1.className = 'news-entry is-newest';
+            artPatch1.className = 'news-entry';
+            artPatch1.style.borderColor = '#0284c7';
+            artPatch1.style.boxShadow = 'inset 0 0 0 1px #080a0c, 0 0 0 1px rgba(2, 132, 199, 0.45)';
             artPatch1.innerHTML = `
                 <div class="news-entry-header">
-                    <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${vPatch1.title}</h3>
+                    <h3 class="text-sky-400 font-bold text-2xl font-['VT323']">${vPatch1.title}</h3>
                     <span class="news-badge">PATCH 1</span>
                 </div>
                 ${renderPatchNoteList(vPatch1.items)}
@@ -3286,24 +5219,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             entriesRoot.appendChild(artPatch1);
         }
 
-        // 2. Beta 0.1.4 (Farming, Livestock, Jukebox & Mechanics Overhaul)
-        const v14 = UPDATE_HISTORY_LOGS[1];
-        if (v14) {
-            const art14 = document.createElement('article');
-            art14.className = 'news-entry';
-            art14.style.borderColor = '#0284c7';
-            art14.style.boxShadow = 'inset 0 0 0 1px #080a0c, 0 0 0 1px rgba(2, 132, 199, 0.45)';
-            art14.innerHTML = `
-                <div class="news-entry-header">
-                    <h3 class="text-sky-400 font-bold text-2xl font-['VT323']">${v14.title}</h3>
-                    <span class="news-badge" style="background: #0284c7; color: #fff;">0.1.4</span>
-                </div>
-                ${renderPatchNoteList(v14.items)}
-            `;
-            entriesRoot.appendChild(art14);
-        }
-
-        // 3. Older Versions (Beta 0.1.3) inside clean collapsible summaries
+        // 3. Older Versions (Beta 0.1.4, Beta 0.1.3) inside clean collapsible summaries
         for (let i = 2; i < UPDATE_HISTORY_LOGS.length; i++) {
             const entry = UPDATE_HISTORY_LOGS[i];
             if (!entry) continue;
@@ -3792,10 +5708,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (currentUserProfile?.createdAt) {
                 const d = new Date(currentUserProfile.createdAt);
                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                createdEl.innerText = `Member since: ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+                createdEl.innerText = `Crafter since: ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+                createdEl.innerText = `${months[d.getMonth()]} ${d.getFullYear()}`;
             } else {
-                createdEl.innerText = isGuest ? 'Session Started: Today' : `Member since: Beta v${DISPLAY_VERSION}`;
+                createdEl.innerText = isGuest ? 'Session Started: Today' : `Crafter since: Beta v${DISPLAY_VERSION}`;
+                createdEl.innerText = isGuest ? 'Today' : `Beta v${DISPLAY_VERSION}`;
             }
+        }
+
+        const astralValEl = document.getElementById('profile-details-astral-val');
+        if (astralValEl) {
+            astralValEl.innerText = (typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0).toLocaleString();
         }
 
         // Emeralds
@@ -3811,7 +5734,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             } else {
                 const spStorage = (typeof getAchievementsStorage === 'function') ? getAchievementsStorage('sp') : {};
                 const unlockedCount = Object.keys(spStorage).length;
-                achEl.innerText = `${unlockedCount} / 32`;
+                achEl.innerText = `${unlockedCount} / ${ACHIEVEMENTS.length}`;
                 achEl.className = 'text-amber-300 font-bold text-2xl font-[\'VT323\'] leading-none';
             }
         }
@@ -3822,6 +5745,109 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             const activeId = localStorage.getItem('swc_active_skin_v1') || currentUserProfile?.activeSkinId;
             const currentSkin = savedSkins.find(s => s.id === activeId);
             skinStatusEl.innerText = currentSkin ? currentSkin.name : (activeId === 'custom' ? 'Custom Skin' : 'Steve (Default)');
+        }
+
+        // Profile Customization Visuals (Banner, Frame, Crown, Title Badge, Name Color, Bio)
+        // Profile Customization Visuals (Theme, Banner, Frame, Crown, Status, Title Badge, Name Color, Bio)
+        const cust = getPlayerCustomization();
+        const themeItem = getCosmeticItem(cust.cardTheme) || getCosmeticItem('theme_slate');
+        const bannerItem = getCosmeticItem(cust.bannerPattern) || getCosmeticItem('banner_slate');
+        const frameItem = getCosmeticItem(cust.avatarFrame) || getCosmeticItem('frame_classic');
+        const titleItem = getCosmeticItem(cust.titlePlate) || getCosmeticItem('title_novice');
+
+        // 1. Card Theme
+        const cardEl = document.getElementById('profile-identity-card');
+        if (cardEl) {
+            cardEl.className = `discord-card-preview ${themeItem.themeClass} w-full relative mb-2.5 shadow-2xl select-none`;
+        }
+
+        // 2. Banner
+        const bannerEl = document.getElementById('profile-overview-banner');
+        if (bannerEl) {
+            bannerEl.className = `w-full h-16 -mt-3 -mx-3 mb-2.5 ${bannerItem.bannerClass} relative overflow-hidden border-b-2 border-[#333e49]`;
+            bannerEl.className = `discord-card-banner ${bannerItem.bannerClass} w-full relative`;
+            bannerEl.style.backgroundColor = cust.bannerColor || bannerItem.color || '#181e24';
+        }
+
+        // 3. Avatar Frame & Crown & Status Dot
+        const avatarFrameEl = document.getElementById('profile-overview-avatar-frame');
+        if (avatarFrameEl) {
+            avatarFrameEl.className = `profile-avatar-frame !w-20 !h-20 flex-shrink-0 ${frameItem.frameClass} bg-[#1e2732] p-1 relative`;
+            avatarFrameEl.className = `avatar-frame-wrapper ${frameItem.frameClass} relative`;
+        }
+
+        const crownEl = document.getElementById('profile-details-crown-icon');
+        if (crownEl) {
+            crownEl.classList.toggle('hidden', frameItem.id !== 'frame_crown');
+        }
+
+        const statusDot = document.getElementById('profile-details-status-dot');
+        if (statusDot) {
+            statusDot.className = isGuest ? 'discord-avatar-status offline' : 'discord-avatar-status online';
+            statusDot.title = isGuest ? 'Guest Session' : 'Online in Webcraft';
+        }
+
+        // 4. Draw Crisp Player Head on 60x60 Canvas
+        const headCanvas = document.getElementById('profile-details-head-canvas');
+        if (headCanvas && typeof drawPlayerHead === 'function') {
+            const ctx = headCanvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, 60, 60);
+
+            const skinCanvas = (typeof window !== 'undefined' && window.skinCanvasObj) ? window.skinCanvasObj : skinCanvasObj;
+            if (skinCanvas) {
+                drawPlayerHead(ctx, skinCanvas, 0, 0, 60);
+            } else {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 16;
+                tempCanvas.height = 32;
+                const tCtx = tempCanvas.getContext('2d');
+                const imgData = tCtx.createImageData(16, 32);
+                const activeSkin = (typeof getSkinSaveData === 'function' ? getSkinSaveData() : null) || (typeof playerSkinData !== 'undefined' ? playerSkinData : null);
+                if (activeSkin) {
+                    for (let i = 0; i < 16 * 32; i++) {
+                        const c = activeSkin[i] || '#00000000';
+                        const rgb = hexToRgb(c);
+                        imgData.data[i * 4] = rgb.r;
+                        imgData.data[i * 4 + 1] = rgb.g;
+                        imgData.data[i * 4 + 2] = rgb.b;
+                        imgData.data[i * 4 + 3] = (c === '#00000000' || !c) ? 0 : 255;
+                    }
+                    tCtx.putImageData(imgData, 0, 0);
+                    drawPlayerHead(ctx, tempCanvas, 0, 0, 60);
+                }
+            }
+        }
+
+        // 5. Title Plate
+        const titleBadgeEl = document.getElementById('profile-details-title-badge');
+        if (titleBadgeEl) {
+            if (titleItem.id !== 'title_novice') {
+                titleBadgeEl.classList.remove('hidden');
+                titleBadgeEl.className = 'profile-title-badge';
+                titleBadgeEl.innerText = titleItem.prefixTag || titleItem.name;
+                titleBadgeEl.style.borderColor = titleItem.nameColor;
+                titleBadgeEl.style.color = titleItem.nameColor;
+            } else {
+                titleBadgeEl.classList.add('hidden');
+            }
+        }
+
+        // 6. Name Color
+        if (nameEl) {
+            nameEl.style.color = cust.nameColor || titleItem.nameColor || '#ffffff';
+        }
+
+        // 7. Bio
+        const bioDisplayEl = document.getElementById('profile-details-bio-display');
+        if (bioDisplayEl) {
+            if (cust.bio && cust.bio.trim()) {
+                bioDisplayEl.classList.remove('hidden');
+                bioDisplayEl.innerText = `"${cust.bio.trim()}"`;
+            } else {
+                bioDisplayEl.classList.add('hidden');
+            }
+            bioDisplayEl.innerText = (cust.bio && cust.bio.trim()) ? cust.bio.trim() : 'Mining across dimensions.';
         }
 
         // Upgrade or Sign out action button
@@ -3895,6 +5921,132 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    let friendsProfileUnsubscribe = null;
+
+    export function renderFriendsListRows(friendProfiles) {
+        const container = document.getElementById('friends-list-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!friendProfiles || friendProfiles.length === 0) {
+            container.innerHTML = `
+                <div class="text-gray-400 font-['VT323'] text-xl py-6 text-center">
+                    No friends added yet.<br>
+                    <span class="text-amber-400 text-base">Enter a player's Webcraft @tag above to send a request!</span>
+                </div>
+            `;
+            return;
+        }
+
+        friendProfiles.forEach(friend => {
+            const row = document.createElement('div');
+            row.className = 'friend-card-row';
+            row.title = `Click to view ${friend.tag}'s profile`;
+            row.onclick = () => openFriendProfileModal(friend);
+
+            const cust = friend.profileCustomization || getDefaultCustomization();
+            const frameItem = getCosmeticItem(cust.avatarFrame) || getCosmeticItem('frame_classic');
+            const titleItem = getCosmeticItem(cust.titlePlate) || getCosmeticItem('title_novice');
+            const bannerItem = getCosmeticItem(cust.bannerPattern) || getCosmeticItem('banner_slate');
+            const bannerAccentColor = cust.bannerColor || bannerItem.accentColor || '#4a5968';
+            const nameColor = cust.nameColor || titleItem.nameColor || '#ffffff';
+
+            // Left accent bar matching friend's custom banner
+            const accentBar = document.createElement('div');
+            accentBar.className = 'friend-accent-bar';
+            accentBar.style.backgroundColor = bannerAccentColor;
+            row.appendChild(accentBar);
+
+            const leftDiv = document.createElement('div');
+            leftDiv.className = 'flex items-center gap-2.5 min-w-0 flex-1 pl-1.5';
+
+            // Avatar frame container
+            const frameWrapper = document.createElement('div');
+            frameWrapper.className = `avatar-frame-wrapper ${frameItem.frameClass} relative`;
+            if (frameItem.id === 'frame_crown') {
+                const crownEl = document.createElement('div');
+                crownEl.className = 'avatar-crown-element';
+                crownEl.innerHTML = `<svg class="pixel-crown-svg" width="24" height="18" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="1" y="10" width="14" height="2" fill="#080a0c"/><rect x="2" y="9" width="12" height="2" fill="#d97706"/><rect x="2" y="7" width="12" height="2" fill="#f59e0b"/><rect x="2" y="5" width="12" height="2" fill="#fbbf24"/><rect x="2" y="2" width="2" height="3" fill="#fbbf24"/><rect x="7" y="0" width="2" height="5" fill="#fbbf24"/><rect x="12" y="2" width="2" height="3" fill="#fbbf24"/><rect x="2" y="2" width="1" height="1" fill="#fef08a"/><rect x="7" y="0" width="1" height="1" fill="#fef08a"/><rect x="12" y="2" width="1" height="1" fill="#fef08a"/><rect x="4" y="7" width="2" height="2" fill="#ef4444"/><rect x="7" y="4" width="2" height="2" fill="#3b82f6"/><rect x="10" y="7" width="2" height="2" fill="#ef4444"/></svg>`;
+                frameWrapper.appendChild(crownEl);
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.className = 'friend-head-preview';
+            canvas.width = 36;
+            canvas.height = 36;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+
+            if (friend.skinData && typeof drawPlayerHead === 'function') {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 16;
+                tempCanvas.height = 32;
+                const tCtx = tempCanvas.getContext('2d');
+                const imgData = tCtx.createImageData(16, 32);
+                for (let i = 0; i < 16 * 32; i++) {
+                    const c = friend.skinData[i] || '#00000000';
+                    const rgb = hexToRgb(c);
+                    imgData.data[i * 4] = rgb.r;
+                    imgData.data[i * 4 + 1] = rgb.g;
+                    imgData.data[i * 4 + 2] = rgb.b;
+                    imgData.data[i * 4 + 3] = c === '#00000000' || !c ? 0 : 255;
+                }
+                tCtx.putImageData(imgData, 0, 0);
+                drawPlayerHead(ctx, tempCanvas, 0, 0, 36);
+            } else {
+                // Default Steve head
+                ctx.fillStyle = '#b4845c';
+                ctx.fillRect(0, 0, 36, 36);
+                ctx.fillStyle = '#4a3320';
+                ctx.fillRect(0, 0, 36, 10);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(6, 14, 8, 5);
+                ctx.fillRect(22, 14, 8, 5);
+                ctx.fillStyle = '#2b3b82';
+                ctx.fillRect(10, 14, 4, 5);
+                ctx.fillRect(22, 14, 4, 5);
+                ctx.fillStyle = '#6d4632';
+                ctx.fillRect(12, 24, 12, 4);
+            }
+
+            frameWrapper.appendChild(canvas);
+
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'min-w-0 text-left';
+            infoDiv.innerHTML = `
+                <div class="flex items-center gap-1.5 leading-tight truncate">
+                    ${titleItem.id !== 'title_novice' ? `<span class="profile-title-badge !text-xs !py-0 !px-1" style="border-color:${titleItem.nameColor}; color:${titleItem.nameColor};">${safeEscapeHtml(titleItem.prefixTag || titleItem.name)}</span>` : ''}
+                    <span class="font-['VT323'] text-xl font-bold truncate" style="color: ${nameColor};">${safeEscapeHtml(friend.username)}</span>
+                </div>
+                <div class="flex items-center gap-1.5 leading-none mt-0.5">
+                    <span class="text-amber-400 font-['VT323'] text-base font-bold">${safeEscapeHtml(friend.tag)}</span>
+                    <span class="text-gray-500 font-['VT323'] text-sm">•</span>
+                    <span class="flex items-center text-xs font-['VT323'] ${friend.isOnline ? 'text-emerald-400' : 'text-gray-400'}">
+                        <span class="friend-status-dot ${friend.isOnline ? 'online' : 'offline'}"></span>
+                        ${friend.isOnline ? 'Online' : 'Offline'}
+                    </span>
+                </div>
+            `;
+
+            leftDiv.appendChild(frameWrapper);
+            leftDiv.appendChild(infoDiv);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'friend-btn-remove';
+            removeBtn.title = `Remove ${friend.tag} from friends`;
+            removeBtn.innerText = 'Remove';
+            removeBtn.onclick = (e) => {
+                e.stopPropagation();
+                handleRemoveFriend(friend.tag);
+            };
+
+            row.appendChild(leftDiv);
+            row.appendChild(removeBtn);
+            container.appendChild(row);
+        });
     }
 
     export async function renderFriendsList() {
@@ -4026,82 +6178,29 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         try {
             const friendProfiles = await fetchFriendsProfiles(friends);
-            container.innerHTML = '';
+            renderFriendsListRows(friendProfiles);
 
-            friendProfiles.forEach(friend => {
-                const row = document.createElement('div');
-                row.className = 'friend-card-row';
-
-                const leftDiv = document.createElement('div');
-                leftDiv.className = 'flex items-center gap-2.5 min-w-0 flex-1';
-
-                const canvas = document.createElement('canvas');
-                canvas.className = 'friend-head-preview';
-                canvas.width = 36;
-                canvas.height = 36;
-                const ctx = canvas.getContext('2d');
-                ctx.imageSmoothingEnabled = false;
-
-                if (friend.skinData && typeof drawPlayerHead === 'function') {
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = 16;
-                    tempCanvas.height = 32;
-                    const tCtx = tempCanvas.getContext('2d');
-                    const imgData = tCtx.createImageData(16, 32);
-                    for (let i = 0; i < 16 * 32; i++) {
-                        const c = friend.skinData[i] || '#00000000';
-                        const rgb = hexToRgb(c);
-                        imgData.data[i * 4] = rgb.r;
-                        imgData.data[i * 4 + 1] = rgb.g;
-                        imgData.data[i * 4 + 2] = rgb.b;
-                        imgData.data[i * 4 + 3] = c === '#00000000' || !c ? 0 : 255;
+            // Establish real-time Firestore listener for live updates!
+            if (typeof listenToFriendsProfiles === 'function' && !friendsProfileUnsubscribe && friends.length > 0) {
+                let currentFriendsList = [...friendProfiles];
+                friendsProfileUnsubscribe = listenToFriendsProfiles(friends, (singleUpdated, allUpdated) => {
+                    const viewFriends = document.getElementById('profile-view-friends');
+                    if (viewFriends && !viewFriends.classList.contains('hidden')) {
+                        if (Array.isArray(allUpdated) && allUpdated.length > 0) {
+                            allUpdated.forEach(u => {
+                                const idx = currentFriendsList.findIndex(f => normalizeWebcraftTag(f.tag) === normalizeWebcraftTag(u.tag));
+                                if (idx >= 0) currentFriendsList[idx] = { ...currentFriendsList[idx], ...u };
+                                else currentFriendsList.push(u);
+                            });
+                        } else if (singleUpdated && singleUpdated.tag) {
+                            const idx = currentFriendsList.findIndex(f => normalizeWebcraftTag(f.tag) === normalizeWebcraftTag(singleUpdated.tag));
+                            if (idx >= 0) currentFriendsList[idx] = { ...currentFriendsList[idx], ...singleUpdated };
+                            else currentFriendsList.push(singleUpdated);
+                        }
+                        renderFriendsListRows(currentFriendsList);
                     }
-                    tCtx.putImageData(imgData, 0, 0);
-                    drawPlayerHead(ctx, tempCanvas, 0, 0, 36);
-                } else {
-                    // Default Steve head
-                    ctx.fillStyle = '#b4845c';
-                    ctx.fillRect(0, 0, 36, 36);
-                    ctx.fillStyle = '#4a3320';
-                    ctx.fillRect(0, 0, 36, 10);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(6, 14, 8, 5);
-                    ctx.fillRect(22, 14, 8, 5);
-                    ctx.fillStyle = '#2b3b82';
-                    ctx.fillRect(10, 14, 4, 5);
-                    ctx.fillRect(22, 14, 4, 5);
-                    ctx.fillStyle = '#6d4632';
-                    ctx.fillRect(12, 24, 12, 4);
-                }
-
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'min-w-0 text-left';
-                infoDiv.innerHTML = `
-                    <div class="text-white font-['VT323'] text-xl font-bold leading-tight truncate">${safeEscapeHtml(friend.username)}</div>
-                    <div class="flex items-center gap-1.5 leading-none mt-0.5">
-                        <span class="text-amber-400 font-['VT323'] text-base font-bold">${safeEscapeHtml(friend.tag)}</span>
-                        <span class="text-gray-500 font-['VT323'] text-sm">•</span>
-                        <span class="flex items-center text-xs font-['VT323'] ${friend.isOnline ? 'text-emerald-400' : 'text-gray-400'}">
-                            <span class="friend-status-dot ${friend.isOnline ? 'online' : 'offline'}"></span>
-                            ${friend.isOnline ? 'Online' : 'Offline'}
-                        </span>
-                    </div>
-                `;
-
-                leftDiv.appendChild(canvas);
-                leftDiv.appendChild(infoDiv);
-
-                const removeBtn = document.createElement('button');
-                removeBtn.type = 'button';
-                removeBtn.className = 'friend-btn-remove';
-                removeBtn.title = `Remove ${friend.tag} from friends`;
-                removeBtn.innerText = 'Remove';
-                removeBtn.onclick = () => handleRemoveFriend(friend.tag);
-
-                row.appendChild(leftDiv);
-                row.appendChild(removeBtn);
-                container.appendChild(row);
-            });
+                });
+            }
         } catch(err) {
             console.warn("Friends list render error", err);
             container.innerHTML = `<div class="text-red-400 font-['VT323'] text-lg py-4 text-center">Could not load friends list. Check connection.</div>`;
@@ -4356,8 +6455,894 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             clearInterval(profilePingTimer);
             profilePingTimer = null;
         }
+        if (friendsProfileUnsubscribe) {
+            try { friendsProfileUnsubscribe(); } catch(e) {}
+            friendsProfileUnsubscribe = null;
+        }
         const modal = document.getElementById('profile-details-modal');
         if (modal) modal.classList.add('hidden');
+    }
+
+    // =========================================================================
+    // PROFILE CUSTOMIZATION & COSMETICS CONTROLLER
+    // =========================================================================
+
+    export function getPlayerCustomization() {
+        if (currentUserProfile && currentUserProfile.profileCustomization) {
+            return currentUserProfile.profileCustomization;
+        }
+        return getDefaultCustomization();
+    }
+
+    export function getPlayerUnlockedCosmetics() {
+        if (currentUserProfile && Array.isArray(currentUserProfile.unlockedCosmetics)) {
+            return currentUserProfile.unlockedCosmetics;
+        }
+        return ['frame_classic', 'banner_slate', 'title_novice', 'theme_slate'];
+    }
+
+    let editorDraftCustomization = null;
+    let profileEditorOpenedFromDetails = false;
+
+    function updateEditorSwatchActiveStates() {
+        const curNameColor = (editorDraftCustomization?.nameColor || '#ffffff').toLowerCase();
+        document.querySelectorAll('#editor-name-swatches .mc-swatch-btn').forEach(btn => {
+            const c = (btn.getAttribute('data-color') || '').toLowerCase();
+            btn.classList.toggle('active', c === curNameColor);
+        });
+
+        const curBannerColor = (editorDraftCustomization?.bannerColor || '#181e24').toLowerCase();
+        document.querySelectorAll('#editor-banner-swatches .mc-swatch-btn').forEach(btn => {
+            const c = (btn.getAttribute('data-color') || '').toLowerCase();
+            btn.classList.toggle('active', c === curBannerColor);
+        });
+    }
+
+    export function openProfileEditor() {
+        const detailsModal = document.getElementById('profile-details-modal');
+        if (detailsModal && !detailsModal.classList.contains('hidden')) {
+            profileEditorOpenedFromDetails = true;
+            detailsModal.classList.add('hidden');
+        }
+
+        editorDraftCustomization = { ...getPlayerCustomization() };
+        const unlocked = getPlayerUnlockedCosmetics();
+
+        // Populate Titles
+        const titleSelect = document.getElementById('editor-title-select');
+        if (titleSelect) {
+            const titles = getCosmeticsByCategory(COSMETIC_CATEGORIES.TITLE);
+            titleSelect.innerHTML = titles.map(t => {
+                const isOwned = unlocked.includes(t.id) || t.isDefault;
+                const statusTag = isOwned ? 'OWNED' : `${t.price}✦`;
+                const label = t.prefixTag ? `${t.name} (${t.prefixTag})` : t.name;
+                return `<option value="${t.id}" ${!isOwned ? 'disabled' : ''} ${editorDraftCustomization.titlePlate === t.id ? 'selected' : ''}>
+                    ${label} [${statusTag}]
+                </option>`;
+            }).join('');
+        }
+
+        // Populate Frames
+        const frameSelect = document.getElementById('editor-frame-select');
+        if (frameSelect) {
+            const frames = getCosmeticsByCategory(COSMETIC_CATEGORIES.FRAME);
+            frameSelect.innerHTML = frames.map(f => {
+                const isOwned = unlocked.includes(f.id) || f.isDefault;
+                const statusTag = isOwned ? 'OWNED' : `${f.price}✦`;
+                return `<option value="${f.id}" ${!isOwned ? 'disabled' : ''} ${editorDraftCustomization.avatarFrame === f.id ? 'selected' : ''}>
+                    ${f.name} [${statusTag}]
+                </option>`;
+            }).join('');
+        }
+
+        // Populate Banners
+        const bannerSelect = document.getElementById('editor-banner-pattern-select');
+        if (bannerSelect) {
+            const banners = getCosmeticsByCategory(COSMETIC_CATEGORIES.BANNER);
+            bannerSelect.innerHTML = banners.map(b => {
+                const isOwned = unlocked.includes(b.id) || b.isDefault;
+                const statusTag = isOwned ? 'OWNED' : `${b.price}✦`;
+                return `<option value="${b.id}" ${!isOwned ? 'disabled' : ''} ${editorDraftCustomization.bannerPattern === b.id ? 'selected' : ''}>
+                    ${b.name} [${statusTag}]
+                </option>`;
+            }).join('');
+        }
+
+        // Populate Themes
+        const themeSelect = document.getElementById('editor-theme-select');
+        if (themeSelect) {
+            const themes = getCosmeticsByCategory(COSMETIC_CATEGORIES.THEME);
+            themeSelect.innerHTML = themes.map(th => {
+                const isOwned = unlocked.includes(th.id) || th.isDefault;
+                const statusTag = isOwned ? 'OWNED' : `${th.price}✦`;
+                return `<option value="${th.id}" ${!isOwned ? 'disabled' : ''} ${editorDraftCustomization.cardTheme === th.id ? 'selected' : ''}>
+                    ${th.name} [${statusTag}]
+                </option>`;
+            }).join('');
+        }
+
+        // Colors & Bio
+        const nameColorPicker = document.getElementById('editor-name-color-picker');
+        if (nameColorPicker) nameColorPicker.value = editorDraftCustomization.nameColor || '#ffffff';
+
+        const bannerColorPicker = document.getElementById('editor-banner-color-picker');
+        if (bannerColorPicker) bannerColorPicker.value = editorDraftCustomization.bannerColor || '#181e24';
+
+        const bioInput = document.getElementById('editor-bio-input');
+        if (bioInput) bioInput.value = editorDraftCustomization.bio || '';
+
+        const bioCount = document.getElementById('editor-bio-char-count');
+        if (bioCount) bioCount.innerText = `${(editorDraftCustomization.bio || '').length} / 120`;
+
+        updateEditorSwatchActiveStates();
+        renderProfileEditorLivePreview();
+
+        const modal = document.getElementById('profile-editor-modal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    export function closeProfileEditor() {
+        const modal = document.getElementById('profile-editor-modal');
+        if (modal) modal.classList.add('hidden');
+        if (profileEditorOpenedFromDetails) {
+            profileEditorOpenedFromDetails = false;
+            openProfileDetailsModal();
+        }
+    }
+
+    export function setEditorNameColor(color) {
+        const picker = document.getElementById('editor-name-color-picker');
+        if (picker) picker.value = color;
+        if (editorDraftCustomization) editorDraftCustomization.nameColor = color;
+        updateEditorSwatchActiveStates();
+        renderProfileEditorLivePreview();
+    }
+
+    export function setEditorBannerColor(color) {
+        const picker = document.getElementById('editor-banner-color-picker');
+        if (picker) picker.value = color;
+        if (editorDraftCustomization) editorDraftCustomization.bannerColor = color;
+        updateEditorSwatchActiveStates();
+        renderProfileEditorLivePreview();
+    }
+
+    export function handleProfileEditorChange() {
+        if (!editorDraftCustomization) editorDraftCustomization = { ...getPlayerCustomization() };
+
+        const titleSel = document.getElementById('editor-title-select');
+        if (titleSel) editorDraftCustomization.titlePlate = titleSel.value;
+
+        const nameCol = document.getElementById('editor-name-color-picker');
+        if (nameCol) editorDraftCustomization.nameColor = nameCol.value;
+
+        const frameSel = document.getElementById('editor-frame-select');
+        if (frameSel) editorDraftCustomization.avatarFrame = frameSel.value;
+
+        const bannerSel = document.getElementById('editor-banner-pattern-select');
+        if (bannerSel) editorDraftCustomization.bannerPattern = bannerSel.value;
+
+        const bannerCol = document.getElementById('editor-banner-color-picker');
+        if (bannerCol) editorDraftCustomization.bannerColor = bannerCol.value;
+
+        const themeSel = document.getElementById('editor-theme-select');
+        if (themeSel) editorDraftCustomization.cardTheme = themeSel.value;
+
+        const bioIn = document.getElementById('editor-bio-input');
+        if (bioIn) {
+            editorDraftCustomization.bio = bioIn.value.slice(0, 120);
+            const bioCount = document.getElementById('editor-bio-char-count');
+            if (bioCount) bioCount.innerText = `${editorDraftCustomization.bio.length} / 120`;
+        }
+
+        updateEditorSwatchActiveStates();
+        renderProfileEditorLivePreview();
+    }
+
+    export function renderProfileEditorLivePreview() {
+        if (!editorDraftCustomization) return;
+
+        // 1. Card Theme
+        const card = document.getElementById('editor-preview-card');
+        if (card) {
+            const theme = getCosmeticItem(editorDraftCustomization.cardTheme) || getCosmeticItem('theme_slate');
+            card.className = `discord-card-preview ${theme.themeClass} w-full max-w-[340px] shadow-2xl relative select-none`;
+        }
+
+        // 2. Banner
+        const banner = document.getElementById('editor-preview-banner');
+        if (banner) {
+            const bannerItem = getCosmeticItem(editorDraftCustomization.bannerPattern) || getCosmeticItem('banner_slate');
+            banner.className = `discord-card-banner ${bannerItem.bannerClass} w-full relative`;
+            banner.style.backgroundColor = editorDraftCustomization.bannerColor || bannerItem.color;
+        }
+
+        // 3. Avatar Frame & Head
+        const frameWrap = document.getElementById('editor-preview-avatar-frame');
+        const crown = document.getElementById('editor-preview-crown-badge');
+        const frameItem = getCosmeticItem(editorDraftCustomization.avatarFrame) || getCosmeticItem('frame_classic');
+        if (frameWrap) {
+            frameWrap.className = `avatar-frame-wrapper ${frameItem.frameClass} relative`;
+        }
+        if (crown) {
+            crown.classList.toggle('hidden', frameItem.id !== 'frame_crown');
+        }
+
+        // Draw Head
+        const canvas = document.getElementById('editor-preview-avatar-canvas');
+        if (canvas && typeof drawPlayerHead === 'function') {
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, 60, 60);
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 16;
+            tempCanvas.height = 32;
+            const tCtx = tempCanvas.getContext('2d');
+            const imgData = tCtx.createImageData(16, 32);
+            const activeSkin = getSkinSaveData() || playerSkinData;
+            for (let i = 0; i < 16 * 32; i++) {
+                const c = activeSkin[i] || '#00000000';
+                const rgb = hexToRgb(c);
+                imgData.data[i * 4] = rgb.r;
+                imgData.data[i * 4 + 1] = rgb.g;
+                imgData.data[i * 4 + 2] = rgb.b;
+                imgData.data[i * 4 + 3] = (c === '#00000000' || !c) ? 0 : 255;
+            }
+            tCtx.putImageData(imgData, 0, 0);
+            drawPlayerHead(ctx, tempCanvas, 0, 0, 60);
+        }
+
+        // 4. Title Badge
+        const titleBadge = document.getElementById('editor-preview-title-badge');
+        const titleItem = getCosmeticItem(editorDraftCustomization.titlePlate) || getCosmeticItem('title_novice');
+        if (titleBadge) {
+            if (titleItem.id !== 'title_novice') {
+                titleBadge.classList.remove('hidden');
+                titleBadge.innerText = titleItem.prefixTag || titleItem.name;
+                titleBadge.style.borderColor = titleItem.nameColor;
+                titleBadge.style.color = titleItem.nameColor;
+            } else {
+                titleBadge.classList.add('hidden');
+            }
+        }
+
+        // 5. Name & Tag
+        const usernameEl = document.getElementById('editor-preview-username');
+        const tagEl = document.getElementById('editor-preview-tag');
+        if (usernameEl) {
+            usernameEl.innerText = currentUserProfile?.username || localStorage.getItem('swc_player_name') || 'Player';
+            usernameEl.style.color = editorDraftCustomization.nameColor || '#ffffff';
+        }
+        if (tagEl) {
+            tagEl.innerText = currentUserProfile?.tag || (currentUserProfile?.username ? `@${currentUserProfile.username}` : '@Guest');
+        }
+
+        // 6. Bio
+        const bioEl = document.getElementById('editor-preview-bio');
+        if (bioEl) {
+            bioEl.innerText = editorDraftCustomization.bio || 'Mining across dimensions.';
+        }
+
+        // 7. Crafter since & Astral tier
+        const memberSinceEl = document.getElementById('editor-preview-member-since');
+        if (memberSinceEl) {
+            if (currentUserProfile?.createdAt) {
+                const d = new Date(currentUserProfile.createdAt);
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                memberSinceEl.innerText = `${months[d.getMonth()]} ${d.getFullYear()}`;
+            } else {
+                memberSinceEl.innerText = 'Webcraft Beta';
+            }
+        }
+        const astralValEl = document.getElementById('editor-preview-astral-val');
+        if (astralValEl) {
+            astralValEl.innerText = (typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0).toLocaleString();
+        }
+    }
+
+    export function resetProfileEditor() {
+        editorDraftCustomization = { ...getDefaultCustomization() };
+        const titleSelect = document.getElementById('editor-title-select');
+        if (titleSelect) titleSelect.value = editorDraftCustomization.titlePlate;
+        const frameSelect = document.getElementById('editor-frame-select');
+        if (frameSelect) frameSelect.value = editorDraftCustomization.avatarFrame;
+        const bannerSelect = document.getElementById('editor-banner-pattern-select');
+        if (bannerSelect) bannerSelect.value = editorDraftCustomization.bannerPattern;
+        const themeSelect = document.getElementById('editor-theme-select');
+        if (themeSelect) themeSelect.value = editorDraftCustomization.cardTheme;
+        const nameColorPicker = document.getElementById('editor-name-color-picker');
+        if (nameColorPicker) nameColorPicker.value = editorDraftCustomization.nameColor || '#ffffff';
+        const bannerColorPicker = document.getElementById('editor-banner-color-picker');
+        if (bannerColorPicker) bannerColorPicker.value = editorDraftCustomization.bannerColor || '#181e24';
+        const bioInput = document.getElementById('editor-bio-input');
+        if (bioInput) bioInput.value = editorDraftCustomization.bio || '';
+        const bioCount = document.getElementById('editor-bio-char-count');
+        if (bioCount) bioCount.innerText = `${(editorDraftCustomization.bio || '').length} / 120`;
+
+        updateEditorSwatchActiveStates();
+        renderProfileEditorLivePreview();
+        showToast("Reset to default customization.");
+    }
+
+    export async function saveProfileEditorChanges() {
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        if (isGuest) {
+            showToast("Create a Webcraft account to save customizations and show them to friends!");
+            closeProfileEditor();
+            openAuthProfileModal('credentials');
+            return;
+        }
+
+        if (!editorDraftCustomization) return;
+
+        currentUserProfile.profileCustomization = { ...editorDraftCustomization };
+        try {
+            localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile));
+        } catch(e) {}
+
+        const saveBtn = document.getElementById('editor-save-btn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<svg class="pixel-art-icon flex-shrink-0 animate-pulse" width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><rect x="2" y="1" width="12" height="2" fill="#d97706"/><rect x="2" y="13" width="12" height="2" fill="#d97706"/><path d="M3 3h10v2l-3 3 3 3v2H3v-2l3-3-3-3V3z" fill="#080a0c"/><path d="M4 4h8l-2 2H6L4 4z" fill="#fef08a"/><rect x="7" y="6" width="2" height="4" fill="#f59e0b"/><path d="M5 11h6l-1-1H6l-1 1z" fill="#fef08a"/></svg><span>Saving...</span>';
+        }
+
+        try {
+            await saveProfileCustomizationToCloud(currentUserProfile.profileCustomization, currentUserProfile.unlockedCosmetics || []);
+            showToast("Profile customizations saved and synced in real time!");
+            playSound('craft');
+            closeProfileEditor();
+        } catch(err) {
+            console.error("Save profile error", err);
+            showToast("Failed to save to cloud. Saved locally.");
+            closeProfileEditor();
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<svg class="pixel-art-icon flex-shrink-0" width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><rect x="1" y="1" width="13" height="14" fill="#1e293b"/><rect x="2" y="2" width="11" height="12" fill="#334155"/><rect x="13" y="3" width="1" height="11" fill="#1e293b"/><rect x="4" y="2" width="7" height="5" fill="#94a3b8"/><rect x="8" y="3" width="2" height="3" fill="#1e293b"/><rect x="3" y="8" width="9" height="5" fill="#f8fafc"/><rect x="4" y="10" width="7" height="1" fill="#3b82f6"/><rect x="4" y="12" width="5" height="1" fill="#94a3b8"/></svg><span>Save Changes</span>';
+            }
+        }
+    }
+
+    // =========================================================================
+    // FRIEND PROFILE INSPECTOR CONTROLLER
+    // =========================================================================
+
+    export function openFriendProfileModal(friend) {
+        if (!friend) return;
+        const modal = document.getElementById('friend-profile-modal');
+        if (!modal) return;
+
+        const cust = friend.profileCustomization || getDefaultCustomization();
+        const frameItem = getCosmeticItem(cust.avatarFrame) || getCosmeticItem('frame_classic');
+        const bannerItem = getCosmeticItem(cust.bannerPattern) || getCosmeticItem('banner_slate');
+        const titleItem = getCosmeticItem(cust.titlePlate) || getCosmeticItem('title_novice');
+        const themeItem = getCosmeticItem(cust.cardTheme) || getCosmeticItem('theme_slate');
+
+        // Theme & Banner
+        const card = document.getElementById('friend-modal-card');
+        if (card) card.className = `discord-card-preview ${themeItem.themeClass} w-full relative`;
+
+        const banner = document.getElementById('friend-modal-banner');
+        if (banner) {
+            banner.className = `discord-card-banner ${bannerItem.bannerClass} h-20 w-full relative`;
+            banner.style.backgroundColor = cust.bannerColor || bannerItem.color;
+        }
+
+        // Avatar Frame & Crown
+        const frameWrap = document.getElementById('friend-modal-avatar-frame');
+        if (frameWrap) frameWrap.className = `avatar-frame-wrapper ${frameItem.frameClass} relative`;
+
+        const crown = document.getElementById('friend-modal-crown-badge');
+        if (crown) crown.classList.toggle('hidden', frameItem.id !== 'frame_crown');
+
+        // Draw Head
+        const canvas = document.getElementById('friend-modal-avatar-canvas');
+        if (canvas && typeof drawPlayerHead === 'function') {
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, 56, 56);
+            if (friend.skinData) {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 16;
+                tempCanvas.height = 32;
+                const tCtx = tempCanvas.getContext('2d');
+                const imgData = tCtx.createImageData(16, 32);
+                for (let i = 0; i < 16 * 32; i++) {
+                    const c = friend.skinData[i] || '#00000000';
+                    const rgb = hexToRgb(c);
+                    imgData.data[i * 4] = rgb.r;
+                    imgData.data[i * 4 + 1] = rgb.g;
+                    imgData.data[i * 4 + 2] = rgb.b;
+                    imgData.data[i * 4 + 3] = (c === '#00000000' || !c) ? 0 : 255;
+                }
+                tCtx.putImageData(imgData, 0, 0);
+                drawPlayerHead(ctx, tempCanvas, 0, 0, 56);
+            } else {
+                ctx.fillStyle = '#b4845c';
+                ctx.fillRect(0, 0, 56, 56);
+            }
+        }
+
+        // Title Badge
+        const titleBadge = document.getElementById('friend-modal-title-badge');
+        if (titleBadge) {
+            if (titleItem.id !== 'title_novice') {
+                titleBadge.classList.remove('hidden');
+                titleBadge.innerText = titleItem.prefixTag || titleItem.name;
+                titleBadge.style.borderColor = titleItem.nameColor;
+                titleBadge.style.color = titleItem.nameColor;
+            } else {
+                titleBadge.classList.add('hidden');
+            }
+        }
+
+        // Name & Tag
+        const nameEl = document.getElementById('friend-modal-username');
+        if (nameEl) {
+            nameEl.innerText = friend.username || friend.tag;
+            nameEl.style.color = cust.nameColor || titleItem.nameColor || '#ffffff';
+        }
+        const tagEl = document.getElementById('friend-modal-tag');
+        if (tagEl) tagEl.innerText = friend.tag;
+
+        // Status dot
+        const statusDot = document.getElementById('friend-modal-status-dot');
+        if (statusDot) {
+            statusDot.className = `discord-avatar-status ${friend.isOnline ? 'online' : 'offline'}`;
+        }
+
+        // Bio
+        const bioEl = document.getElementById('friend-modal-bio');
+        if (bioEl) bioEl.innerText = cust.bio || 'Mining across dimensions.';
+
+        // Remove Friend button
+        const removeBtn = document.getElementById('friend-modal-remove-btn');
+        if (removeBtn) {
+            removeBtn.onclick = () => {
+                handleRemoveFriend(friend.tag);
+                closeFriendProfileModal();
+            };
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    export function closeFriendProfileModal() {
+        const modal = document.getElementById('friend-profile-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    // =========================================================================
+    // UNIFIED ASTRAL SHOP CONTROLLER
+    // =========================================================================
+
+    let currentShopTab = 'cosmetics';
+    let currentCosmeticsFilter = 'all';
+
+    export function openShop(initialTab = 'cosmetics') {
+        const modal = document.getElementById('unified-shop-modal');
+        if (!modal) return;
+
+        modal.classList.remove('hidden');
+
+        // Update balances in header and external bottom bar
+        const astral = (typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0).toLocaleString();
+        const emeralds = (typeof getPlayerEmeralds === 'function' ? getPlayerEmeralds() : 0).toLocaleString();
+
+        const astralCount = document.getElementById('shop-astral-count');
+        if (astralCount) astralCount.innerText = astral;
+        const emeraldsCount = document.getElementById('shop-emeralds-count');
+        if (emeraldsCount) emeraldsCount.innerText = emeralds;
+
+        const bEmerald = document.getElementById('shop-bottom-emerald-count');
+        if (bEmerald) bEmerald.innerText = emeralds;
+        const bAstral = document.getElementById('shop-bottom-astral-count');
+        if (bAstral) bAstral.innerText = astral;
+
+        switchShopTab(initialTab);
+    }
+
+    export function closeShop() {
+        const modal = document.getElementById('unified-shop-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    export function switchShopTab(tab) {
+        currentShopTab = tab;
+        ['cosmetics', 'exchange', 'atlas'].forEach(t => {
+            const btn = document.getElementById(`shop-main-tab-${t}-btn`);
+            const pane = document.getElementById(`shop-pane-${t}`);
+            if (btn) btn.classList.toggle('active', t === tab);
+            if (pane) pane.classList.toggle('hidden', t !== tab);
+        });
+
+        if (tab === 'cosmetics') {
+            renderShopCosmetics(currentCosmeticsFilter);
+        } else if (tab === 'exchange') {
+            renderShopAstralExchange();
+        } else if (tab === 'atlas') {
+            renderShopAtlasOutpost();
+        }
+    }
+
+    export function filterShopCosmetics(category) {
+        currentCosmeticsFilter = category;
+        ['all', 'frame', 'banner', 'title', 'theme'].forEach(c => {
+            const pill = document.getElementById(`cosmetics-filter-${c}`);
+            if (pill) pill.classList.toggle('active', c === category);
+        });
+        renderShopCosmetics(category);
+    }
+
+    export function renderShopCosmetics(category = 'all') {
+        const grid = document.getElementById('shop-cosmetics-grid');
+        if (!grid) return;
+
+        const unlocked = getPlayerUnlockedCosmetics();
+        const cust = getPlayerCustomization();
+        const items = category === 'all' ? COSMETICS_CATALOG : getCosmeticsByCategory(category);
+        const playerGems = typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0;
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+
+        grid.innerHTML = items.map(item => {
+            const isOwned = unlocked.includes(item.id) || item.isDefault;
+            const isEquipped = 
+                cust.avatarFrame === item.id ||
+                cust.bannerPattern === item.id ||
+                cust.titlePlate === item.id ||
+                cust.cardTheme === item.id;
+            const canAfford = !isGuest && playerGems >= item.price;
+
+            let actionBtnHtml = '';
+            let statusBadgeHtml = '';
+
+            if (isEquipped) {
+                statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-amber-300 bg-amber-950/60 border border-amber-600/50 shadow-inner flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>EQUIPPED</span>`;
+                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !bg-[#ffd34d] !text-black font-bold cursor-default" disabled>Equipped</button>`;
+            } else if (isOwned) {
+                statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-600/50 shadow-inner">OWNED</span>`;
+                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !bg-[#2563eb] hover:!bg-[#1d4ed8] !text-white" onclick="equipCosmeticItem('${item.id}')">Equip</button>`;
+            } else {
+                statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-purple-300 bg-purple-950/60 border border-purple-600/50 shadow-inner">${item.price > 0 ? `${item.price} ✦` : 'FREE'}</span>`;
+                if (isGuest) {
+                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white" onclick="purchaseCosmeticItem('${item.id}')">Sign In</button>`;
+                } else if (canAfford) {
+                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white" onclick="purchaseCosmeticItem('${item.id}')">Buy</button>`;
+                } else {
+                    const diff = item.price - playerGems;
+                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !bg-[#382645] !text-[#d8b4fe] opacity-80 cursor-not-allowed" disabled title="Need ${diff} more Astral Gems">Need ${diff} ✦</button>`;
+                }
+            }
+
+            const rarityClass = `rarity-${(item.rarity || 'common').toLowerCase()}`;
+
+            return `
+                <div class="cosmetic-card ${isEquipped ? 'equipped' : ''}">
+                    <div>
+                        <!-- Header: Category Rarity Badge + Status / Price -->
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="cosmetic-rarity-tag ${rarityClass}">${item.rarity}</span>
+                            ${statusBadgeHtml}
+                        </div>
+
+                        <!-- Content Row: Pixel Preview Frame + Name + Description -->
+                        <div class="flex items-start gap-2.5 mb-1.5">
+                            <div class="cosmetic-card-icon" title="${item.name}">
+                                ${item.iconSvg || ''}
+                            </div>
+                            <div class="flex-1 min-w-0 text-left">
+                                <div class="text-base sm:text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate drop-shadow-[1px_1px_0_#000]">${item.name}</div>
+                                <p class="text-xs text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-0.5 drop-shadow-[1px_1px_0_#000]">${item.description}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer: Price Box + Action Buttons -->
+                    <div class="flex items-center justify-between pt-1.5 border-t border-[#2b3542] mt-auto">
+                        <div class="flex items-center gap-1 bg-[#12161b] px-2 py-0.5 border border-[#2b3542] shadow-inner">
+                            <span class="text-lg font-bold text-[#c084fc] font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000]">${item.price > 0 ? item.price : 'FREE'}</span>
+                            <span class="text-[10px] text-purple-300 font-['VT323'] uppercase">${item.price > 0 ? 'ASTRAL' : ''}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" class="text-cyan-400 hover:text-cyan-300 text-xs font-['VT323'] underline cursor-pointer" onclick="tryOnCosmeticItem('${item.id}')">Try On</button>
+                            ${actionBtnHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    export async function purchaseCosmeticItem(itemId) {
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        if (isGuest) {
+            showToast("Log in or create an account to purchase cosmetics with Astral Gems!");
+            closeShop();
+            openAuthProfileModal('credentials');
+            return;
+        }
+
+        const item = getCosmeticItem(itemId);
+        if (!item) return;
+
+        const unlocked = getPlayerUnlockedCosmetics();
+        if (unlocked.includes(itemId)) {
+            showToast(`${item.name} is already unlocked!`);
+            return;
+        }
+
+        const gems = typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0;
+        if (gems < item.price) {
+            showToast(`Not enough Astral Gems! (${item.price} ✦ required, you have ${gems} ✦)`);
+            return;
+        }
+
+        // Deduct Astral Gems
+        addPlayerAstralEmeralds(-item.price);
+
+        // Add to unlocked cosmetics
+        if (!Array.isArray(currentUserProfile.unlockedCosmetics)) {
+            currentUserProfile.unlockedCosmetics = ['frame_classic', 'banner_slate', 'title_novice', 'theme_slate'];
+        }
+        currentUserProfile.unlockedCosmetics.push(itemId);
+
+        // Auto-equip the newly purchased cosmetic
+        if (!currentUserProfile.profileCustomization) {
+            currentUserProfile.profileCustomization = getDefaultCustomization();
+        }
+        if (item.category === COSMETIC_CATEGORIES.FRAME) currentUserProfile.profileCustomization.avatarFrame = item.id;
+        if (item.category === COSMETIC_CATEGORIES.BANNER) currentUserProfile.profileCustomization.bannerPattern = item.id;
+        if (item.category === COSMETIC_CATEGORIES.TITLE) currentUserProfile.profileCustomization.titlePlate = item.id;
+        if (item.category === COSMETIC_CATEGORIES.THEME) currentUserProfile.profileCustomization.cardTheme = item.id;
+
+        try {
+            localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile));
+        } catch(e) {}
+
+        try {
+            await saveProfileCustomizationToCloud(currentUserProfile.profileCustomization, currentUserProfile.unlockedCosmetics);
+        } catch(e) {
+            console.warn("Cloud sync warning", e);
+        }
+
+        playSound('astral_exchange');
+        showToast(`Unlocked and equipped ${item.name}!`);
+
+        // Update UI balances
+        const astralCount = document.getElementById('shop-astral-count');
+        if (astralCount) astralCount.innerText = getPlayerAstralEmeralds().toLocaleString();
+        updateEmeraldsUI();
+
+        renderShopCosmetics(currentCosmeticsFilter);
+    }
+
+    export async function equipCosmeticItem(itemId) {
+        const item = getCosmeticItem(itemId);
+        if (!item) return;
+
+        if (!currentUserProfile) currentUserProfile = { isGuest: true, username: 'Player' };
+        if (!currentUserProfile.profileCustomization) currentUserProfile.profileCustomization = getDefaultCustomization();
+
+        if (item.category === COSMETIC_CATEGORIES.FRAME) currentUserProfile.profileCustomization.avatarFrame = item.id;
+        if (item.category === COSMETIC_CATEGORIES.BANNER) currentUserProfile.profileCustomization.bannerPattern = item.id;
+        if (item.category === COSMETIC_CATEGORIES.TITLE) currentUserProfile.profileCustomization.titlePlate = item.id;
+        if (item.category === COSMETIC_CATEGORIES.THEME) currentUserProfile.profileCustomization.cardTheme = item.id;
+
+        try {
+            localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile));
+        } catch(e) {}
+
+        if (!currentUserProfile.isGuest) {
+            try {
+                await saveProfileCustomizationToCloud(currentUserProfile.profileCustomization, currentUserProfile.unlockedCosmetics || []);
+            } catch(e) {}
+        }
+
+        playSound('click');
+        showToast(`Equipped ${item.name}!`);
+        renderShopCosmetics(currentCosmeticsFilter);
+    }
+
+    export function tryOnCosmeticItem(itemId) {
+        const item = getCosmeticItem(itemId);
+        if (!item) return;
+
+        closeShop();
+        openProfileEditor();
+
+        if (!editorDraftCustomization) editorDraftCustomization = { ...getPlayerCustomization() };
+
+        if (item.category === COSMETIC_CATEGORIES.FRAME) {
+            editorDraftCustomization.avatarFrame = item.id;
+            const sel = document.getElementById('editor-frame-select');
+            if (sel) sel.value = item.id;
+        } else if (item.category === COSMETIC_CATEGORIES.BANNER) {
+            editorDraftCustomization.bannerPattern = item.id;
+            const sel = document.getElementById('editor-banner-pattern-select');
+            if (sel) sel.value = item.id;
+        } else if (item.category === COSMETIC_CATEGORIES.TITLE) {
+            editorDraftCustomization.titlePlate = item.id;
+            const sel = document.getElementById('editor-title-select');
+            if (sel) sel.value = item.id;
+        } else if (item.category === COSMETIC_CATEGORIES.THEME) {
+            editorDraftCustomization.cardTheme = item.id;
+            const sel = document.getElementById('editor-theme-select');
+            if (sel) sel.value = item.id;
+        }
+
+        renderProfileEditorLivePreview();
+        showToast(`Trying on ${item.name} in live preview!`);
+    }
+
+    function renderShopAstralExchange() {
+        const container = document.getElementById('shop-exchange-cards-container');
+        if (!container) return;
+
+        const emeralds = typeof getPlayerEmeralds === 'function' ? getPlayerEmeralds() : 0;
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+
+        const tiers = [
+            { cost: 20, gain: 1, title: 'Starter Exchange', subtitle: 'Standard 20:1 conversion rate', note: 'Standard Trade', illustration: getTier1AstralIllustration(), cardClass: 'tier-1' },
+            { cost: 50, gain: 3, title: 'Bulk Exchange', subtitle: '16.7 Emeralds each • Save 10', note: '16% Emerald Discount', illustration: getTier2AstralIllustration(), cardClass: 'tier-2' },
+            { cost: 100, gain: 7, title: 'Mega Exchange', subtitle: '14.3 Emeralds each • Save 40!', note: 'Best Value Deal', illustration: getTier3AstralIllustration(), cardClass: 'tier-3' }
+        ];
+
+        container.innerHTML = tiers.map(t => {
+            const canAfford = !isGuest && emeralds >= t.cost;
+            let btnHtml = '';
+            if (isGuest) {
+                btnHtml = `<button type="button" class="exchange-card-action-btn unaffordable" onclick="closeShop(); openAuthProfileModal('credentials');">Sign In to Exchange</button>`;
+            } else if (canAfford) {
+                btnHtml = `<button type="button" class="exchange-card-action-btn affordable" onclick="performShopAstralExchange(${t.cost}, ${t.gain})">Exchange for +${t.gain} ✦</button>`;
+            } else {
+                const diff = t.cost - emeralds;
+                btnHtml = `<button type="button" class="exchange-card-action-btn unaffordable" disabled>Need ${diff} more Emeralds</button>`;
+            }
+
+            return `
+                <div class="exchange-card ${t.cardClass}">
+                    <div class="exchange-card-header flex-shrink-0">
+                        <div class="text-2xl font-bold text-purple-200 font-['VT323'] leading-tight mb-0.5">${t.title}</div>
+                        <div class="text-xs text-purple-400 font-['VT323'] uppercase tracking-wider">${t.note}</div>
+                    </div>
+                    <div class="exchange-card-center-body">
+                        <div class="exchange-card-illustration" title="${t.title}">${t.illustration}</div>
+                        <div class="exchange-preview-box">
+                            <div class="flex items-center gap-1">
+                                <span class="text-emerald-400 font-bold font-['VT323'] text-2xl leading-none">${t.cost}</span>
+                                <span class="inline-flex items-center">${getPixelEmeraldSvg(16)}</span>
+                            </div>
+                            <span class="text-purple-400 font-bold text-sm px-1">➔</span>
+                            <div class="flex items-center gap-1">
+                                <span class="text-purple-300 font-bold font-['VT323'] text-2xl leading-none">+${t.gain}</span>
+                                <span class="inline-flex items-center">${getPixelAstralEmeraldSvg(16)}</span>
+                            </div>
+                        </div>
+                        <div class="text-xs text-purple-200/80 font-['VT323'] leading-tight text-center px-1">${t.subtitle}</div>
+                    </div>
+                    <div class="exchange-card-btn-wrap">${btnHtml}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    export function performShopAstralExchange(emeraldCost, astralGain) {
+        performAstralExchange(emeraldCost, astralGain);
+        const astralCount = document.getElementById('shop-astral-count');
+        if (astralCount) astralCount.innerText = getPlayerAstralEmeralds().toLocaleString();
+        const emeraldsCount = document.getElementById('shop-emeralds-count');
+        if (emeraldsCount) emeraldsCount.innerText = getPlayerEmeralds().toLocaleString();
+        renderShopAstralExchange();
+    }
+
+    function renderShopAtlasOutpost() {
+        const grid = document.getElementById('shop-atlas-grid');
+        if (!grid) return;
+
+        const catalog = (typeof window !== 'undefined' && window.ATLAS_CATALOG) ? window.ATLAS_CATALOG : (typeof ATLAS_CATALOG !== 'undefined' ? ATLAS_CATALOG : []);
+        const astralGems = typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0;
+        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+        const astralSrc = (typeof textures !== 'undefined' && textures && textures[IDS?.ASTRAL_EMERALD]?.src) || '';
+
+        grid.innerHTML = catalog.map(item => {
+            const stock = (typeof window !== 'undefined' && window.AtlasTradeManager) ? window.AtlasTradeManager.getStock(item.id) : item.baseStock;
+            const canAfford = !isGuest && astralGems >= item.cost;
+            const inStock = stock > 0;
+            const itemSrc = (typeof textures !== 'undefined' && textures && textures[item.itemId]?.src) || '';
+
+            let categoryName = 'Relic';
+            let categoryColor = '#c084fc';
+            if (item.category === 'flora') {
+                categoryName = 'Exotic Flora';
+                categoryColor = '#34d399';
+            } else if (item.category === 'relic') {
+                categoryName = 'Audio Relic';
+                categoryColor = '#f472b6';
+            } else if (item.category === 'gear') {
+                categoryName = 'Cosmic Gear';
+                categoryColor = '#fbbf24';
+            } else if (item.category === 'tiles') {
+                categoryName = 'Planar Block';
+                categoryColor = '#38bdf8';
+            } else if (item.category === 'material') {
+                categoryName = 'Stellar Shard';
+                categoryColor = '#a855f7';
+            }
+
+            let buttonLabel = 'Buy';
+            let buttonDisabled = '';
+            let buttonClass = '!bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white';
+            if (isGuest) {
+                buttonLabel = 'Sign In';
+            } else if (!inStock) {
+                buttonLabel = 'Sold Out';
+                buttonDisabled = 'disabled';
+                buttonClass = '!bg-[#2d353e] !text-[#64748b] opacity-60 cursor-not-allowed';
+            } else if (!canAfford) {
+                const diff = item.cost - astralGems;
+                buttonLabel = `Need ${diff} ✦`;
+                buttonDisabled = 'disabled';
+                buttonClass = '!bg-[#382645] !text-[#d8b4fe] opacity-80 cursor-not-allowed';
+            }
+
+            return `
+                <div class="atlas-market-card flex flex-col justify-between">
+                    <div>
+                        <!-- Category Badge + Stock Indicator -->
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="atlas-ware-badge text-xs" style="background: ${categoryColor}18; color: ${categoryColor}; border: 1px solid ${categoryColor}66; padding: 1px 6px;">
+                                ${categoryName}
+                            </span>
+                            ${inStock ? `
+                                <span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-600/50 flex items-center gap-1 shadow-inner">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    <span>STOCK: ${stock}/${item.baseStock}</span>
+                                </span>
+                            ` : `
+                                <span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-red-400 bg-red-950/60 border border-red-600/50 shadow-inner">
+                                    SOLD OUT
+                                </span>
+                            `}
+                        </div>
+
+                        <!-- Item Icon + Name + Description -->
+                        <div class="flex items-start gap-2.5 mb-1.5">
+                            <div class="cosmetic-card-icon flex-shrink-0">
+                                ${itemSrc ? `<img src="${itemSrc}" class="pixelated w-7 h-7 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" alt="${item.name}" />` : ''}
+                            </div>
+                            <div class="flex-1 min-w-0 text-left">
+                                <div class="text-base sm:text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate drop-shadow-[1px_1px_0_#000]">${item.name}</div>
+                                <p class="text-xs text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-0.5 drop-shadow-[1px_1px_0_#000]">${item.description}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer: Astral Cost Box + Action Button -->
+                    <div class="flex items-center justify-between pt-1.5 border-t border-[#2b3542] mt-auto">
+                        <div class="flex items-center gap-1 bg-[#12161b] px-2 py-0.5 border border-[#2b3542] shadow-inner">
+                            ${astralSrc ? `<img src="${astralSrc}" class="pixelated w-4 h-4 object-contain" alt="Astral Gem" />` : ''}
+                            <span class="text-lg font-bold text-[#c084fc] font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000]">${item.cost}</span>
+                            <span class="text-[10px] text-purple-300 font-['VT323'] uppercase">✦</span>
+                        </div>
+                        <button class="mc-btn ${buttonClass} !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !font-['VT323']"
+                                onclick="purchaseAtlasWareFromShop('${item.id}')" ${buttonDisabled}>
+                            ${buttonLabel}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    export function purchaseAtlasWareFromShop(wareId) {
+        if (typeof window !== 'undefined' && window.AtlasTradeManager && typeof window.AtlasTradeManager.buyItem === 'function') {
+            window.AtlasTradeManager.buyItem(wareId);
+            const astralCount = document.getElementById('shop-astral-count');
+            if (astralCount) astralCount.innerText = getPlayerAstralEmeralds().toLocaleString();
+            renderShopAtlasOutpost();
+        } else {
+            showToast("Atlas Explorer market is currently unavailable in this dimension.");
+        }
     }
 
     export async function handleProfileAuthAction() {
@@ -4392,9 +7377,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             generateMenuWorld();
         }
         if (typeof drawMenuBackground === 'function') drawMenuBackground();
+        if (typeof dismissBootLoadingScreen === 'function') {
+            dismissBootLoadingScreen();
+        } else if (typeof window !== 'undefined' && typeof window.dismissBootLoadingScreen === 'function') {
+            window.dismissBootLoadingScreen();
+        }
         compileSkinCanvas();
         if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
         updateMainMenuProfileBadge();
+        updateEmeraldsUI();
+        syncCurrencyTextureImages();
         checkProfileOnStartup();
         openWhatsNewOnce();
     }
@@ -4406,6 +7398,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             intro.classList.add('hidden');
             intro.setAttribute('aria-hidden', 'true');
             intro.style.pointerEvents = 'none';
+        }
+        if (typeof dismissBootLoadingScreen === 'function') {
+            dismissBootLoadingScreen();
+        } else if (typeof window !== 'undefined' && typeof window.dismissBootLoadingScreen === 'function') {
+            window.dismissBootLoadingScreen();
         }
         document.getElementById('main-menu').classList.add('intro-reveal');
         showMainMenu();
@@ -4437,6 +7434,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function startIntro() {
+        if (typeof dismissBootLoadingScreen === 'function') {
+            dismissBootLoadingScreen();
+        } else if (typeof window !== 'undefined' && typeof window.dismissBootLoadingScreen === 'function') {
+            window.dismissBootLoadingScreen();
+        }
         if (!introEnabled) { showMainMenu(); return; }
         introPhase = 0;
         introPhaseLockUntil = 0;
@@ -4506,23 +7508,30 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function decompressWorld(compressed, width = WORLD_WIDTH, height = WORLD_HEIGHT) {
-        if (!Array.isArray(compressed) || compressed.length % 2 !== 0) throw new Error('Invalid compressed world');
+        if (!Array.isArray(compressed) || compressed.length === 0 || compressed.length % 2 !== 0) {
+            return Array.from({ length: width }, () => Array(height).fill(IDS.AIR));
+        }
         const restoredWorld = Array.from({ length: width }, () => new Array(height));
         let flatIndex = 0;
         const totalBlocks = width * height;
         for (let index = 0; index < compressed.length; index += 2) {
             const blockId = compressed[index];
             const count = compressed[index + 1];
-            if (!Number.isInteger(blockId) || !Number.isInteger(count) || count < 1) throw new Error('Invalid compressed world');
+            if (!Number.isInteger(blockId) || !Number.isInteger(count) || count < 1) continue;
             for (let offset = 0; offset < count; offset++) {
-                if (flatIndex >= totalBlocks) throw new Error('Invalid compressed world size');
+                if (flatIndex >= totalBlocks) break;
                 const x = Math.floor(flatIndex / height);
                 const y = flatIndex % height;
                 restoredWorld[x][y] = blockId;
                 flatIndex++;
             }
         }
-        if (flatIndex !== totalBlocks) throw new Error('Invalid compressed world size: got ' + flatIndex + ', expected ' + totalBlocks);
+        while (flatIndex < totalBlocks) {
+            const x = Math.floor(flatIndex / height);
+            const y = flatIndex % height;
+            restoredWorld[x][y] = IDS.AIR;
+            flatIndex++;
+        }
         return restoredWorld;
     }
 
@@ -4590,6 +7599,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             row.tabIndex = 0;
             row.setAttribute('role', 'button');
             
+            let hasSaveData = (typeof localStorage !== 'undefined') && !!localStorage.getItem('swc_data_' + w.id);
             let difficulty = (w.difficulty || 'normal').toLowerCase();
             let diffName = difficulty.toUpperCase();
             let sizeName = (w.worldSize || (w.worldWidth > 700 ? 'big' : 'small')).toUpperCase();
@@ -4607,8 +7617,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     <span class="world-badge world-badge-difficulty-${difficulty} font-['VT323']">${diffName}</span>
                     <span class="world-badge ${versionClass} font-['VT323']">v${w.gameVersion || 'older'}</span>
                     ${!isCompatible ? '<span class="world-badge world-badge-version-invalid font-[\'VT323\']">INCOMPATIBLE</span>' : ''}
+                    ${!hasSaveData ? '<span class="world-badge font-[\'VT323\'] bg-amber-700 text-amber-100" title="Save data missing">NO SAVE DATA</span>' : ''}
                 </div>
-                <p class="world-meta text-lg font-['VT323'] font-bold mt-0.5">Day ${w.dayCount || 1} • ${new Date(w.lastPlayed).toLocaleString()}</p>
+                <p class="world-meta text-lg font-['VT323'] font-bold mt-0.5">${hasSaveData ? `Day ${w.dayCount || 1} • ` : '<span class="inline-flex items-center text-amber-400 align-middle mr-1"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><polygon points="7,1 13,12 1,12" fill="#f59e0b"/><rect x="6" y="4" width="2" height="4" fill="#080a0c"/><rect x="6" y="9" width="2" height="2" fill="#080a0c"/></svg></span>Missing save data (click to repair or delete) • '}${new Date(w.lastPlayed).toLocaleString()}</p>
             `;
             if (isCompatible) {
                 info.onclick = () => loadWorld(w.id);
@@ -4645,15 +7656,29 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function confirmCreateWorld() {
         let name = document.getElementById('new-world-name').value.trim() || "New World";
+
+        let chosenSize = 'small';
+        const activeSizeBtn = document.querySelector('#world-size-selector button.active');
+        if (activeSizeBtn && activeSizeBtn.dataset && activeSizeBtn.dataset.size) {
+            chosenSize = activeSizeBtn.dataset.size === 'big' ? 'big' : 'small';
+        } else if (typeof window !== 'undefined' && window.selectedWorldSizeChoice) {
+            chosenSize = window.selectedWorldSizeChoice === 'big' ? 'big' : 'small';
+        } else if (selectedWorldSizeChoice) {
+            chosenSize = selectedWorldSizeChoice === 'big' ? 'big' : 'small';
+        }
+        selectedWorldSizeChoice = chosenSize;
+        if (typeof window !== 'undefined') window.selectedWorldSizeChoice = chosenSize;
+
         closeNewWorldModal();
         
         isMultiplayer = false;
         currentWorldId = 'world_' + Date.now();
         if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
+        setPlayerTalkedToKael(false);
         currentDifficulty = selectedDiffChoice;
         if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(currentDifficulty);
         if (typeof window !== 'undefined') window.currentDifficulty = currentDifficulty;
-        setWorldDimensions(selectedWorldSizeChoice);
+        setWorldDimensions(chosenSize);
         let starterItems = document.getElementById('new-world-starter-items').checked;
         keepInventory = currentDifficulty !== 'hardcore' && document.getElementById('new-world-keep-inventory').checked;
         currentWorldAchievementsEnabled = (!starterItems && !keepInventory);
@@ -4678,42 +7703,75 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         player.isDead = false; player.vy = 0; player.vx = 0; player.damageCooldown = 60;
         if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
         
-        entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.15; dayCount = 1; frameCount = 0;
+        entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.02; dayCount = 1; frameCount = 0;
+        if (typeof RiftExplorerSpawner !== 'undefined' && RiftExplorerSpawner.initNewWorld) RiftExplorerSpawner.initNewWorld();
         if (typeof setEngineFurnaces === 'function') setEngineFurnaces([]);
         if (typeof window !== 'undefined') window.furnaces = [];
         if (typeof setEngineJukeboxes === 'function') setEngineJukeboxes([]);
         if (typeof window !== 'undefined') window.jukeboxes = [];
         if (typeof jukebox !== 'undefined' && jukebox.stop) jukebox.stop();
-        if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(0.15);
+        if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(0.02);
         if (typeof setEngineDayCount === 'function') setEngineDayCount(1);
         if (typeof setEngineFrameCount === 'function') setEngineFrameCount(0);
         if (typeof window !== 'undefined') {
-            window.timeOfDay = 0.15;
+            window.timeOfDay = 0.02;
             window.dayCount = 1;
             window.frameCount = 0;
         }
-        let initialAnimals = Math.min(getMaxAnimals(), Math.floor(getMaxAnimals() * 0.7));
+        const targetInitialAnimals = getMaxAnimals();
         const centerSpawnX = Math.floor(spawn.x / TILE_SIZE);
         const curSurfaces = (typeof window !== 'undefined' && window.surfaceHeights && window.surfaceHeights.length === WORLD_WIDTH) ? window.surfaceHeights : ((surfaceHeights && surfaceHeights.length === WORLD_WIDTH) ? surfaceHeights : []);
         const curWorld = (typeof window !== 'undefined' && window.world && window.world.length === WORLD_WIDTH) ? window.world : (world || []);
-        for (let i = 0; i < initialAnimals; i++) {
-            // Evenly segment the world to guarantee nice, widespread distribution
-            let segmentMin = Math.floor(15 + (i / initialAnimals) * (WORLD_WIDTH - 30));
-            let segmentMax = Math.floor(15 + ((i + 1) / initialAnimals) * (WORLD_WIDTH - 30));
-            let rx = Math.floor(segmentMin + Math.random() * Math.max(1, segmentMax - segmentMin));
-            // Ensure animal is at least 25 tiles away from the player's immediate spawn spot
-            if (Math.abs(rx - centerSpawnX) < 25) {
-                rx = (rx < centerSpawnX) ? Math.max(5, centerSpawnX - 28) : Math.min(WORLD_WIDTH - 6, centerSpawnX + 28);
+        
+        let pigeonCount = 0;
+        const targetPigeons = 11;
+        const nearCount = Math.round(targetInitialAnimals * 0.62); // ~25 near player
+        let spawnAttempts = 0;
+
+        while (entities.length < targetInitialAnimals && spawnAttempts < 450) {
+            spawnAttempts++;
+            const isNear = entities.length < nearCount;
+            let rx;
+            if (isNear) {
+                // Bigger chunk near the player (8 to 48 tiles away)
+                const dist = 8 + Math.floor(Math.random() * 41);
+                const side = Math.random() > 0.5 ? 1 : -1;
+                rx = centerSpawnX + side * dist;
+            } else {
+                // Rest distributed across the wider world
+                rx = Math.floor(15 + Math.random() * (WORLD_WIDTH - 30));
+                if (Math.abs(rx - centerSpawnX) < 20) continue;
             }
+            if (rx < 5 || rx >= WORLD_WIDTH - 5) continue;
+
             let ry = curSurfaces[rx] !== undefined ? curSurfaces[rx] : Math.floor(WORLD_HEIGHT / 2);
             if (ry < WORLD_HEIGHT && curWorld[rx] && (curWorld[rx][ry] === IDS.GRASS || curWorld[rx][ry] === IDS.SNOW || curWorld[rx][ry] === IDS.DIRT)) {
-                let roll = Math.random();
-                let animal;
-                if (roll < 0.25) animal = new Sheep(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
-                else if (roll < 0.50) animal = new Pig(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
-                else if (roll < 0.75) animal = new Cow(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
-                else animal = new Chicken(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
-                entities.push(animal);
+                if (curWorld[rx][ry - 1] !== IDS.AIR || curWorld[rx][ry - 2] !== IDS.AIR) continue;
+
+                const isJungle = typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(rx) === 'jungle';
+                if (isJungle && Math.random() < 0.70) {
+                    const parrot = new Parrot(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    entities.push(parrot);
+                } else if (pigeonCount < targetPigeons && Math.random() < 0.35) {
+                    const p1 = new Pigeon(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    entities.push(p1);
+                    pigeonCount++;
+                    if (Math.random() < 0.45 && pigeonCount < 12 && entities.length < targetInitialAnimals) {
+                        const p2 = new Pigeon(rx * TILE_SIZE + 16, (ry - 2) * TILE_SIZE);
+                        p1.partner = p2;
+                        p2.partner = p1;
+                        entities.push(p2);
+                        pigeonCount++;
+                    }
+                } else {
+                    let roll = Math.random();
+                    let animal;
+                    if (roll < 0.25) animal = new Sheep(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    else if (roll < 0.50) animal = new Pig(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    else if (roll < 0.75) animal = new Cow(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    else animal = new Chicken(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    entities.push(animal);
+                }
             }
         }
         if (typeof setEngineEntities === 'function') setEngineEntities(entities);
@@ -4722,11 +7780,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
         if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
         if (starterItems) {
-            giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 32); giveItem(IDS.RAW_PORKCHOP, 5); giveItem(IDS.TORCH, 16);
+            giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 32); giveItem(IDS.RAW_PORKCHOP, 5); giveItem(IDS.TORCH, 16); giveItem(IDS.SAPLING, 4);
         }
         updateArmorUI();
         updateHudArmorBar();
-        saveCurrentWorld();
+        const saved = saveCurrentWorld();
+        if (!saved) {
+            let curWorlds = getSavedWorlds().filter(w => w.id !== currentWorldId);
+            saveWorldsList(curWorlds);
+            showToast('Warning: Could not save world data to browser storage. Storage quota may be full.');
+        }
         
         document.getElementById('btn-quit-to-menu').innerText = "Save & Quit to Title";
         document.getElementById('room-indicator').classList.add('hidden');
@@ -4748,6 +7811,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function saveCurrentWorld(forceSaveMp = false) {
+        if (!currentWorldId && typeof window !== 'undefined' && window.currentWorldId) {
+            currentWorldId = window.currentWorldId;
+        }
         if((isMultiplayer && !forceSaveMp) || !currentWorldId) return false;
         const liveTimeOfDay = (typeof window !== 'undefined' && typeof window.timeOfDay === 'number') ? window.timeOfDay : timeOfDay;
         const liveDayCount = (typeof window !== 'undefined' && typeof window.dayCount === 'number') ? window.dayCount : dayCount;
@@ -4775,19 +7841,61 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const liveInventory = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
         const liveEquippedArmor = (typeof window !== 'undefined' && Array.isArray(window.equippedArmor)) ? window.equippedArmor : equippedArmor;
 
+        const safeMapToEntries = (m) => {
+            if (!m) return {};
+            if (m instanceof Map) return Object.fromEntries(m);
+            if (typeof m === 'object') return m;
+            return {};
+        };
+        const safeSetToArray = (s) => {
+            if (!s) return [];
+            if (s instanceof Set || Array.isArray(s)) return [...s];
+            return [];
+        };
+
         let saveData = {
             worldSize: currentWorldSize, worldWidth: WORLD_WIDTH, worldHeight: WORLD_HEIGHT,
-            worldRle: compressWorld(liveWorld), bgWorldRle: compressWorld(liveBgWorld), fluids: Object.fromEntries(fluids), timeOfDay: liveTimeOfDay, dayCount: liveDayCount, frameCount: liveFrameCount, difficulty: currentDifficulty, keepInventory, achievementsEnabled: currentWorldAchievementsEnabled, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
-            player: { x: livePlayer.x, y: livePlayer.y, health: livePlayer.health, hunger: livePlayer.hunger, exhaustion: livePlayer.exhaustion, oxygen: livePlayer.oxygen, poisonTimer: livePlayer.poisonTimer || 0, facingRight: livePlayer.facingRight },
-            inventory: liveInventory, equippedArmor: liveEquippedArmor, furnaces: (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces,
-            jukeboxes: (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : (typeof jukeboxes !== 'undefined' ? jukeboxes : []),
-            chests: Object.fromEntries(chests),
-            saplingGrowthQueue: Object.fromEntries(saplingGrowthQueue),
-            cropGrowthQueue: Object.fromEntries((typeof window !== 'undefined' && window.cropGrowthQueue) ? window.cropGrowthQueue : cropGrowthQueue),
-            dirtToGrassQueue: Object.fromEntries(dirtToGrassQueue),
-            snowRegrowthQueue: Object.fromEntries(snowRegrowthQueue),
-            treeWoodCells: [...nonCollidableTreeWood],
-            entities: liveEntities.map(e => ({ type: e.constructor.name, x: e.x, y: e.y, health: e.health, dir: e.dir || 1 }))
+            worldRle: compressWorld(liveWorld), bgWorldRle: compressWorld(liveBgWorld),
+            fluids: safeMapToEntries((typeof window !== 'undefined' && window.fluids) ? window.fluids : fluids),
+            timeOfDay: liveTimeOfDay, dayCount: liveDayCount, frameCount: liveFrameCount,
+            difficulty: currentDifficulty, keepInventory, achievementsEnabled: currentWorldAchievementsEnabled,
+            gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
+            player: livePlayer ? {
+                x: livePlayer.x, y: livePlayer.y,
+                health: livePlayer.health, hunger: livePlayer.hunger,
+                exhaustion: livePlayer.exhaustion, oxygen: livePlayer.oxygen,
+                poisonTimer: livePlayer.poisonTimer || 0, facingRight: livePlayer.facingRight
+            } : { x: 50 * TILE_SIZE, y: 50 * TILE_SIZE, health: 20, hunger: 20, exhaustion: 0, oxygen: 20, poisonTimer: 0, facingRight: true },
+            inventory: liveInventory, equippedArmor: liveEquippedArmor,
+            furnaces: (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : (Array.isArray(furnaces) ? furnaces : []),
+            jukeboxes: (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : (Array.isArray(jukeboxes) ? jukeboxes : []),
+            chests: safeMapToEntries((typeof window !== 'undefined' && window.chests) ? window.chests : chests),
+            signs: safeMapToEntries((typeof window !== 'undefined' && window.signs) ? window.signs : signs),
+            kaelTalked: typeof hasPlayerTalkedToKael === 'function' ? hasPlayerTalkedToKael() : false,
+            riftSpawner: (typeof RiftExplorerSpawner !== 'undefined' && RiftExplorerSpawner.saveState) ? RiftExplorerSpawner.saveState() : null,
+            worldBiomes: (typeof worldBiomes !== 'undefined' && Array.isArray(worldBiomes)) ? worldBiomes : ((typeof window !== 'undefined' && Array.isArray(window.worldBiomes)) ? window.worldBiomes : null),
+            saplingGrowthQueue: safeMapToEntries((typeof window !== 'undefined' && window.saplingGrowthQueue) ? window.saplingGrowthQueue : saplingGrowthQueue),
+            cropGrowthQueue: safeMapToEntries((typeof window !== 'undefined' && window.cropGrowthQueue) ? window.cropGrowthQueue : cropGrowthQueue),
+            dirtToGrassQueue: safeMapToEntries((typeof window !== 'undefined' && window.dirtToGrassQueue) ? window.dirtToGrassQueue : dirtToGrassQueue),
+            snowRegrowthQueue: safeMapToEntries((typeof window !== 'undefined' && window.snowRegrowthQueue) ? window.snowRegrowthQueue : snowRegrowthQueue),
+            treeWoodCells: safeSetToArray((typeof window !== 'undefined' && window.nonCollidableTreeWood) ? window.nonCollidableTreeWood : nonCollidableTreeWood),
+            entities: (liveEntities || []).filter(e => e && e.constructor && !e.isDeparted).map(e => ({
+                type: e.constructor.name,
+                x: e.x,
+                y: e.y,
+                health: e.health,
+                dir: e.dir || 1,
+                ...(e.variant !== undefined ? { variant: e.variant } : {}),
+                ...(e.isTamed !== undefined ? { isTamed: e.isTamed } : {}),
+                ...(e.isSitting !== undefined ? { isSitting: e.isSitting } : {}),
+                ...(e.constructor.name === 'AtlasExplorer' ? {
+                    warpState: (e.warpState === 'warping_out') ? 'warping_out' : 'active',
+                    warpProgress: (e.warpProgress !== undefined) ? e.warpProgress : 1.0,
+                    stayTimer: e.stayTimer || 0,
+                    maxStayDuration: e.maxStayDuration || 18000,
+                    isDeparted: !!e.isDeparted
+                } : {})
+            }))
         };
         const serializedSaveData = JSON.stringify(saveData);
         try {
@@ -4890,7 +7998,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function checkAutosave(now = Date.now()) {
         if (STATE !== 'PLAYING') return;
-        if (now - lastAutosaveTimestamp >= 60000) { // 1 minute (60,000 ms)
+        const intervalMs = (autosaveInterval || 60) * 1000;
+        if (now - lastAutosaveTimestamp >= intervalMs) {
             lastAutosaveTimestamp = now;
             performWorldAutosave();
         }
@@ -4936,12 +8045,97 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         reader.readAsText(file);
     }
 
+    export function regenerateLostWorld(wInfo) {
+        if (!wInfo) return;
+        showSingleplayerLoading(wInfo.name);
+        setMultiplayerLoadingStatus('Regenerating world terrain', 45);
+
+        setTimeout(() => {
+            currentWorldId = wInfo.id;
+            isMultiplayer = false;
+            if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
+            setPlayerTalkedToKael(false);
+            currentDifficulty = wInfo.difficulty || 'normal';
+            if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(currentDifficulty);
+            if (typeof window !== 'undefined') window.currentDifficulty = currentDifficulty;
+            setWorldDimensions(wInfo.worldSize || 'small');
+            keepInventory = !!wInfo.keepInventory;
+            currentWorldAchievementsEnabled = !!wInfo.achievementsEnabled;
+
+            generateWorld();
+            if (typeof window !== 'undefined' && window.world) world = window.world;
+            if (typeof window !== 'undefined' && window.surfaceHeights) surfaceHeights = window.surfaceHeights;
+            if (typeof setEngineWorld === 'function') setEngineWorld(world);
+            if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights(surfaceHeights);
+
+            const spawn = getInitialSpawnPoint();
+            if (!player) player = (typeof window !== 'undefined' && window.player) ? window.player : new Player(spawn.x, spawn.y);
+            player.x = spawn.x; player.y = spawn.y;
+            player.fallStartY = spawn.y;
+            player.isGrounded = true;
+            player.health = player.maxHealth; player.hunger = 20; player.exhaustion = 0; player.oxygen = player.maxOxygen;
+            player.poisonTimer = 0;
+            player.isDead = false; player.vy = 0; player.vx = 0; player.damageCooldown = 60;
+            if (typeof setEnginePlayer === 'function') setEnginePlayer(player);
+
+            entities = []; furnaces = []; jukeboxes = []; timeOfDay = 0.02; dayCount = 1; frameCount = 0;
+            if (typeof RiftExplorerSpawner !== 'undefined' && RiftExplorerSpawner.initNewWorld) RiftExplorerSpawner.initNewWorld();
+            if (typeof setEngineFurnaces === 'function') setEngineFurnaces([]);
+            if (typeof window !== 'undefined') window.furnaces = [];
+            if (typeof setEngineJukeboxes === 'function') setEngineJukeboxes([]);
+            if (typeof window !== 'undefined') window.jukeboxes = [];
+            if (typeof jukebox !== 'undefined' && jukebox.stop) jukebox.stop();
+            if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(0.02);
+            if (typeof setEngineDayCount === 'function') setEngineDayCount(1);
+            if (typeof setEngineFrameCount === 'function') setEngineFrameCount(0);
+            if (typeof window !== 'undefined') {
+                window.timeOfDay = 0.02;
+                window.dayCount = 1;
+                window.frameCount = 0;
+            }
+
+            inventory.fill(null);
+            equippedArmor = [null, null, null, null];
+            if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
+            if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
+            if (wInfo.starterItems) {
+                giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 32); giveItem(IDS.RAW_PORKCHOP, 5); giveItem(IDS.TORCH, 16); giveItem(IDS.SAPLING, 4);
+            }
+            updateArmorUI();
+            updateHudArmorBar();
+            saveCurrentWorld();
+
+            hideSingleplayerLoading();
+            document.getElementById('btn-quit-to-menu').innerText = "Save & Quit to Title";
+            document.getElementById('room-indicator').classList.add('hidden');
+            showToast(`World "${wInfo.name}" regenerated and saved!`);
+            startGameplay();
+        }, 120);
+    }
+
     export function loadWorld(id) {
         const worldInfo = getSavedWorlds().find(world => world.id === id);
         if (worldInfo && (worldInfo.gameVersion !== GAME_VERSION || worldInfo.gameBuild !== GAME_BUILD)) {
             showToast(`Cannot open world '${worldInfo.name}': Incompatible version (World is v${worldInfo.gameVersion || 'older'}, Client is v${GAME_VERSION}).`);
             return;
         }
+
+        const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('swc_data_' + id) : null;
+        if (!raw) {
+            const worldName = worldInfo?.name || 'Selected World';
+            const action = confirm(`Save data for "${worldName}" is missing from browser storage.\n\n• Click OK to regenerate this world from scratch and play\n• Click Cancel to remove this world from your list`);
+            if (action) {
+                if (worldInfo) {
+                    regenerateLostWorld(worldInfo);
+                } else {
+                    showToast('Could not find world metadata to regenerate.');
+                }
+            } else {
+                deleteWorld(id, false);
+            }
+            return;
+        }
+
         showSingleplayerLoading(worldInfo?.name);
         setMultiplayerLoadingStatus('Reading save data', 34);
         setTimeout(() => {
@@ -4966,7 +8160,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function loadWorldData(id) {
         let raw = localStorage.getItem('swc_data_' + id);
-        if(!raw) { hideSingleplayerLoading(); showToast('This world has no saved game data.'); return; }
+        if(!raw) {
+            hideSingleplayerLoading();
+            const worldInfo = getSavedWorlds().find(world => world.id === id);
+            if (worldInfo) {
+                const action = confirm(`Save data for "${worldInfo.name}" is missing from browser storage.\n\n• Click OK to regenerate this world from scratch and play\n• Click Cancel to remove this world from your list`);
+                if (action) {
+                    regenerateLostWorld(worldInfo);
+                    return;
+                } else {
+                    deleteWorld(id, false);
+                    return;
+                }
+            }
+            showToast('This world has no saved game data.');
+            return;
+        }
         currentWorldId = id; isMultiplayer = false;
         if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
         try {
@@ -4981,12 +8190,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             
             // 1. Determine world dimensions first before decompression
             let targetSize = data.worldSize;
-            let targetWidth = data.worldWidth || (targetSize === 'big' ? 1024 : 512);
-            let targetHeight = data.worldHeight || (targetSize === 'big' ? 320 : 256);
+            let targetWidth = data.worldWidth || (targetSize === 'big' ? 2048 : 1024);
+            let targetHeight = data.worldHeight || (targetSize === 'big' ? 512 : 320);
             if (!targetSize) {
-                targetSize = targetWidth > 700 ? 'big' : 'small';
+                targetSize = targetWidth > 1200 ? 'big' : 'small';
             }
-            setWorldDimensions(targetSize);
+            setWorldDimensions(targetSize, targetWidth, targetHeight);
 
             // 2. Decompress world with explicit dimensions
             let restoredWorld = null;
@@ -5038,12 +8247,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             
             // 3. Rebuild surfaceHeights properly from the restored world blocks
             surfaceHeights = new Array(WORLD_WIDTH);
-            const nonGround = new Set([IDS.AIR, IDS.LEAVES, IDS.WOOD, IDS.TORCH, IDS.SAPLING, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP]);
             for (let x = 0; x < WORLD_WIDTH; x++) {
                 let surfY = WORLD_HEIGHT - 1;
                 for (let y = 0; y < WORLD_HEIGHT; y++) {
                     let b = world[x]?.[y];
-                    if (b !== undefined && !nonGround.has(b)) {
+                    if (b !== undefined && !isNonSurfaceBlock(b)) {
                         surfY = y;
                         break;
                     }
@@ -5053,7 +8261,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             window.surfaceHeights = surfaceHeights;
             if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights(surfaceHeights);
 
-            timeOfDay = data.timeOfDay !== undefined ? data.timeOfDay : 0.2;
+            timeOfDay = data.timeOfDay !== undefined ? data.timeOfDay : 0.02;
             dayCount = data.dayCount || 1;
             frameCount = data.frameCount || 0;
             if (typeof setEngineTimeOfDay === 'function') setEngineTimeOfDay(timeOfDay);
@@ -5065,11 +8273,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 window.frameCount = frameCount;
             }
             saplingGrowthQueue = new Map(Object.entries(data.saplingGrowthQueue || {}).map(([key, growthAt]) => [key, Number(growthAt)]).filter(([, growthAt]) => Number.isFinite(growthAt)));
+            if (typeof window !== 'undefined') window.saplingGrowthQueue = saplingGrowthQueue;
+            if (typeof setEngineSaplingGrowthQueue === 'function') setEngineSaplingGrowthQueue(saplingGrowthQueue);
+            else if (typeof window !== 'undefined' && typeof window.setEngineSaplingGrowthQueue === 'function') window.setEngineSaplingGrowthQueue(saplingGrowthQueue);
+
             cropGrowthQueue = new Map(Object.entries(data.cropGrowthQueue || {}));
             if (typeof window !== 'undefined') window.cropGrowthQueue = cropGrowthQueue;
             if (typeof setEngineCropGrowthQueue === 'function') setEngineCropGrowthQueue(cropGrowthQueue);
+            else if (typeof window !== 'undefined' && typeof window.setEngineCropGrowthQueue === 'function') window.setEngineCropGrowthQueue(cropGrowthQueue);
+
             dirtToGrassQueue = new Map(Object.entries(data.dirtToGrassQueue || {}).map(([key, growAt]) => [key, Number(growAt)]).filter(([, growAt]) => Number.isFinite(growAt)));
+            if (typeof window !== 'undefined') window.dirtToGrassQueue = dirtToGrassQueue;
+            if (typeof setEngineDirtToGrassQueue === 'function') setEngineDirtToGrassQueue(dirtToGrassQueue);
+            else if (typeof window !== 'undefined' && typeof window.setEngineDirtToGrassQueue === 'function') window.setEngineDirtToGrassQueue(dirtToGrassQueue);
+
             snowRegrowthQueue = new Map(Object.entries(data.snowRegrowthQueue || {}).map(([key, regrowAt]) => [key, Number(regrowAt)]).filter(([, regrowAt]) => Number.isFinite(regrowAt)));
+            if (typeof window !== 'undefined') window.snowRegrowthQueue = snowRegrowthQueue;
+            if (typeof setEngineSnowRegrowthQueue === 'function') setEngineSnowRegrowthQueue(snowRegrowthQueue);
+            else if (typeof window !== 'undefined' && typeof window.setEngineSnowRegrowthQueue === 'function') window.setEngineSnowRegrowthQueue(snowRegrowthQueue);
             currentDifficulty = data.difficulty || 'normal';
             if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(currentDifficulty);
             if (typeof window !== 'undefined') window.currentDifficulty = currentDifficulty;
@@ -5127,27 +8348,77 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (typeof window !== 'undefined') window.jukeboxes = jukeboxes;
             if (typeof jukebox !== 'undefined' && jukebox.stop) jukebox.stop();
             chests = new Map(Object.entries(data.chests || {}).map(([key, value]) => [key, { items: Array.isArray(value.items) ? value.items : new Array(27).fill(null) }]));
+            const restoredSigns = new Map(Object.entries(data.signs || {}));
+            if (typeof setEngineSigns === 'function') setEngineSigns(restoredSigns);
+            if (typeof window !== 'undefined') window.signs = restoredSigns;
+
+            if (data.worldBiomes && Array.isArray(data.worldBiomes)) {
+                if (typeof setEngineWorldBiomes === 'function') setEngineWorldBiomes(data.worldBiomes);
+                if (typeof window !== 'undefined') window.worldBiomes = data.worldBiomes;
+            }
+
+            if (data.kaelTalked !== undefined) {
+                setPlayerTalkedToKael(!!data.kaelTalked);
+            } else {
+                try {
+                    const stored = localStorage.getItem('webcraft_kael_talked_' + currentWorldId);
+                    setPlayerTalkedToKael(stored === 'true');
+                } catch(e) {
+                    setPlayerTalkedToKael(false);
+                }
+            }
             openedChest = null;
             fallingBlocks = [];
             activeProjectiles = [];
             nonCollidableTreeWood = new Set(data.treeWoodCells || []);
             ensureTreeWoodNonCollidable();
-            entities = (data.entities || []).map(e => {
+            entities = (data.entities || []).filter(e => !e.isDeparted).map(e => {
                 let inst;
                 if (e.type === 'Pig') inst = new Pig(e.x, e.y);
                 else if (e.type === 'Chicken') inst = new Chicken(e.x, e.y);
                 else if (e.type === 'Sheep') inst = new Sheep(e.x, e.y);
                 else if (e.type === 'Cow') inst = new Cow(e.x, e.y);
+                else if (e.type === 'Pigeon') inst = new Pigeon(e.x, e.y);
+                else if (e.type === 'Parrot') {
+                    inst = new Parrot(e.x, e.y, e.variant !== undefined ? e.variant : 0);
+                    if (e.isTamed !== undefined) inst.isTamed = !!e.isTamed;
+                    if (e.isSitting !== undefined) inst.isSitting = !!e.isSitting;
+                }
                 else if (e.type === 'Creeper') inst = new Creeper(e.x, e.y);
                 else if (e.type === 'Scorpion') inst = new Scorpion(e.x, e.y);
+                else if (e.type === 'AtlasExplorer') {
+                    inst = new AtlasExplorer(e.x, e.y);
+                    inst.warpState = (e.warpState === 'warping_out') ? 'warping_out' : 'active';
+                    inst.warpProgress = (e.warpProgress !== undefined) ? e.warpProgress : 1.0;
+                    inst.stayTimer = (e.stayTimer !== undefined) ? e.stayTimer : 0;
+                    inst.maxStayDuration = (e.maxStayDuration !== undefined) ? e.maxStayDuration : 18000;
+                    inst.isDeparted = !!e.isDeparted;
+                }
                 else inst = new Zombie(e.x, e.y);
                 inst.health = e.health;
-                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow) inst.dir = e.dir;
+                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon || inst instanceof Parrot || inst instanceof AtlasExplorer) inst.dir = e.dir || 1;
                 return inst;
             });
             ensureDesertScorpions();
             window.entities = entities;
             if (typeof setEngineEntities === 'function') setEngineEntities(entities);
+
+            if (typeof RiftExplorerSpawner !== 'undefined') {
+                if (data.riftSpawner) {
+                    RiftExplorerSpawner.loadState(data.riftSpawner);
+                } else {
+                    RiftExplorerSpawner.loadState({
+                        hasSpawnedInitial: true,
+                        nextArrivalDay: (dayCount || 1) + 2
+                    });
+                }
+                const activeAtlas = entities.find(e => e instanceof AtlasExplorer && !e.isDeparted);
+                if (activeAtlas) {
+                    RiftExplorerSpawner.activeExplorer = activeAtlas;
+                } else {
+                    RiftExplorerSpawner.activeExplorer = null;
+                }
+            }
             
             // 5. Update world metadata and upgrade version safely
             let worlds = getSavedWorlds();
@@ -5180,7 +8451,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function deleteWorld(id, prompt = true) {
         if(prompt && !confirm("Delete this world forever?")) return;
         let worlds = getSavedWorlds(); worlds = worlds.filter(w => w.id !== id); saveWorldsList(worlds);
-        localStorage.removeItem('swc_data_' + id); renderWorldsList();
+        localStorage.removeItem('swc_data_' + id);
+        try { localStorage.removeItem('webcraft_kael_talked_' + id); } catch(e) {}
+        renderWorldsList();
     }
 
 
@@ -5274,6 +8547,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     
     export function updateGraphicsButton() {
         const btn = document.getElementById('btn-toggle-graphics');
+        const custBtn = document.getElementById('btn-customize-fabulous');
+        if (custBtn) {
+            custBtn.style.display = (graphicsMode === 'fabulous') ? 'inline-flex' : 'none';
+        }
         if (!btn) return;
         if (graphicsMode === 'fabulous') {
             btn.innerHTML = '<span class="pixel-rainbow-text"><span>F</span><span>A</span><span>B</span><span>U</span><span>L</span><span>O</span><span>U</span><span>S</span></span>';
@@ -5320,27 +8597,32 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         updateKeybindButtonsUI();
         updateGamepadUI();
         updateSettingsDifficultyUI();
-        if (document.getElementById('btn-toggle-fps-cap')) document.getElementById('btn-toggle-fps-cap').innerText = getFpsCapText();
+        const btnAutosave = document.getElementById('btn-settings-autosave');
+        if (btnAutosave) {
+            const curOpt = AUTOSAVE_INTERVALS.find(opt => opt.seconds === (autosaveInterval || 60)) || AUTOSAVE_INTERVALS[1];
+            btnAutosave.innerText = curOpt.label;
+        }
+        if (document.getElementById('btn-toggle-fps-cap')) {
+            if (typeof setEngineFpsCap === 'function') setEngineFpsCap(fpsCap);
+            document.getElementById('btn-toggle-fps-cap').innerText = getFpsCapText(fpsCap);
+        }
     }
 
     export function switchSettingsTab(tabName) {
+        const menu = document.getElementById('settings-menu');
+        const targetTab = (tabName === 'controller') ? 'controls' : tabName;
+        if (menu) {
+            menu.querySelectorAll('.settings-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === targetTab);
+            });
+            menu.querySelectorAll('.settings-tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === `settings-tab-${targetTab}`);
+            });
+        }
         if (tabName === 'controller') {
-            document.querySelectorAll('.settings-tab-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.tab === 'controls');
-            });
-            document.querySelectorAll('.settings-tab-content').forEach(content => {
-                content.classList.toggle('active', content.id === 'settings-tab-controls');
-            });
             switchControlsSubTab('gamepad');
             return;
         }
-
-        document.querySelectorAll('.settings-tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === tabName);
-        });
-        document.querySelectorAll('.settings-tab-content').forEach(content => {
-            content.classList.toggle('active', content.id === `settings-tab-${tabName}`);
-        });
         if (tabName === 'controls') {
             updateGamepadUI();
         } else {
@@ -5759,6 +9041,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
     export function closeSettings() { 
         stopGamepadUiMonitor();
+        closeFabulousSettingsModal();
         document.getElementById('settings-menu').classList.add('hidden'); 
         if (STATE === 'PAUSED' || settingsPreviousState === 'PAUSED' || (STATE === 'PLAYING' && settingsPreviousState !== 'MENU')) {
             document.getElementById('pause-menu').classList.remove('hidden');
@@ -5852,47 +9135,167 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         showToast(`Difficulty set to ${DIFFICULTIES[newDiff]?.name || newDiff}`);
     }
 
+    export function cycleAutosaveInterval() {
+        const curSec = autosaveInterval || 60;
+        const idx = AUTOSAVE_INTERVALS.findIndex(opt => opt.seconds === curSec);
+        const nextIdx = (idx + 1) % AUTOSAVE_INTERVALS.length;
+        autosaveInterval = AUTOSAVE_INTERVALS[nextIdx].seconds;
+        if (typeof window !== 'undefined') window.autosaveInterval = autosaveInterval;
+        saveCurrentSettings();
+        updateSettingsUI();
+        showToast(`Autosave interval set to ${AUTOSAVE_INTERVALS[nextIdx].label}`);
+    }
 
+
+    let isQuittingToMenu = false;
     export function quitToMenu() {
-        if (currentWorldId && (STATE === 'PLAYING' || STATE === 'PAUSED')) saveCurrentWorld();
-        if (isMultiplayer) {
-            const user = window.user || window.fbAuth?.currentUser;
-            broadcastDataPacket({ type: 'leave', uid: user?.uid });
-            cleanUpPeerConnection();
-            mpUnsubscribers.forEach(u => u()); mpUnsubscribers = [];
-            isMultiplayer = false;
-            remotePlayers = {};
-            lastSentSkinData = null; // Force skin re-upload on next connect
-            mpPeerIds = new Set(); lastWorldSyncTime = 0; lastWorldStateTimestamp = 0; mpPlayerSyncPending = false; mpPlayerSyncQueued = false; mpWorldSyncPending = false; pendingDropRequest = null; isSleeping = false; sleepWakeVersion = 0; currentMpWorldName = null; currentMpRoom = null;
-            closeChat();
-            const chatContainer = document.getElementById('mp-chat-container');
-            if (chatContainer) chatContainer.classList.add('hidden');
-            const chatMessages = document.getElementById('mp-chat-messages');
-            if (chatMessages) chatMessages.innerHTML = '';
-            chatSeenMessageIds = new Set();
+        if (isQuittingToMenu) return;
+        isQuittingToMenu = true;
+
+        try {
+            const activeWorldId = currentWorldId || (typeof window !== 'undefined' && window.currentWorldId);
+            const activeState = (typeof window !== 'undefined' && window.STATE) ? window.STATE : STATE;
+            if (activeWorldId && (activeState === 'PLAYING' || activeState === 'PAUSED' || (activeState === 'DEAD' && currentDifficulty !== 'hardcore'))) {
+                try {
+                    saveCurrentWorld();
+                } catch (saveErr) {
+                    console.error("Save before quit failed:", saveErr);
+                }
+            }
+            if (isMultiplayer) {
+                try {
+                    const user = window.user || window.fbAuth?.currentUser;
+                    broadcastDataPacket({ type: 'leave', uid: user?.uid });
+                    cleanUpPeerConnection();
+                    mpUnsubscribers.forEach(u => u()); mpUnsubscribers = [];
+                    isMultiplayer = false;
+                    remotePlayers = {};
+                    lastSentSkinData = null; // Force skin re-upload on next connect
+                    mpPeerIds = new Set(); lastWorldSyncTime = 0; lastWorldStateTimestamp = 0; mpPlayerSyncPending = false; mpPlayerSyncQueued = false; mpWorldSyncPending = false; pendingDropRequest = null; isSleeping = false; sleepWakeVersion = 0; currentMpWorldName = null; currentMpRoom = null;
+                    closeChat();
+                    const chatContainer = document.getElementById('mp-chat-container');
+                    if (chatContainer) chatContainer.classList.add('hidden');
+                    const chatMessages = document.getElementById('mp-chat-messages');
+                    if (chatMessages) chatMessages.innerHTML = '';
+                    chatSeenMessageIds = new Set();
+                } catch (mpErr) {
+                    console.error("Error leaving multiplayer during quitToMenu:", mpErr);
+                }
+            }
+
+            setUIState('MENU');
+            if (typeof setEngineState === 'function') setEngineState('MENU');
+            if (typeof window !== 'undefined') {
+                window.STATE = 'MENU';
+                if (typeof window.setGameState === 'function') window.setGameState('MENU');
+            }
+
+            if (typeof jukebox !== 'undefined' && jukebox.stop) {
+                try { jukebox.stop(); } catch(e) {}
+            }
+            if (typeof ejectActiveJukebox === 'function') {
+                try { ejectActiveJukebox(); } catch(e) {}
+            }
+            
+            // Clear active gameplay world references so menu background never cross-contaminates
+            try {
+                world = null;
+                if (typeof window !== 'undefined') window.world = null;
+                if (typeof setEngineWorld === 'function') setEngineWorld(null);
+                
+                surfaceHeights = [];
+                if (typeof window !== 'undefined') window.surfaceHeights = [];
+                if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights([]);
+                
+                if (typeof window !== 'undefined') window.worldBiomes = null;
+                if (typeof setEngineWorldBiomes === 'function') setEngineWorldBiomes(null);
+                
+                entities = [];
+                if (typeof window !== 'undefined') window.entities = [];
+                if (typeof setEngineEntities === 'function') setEngineEntities([]);
+
+                if (typeof RiftExplorerSpawner !== 'undefined') {
+                    RiftExplorerSpawner.activeExplorer = null;
+                }
+                if (typeof closeAtlasDialogue === 'function') closeAtlasDialogue();
+                if (typeof closeAtlasMarket === 'function') closeAtlasMarket();
+                const kaelBannerContainer = document.getElementById('kael-banner-container');
+                if (kaelBannerContainer) kaelBannerContainer.innerHTML = '';
+            } catch (clearErr) {
+                console.error("Error clearing world/entities on quit:", clearErr);
+            }
+
+            try {
+                const idsToHide = [
+                    'pause-menu', 'death-menu', 'settings-menu', 'inventory-container',
+                    'achievements-modal', 'emerald-vault-modal', 'atlas-market-modal',
+                    'sign-edit-modal', 'astral-infuser-modal', 'world-map-modal',
+                    'unified-shop-modal', 'skins-menu', 'tutorial-modal', 'bg-build-overlay',
+                    'publish-multiplayer-modal', 'guest-confirm-modal', 'profile-editor-modal'
+                ];
+                idsToHide.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
+                isInventoryOpen = false;
+                if (typeof setEngineIsInventoryOpen === 'function') setEngineIsInventoryOpen(false);
+                if (typeof window !== 'undefined') {
+                    window.isInventoryOpen = false;
+                    if (typeof window.setMainIsInventoryOpen === 'function') window.setMainIsInventoryOpen(false);
+                }
+            } catch (modalErr) {
+                console.error("Error hiding overlays on quit:", modalErr);
+            }
+
+            try {
+                inventory = new Array(INVENTORY_SIZE).fill(null);
+                if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
+                if (typeof window !== 'undefined') window.inventory = inventory;
+
+                equippedArmor = [null, null, null, null];
+                if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
+                if (typeof window !== 'undefined') window.equippedArmor = equippedArmor;
+
+                currentWorldId = null;
+                if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(null);
+                if (typeof window !== 'undefined') window.currentWorldId = null;
+
+                const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+                if (curPlayer) {
+                    curPlayer.poisonTimer = 0;
+                    curPlayer.health = curPlayer.maxHealth || 20;
+                    curPlayer.hunger = 20;
+                    curPlayer.exhaustion = 0;
+                    curPlayer.oxygen = curPlayer.maxOxygen || 20;
+                    curPlayer.isDead = false;
+                    curPlayer.damageCooldown = 0;
+                    curPlayer.vx = 0;
+                    curPlayer.vy = 0;
+                }
+
+                try { updateArmorUI(); } catch(e) {}
+                try { updateHudArmorBar(); } catch(e) {}
+                try { updateHealthUI(); } catch(e) {}
+                try { updateHungerUI(); } catch(e) {}
+            } catch (playerErr) {
+                console.error("Error resetting player state on quit:", playerErr);
+            }
+
+            try {
+                const hud = document.getElementById('hud');
+                if (hud) hud.style.display = 'none'; 
+                const gameCanvas = document.getElementById('gameCanvas') || document.getElementById('game-canvas');
+                if (gameCanvas) gameCanvas.classList.add('hidden');
+                const sharedBg = document.getElementById('shared-menu-bg');
+                if (sharedBg) sharedBg.classList.remove('hidden');
+
+                showMainMenu();
+            } catch (menuErr) {
+                console.error("Error transitioning to main menu on quit:", menuErr);
+            }
+        } finally {
+            isQuittingToMenu = false;
         }
-        setUIState('MENU');
-        if (typeof setEngineState === 'function') setEngineState('MENU');
-        document.getElementById('pause-menu').classList.add('hidden'); document.getElementById('death-menu').classList.add('hidden');
-        inventory = new Array(INVENTORY_SIZE).fill(null);
-        equippedArmor = [null, null, null, null];
-        currentWorldId = null;
-        player.poisonTimer = 0;
-        player.health = player.maxHealth;
-        player.hunger = 20;
-        player.exhaustion = 0;
-        player.oxygen = player.maxOxygen;
-        player.isDead = false;
-        player.damageCooldown = 0;
-        updateArmorUI();
-        updateHudArmorBar();
-        updateHealthUI();
-        updateHungerUI();
-        document.getElementById('hud').style.display = 'none'; 
-        document.getElementById('gameCanvas').classList.add('hidden');
-        document.getElementById('shared-menu-bg').classList.remove('hidden');
-        showMainMenu();
-        if(isInventoryOpen) toggleInventory();
     }
 
     window.addEventListener('beforeunload', () => {
@@ -6045,9 +9448,108 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (currentIndex === -1) currentIndex = 0;
         fpsCap = FPS_CAP_OPTIONS[(currentIndex + 1) % FPS_CAP_OPTIONS.length];
         localStorage.setItem('swc_fps_cap', String(fpsCap));
+        if (typeof setEngineFpsCap === 'function') {
+            setEngineFpsCap(fpsCap);
+        }
+        if (typeof window !== 'undefined') {
+            window.fpsCap = fpsCap;
+            if (typeof window.setEngineFpsCap === 'function') {
+                window.setEngineFpsCap(fpsCap);
+            }
+        }
         const btn = document.getElementById('btn-toggle-fps-cap');
-        if (btn) btn.innerText = getFpsCapText();
+        if (btn) btn.innerText = getFpsCapText(fpsCap);
         saveCurrentSettings();
+    }
+
+    export function openFabulousSettingsModal() {
+        const modal = document.getElementById('fabulous-settings-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        const tabContent = document.getElementById('fabulous-tab-content');
+        if (tabContent) {
+            tabContent.style.setProperty('display', 'flex', 'important');
+        }
+        renderFabulousSettingsUI();
+    }
+
+    export function closeFabulousSettingsModal() {
+        const modal = document.getElementById('fabulous-settings-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    export function selectFabulousPreset(presetName) {
+        if (typeof applyFabulousPreset === 'function') {
+            applyFabulousPreset(presetName);
+        } else if (typeof window !== 'undefined' && typeof window.applyFabulousPreset === 'function') {
+            window.applyFabulousPreset(presetName);
+        }
+        renderFabulousSettingsUI();
+    }
+
+    export function toggleFabulousOption(optionKey) {
+        const curCfg = (typeof window !== 'undefined' && window.fabulousConfig) ? window.fabulousConfig : fabulousConfig;
+        const currentVal = !!curCfg[optionKey];
+        const nextVal = !currentVal;
+        const patch = { [optionKey]: nextVal, preset: 'custom' };
+        if (typeof setFabulousConfig === 'function') {
+            setFabulousConfig(patch);
+        } else if (typeof window !== 'undefined' && typeof window.setFabulousConfig === 'function') {
+            window.setFabulousConfig(patch);
+        }
+        renderFabulousSettingsUI();
+    }
+
+    export function resetFabulousDefaults() {
+        selectFabulousPreset('high');
+    }
+
+    export function renderFabulousSettingsUI() {
+        const curCfg = (typeof window !== 'undefined' && window.fabulousConfig) ? window.fabulousConfig : fabulousConfig;
+        if (!curCfg) return;
+
+        // Ensure options tab content is visible
+        const tabContent = document.getElementById('fabulous-tab-content');
+        if (tabContent) {
+            tabContent.style.setProperty('display', 'flex', 'important');
+        }
+
+        // 1. Update active preset badge
+        const badge = document.getElementById('fabulous-active-preset-badge');
+        const activePreset = curCfg.preset || 'custom';
+        if (badge) {
+            badge.innerText = activePreset.toUpperCase();
+        }
+
+        // Highlight active preset tab button
+        const presets = ['low', 'medium', 'high', 'custom'];
+        presets.forEach(p => {
+            const pBtn = document.getElementById(`btn-fab-preset-${p}`);
+            if (pBtn) {
+                if (activePreset === p) {
+                    pBtn.classList.add('active');
+                    if (p === 'custom') pBtn.style.display = 'inline-flex';
+                } else {
+                    pBtn.classList.remove('active');
+                    if (p === 'custom') pBtn.style.display = 'none';
+                }
+            }
+        });
+
+        // 2. Update each of the 11 option buttons (standard mc-btn styling)
+        const optionKeys = [
+            'colorGrading', 'volumetricFog', 'godRays', 'vignette', 'heatShimmer',
+            'foliageSway', 'windBreeze', 'waterEffects', 'ambientParticles', 'lavaGlow', 'bloomAura'
+        ];
+
+        optionKeys.forEach(key => {
+            const btn = document.getElementById(`btn-fab-opt-${key}`);
+            if (btn) {
+                const isOn = !!curCfg[key];
+                btn.innerText = isOn ? "ON" : "OFF";
+                btn.className = "mc-btn";
+            }
+        });
     }
     export function toggleIntro() {
         introEnabled = !introEnabled;
@@ -6180,6 +9682,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         } 
         else {
             if (container) container.classList.add('hidden');
+            if (typeof window !== 'undefined' && typeof window.resetMouseInputState === 'function') {
+                window.resetMouseInputState();
+            }
             hotbarWheelLockUntil = performance.now() + 500;
             if (heldItemObj) { 
                 if(!giveItem(heldItemObj.id, heldItemObj.count)) { } 
@@ -6312,7 +9817,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function moveItemToContainer(sourceItem, targetArray, startIndex = 0, endIndex = targetArray.length) {
         if (!sourceItem || sourceItem.count <= 0) return true;
-        const maxStack = isTool(sourceItem.id) ? 1 : 64;
+        const maxStack = getItemMaxStack(sourceItem.id);
 
         // Pass 1: Smart Stacking into existing non-full matching stacks
         if (maxStack > 1) {
@@ -6335,7 +9840,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 targetArray[i] = {
                     id: sourceItem.id,
                     count: toMove,
-                    ...(sourceItem.durability !== undefined ? { durability: sourceItem.durability, maxDurability: sourceItem.maxDurability } : {})
+                    ...(sourceItem.durability !== undefined ? { durability: sourceItem.durability, maxDurability: sourceItem.maxDurability } : {}),
+                    ...(sourceItem.customName ? { customName: sourceItem.customName } : {}),
+                    ...(sourceItem.trackId ? { trackId: sourceItem.trackId } : {})
                 };
                 sourceItem.count -= toMove;
                 if (sourceItem.count <= 0) return true;
@@ -6451,8 +9958,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 if (type === 'furnace') {
                     if (index === 'output') {
                         // Output slot is strictly take-only! You cannot put items into it.
-                        if (currentItem && currentItem.id === heldItemObj.id && !isTool(currentItem.id) && heldItemObj.count < 64) {
-                            let space = 64 - heldItemObj.count;
+                        const maxStack = getItemMaxStack(heldItemObj.id);
+                        if (currentItem && currentItem.id === heldItemObj.id && maxStack > 1 && heldItemObj.count < maxStack) {
+                            let space = maxStack - heldItemObj.count;
                             let amount = Math.min(space, currentItem.count);
                             heldItemObj.count += amount;
                             currentItem.count -= amount;
@@ -6477,12 +9985,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 }
 
                 if (currentItem) {
-                    if (currentItem.id === heldItemObj.id && !isTool(currentItem.id) && currentItem.count < 64) {
+                    const maxStack = getItemMaxStack(currentItem.id);
+                    if (currentItem.id === heldItemObj.id && maxStack > 1 && currentItem.count < maxStack) {
                         if (isRightClick) {
                             currentItem.count += 1; heldItemObj.count -= 1;
                             if (heldItemObj.count <= 0) heldItemObj = null;
                         } else {
-                            let space = 64 - currentItem.count; let amount = Math.min(space, heldItemObj.count);
+                            let space = maxStack - currentItem.count; let amount = Math.min(space, heldItemObj.count);
                             currentItem.count += amount; heldItemObj.count -= amount;
                             if (heldItemObj.count <= 0) heldItemObj = null;
                         }
@@ -6493,7 +10002,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     }
                 } else {
                     if (isRightClick) {
-                        let placedItem = { id: heldItemObj.id, count: 1, ...(heldItemObj.durability !== undefined ? { durability: heldItemObj.durability, maxDurability: heldItemObj.maxDurability } : {}) };
+                        let placedItem = { id: heldItemObj.id, count: 1, ...(heldItemObj.durability !== undefined ? { durability: heldItemObj.durability, maxDurability: heldItemObj.maxDurability } : {}), ...(heldItemObj.customName ? { customName: heldItemObj.customName } : {}), ...(heldItemObj.trackId ? { trackId: heldItemObj.trackId } : {}) };
                         containerItems[index] = placedItem;
                         heldItemObj.count -= 1;
                         if (heldItemObj.count <= 0) heldItemObj = null;
@@ -6656,13 +10165,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         let materialsSummary = [];
 
         recipe.inputs.forEach(r => {
-            const has = getItemCount(r.id);
+            const has = getRecipeInputCount(r);
             const needed = r.count;
             const ready = (has >= needed);
             if (!ready) allIngredientsReady = false;
             materialsSummary.push({
                 id: r.id,
-                name: ID_NAMES[r.id] || 'Material',
+                name: r.name || ID_NAMES[r.id] || 'Material',
                 tex: (typeof textures !== 'undefined' && textures[r.id]) ? textures[r.id].src : '',
                 has,
                 needed,
@@ -6797,10 +10306,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         if (playPauseBtn) {
             if (isPlaying) {
-                playPauseBtn.innerHTML = '⏸ Pause';
+                playPauseBtn.innerHTML = '<span class="inline-flex items-center gap-1"><svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><rect x="1" y="1" width="3" height="8"/><rect x="6" y="1" width="3" height="8"/></svg><span>Pause</span></span>';
                 playPauseBtn.title = 'Pause music';
             } else {
-                playPauseBtn.innerHTML = '▶ Play';
+                playPauseBtn.innerHTML = '<span class="inline-flex items-center gap-1"><svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><polygon points="2,1 9,5 2,9"/></svg><span>Play</span></span>';
                 playPauseBtn.title = 'Play music';
             }
         }
@@ -6942,7 +10451,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         const frag = document.createDocumentFragment();
         filteredRecipes.forEach(({ recipe, idx }) => {
-            let canCraft = recipe.inputs.every(req => hasItem(req.id, req.count));
+            let canCraft = recipe.inputs.every(req => hasRecipeInput(req));
             let isPinned = (pinnedRecipeIndex === idx);
             let row = document.createElement('div');
             row.className = `flex flex-col bg-black/40 p-1.5 rounded border ${isPinned ? 'crafting-row-pinned' : (canCraft ? 'border-[#8c5a2b]/80 bg-black/50' : 'border-gray-700/80 opacity-80')} mb-1 hover:bg-black/70 transition-colors cursor-pointer`;
@@ -7015,11 +10524,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             let reqs = document.createElement('div');
             reqs.className = 'text-base text-gray-300 mt-0.5 pl-8 flex flex-wrap gap-2';
             recipe.inputs.forEach(r => {
-                let has = hasItem(r.id, r.count);
-                let currentCount = getItemCount(r.id);
+                let has = hasRecipeInput(r);
+                let currentCount = getRecipeInputCount(r);
+                let displayName = r.name || ID_NAMES[r.id] || 'Material';
                 let reqSpan = document.createElement('span');
                 reqSpan.className = has ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
-                reqSpan.innerText = `${currentCount}/${r.count} ${ID_NAMES[r.id]}`;
+                reqSpan.innerText = `${currentCount}/${r.count} ${displayName}`;
                 reqs.appendChild(reqSpan);
             });
             
@@ -7297,6 +10807,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             equippedArmor[2]?.id === IDS.LEGGINGS_DIAMOND &&
             equippedArmor[3]?.id === IDS.BOOTS_DIAMOND) {
             unlockAchievement('covert_with_diamonds');
+        }
+        if (equippedArmor[0]?.id === IDS.ASTRAL_HELMET &&
+            equippedArmor[1]?.id === IDS.ASTRAL_CHESTPLATE &&
+            equippedArmor[2]?.id === IDS.ASTRAL_LEGGINGS &&
+            equippedArmor[3]?.id === IDS.ASTRAL_BOOTS) {
+            unlockAchievement('astral_ascension');
         }
         if (getTotalArmorDefense() >= 20) {
             unlockAchievement('armored_tank');
@@ -7685,7 +11201,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     // ONBOARDING & TUTORIAL GUIDE SYSTEM (AUTHENTIC PIXEL-ART GAME DESIGN)
     // =========================================================================
     export let currentTutorialStep = 0;
-    export const TOTAL_TUTORIAL_STEPS = 7;
+    export const TOTAL_TUTORIAL_STEPS = 9;
 
     export function getTutorialTextureSrc(id) {
         if (typeof textures !== 'undefined' && textures && textures[id]) {
@@ -7795,8 +11311,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                                     <span class="mc-keycap">E</span>
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Inventory & Crafting</span>
-                                    <p class="tutorial-card-desc">Manage hotbar, backpack storage, and craft recipes.</p>
+                                    <span class="tutorial-card-title gold">Inventory & Interact</span>
+                                    <p class="tutorial-card-desc">Manage backpack storage, craft recipes, and talk/trade with NPCs like Kael.</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
@@ -7956,15 +11472,25 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                         <div class="tutorial-preview-box w-full mb-2">
                             <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
                         </div>
-                        <div class="tutorial-grid-3">
+                        <div class="tutorial-grid-2">
                             <div class="tutorial-card">
                                 <div class="flex gap-1">
                                     ${renderItemFrameHtml(IDS.RAW_PORKCHOP, "Porkchop")}
                                     ${renderItemFrameHtml(IDS.WOOL, "Wool")}
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title green">Peaceful Wildlife</span>
-                                    <p class="tutorial-card-desc">Hunt Pigs for Porkchops to replenish hunger and heal. Shear Sheep for Wool.</p>
+                                    <span class="tutorial-card-title green">1. Peaceful Wildlife & Hunting</span>
+                                    <p class="tutorial-card-desc">Hunt Pigs for Porkchops to replenish hunger and regenerate health. Shear Sheep for cozy Wool.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.SEEDS, "Seeds")}
+                                    ${renderItemFrameHtml(IDS.KINETIC_SHEARS, "Kinetic Shears")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">2. Parrots & Kinetic Shears</span>
+                                    <p class="tutorial-card-desc">Tame Jungle Parrots with seeds to perch on your shoulders! Kinetic Shears harvest 3x wool and leaves instantly.</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
@@ -7973,15 +11499,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                                     ${renderItemFrameHtml(IDS.BONE, "Bone")}
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">Monsters in the Dark</span>
-                                    <p class="tutorial-card-desc">Zombies, Skeletons, and Creepers spawn in the dark. Craft a Sword to fight back!</p>
+                                    <span class="tutorial-card-title orange">3. Monsters in the Dark</span>
+                                    <p class="tutorial-card-desc">Zombies, Skeletons, and Creepers spawn when night falls. Forge sharp Swords and armor to defend yourself!</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.BED, "Bed")}
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.BED, "Bed")}
+                                    ${renderItemFrameHtml(IDS.TORCH, "Torch")}
+                                </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Sleep Through Night</span>
-                                    <p class="tutorial-card-desc">Combine 3 Planks + 3 Wool. Right-Click a Bed at dusk to fast-forward to morning safely.</p>
+                                    <span class="tutorial-card-title gold">4. Beds & Safe Haven</span>
+                                    <p class="tutorial-card-desc">Combine 3 Planks + 3 Wool. Right-Click a Bed at dusk to fast-forward safely to morning and set your spawn.</p>
                                 </div>
                             </div>
                         </div>
@@ -8024,10 +11553,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                                 <div class="flex gap-1">
                                     ${renderItemFrameHtml(IDS.IRON_INGOT, "Ingot")}
                                     ${renderItemFrameHtml(IDS.DIAMOND, "Diamond")}
+                                    ${renderItemFrameHtml(IDS.ASTRAL_CHESTPLATE, "Astral Armor")}
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Tier Progression</span>
-                                    <p class="tutorial-card-desc">Leather -> Iron -> Gold -> Diamond. Diamond armor offers peak damage reduction and the greatest durability.</p>
+                                    <span class="tutorial-card-title gold">Tier Progression & Astral</span>
+                                    <p class="tutorial-card-desc">Leather -> Iron -> Gold -> Diamond -> Astral. Diamond armor can be upgraded to celestial Astral Armor at an Astral Infuser!</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
@@ -8041,6 +11571,113 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     </div>
                 `;
                 drawTutorialArmorScene();
+            }
+        },
+        {
+            title: "Planar Cartography & Kael",
+            badge: "NPCs & Trading",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-preview-box w-full mb-2">
+                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
+                        </div>
+                        <div class="tutorial-grid-2">
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.VOID_STONE_BRICK, "Planar Rift")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title purple">1. Planar Rifts & Explorer Arrival</span>
+                                    <p class="tutorial-card-desc">Mysterious Planar Rifts pierce the world. Kael, The Atlas Explorer, steps through from across the cosmos to study anomalies.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="min-w-[70px] flex justify-center">
+                                    <span class="mc-keycap">E</span>
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">2. Speak & Interact [E]</span>
+                                    <p class="tutorial-card-desc">Approach Kael and press [E] (or Right-Click) to engage in interactive dialogue, discover planar secrets, and open trading.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.ASTRAL_EMERALD, "Atlas Market")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">3. The Atlas Market</span>
+                                    <p class="tutorial-card-desc">Browse Kael's revolving catalog of rare artifacts, biome charts, celestial gear, and exotic blocks. Stock rotates every visit!</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.EMERALD_ORE, "Astral Emeralds")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title green">4. Astral Emerald Economy</span>
+                                    <p class="tutorial-card-desc">Trade surplus supplies or exchange mined Emeralds for Astral Emeralds—the universal currency of planar travelers.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tutorial-tip-box">
+                            ${renderItemFrameHtml(IDS.ASTRAL_EMERALD, "Market Tip")}
+                            <span><b>EXPLORER TIP:</b> Talk to Kael whenever a rift opens! Fulfilling his trade requests earns you the <b>Planar Commerce</b> achievement and rare celestial artifacts.</span>
+                        </div>
+                    </div>
+                `;
+                drawTutorialKaelScene();
+            }
+        },
+        {
+            title: "Astral Infusion & Gems",
+            badge: "Endgame Alchemy",
+            render(container) {
+                container.innerHTML = `
+                    <div class="w-full flex flex-col items-center">
+                        <div class="tutorial-preview-box w-full mb-2">
+                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
+                        </div>
+                        <div class="tutorial-grid-2">
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.EMERALD_ORE, "Emerald Ore")}
+                                    ${renderItemFrameHtml(IDS.ASTRAL_SHARD, "Astral Shard")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title green">1. Deep Gems & Shards</span>
+                                    <p class="tutorial-card-desc">Mine Emerald Ore in the deepest caverns and harvest Astral Shards from dimensional anomalies and void flora.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.ASTRAL_EMERALD, "Astral Exchange")}
+                                    ${renderItemFrameHtml(IDS.DIAMOND, "Diamond")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title cyan">2. Astral Exchange Vault</span>
+                                    <p class="tutorial-card-desc">Access the Astral Exchange in inventory to convert valuable minerals and gems into Astral Emeralds at dynamic market rates.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                ${renderItemFrameHtml(IDS.ASTRAL_INFUSER, "Astral Infuser")}
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title purple">3. Craft the Astral Infuser</span>
+                                    <p class="tutorial-card-desc">Craft an Astral Infuser station (Void Stone Bricks, Diamonds, and Astral Shards) to establish your celestial transmutation forge.</p>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="flex gap-1">
+                                    ${renderItemFrameHtml(IDS.CHESTPLATE_DIAMOND, "Diamond")}
+                                    ${renderItemFrameHtml(IDS.ASTRAL_CHESTPLATE, "Astral")}
+                                </div>
+                                <div class="tutorial-card-content">
+                                    <span class="tutorial-card-title gold">4. Diamond to Astral Ascension</span>
+                                    <p class="tutorial-card-desc">Infuse Diamond Armor and tools with Astral Shards inside the Infuser to ascend them into Astral Tier—granting supreme defense!</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tutorial-tip-box">
+                            ${renderItemFrameHtml(IDS.ASTRAL_CHESTPLATE, "Ascension Tip")}
+                            <span><b>ALCHEMIST TIP:</b> Equipping a full 4-piece set of Astral Armor (Helmet, Chestplate, Leggings, Boots) unlocks the coveted <b>Celestial Juggernaut</b> achievement!</span>
+                        </div>
+                    </div>
+                `;
+                drawTutorialAstralScene();
             }
         },
         {
@@ -8143,7 +11780,36 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             [IDS.CHEST]: '#8d6e63',
             [IDS.WOOD_HOE]: '#8d6e63',
             [IDS.IRON_SWORD]: '#cfd8dc',
-            [IDS.DIAMOND_PICKAXE]: '#00e5ff'
+            [IDS.DIAMOND_PICKAXE]: '#00e5ff',
+            [IDS.JUNGLE_WOOD]: '#564228',
+            [IDS.JUNGLE_LEAVES]: '#1e7e34',
+            [IDS.JUNGLE_PLANKS]: '#b8824f',
+            [IDS.JUNGLE_SAPLING]: '#28a745',
+            [IDS.JUNGLE_DOOR]: '#8d5d36',
+            [IDS.VINES]: '#2e7d32',
+            [IDS.MELON]: '#2e7d32',
+            [IDS.MELON_SLICE]: '#ef5350',
+            [IDS.MELON_SEEDS]: '#404040',
+            [IDS.FERN]: '#43a047',
+            [IDS.BAMBOO]: '#4caf50',
+            [IDS.VOID_STONE_BRICK]: '#1f1929',
+            [IDS.EMERALD_ORE]: '#10b981',
+            [IDS.ASTRAL_INFUSER]: '#7e22ce',
+            [IDS.ASTRAL_EMERALD]: '#34d399',
+            [IDS.ASTRAL_SHARD]: '#c084fc',
+            [IDS.ASTRAL_SWORD]: '#a855f7',
+            [IDS.ASTRAL_PICKAXE]: '#a855f7',
+            [IDS.ASTRAL_HELMET]: '#9333ea',
+            [IDS.ASTRAL_CHESTPLATE]: '#9333ea',
+            [IDS.ASTRAL_LEGGINGS]: '#9333ea',
+            [IDS.ASTRAL_BOOTS]: '#9333ea',
+            [IDS.KINETIC_SHEARS]: '#38bdf8',
+            [IDS.SHEARS]: '#94a3b8',
+            [IDS.CHESTPLATE_DIAMOND]: '#55e6e6',
+            [IDS.DIAMOND]: '#00e5ff',
+            [IDS.RAW_PORKCHOP]: '#f472b6',
+            [IDS.WOOL]: '#f8fafc',
+            [IDS.BONE]: '#f1f5f9'
         };
         ctx.fillStyle = fallbackColors[id] || '#5c4033';
         ctx.fillRect(ix, iy, size, size);
@@ -8765,6 +12431,319 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         ctx.fillText("Storage", w - 61, 102);
     }
 
+    export function drawTutorialKaelScene() {
+        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        const w = c.width, h = c.height;
+        ctx.imageSmoothingEnabled = false;
+
+        const groundY = 88;
+        const bSize = 24;
+
+        // Dark celestial / rift sky
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+        skyGrad.addColorStop(0, '#0a091e');
+        skyGrad.addColorStop(0.5, '#181335');
+        skyGrad.addColorStop(1, '#2c194d');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, groundY);
+
+        // Twinkling stars
+        ctx.fillStyle = '#ffffff';
+        const stars = [
+            [25, 12], [70, 32], [115, 15], [170, 24], [230, 10], [290, 36],
+            [340, 14], [395, 28], [450, 18], [510, 34], [570, 12], [630, 26], [690, 14], [730, 32]
+        ];
+        stars.forEach(([sx, sy]) => ctx.fillRect(sx, sy, 2, 2));
+
+        // Distant violet nebula mountains
+        drawMountainRidge(ctx, 0, w, groundY, '#2a1a45');
+        drawWoodlandHills(ctx, 0, w, groundY, '#1b2d2f');
+
+        // Ground terrain: 2 complete rows across entire canvas
+        for (let x = 0; x < w; x += bSize) {
+            let top = IDS.GRASS;
+            if (x >= 144 && x <= 240) top = IDS.VOID_STONE_BRICK;
+            drawTutorialBlock(ctx, top, x, groundY, bSize);
+            drawTutorialBlock(ctx, top === IDS.VOID_STONE_BRICK ? IDS.STONE : IDS.DIRT, x, groundY + bSize, bSize);
+        }
+
+        // Planar Rift Vortex at x: 192
+        const riftX = 192, riftY = groundY - 38;
+        const riftGrad = ctx.createRadialGradient(riftX, riftY, 4, riftX, riftY, 40);
+        riftGrad.addColorStop(0, 'rgba(192, 132, 252, 0.9)');
+        riftGrad.addColorStop(0.5, 'rgba(126, 34, 206, 0.6)');
+        riftGrad.addColorStop(0.8, 'rgba(6, 182, 212, 0.3)');
+        riftGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = riftGrad;
+        ctx.beginPath();
+        ctx.ellipse(riftX, riftY, 32, 42, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rift core slit
+        ctx.fillStyle = '#f5d0fe';
+        ctx.beginPath();
+        ctx.ellipse(riftX, riftY, 5, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cosmic floating particles around rift
+        const riftParticles = [
+            [riftX - 18, riftY - 24, '#c084fc'],
+            [riftX + 22, riftY - 14, '#38bdf8'],
+            [riftX - 12, riftY + 18, '#a855f7'],
+            [riftX + 16, riftY + 22, '#34d399']
+        ];
+        riftParticles.forEach(([px, py, col]) => {
+            ctx.fillStyle = col;
+            ctx.fillRect(px, py, 3, 3);
+        });
+
+        // Kael, The Atlas Explorer standing at x: 232
+        const kCanvas = (typeof getKaelSkinCanvas === 'function') ? getKaelSkinCanvas() : null;
+        if (kCanvas) {
+            ctx.drawImage(kCanvas, 226, groundY - 48, 24, 48);
+        } else {
+            drawTutorialPlayer(ctx, 226, groundY - 44, { skin: 'alex' });
+        }
+
+        // Kael Name Tag
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(170, groundY - 66, 136, 15);
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(170, groundY - 66, 136, 15);
+        ctx.fillStyle = '#e9d5ff';
+        ctx.font = 'bold 12px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('✦ Kael, The Atlas Explorer ✦', 238, groundY - 54);
+
+        // Steve / Player standing at x: 118 facing Kael
+        drawTutorialPlayer(ctx, 118, groundY - 44, {
+            skin: 'steve',
+            heldItem: IDS.ASTRAL_EMERALD,
+            name: '<Steve>',
+            nameColor: '#38bdf8'
+        });
+
+        // Speech bubble prompt: "[E] Talk / Open Atlas Market"
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.fillRect(124, 12, 196, 26);
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(124, 12, 196, 26);
+        ctx.fillStyle = '#fde047';
+        ctx.font = 'bold 16px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('PRESS [E] TO TALK & TRADE', 222, 29);
+
+        // Right side: Atlas Market showcase HUD
+        const panelX = 390, panelY = 12, panelW = 350, panelH = 76;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+        ctx.fillRect(panelX, panelY, panelW, panelH);
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+        // Header
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 18px "VT323", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('ATLAS MARKET CATALOG', panelX + 12, panelY + 18);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '13px "VT323", monospace';
+        ctx.fillText('Rotating Planar Relics', panelX + 180, panelY + 18);
+
+        // Market item slots
+        const trades = [
+            { cost: '5x', costId: IDS.ASTRAL_EMERALD, outId: IDS.ASTRAL_SHARD, name: 'Shard' },
+            { cost: '12x', costId: IDS.ASTRAL_EMERALD, outId: IDS.ASTRAL_SWORD, name: 'Blade' },
+            { cost: '8x', costId: IDS.ASTRAL_EMERALD, outId: IDS.KINETIC_SHEARS, name: 'Shears' }
+        ];
+
+        const tSpacing = 110;
+        for (let i = 0; i < trades.length; i++) {
+            const tr = trades[i];
+            const tx = panelX + 12 + i * tSpacing;
+            const ty = panelY + 28;
+
+            ctx.fillStyle = '#101418';
+            ctx.fillRect(tx, ty, 100, 38);
+            ctx.strokeStyle = '#333a41';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(tx, ty, 100, 38);
+
+            drawTutorialBlock(ctx, tr.costId, tx + 4, ty + 7, 24);
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 14px "VT323", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(tr.cost, tx + 30, ty + 23);
+
+            ctx.fillStyle = '#ffd34d';
+            ctx.font = '14px "VT323", monospace';
+            ctx.fillText('->', tx + 48, ty + 23);
+
+            drawTutorialBlock(ctx, tr.outId, tx + 66, ty + 7, 24);
+        }
+    }
+
+    export function drawTutorialAstralScene() {
+        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        const w = c.width, h = c.height;
+        ctx.imageSmoothingEnabled = false;
+
+        // Dark celestial workshop backdrop
+        ctx.fillStyle = '#0f0c1b';
+        ctx.fillRect(0, 0, w, h);
+
+        // Subtle cosmic grid lines
+        ctx.strokeStyle = '#231838';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < w; x += 24) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+
+        // Top banner: ASTRAL INFUSION & CELESTIAL ASCENSION
+        ctx.fillStyle = '#191228';
+        ctx.fillRect(w / 2 - 240, 7, 480, 24);
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(w / 2 - 240, 7, 480, 24);
+
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 18px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("ASTRAL INFUSION: DIAMOND GEAR -> ASTRAL ASCENSION (+9 DEFENSE)", w / 2, 24);
+
+        // Central Altar with Astral Infuser
+        const altarX = Math.floor(w / 2);
+        const altarY = 62;
+
+        // Infusion Energy Beam
+        const beamGrad = ctx.createLinearGradient(altarX, altarY - 45, altarX, altarY + 20);
+        beamGrad.addColorStop(0, 'rgba(192, 132, 252, 0)');
+        beamGrad.addColorStop(0.5, 'rgba(192, 132, 252, 0.35)');
+        beamGrad.addColorStop(1, 'rgba(126, 34, 206, 0.6)');
+        ctx.fillStyle = beamGrad;
+        ctx.fillRect(altarX - 28, altarY - 26, 56, 50);
+
+        // Infuser Block
+        drawTutorialBlock(ctx, IDS.ASTRAL_INFUSER, altarX - 18, altarY - 14, 36);
+
+        // Sparkling motes
+        const motes = [
+            [altarX - 24, altarY - 20, '#c084fc'],
+            [altarX + 22, altarY - 16, '#f472b6'],
+            [altarX - 14, altarY - 32, '#38bdf8'],
+            [altarX + 16, altarY - 28, '#fef08a']
+        ];
+        motes.forEach(([mx, my, col]) => {
+            ctx.fillStyle = col;
+            ctx.fillRect(mx, my, 3, 3);
+        });
+
+        // Infuser label
+        ctx.fillStyle = '#f5d0fe';
+        ctx.font = 'bold 16px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Astral Infuser", altarX, altarY + 36);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '13px "VT323", monospace';
+        ctx.fillText("Celestial Station", altarX, altarY + 49);
+
+        // Left Side: Inputs (Diamond Chestplate + Astral Shards)
+        const leftStartX = 90;
+        const slotSize = 46;
+
+        // Slot 1: Diamond Chestplate
+        ctx.fillStyle = '#101418';
+        ctx.fillRect(leftStartX, 44, slotSize, slotSize);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(leftStartX, 44, slotSize, slotSize);
+        drawTutorialBlock(ctx, IDS.CHESTPLATE_DIAMOND, leftStartX + 7, 51, 32);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 16px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Diamond Armor", leftStartX + slotSize / 2, 104);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '13px "VT323", monospace';
+        ctx.fillText("+8 Defense", leftStartX + slotSize / 2, 118);
+
+        // Plus Sign
+        ctx.fillStyle = '#ffd34d';
+        ctx.font = 'bold 24px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("+", leftStartX + slotSize + 22, 72);
+
+        // Slot 2: Astral Shards / Gems
+        const slot2X = leftStartX + slotSize + 44;
+        ctx.fillStyle = '#101418';
+        ctx.fillRect(slot2X, 44, slotSize, slotSize);
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(slot2X, 44, slotSize, slotSize);
+        drawTutorialBlock(ctx, IDS.ASTRAL_SHARD, slot2X + 7, 51, 32);
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 16px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Astral Shards", slot2X + slotSize / 2, 104);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '13px "VT323", monospace';
+        ctx.fillText("Cosmic Catalyst", slot2X + slotSize / 2, 118);
+
+        // Arrow pointing right to Infuser
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 22px "VT323", monospace';
+        ctx.fillText("▶▶", slot2X + slotSize + 24, 71);
+
+        // Right Side: Ascended Output (Astral Chestplate)
+        const rightStartX = altarX + 90;
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 22px "VT323", monospace';
+        ctx.fillText("▶▶", rightStartX - 24, 71);
+
+        // Slot 3: Astral Chestplate
+        ctx.fillStyle = '#1e1133';
+        ctx.fillRect(rightStartX, 44, slotSize, slotSize);
+        ctx.strokeStyle = '#e879f9';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(rightStartX, 44, slotSize, slotSize);
+        drawTutorialBlock(ctx, IDS.ASTRAL_CHESTPLATE, rightStartX + 7, 51, 32);
+        ctx.fillStyle = '#f0abfc';
+        ctx.font = 'bold 16px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Astral Chestplate", rightStartX + slotSize / 2, 104);
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 13px "VT323", monospace';
+        ctx.fillText("+9 DEF + KINETIC", rightStartX + slotSize / 2, 118);
+
+        // Far right: Astral Exchange Vault mini badge
+        const vaultX = rightStartX + slotSize + 40;
+        ctx.fillStyle = '#101418';
+        ctx.fillRect(vaultX, 44, 90, slotSize);
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(vaultX, 44, 90, slotSize);
+        drawTutorialBlock(ctx, IDS.EMERALD_ORE, vaultX + 6, 52, 30);
+        ctx.fillStyle = '#ffd34d';
+        ctx.font = '14px "VT323", monospace';
+        ctx.fillText('->', vaultX + 46, 72);
+        drawTutorialBlock(ctx, IDS.ASTRAL_EMERALD, vaultX + 56, 52, 30);
+
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 15px "VT323", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("Exchange Vault", vaultX + 45, 104);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '13px "VT323", monospace';
+        ctx.fillText("Currency Mint", vaultX + 45, 118);
+    }
+
     export function drawTutorialMultiplayerScene() {
         const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
         if (!c) return;
@@ -9012,6 +12991,9 @@ try { if (typeof currentWorldAchievementsEnabled !== "undefined") window.current
 try { if (typeof cycleFpsCap !== "undefined") window.cycleFpsCap = cycleFpsCap; } catch(e) {}
 try { if (typeof cycleShopkeeperDialogue !== "undefined") window.cycleShopkeeperDialogue = cycleShopkeeperDialogue; } catch(e) {}
 try { if (typeof cycleWorldDifficulty !== "undefined") window.cycleWorldDifficulty = cycleWorldDifficulty; } catch(e) {}
+try { if (typeof cycleAutosaveInterval !== "undefined") window.cycleAutosaveInterval = cycleAutosaveInterval; } catch(e) {}
+try { if (typeof autosaveInterval !== "undefined") window.autosaveInterval = autosaveInterval; } catch(e) {}
+try { if (typeof AUTOSAVE_INTERVALS !== "undefined") window.AUTOSAVE_INTERVALS = AUTOSAVE_INTERVALS; } catch(e) {}
 try { if (typeof damageSelectedTool !== "undefined") window.damageSelectedTool = damageSelectedTool; } catch(e) {}
 try { if (typeof decompressChunkInto !== "undefined") window.decompressChunkInto = decompressChunkInto; } catch(e) {}
 try { if (typeof decompressWorld !== "undefined") window.decompressWorld = decompressWorld; } catch(e) {}
@@ -9053,6 +13035,7 @@ try { if (typeof getSavedSkins !== "undefined") window.getSavedSkins = getSavedS
 try { if (typeof getSavedWorlds !== "undefined") window.getSavedWorlds = getSavedWorlds; } catch(e) {}
 try { if (typeof getSkinToneFromContext !== "undefined") window.getSkinToneFromContext = getSkinToneFromContext; } catch(e) {}
 try { if (typeof getSmeltResult !== "undefined") window.getSmeltResult = getSmeltResult; } catch(e) {}
+try { if (typeof getItemMaxStack !== "undefined") window.getItemMaxStack = getItemMaxStack; } catch(e) {}
 try { if (typeof giveItem !== "undefined") window.giveItem = giveItem; } catch(e) {}
 try { if (typeof goToMySkinsFromOwnedModal !== "undefined") window.goToMySkinsFromOwnedModal = goToMySkinsFromOwnedModal; } catch(e) {}
 try { if (typeof handleArmorSlotClick !== "undefined") window.handleArmorSlotClick = handleArmorSlotClick; } catch(e) {}
@@ -9077,7 +13060,9 @@ try { if (typeof isErasing !== "undefined") window.isErasing = isErasing; } catc
 try { if (typeof isMyGallerySkin !== "undefined") window.isMyGallerySkin = isMyGallerySkin; } catch(e) {}
 try { if (typeof isSkinInMySkins !== "undefined") window.isSkinInMySkins = isSkinInMySkins; } catch(e) {}
 try { if (typeof isSkinOwned !== "undefined") window.isSkinOwned = isSkinOwned; } catch(e) {}
+try { if (typeof isNonStackable !== "undefined") window.isNonStackable = isNonStackable; } catch(e) {}
 try { if (typeof isTool !== "undefined") window.isTool = isTool; } catch(e) {}
+try { if (typeof isVinyl !== "undefined") window.isVinyl = isVinyl; } catch(e) {}
 try { if (typeof lastAutosaveTimestamp !== "undefined") window.lastAutosaveTimestamp = lastAutosaveTimestamp; } catch(e) {}
 try { if (typeof lastSplashText !== "undefined") window.lastSplashText = lastSplashText; } catch(e) {}
 try { if (typeof lastUiClickSoundTime !== "undefined") window.lastUiClickSoundTime = lastUiClickSoundTime; } catch(e) {}
@@ -9103,6 +13088,7 @@ try { if (typeof openSkins !== "undefined") window.openSkins = openSkins; } catc
 try { if (typeof openWhatsNew !== "undefined") window.openWhatsNew = openWhatsNew; } catch(e) {}
 try { if (typeof openWhatsNewOnce !== "undefined") window.openWhatsNewOnce = openWhatsNewOnce; } catch(e) {}
 try { if (typeof openWorldsMenu !== "undefined") window.openWorldsMenu = openWorldsMenu; } catch(e) {}
+try { if (typeof openShop !== "undefined") window.openShop = openShop; } catch(e) {}
 try { if (typeof openedAchievementsFromPause !== "undefined") window.openedAchievementsFromPause = openedAchievementsFromPause; } catch(e) {}
 try { if (typeof pendingUploadSkinData !== "undefined") window.pendingUploadSkinData = pendingUploadSkinData; } catch(e) {}
 try { if (typeof pendingUploadSkinId !== "undefined") window.pendingUploadSkinId = pendingUploadSkinId; } catch(e) {}
@@ -9148,6 +13134,9 @@ try { if (typeof saveSkin !== "undefined") window.saveSkin = saveSkin; } catch(e
 try { if (typeof saveWorldsList !== "undefined") window.saveWorldsList = saveWorldsList; } catch(e) {}
 try { if (typeof scrollSensitivity !== "undefined") window.scrollSensitivity = scrollSensitivity; } catch(e) {}
 try { if (typeof selectDifficulty !== "undefined") window.selectDifficulty = selectDifficulty; } catch(e) {}
+try { if (typeof selectWorldSize !== "undefined") window.selectWorldSize = selectWorldSize; } catch(e) {}
+try { if (typeof selectedWorldSizeChoice !== "undefined") window.selectedWorldSizeChoice = selectedWorldSizeChoice; } catch(e) {}
+try { if (typeof currentWorldSize !== "undefined") window.currentWorldSize = currentWorldSize; } catch(e) {}
 try { if (typeof selectSkin !== "undefined") window.selectSkin = selectSkin; } catch(e) {}
 try { if (typeof selectSkinColor !== "undefined") window.selectSkinColor = selectSkinColor; } catch(e) {}
 try { if (typeof selectSkinTool !== "undefined") window.selectSkinTool = selectSkinTool; } catch(e) {}
@@ -9258,6 +13247,8 @@ try { if (typeof drawTutorialCraftingScene !== "undefined") window.drawTutorialC
 try { if (typeof drawTutorialFarmingScene !== "undefined") window.drawTutorialFarmingScene = drawTutorialFarmingScene; } catch(e) {}
 try { if (typeof drawTutorialMobsScene !== "undefined") window.drawTutorialMobsScene = drawTutorialMobsScene; } catch(e) {}
 try { if (typeof drawTutorialArmorScene !== "undefined") window.drawTutorialArmorScene = drawTutorialArmorScene; } catch(e) {}
+try { if (typeof drawTutorialKaelScene !== "undefined") window.drawTutorialKaelScene = drawTutorialKaelScene; } catch(e) {}
+try { if (typeof drawTutorialAstralScene !== "undefined") window.drawTutorialAstralScene = drawTutorialAstralScene; } catch(e) {}
 try { if (typeof drawTutorialMultiplayerScene !== "undefined") window.drawTutorialMultiplayerScene = drawTutorialMultiplayerScene; } catch(e) {}
 try { if (typeof getTutorialTextureSrc !== "undefined") window.getTutorialTextureSrc = getTutorialTextureSrc; } catch(e) {}
 try { if (typeof renderItemFrameHtml !== "undefined") window.renderItemFrameHtml = renderItemFrameHtml; } catch(e) {}
@@ -9379,3 +13370,85 @@ try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropG
         }, true);
     }
 
+// Atlas Merchant & Currency Hub Window Exports
+try { if (typeof getPixelEmeraldSvg !== "undefined") window.getPixelEmeraldSvg = getPixelEmeraldSvg; } catch(e) {}
+try { if (typeof getPixelAstralEmeraldSvg !== "undefined") window.getPixelAstralEmeraldSvg = getPixelAstralEmeraldSvg; } catch(e) {}
+try { if (typeof syncCurrencyTextureImages !== "undefined") window.syncCurrencyTextureImages = syncCurrencyTextureImages; } catch(e) {}
+try { if (typeof getPlayerAstralEmeralds !== "undefined") window.getPlayerAstralEmeralds = getPlayerAstralEmeralds; } catch(e) {}
+try { if (typeof setPlayerAstralEmeralds !== "undefined") window.setPlayerAstralEmeralds = setPlayerAstralEmeralds; } catch(e) {}
+try { if (typeof addPlayerAstralEmeralds !== "undefined") window.addPlayerAstralEmeralds = addPlayerAstralEmeralds; } catch(e) {}
+try { if (typeof getDailyMinedEmeralds !== "undefined") window.getDailyMinedEmeralds = getDailyMinedEmeralds; } catch(e) {}
+try { if (typeof recordDailyMinedEmerald !== "undefined") window.recordDailyMinedEmerald = recordDailyMinedEmerald; } catch(e) {}
+try { if (typeof renderMiningTrackerUI !== "undefined") window.renderMiningTrackerUI = renderMiningTrackerUI; } catch(e) {}
+try { if (typeof DAILY_QUEST_POOL !== "undefined") window.DAILY_QUEST_POOL = DAILY_QUEST_POOL; } catch(e) {}
+try { if (typeof getDailyQuestsState !== "undefined") window.getDailyQuestsState = getDailyQuestsState; } catch(e) {}
+try { if (typeof saveDailyQuestsState !== "undefined") window.saveDailyQuestsState = saveDailyQuestsState; } catch(e) {}
+try { if (typeof trackDailyQuestProgress !== "undefined") window.trackDailyQuestProgress = trackDailyQuestProgress; } catch(e) {}
+try { if (typeof claimDailyQuestReward !== "undefined") window.claimDailyQuestReward = claimDailyQuestReward; } catch(e) {}
+try { if (typeof renderDailyQuestsUI !== "undefined") window.renderDailyQuestsUI = renderDailyQuestsUI; } catch(e) {}
+try { if (typeof performAstralExchange !== "undefined") window.performAstralExchange = performAstralExchange; } catch(e) {}
+try { if (typeof openCurrencyHubModal !== "undefined") window.openCurrencyHubModal = openCurrencyHubModal; } catch(e) {}
+try { if (typeof closeCurrencyHubModal !== "undefined") window.closeCurrencyHubModal = closeCurrencyHubModal; } catch(e) {}
+try { if (typeof switchVaultTab !== "undefined") window.switchVaultTab = switchVaultTab; } catch(e) {}
+try { if (typeof openAchievementsFromVault !== "undefined") window.openAchievementsFromVault = openAchievementsFromVault; } catch(e) {}
+try { if (typeof KAEL_DIALOGUES !== "undefined") window.KAEL_DIALOGUES = KAEL_DIALOGUES; } catch(e) {}
+try { if (typeof drawKaelPortrait !== "undefined") window.drawKaelPortrait = drawKaelPortrait; } catch(e) {}
+try { if (typeof hasPlayerTalkedToKael !== "undefined") window.hasPlayerTalkedToKael = hasPlayerTalkedToKael; } catch(e) {}
+try { if (typeof setPlayerTalkedToKael !== "undefined") window.setPlayerTalkedToKael = setPlayerTalkedToKael; } catch(e) {}
+try { if (typeof openAtlasDialogue !== "undefined") window.openAtlasDialogue = openAtlasDialogue; } catch(e) {}
+try { if (typeof closeAtlasDialogue !== "undefined") window.closeAtlasDialogue = closeAtlasDialogue; } catch(e) {}
+try { if (typeof renderKaelNode !== "undefined") window.renderKaelNode = renderKaelNode; } catch(e) {}
+try { if (typeof handleAtlasDialogueChoice !== "undefined") window.handleAtlasDialogueChoice = handleAtlasDialogueChoice; } catch(e) {}
+try { if (typeof openAtlasMarket !== "undefined") window.openAtlasMarket = openAtlasMarket; } catch(e) {}
+try { if (typeof closeAtlasMarket !== "undefined") window.closeAtlasMarket = closeAtlasMarket; } catch(e) {}
+try { if (typeof renderAtlasMarketWares !== "undefined") window.renderAtlasMarketWares = renderAtlasMarketWares; } catch(e) {}
+try { if (typeof switchAtlasCategory !== "undefined") window.switchAtlasCategory = switchAtlasCategory; } catch(e) {}
+try { if (typeof currentAtlasCategory !== "undefined") window.currentAtlasCategory = currentAtlasCategory; } catch(e) {}
+try { if (typeof DIAMOND_TO_ASTRAL_MAP !== "undefined") window.DIAMOND_TO_ASTRAL_MAP = DIAMOND_TO_ASTRAL_MAP; } catch(e) {}
+try { if (typeof openAstralInfuser !== "undefined") window.openAstralInfuser = openAstralInfuser; } catch(e) {}
+try { if (typeof closeAstralInfuser !== "undefined") window.closeAstralInfuser = closeAstralInfuser; } catch(e) {}
+try { if (typeof renderInfuserUI !== "undefined") window.renderInfuserUI = renderInfuserUI; } catch(e) {}
+try { if (typeof handleEligibleItemClick !== "undefined") window.handleEligibleItemClick = handleEligibleItemClick; } catch(e) {}
+try { if (typeof handleInfuserSlotClick !== "undefined") window.handleInfuserSlotClick = handleInfuserSlotClick; } catch(e) {}
+try { if (typeof performAstralInfusion !== "undefined") window.performAstralInfusion = performAstralInfusion; } catch(e) {}
+try { if (typeof getQuestCategorySvg !== "undefined") window.getQuestCategorySvg = getQuestCategorySvg; } catch(e) {}
+try { if (typeof renderAstralExchangeUI !== "undefined") window.renderAstralExchangeUI = renderAstralExchangeUI; } catch(e) {}
+try { if (typeof updateVaultResetCountdown !== "undefined") window.updateVaultResetCountdown = updateVaultResetCountdown; } catch(e) {}
+try { if (typeof getPixelPadlockSvg !== "undefined") window.getPixelPadlockSvg = getPixelPadlockSvg; } catch(e) {}
+try { if (typeof getTier1AstralIllustration !== "undefined") window.getTier1AstralIllustration = getTier1AstralIllustration; } catch(e) {}
+try { if (typeof getTier2AstralIllustration !== "undefined") window.getTier2AstralIllustration = getTier2AstralIllustration; } catch(e) {}
+try { if (typeof getTier3AstralIllustration !== "undefined") window.getTier3AstralIllustration = getTier3AstralIllustration; } catch(e) {}
+try { if (typeof openSignEditor !== "undefined") window.openSignEditor = openSignEditor; } catch(e) {}
+try { if (typeof closeSignEditor !== "undefined") window.closeSignEditor = closeSignEditor; } catch(e) {}
+try { if (typeof regenerateLostWorld !== "undefined") window.regenerateLostWorld = regenerateLostWorld; } catch(e) {}
+try { if (typeof showKaelArrivalBanner !== "undefined") window.showKaelArrivalBanner = showKaelArrivalBanner; } catch(e) {}
+try { if (typeof showKaelDepartureBanner !== "undefined") window.showKaelDepartureBanner = showKaelDepartureBanner; } catch(e) {}
+try { if (typeof openShop !== "undefined") window.openShop = openShop; } catch(e) {}
+try { if (typeof closeShop !== "undefined") window.closeShop = closeShop; } catch(e) {}
+try { if (typeof switchShopTab !== "undefined") window.switchShopTab = switchShopTab; } catch(e) {}
+try { if (typeof filterShopCosmetics !== "undefined") window.filterShopCosmetics = filterShopCosmetics; } catch(e) {}
+try { if (typeof renderShopCosmetics !== "undefined") window.renderShopCosmetics = renderShopCosmetics; } catch(e) {}
+try { if (typeof purchaseCosmeticItem !== "undefined") window.purchaseCosmeticItem = purchaseCosmeticItem; } catch(e) {}
+try { if (typeof equipCosmeticItem !== "undefined") window.equipCosmeticItem = equipCosmeticItem; } catch(e) {}
+try { if (typeof tryOnCosmeticItem !== "undefined") window.tryOnCosmeticItem = tryOnCosmeticItem; } catch(e) {}
+try { if (typeof performShopAstralExchange !== "undefined") window.performShopAstralExchange = performShopAstralExchange; } catch(e) {}
+try { if (typeof purchaseAtlasWareFromShop !== "undefined") window.purchaseAtlasWareFromShop = purchaseAtlasWareFromShop; } catch(e) {}
+try { if (typeof openProfileEditor !== "undefined") window.openProfileEditor = openProfileEditor; } catch(e) {}
+try { if (typeof closeProfileEditor !== "undefined") window.closeProfileEditor = closeProfileEditor; } catch(e) {}
+try { if (typeof setEditorNameColor !== "undefined") window.setEditorNameColor = setEditorNameColor; } catch(e) {}
+try { if (typeof setEditorBannerColor !== "undefined") window.setEditorBannerColor = setEditorBannerColor; } catch(e) {}
+try { if (typeof handleProfileEditorChange !== "undefined") window.handleProfileEditorChange = handleProfileEditorChange; } catch(e) {}
+try { if (typeof renderProfileEditorLivePreview !== "undefined") window.renderProfileEditorLivePreview = renderProfileEditorLivePreview; } catch(e) {}
+try { if (typeof resetProfileEditor !== "undefined") window.resetProfileEditor = resetProfileEditor; } catch(e) {}
+try { if (typeof saveProfileEditorChanges !== "undefined") window.saveProfileEditorChanges = saveProfileEditorChanges; } catch(e) {}
+try { if (typeof openFriendProfileModal !== "undefined") window.openFriendProfileModal = openFriendProfileModal; } catch(e) {}
+try { if (typeof closeFriendProfileModal !== "undefined") window.closeFriendProfileModal = closeFriendProfileModal; } catch(e) {}
+try { if (typeof renderFriendsListRows !== "undefined") window.renderFriendsListRows = renderFriendsListRows; } catch(e) {}
+try { if (typeof getPlayerCustomization !== "undefined") window.getPlayerCustomization = getPlayerCustomization; } catch(e) {}
+try { if (typeof openFabulousSettingsModal !== "undefined") window.openFabulousSettingsModal = openFabulousSettingsModal; } catch(e) {}
+try { if (typeof closeFabulousSettingsModal !== "undefined") window.closeFabulousSettingsModal = closeFabulousSettingsModal; } catch(e) {}
+try { if (typeof selectFabulousPreset !== "undefined") window.selectFabulousPreset = selectFabulousPreset; } catch(e) {}
+try { if (typeof toggleFabulousOption !== "undefined") window.toggleFabulousOption = toggleFabulousOption; } catch(e) {}
+try { if (typeof resetFabulousDefaults !== "undefined") window.resetFabulousDefaults = resetFabulousDefaults; } catch(e) {}
+try { if (typeof renderFabulousSettingsUI !== "undefined") window.renderFabulousSettingsUI = renderFabulousSettingsUI; } catch(e) {}
+try { if (typeof getPlayerUnlockedCosmetics !== "undefined") window.getPlayerUnlockedCosmetics = getPlayerUnlockedCosmetics; } catch(e) {}

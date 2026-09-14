@@ -276,55 +276,65 @@ export async function fetchClosedBetaConfig() {
             return defaultConfig;
         }
         const { doc, getDoc, setDoc } = window.fbModules;
-        const artifactConfigRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'system_config', 'closed_beta');
-        
-        let rootConfigRef = null;
-        try {
-            rootConfigRef = doc(window.fbDb, 'system_config', 'closed_beta');
-        } catch (e) {}
 
-        let snap = null;
-        try {
-            snap = await getDoc(artifactConfigRef);
-        } catch (e) {
-            console.warn("Could not read artifact system_config path:", e);
-        }
+        // Priority candidate paths in Cloud Firestore (Console-created root collections come FIRST)
+        const candidateRefs = [
+            doc(window.fbDb, 'system_config', 'closed_beta'),
+            doc(window.fbDb, 'closed_beta', 'config'),
+            doc(window.fbDb, 'closed_beta', 'closed_beta'),
+            doc(window.fbDb, 'config', 'closed_beta'),
+            doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'system_config', 'closed_beta')
+        ];
 
-        if (!snap || !snap.exists()) {
-            if (rootConfigRef) {
-                try {
-                    const rootSnap = await getDoc(rootConfigRef);
-                    if (rootSnap && rootSnap.exists()) {
-                        snap = rootSnap;
+        let foundConfig = null;
+        let anyDocExists = false;
+
+        for (const ref of candidateRefs) {
+            try {
+                const snap = await getDoc(ref);
+                if (snap && snap.exists()) {
+                    anyDocExists = true;
+                    const data = snap.data();
+                    if (data) {
+                        const isUnlocked = data.locked === false || data.locked === 'false' || data.isLocked === false || data.open === true;
+                        if (isUnlocked) {
+                            // If ANY document in Firestore has locked: false, admin intent is to open the game!
+                            return {
+                                locked: false,
+                                passwordHash: data.passwordHash || DEFAULT_BETA_PASSWORD_HASH,
+                                description: data.description || defaultConfig.description
+                            };
+                        }
+                        if (!foundConfig) {
+                            foundConfig = {
+                                locked: data.locked === true || data.locked === 'true',
+                                passwordHash: data.passwordHash || DEFAULT_BETA_PASSWORD_HASH,
+                                description: data.description || defaultConfig.description
+                            };
+                        }
                     }
-                } catch (e) {
-                    console.warn("Could not read root system_config path:", e);
                 }
+            } catch (err) {
+                // Ignore collection permissions/missing path errors
             }
         }
 
-        if (snap && snap.exists()) {
-            const data = snap.data();
-            return {
-                locked: typeof data.locked === 'boolean' ? data.locked : true,
-                passwordHash: data.passwordHash || DEFAULT_BETA_PASSWORD_HASH,
-                description: data.description || defaultConfig.description
-            };
+        if (foundConfig) {
+            return foundConfig;
         }
 
-        // Auto-seed document in Firestore so it's immediately accessible in Firebase Console
-        try {
-            const seedPayload = {
-                ...defaultConfig,
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-            };
-            await setDoc(artifactConfigRef, seedPayload, { merge: true });
-            if (rootConfigRef) {
-                try { await setDoc(rootConfigRef, seedPayload, { merge: true }); } catch (e) {}
+        // If no document exists in Firestore at all, auto-seed the root configuration
+        if (!anyDocExists) {
+            try {
+                const seedPayload = {
+                    ...defaultConfig,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+                await setDoc(doc(window.fbDb, 'system_config', 'closed_beta'), seedPayload, { merge: true });
+            } catch (seedErr) {
+                console.warn("Auto-seeding closed_beta config in Firebase failed:", seedErr);
             }
-        } catch (seedErr) {
-            console.warn("Auto-seeding closed_beta config in Firebase failed:", seedErr);
         }
 
         return defaultConfig;
@@ -1062,7 +1072,9 @@ export async function fetchFriendsProfiles(friendTags = []) {
                 skinData: profile.skinData || null,
                 lastLogin: profile.lastLogin || 0,
                 lastActive: lastActiveTime,
-                isOnline: isOnline
+                isOnline: isOnline,
+                profileCustomization: profile.profileCustomization || null,
+                unlockedCosmetics: profile.unlockedCosmetics || []
             });
         } else {
             results.push({
@@ -1072,11 +1084,99 @@ export async function fetchFriendsProfiles(friendTags = []) {
                 skinData: null,
                 lastLogin: 0,
                 lastActive: 0,
-                isOnline: false
+                isOnline: false,
+                profileCustomization: null,
+                unlockedCosmetics: []
             });
         }
     }
     return results;
+}
+
+export function listenToFriendsProfiles(friendTags = [], onUpdate) {
+    if (!Array.isArray(friendTags) || friendTags.length === 0 || typeof onUpdate !== 'function') {
+        return () => {};
+    }
+    const unsubs = [];
+    const profilesMap = new Map();
+    if (window.fbDb && window.fbModules && window.fbModules.onSnapshot && window.fbModules.doc) {
+        const { doc, onSnapshot } = window.fbModules;
+        for (const tag of friendTags) {
+            const normTag = normalizeWebcraftTag(tag);
+            try {
+                const ref = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', normTag);
+                const unsub = onSnapshot(ref, (snap) => {
+                    if (snap && snap.exists()) {
+                        const data = snap.data();
+                        const now = Date.now();
+                        const lastActiveTime = data.lastActive || data.lastLogin || 0;
+                        const isOnline = (data.isOnline === true) && (now - lastActiveTime < 60 * 1000);
+                        const profileObj = {
+                            tag: data.tag || `@${normTag}`,
+                            normalizedTag: normTag,
+                            username: data.username || normTag,
+                            skinData: data.skinData || null,
+                            lastLogin: data.lastLogin || 0,
+                            lastActive: lastActiveTime,
+                            isOnline: isOnline,
+                            profileCustomization: data.profileCustomization || null,
+                            unlockedCosmetics: data.unlockedCosmetics || []
+                        };
+                        profilesMap.set(normTag, profileObj);
+                        onUpdate(profileObj, Array.from(profilesMap.values()));
+                    }
+                }, (err) => {
+                    console.warn(`Realtime friend listener error for @${normTag}:`, err);
+                });
+                unsubs.push(unsub);
+            } catch(e) {}
+        }
+    }
+    return () => {
+        unsubs.forEach(fn => { try { fn(); } catch(e) {} });
+    };
+}
+
+export async function saveProfileCustomizationToCloud(customization, unlockedCosmetics = null) {
+    const rawProfile = localStorage.getItem('webcraft_user_profile');
+    if (!rawProfile) return false;
+    let profile = null;
+    try { profile = JSON.parse(rawProfile); } catch(e) { return false; }
+    if (!profile || profile.isGuest) return false;
+
+    profile.profileCustomization = { ...(profile.profileCustomization || {}), ...customization };
+    if (Array.isArray(unlockedCosmetics)) {
+        profile.unlockedCosmetics = Array.from(new Set([...(profile.unlockedCosmetics || []), ...unlockedCosmetics]));
+    }
+    try {
+        localStorage.setItem('webcraft_user_profile', JSON.stringify(profile));
+    } catch(e) {}
+
+    await initFirebaseSdk();
+    if (window.fbDb && window.fbModules) {
+        try {
+            const { doc, setDoc } = window.fbModules;
+            const normTag = normalizeWebcraftTag(profile.normalizedTag || profile.tag);
+            if (normTag) {
+                const accRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'webcraft_accounts', normTag);
+                await setDoc(accRef, {
+                    profileCustomization: profile.profileCustomization,
+                    unlockedCosmetics: profile.unlockedCosmetics || []
+                }, { merge: true });
+            }
+            if (profile.uid) {
+                const userRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'user_profiles', profile.uid);
+                await setDoc(userRef, {
+                    profileCustomization: profile.profileCustomization,
+                    unlockedCosmetics: profile.unlockedCosmetics || []
+                }, { merge: true });
+            }
+            return true;
+        } catch(e) {
+            console.warn("Failed saving profile customization to Firestore", e);
+        }
+    }
+    return false;
 }
 
 // =============================================================================
@@ -1234,7 +1334,7 @@ if (typeof window !== 'undefined') {
 
 
     export function tryCompleteMultiplayerSleep() {
-        if (!isSleeping || timeOfDay <= 0.5 || timeOfDay > 0.9) return;
+        if (!isSleeping || timeOfDay <= 0.62 || timeOfDay > 0.95) return;
         if (sleepStartTime && performance.now() - sleepStartTime >= sleepTransitionMs) {
             completeSleepTransition();
         }
@@ -1272,10 +1372,18 @@ if (typeof window !== 'undefined') {
     }
 
     export function spawnDroppedItem(itemId, x, y, count = 1) {
+        if (typeof window !== 'undefined' && typeof window.spawnDroppedItem === 'function' && window.spawnDroppedItem !== spawnDroppedItem) {
+            return window.spawnDroppedItem(itemId, x, y, count);
+        }
         let dropId = `drop_${window.user?.uid || 'local'}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const DropClass = (typeof ItemDrop !== 'undefined') ? ItemDrop : (typeof window !== 'undefined' ? window.ItemDrop : null);
         if (DropClass) {
-            droppedItems.push(new DropClass(itemId, x, y, count, dropId));
+            const drop = new DropClass(itemId, x, y, count, dropId);
+            droppedItems.push(drop);
+            if (typeof window !== 'undefined' && Array.isArray(window.droppedItems) && window.droppedItems !== droppedItems) {
+                window.droppedItems.push(drop);
+            }
+            return drop;
         }
     }
 
@@ -1317,6 +1425,7 @@ if (typeof window !== 'undefined') {
             return;
         }
         if (!world || !world[x]) return;
+        let prevBlockId = world[x]?.[y];
         let wasTreeTrunk = nonCollidableTreeWood.has(`${x}_${y}`);
         let wasSolid = world[x]?.[y] !== IDS.AIR;
         let wasSnow = world[x]?.[y] === IDS.SNOW;
@@ -1325,6 +1434,8 @@ if (typeof window !== 'undefined') {
         world[x][y] = newId;
         if (newId === IDS.WOOD && treeTrunk) nonCollidableTreeWood.add(`${x}_${y}`);
         if (newId === IDS.AIR) {
+            const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+            if (liveSigns) liveSigns.delete(`${x}_${y}`);
             notifyBlockedSaplings();
             checkSandFallAbove(x, y);
             dirtToGrassQueue.delete(`${x}_${y}`);
@@ -1348,8 +1459,19 @@ if (typeof window !== 'undefined') {
         if (newId !== IDS.WHEAT_STAGE_1 && newId !== IDS.WHEAT_STAGE_2 && newId !== IDS.WHEAT_STAGE_3 && newId !== IDS.WHEAT_STAGE_4) {
             cropGrowthQueue.delete(`${x}_${y}`);
         }
-        if (wasTreeTrunk && newId === IDS.AIR && isMultiplayerAuthority() && ![...nonCollidableTreeWood].some(cell => cell.startsWith(`${x}_`))) {
-            scheduleTreeLeafDecay(x);
+        const isWoodSync = (wasTreeTrunk || prevBlockId === IDS.WOOD || prevBlockId === IDS.JUNGLE_WOOD);
+        if (isWoodSync && newId === IDS.AIR && isMultiplayerAuthority()) {
+            let hasTrunkRemaining = false;
+            for (let ty = Math.max(0, y - 10); ty <= Math.min(WORLD_HEIGHT - 1, y + 10); ty++) {
+                if (world[x]?.[ty] === IDS.WOOD || world[x]?.[ty] === IDS.JUNGLE_WOOD) {
+                    hasTrunkRemaining = true;
+                    break;
+                }
+            }
+            const hasSetTrunk = [...nonCollidableTreeWood].some(cell => cell.startsWith(`${x}_`));
+            if (!hasTrunkRemaining && !hasSetTrunk) {
+                scheduleTreeLeafDecay(x, y);
+            }
         }
     }
 
@@ -1410,6 +1532,8 @@ if (typeof window !== 'undefined') {
             Chicken: typeof Chicken !== 'undefined' ? Chicken : (typeof window !== 'undefined' ? window.Chicken : null),
             Sheep: typeof Sheep !== 'undefined' ? Sheep : (typeof window !== 'undefined' ? window.Sheep : null),
             Cow: typeof Cow !== 'undefined' ? Cow : (typeof window !== 'undefined' ? window.Cow : null),
+            Pigeon: typeof Pigeon !== 'undefined' ? Pigeon : (typeof window !== 'undefined' ? window.Pigeon : null),
+            Parrot: typeof Parrot !== 'undefined' ? Parrot : (typeof window !== 'undefined' ? window.Parrot : null),
             Zombie: typeof Zombie !== 'undefined' ? Zombie : (typeof window !== 'undefined' ? window.Zombie : null),
             Creeper: typeof Creeper !== 'undefined' ? Creeper : (typeof window !== 'undefined' ? window.Creeper : null),
             Scorpion: typeof Scorpion !== 'undefined' ? Scorpion : (typeof window !== 'undefined' ? window.Scorpion : null)
@@ -1453,6 +1577,8 @@ if (typeof window !== 'undefined') {
             Chicken: typeof Chicken !== 'undefined' ? Chicken : (typeof window !== 'undefined' ? window.Chicken : null),
             Sheep: typeof Sheep !== 'undefined' ? Sheep : (typeof window !== 'undefined' ? window.Sheep : null),
             Cow: typeof Cow !== 'undefined' ? Cow : (typeof window !== 'undefined' ? window.Cow : null),
+            Pigeon: typeof Pigeon !== 'undefined' ? Pigeon : (typeof window !== 'undefined' ? window.Pigeon : null),
+            Parrot: typeof Parrot !== 'undefined' ? Parrot : (typeof window !== 'undefined' ? window.Parrot : null),
             Zombie: typeof Zombie !== 'undefined' ? Zombie : (typeof window !== 'undefined' ? window.Zombie : null),
             Creeper: typeof Creeper !== 'undefined' ? Creeper : (typeof window !== 'undefined' ? window.Creeper : null),
             Scorpion: typeof Scorpion !== 'undefined' ? Scorpion : (typeof window !== 'undefined' ? window.Scorpion : null)
@@ -1951,11 +2077,80 @@ if (typeof window !== 'undefined') {
                         }
                         break;
                     }
+
+                    case 'ATLAS_EXPLORER_ARRIVED': {
+                        if (typeof window !== 'undefined' && window.RiftExplorerSpawner && typeof window.RiftExplorerSpawner.handleRemoteArrival === 'function') {
+                            window.RiftExplorerSpawner.handleRemoteArrival(packet);
+                        }
+                        break;
+                    }
+
+                    case 'ATLAS_EXPLORER_DEPARTED': {
+                        if (typeof window !== 'undefined' && window.RiftExplorerSpawner && typeof window.RiftExplorerSpawner.handleRemoteDeparture === 'function') {
+                            window.RiftExplorerSpawner.handleRemoteDeparture(packet);
+                        }
+                        break;
+                    }
+
+                    case 'EXECUTE_ATLAS_TRADE_REQ': {
+                        if (typeof window !== 'undefined' && window.AtlasTradeManager && typeof window.AtlasTradeManager.handleTradeRequest === 'function') {
+                            window.AtlasTradeManager.handleTradeRequest(packet);
+                        }
+                        break;
+                    }
+
+                    case 'EXECUTE_ATLAS_TRADE_RES': {
+                        if (typeof window !== 'undefined' && window.AtlasTradeManager && typeof window.AtlasTradeManager.handleTradeResponse === 'function') {
+                            window.AtlasTradeManager.handleTradeResponse(packet);
+                        }
+                        break;
+                    }
+
+                    case 'sign_update': {
+                        if (packet.x !== undefined && packet.y !== undefined) {
+                            const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+                            if (liveSigns) {
+                                liveSigns.set(`${packet.x}_${packet.y}`, {
+                                    text: packet.text || '',
+                                    lines: Array.isArray(packet.lines) ? packet.lines : [packet.text || '', '', '', '']
+                                });
+                            }
+                        }
+                        break;
+                    }
+
+                    case 'sign_delete': {
+                        if (packet.x !== undefined && packet.y !== undefined) {
+                            const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+                            if (liveSigns) liveSigns.delete(`${packet.x}_${packet.y}`);
+                        }
+                        break;
+                    }
                 }
             } catch(err) {
                 console.error("Error processing WebRTC data channel packet", err);
             }
         };
+    }
+
+    export function syncSign(x, y, text, lines) {
+        if (!isMultiplayer) return;
+        broadcastDataPacket({
+            type: 'sign_update',
+            x,
+            y,
+            text: text || '',
+            lines: Array.isArray(lines) ? lines : [text || '', '', '', '']
+        });
+    }
+
+    export function syncSignDelete(x, y) {
+        if (!isMultiplayer) return;
+        broadcastDataPacket({
+            type: 'sign_delete',
+            x,
+            y
+        });
     }
 
     export async function createMultiplayerRoom() {
@@ -2022,8 +2217,12 @@ if (typeof window !== 'undefined') {
         await peerConnection.setLocalDescription(offer);
 
         // 4. Save Room Document with Offer to Firestore
+        const activeMpSizeBtn = document.querySelector('#mp-world-size-selector button.active');
+        const chosenMpSize = (activeMpSizeBtn?.dataset?.size === 'big' || (typeof window !== 'undefined' && window.selectedMpWorldSize === 'big') || (typeof selectedMpWorldSize !== 'undefined' && selectedMpWorldSize === 'big')) ? 'big' : 'small';
+        const chosenMpWidth = (chosenMpSize === 'big' ? 2048 : 1024);
+        const chosenMpHeight = (chosenMpSize === 'big' ? 512 : 320);
         await setDoc(roomRef, {
-            worldName, gameMode, minigameType, difficulty: mpCreateDifficulty, worldSize: selectedMpWorldSize, starterItems, keepInventory: roomKeepInventory, achievementsEnabled: roomAchievementsEnabled, passwordHash, seed, timeOfDay: 0.2, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
+            worldName, gameMode, minigameType, difficulty: mpCreateDifficulty, worldSize: chosenMpSize, worldWidth: chosenMpWidth, worldHeight: chosenMpHeight, starterItems, keepInventory: roomKeepInventory, achievementsEnabled: roomAchievementsEnabled, passwordHash, seed, timeOfDay: 0.02, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
             createdAt: Date.now(), ownerId: window.user.uid, status: 'open',
             offer: { type: offer.type, sdp: offer.sdp }
         });
@@ -2246,9 +2445,9 @@ if (typeof window !== 'undefined') {
             currentDifficulty = roomData.difficulty || 'normal';
             keepInventory = currentDifficulty !== 'hardcore' && roomData.keepInventory === true;
             currentWorldAchievementsEnabled = (roomData.starterItems !== true && roomData.keepInventory !== true && roomData.achievementsEnabled !== false);
-            timeOfDay = roomData.timeOfDay ?? 0.2;
-            let targetSize = roomData.worldSize || (roomData.worldWidth > 700 ? 'big' : 'small');
-            setWorldDimensions(targetSize);
+            timeOfDay = roomData.timeOfDay ?? 0.02;
+            let targetSize = roomData.worldSize || (roomData.worldWidth > 1200 ? 'big' : 'small');
+            setWorldDimensions(targetSize, roomData.worldWidth, roomData.worldHeight);
             document.getElementById('mp-room-display').innerText = currentMpWorldName;
             
             if (!preserveLocalHostState) {
@@ -2291,6 +2490,14 @@ if (typeof window !== 'undefined') {
                         if (Array.isArray(cwData.furnaces)) {
                             furnaces = cwData.furnaces;
                         }
+                        if (cwData.signs) {
+                            const restoredSigns = new Map(Object.entries(cwData.signs));
+                            if (typeof window !== 'undefined' && typeof window.setEngineSigns === 'function') {
+                                window.setEngineSigns(restoredSigns);
+                            } else if (typeof window !== 'undefined') {
+                                window.signs = restoredSigns;
+                            }
+                        }
                     } else if (cwData && cwData.worldRle) {
                         world = decompressWorld(cwData.worldRle, WORLD_WIDTH, WORLD_HEIGHT);
                         if (cwData.bgWorldRle) {
@@ -2310,6 +2517,14 @@ if (typeof window !== 'undefined') {
                         if (Array.isArray(cwData.furnaces)) {
                             furnaces = cwData.furnaces;
                         }
+                        if (cwData.signs) {
+                            const restoredSigns = new Map(Object.entries(cwData.signs));
+                            if (typeof window !== 'undefined' && typeof window.setEngineSigns === 'function') {
+                                window.setEngineSigns(restoredSigns);
+                            } else if (typeof window !== 'undefined') {
+                                window.signs = restoredSigns;
+                            }
+                        }
                     } else {
                         generateWorld(targetSeed);
                     }
@@ -2319,12 +2534,31 @@ if (typeof window !== 'undefined') {
                 }
 
                 surfaceHeights = new Array(WORLD_WIDTH);
-                const nonGround = new Set([IDS.AIR, IDS.LEAVES, IDS.WOOD, IDS.TORCH, IDS.SAPLING, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP]);
+                const nonGroundFallback = new Set([
+                    IDS.AIR, IDS.LEAVES, IDS.JUNGLE_LEAVES,
+                    IDS.WOOD, IDS.JUNGLE_WOOD,
+                    IDS.SAPLING, IDS.JUNGLE_SAPLING,
+                    IDS.TORCH, IDS.LADDER, IDS.SIGN,
+                    IDS.SHORT_GRASS, IDS.TALL_GRASS,
+                    IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.FERN,
+                    IDS.VINES, IDS.BAMBOO, IDS.CACTUS,
+                    IDS.MELON, IDS.MELON_STEM, IDS.SUNBURST_MELON,
+                    IDS.VOID_BERRY_BUSH, IDS.PRISM_GLASS,
+                    IDS.DOOR, IDS.DOOR_TOP, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP,
+                    IDS.JUNGLE_DOOR, IDS.JUNGLE_DOOR_TOP, IDS.JUNGLE_DOOR_OPEN, IDS.JUNGLE_DOOR_OPEN_TOP,
+                    IDS.WHEAT_STAGE_1, IDS.WHEAT_STAGE_2, IDS.WHEAT_STAGE_3, IDS.WHEAT_STAGE_4
+                ]);
+                const isNonGroundBlock = (block) => {
+                    if (typeof window !== 'undefined' && typeof window.isNonSurfaceBlock === 'function') {
+                        return window.isNonSurfaceBlock(block);
+                    }
+                    return block === undefined || nonGroundFallback.has(block);
+                };
                 for (let x = 0; x < WORLD_WIDTH; x++) {
                     let surfY = WORLD_HEIGHT - 1;
                     for (let y = 0; y < WORLD_HEIGHT; y++) {
                         let b = world[x]?.[y];
-                        if (b !== undefined && !nonGround.has(b)) {
+                        if (b !== undefined && !isNonGroundBlock(b)) {
                             surfY = y;
                             break;
                         }
@@ -2356,7 +2590,7 @@ if (typeof window !== 'undefined') {
                 inventory.fill(null);
                 equippedArmor = [null, null, null, null];
                 if (roomData.starterItems !== false) {
-                    giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 16); giveItem(IDS.COOKED_PORKCHOP, 10); giveItem(IDS.TORCH, 32);
+                    giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 16); giveItem(IDS.COOKED_PORKCHOP, 10); giveItem(IDS.TORCH, 32); giveItem(IDS.SAPLING, 4);
                 }
                 camera.x = player.x + player.width / 2 - canvas.width / 2;
                 camera.y = player.y + player.height / 2 - canvas.height / 2;
@@ -2622,6 +2856,7 @@ if (typeof window !== 'undefined') {
                 saplingGrowthQueue: Object.fromEntries(saplingGrowthQueue),
                 cropGrowthQueue: Object.fromEntries(cropGrowthQueue),
                 furnaces: furnaces,
+                signs: Object.fromEntries((typeof window !== 'undefined' && window.signs) ? window.signs : (typeof signs !== 'undefined' ? signs : new Map())),
                 timestamp: Date.now()
             });
 
@@ -2728,5 +2963,9 @@ try { if (typeof DEFAULT_BETA_PASSWORD_HASH !== "undefined") window.DEFAULT_BETA
 try { if (typeof CLOSED_BETA_LOCALSTORAGE_KEY !== "undefined") window.CLOSED_BETA_LOCALSTORAGE_KEY = CLOSED_BETA_LOCALSTORAGE_KEY; } catch(e) {}
 try { if (typeof fetchClosedBetaConfig !== "undefined") window.fetchClosedBetaConfig = fetchClosedBetaConfig; } catch(e) {}
 try { if (typeof setClosedBetaLockState !== "undefined") window.setClosedBetaLockState = setClosedBetaLockState; } catch(e) {}
+try { if (typeof syncSign !== "undefined") window.syncSign = syncSign; } catch(e) {}
+try { if (typeof syncSignDelete !== "undefined") window.syncSignDelete = syncSignDelete; } catch(e) {}
+try { if (typeof listenToFriendsProfiles !== "undefined") window.listenToFriendsProfiles = listenToFriendsProfiles; } catch(e) {}
+try { if (typeof saveProfileCustomizationToCloud !== "undefined") window.saveProfileCustomizationToCloud = saveProfileCustomizationToCloud; } catch(e) {}
 
 

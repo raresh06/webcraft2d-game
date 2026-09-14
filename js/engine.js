@@ -35,6 +35,112 @@ export function setEngineGraphicsMode(mode) {
     }
 }
 
+// Granular Fabulous Graphics Configuration Schema & Presets
+export const DEFAULT_FABULOUS_CONFIG = {
+    colorGrading: true,        // Biome ambient color grading
+    volumetricFog: true,       // Multi-layer snow & rainforest fog
+    godRays: true,             // Crepuscular sunbeams through foliage
+    vignette: true,            // Cinematic corner vignette
+    heatShimmer: true,         // Desert atmospheric heat waves
+    foliageSway: true,         // Wind sway on grass, crops, saplings, flowers
+    windBreeze: true,          // Animated wind breeze gusts
+    waterEffects: true,        // Fluid surface ripples & specular glints
+    ambientParticles: true,    // Fireflies, leaves, snow, dust, spores
+    lavaGlow: true,            // Dynamic lava illumination & rising embers
+    bloomAura: true,           // Radiant celestial and torch bloom
+    preset: 'high'             // 'low' | 'medium' | 'high' | 'custom'
+};
+
+export const FABULOUS_PRESETS = {
+    low: {
+        colorGrading: true,
+        volumetricFog: false,
+        godRays: false,
+        vignette: true,
+        heatShimmer: false,
+        foliageSway: false,
+        windBreeze: false,
+        waterEffects: false,
+        ambientParticles: false,
+        lavaGlow: true,
+        bloomAura: false,
+        preset: 'low'
+    },
+    medium: {
+        colorGrading: true,
+        volumetricFog: true,
+        godRays: true,
+        vignette: true,
+        heatShimmer: false,
+        foliageSway: true,
+        windBreeze: false,
+        waterEffects: true,
+        ambientParticles: true,
+        lavaGlow: true,
+        bloomAura: true,
+        preset: 'medium'
+    },
+    high: {
+        colorGrading: true,
+        volumetricFog: true,
+        godRays: true,
+        vignette: true,
+        heatShimmer: true,
+        foliageSway: true,
+        windBreeze: true,
+        waterEffects: true,
+        ambientParticles: true,
+        lavaGlow: true,
+        bloomAura: true,
+        preset: 'high'
+    }
+};
+
+export function loadFabulousConfig() {
+    let cfg = { ...DEFAULT_FABULOUS_CONFIG };
+    if (typeof localStorage !== 'undefined') {
+        try {
+            const raw = localStorage.getItem('swc_fabulous_config');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (typeof parsed === 'object' && parsed !== null) {
+                    cfg = { ...cfg, ...parsed };
+                }
+            }
+        } catch (e) {}
+    }
+    return cfg;
+}
+
+export let fabulousConfig = loadFabulousConfig();
+
+export function setFabulousConfig(newConfig) {
+    fabulousConfig = { ...fabulousConfig, ...newConfig };
+    if (typeof localStorage !== 'undefined') {
+        try {
+            localStorage.setItem('swc_fabulous_config', JSON.stringify(fabulousConfig));
+        } catch (e) {}
+    }
+    if (typeof window !== 'undefined') {
+        window.fabulousConfig = fabulousConfig;
+    }
+    return fabulousConfig;
+}
+
+export function applyFabulousPreset(presetName) {
+    if (FABULOUS_PRESETS[presetName]) {
+        return setFabulousConfig(FABULOUS_PRESETS[presetName]);
+    }
+    return fabulousConfig;
+}
+
+export function getFabulousParticleBudget() {
+    if (!fabulousGraphics || !fabulousConfig.ambientParticles) return 0;
+    if (fabulousConfig.preset === 'low') return 0;
+    if (fabulousConfig.preset === 'medium') return 25;
+    return 55;
+}
+
 export function setEngineSetting(key, val) {
     if (key === 'showClouds') showClouds = val;
     else if (key === 'showDebug') showDebug = val;
@@ -65,11 +171,12 @@ export function ensureToolDurability(item) { if (typeof window !== 'undefined' &
 export function isTool(id) {
     if (typeof window !== 'undefined' && typeof window.isTool === 'function' && window.isTool !== isTool) return window.isTool(id);
     return [
-        IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE,
-        IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD,
-        IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE,
-        IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL,
-        IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE
+        IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE, IDS.ASTRAL_PICKAXE,
+        IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD, IDS.ASTRAL_SWORD,
+        IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE, IDS.ASTRAL_AXE,
+        IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL, IDS.ASTRAL_SHOVEL,
+        IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE,
+        IDS.KINETIC_SHEARS
     ].includes(id);
 }
 export function updateArmorUI() { if (typeof window !== 'undefined' && typeof window.updateArmorUI === 'function' && window.updateArmorUI !== updateArmorUI) return window.updateArmorUI(); }
@@ -86,7 +193,18 @@ export function syncFluidState() { if (typeof window !== 'undefined' && typeof w
 export function syncLocalPlayerState(immediate) { if (typeof window !== 'undefined' && typeof window.syncLocalPlayerState === 'function' && window.syncLocalPlayerState !== syncLocalPlayerState) return window.syncLocalPlayerState(immediate); }
 export function broadcastDataPacket(packet) { if (typeof window !== 'undefined' && typeof window.broadcastDataPacket === 'function' && window.broadcastDataPacket !== broadcastDataPacket) return window.broadcastDataPacket(packet); }
 export function deleteWorld(id, prompt) { if (typeof window !== 'undefined' && typeof window.deleteWorld === 'function' && window.deleteWorld !== deleteWorld) return window.deleteWorld(id, prompt); }
-export function spawnDroppedItem(itemId, x, y, count = 1) { if (typeof window !== 'undefined' && typeof window.spawnDroppedItem === 'function' && window.spawnDroppedItem !== spawnDroppedItem) return window.spawnDroppedItem(itemId, x, y, count); }
+export function spawnDroppedItem(itemId, x, y, count = 1) {
+    let dropId = `drop_${(typeof window !== 'undefined' && window.user?.uid) || 'local'}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const DropClass = (typeof ItemDrop !== 'undefined') ? ItemDrop : (typeof window !== 'undefined' ? window.ItemDrop : null);
+    if (DropClass) {
+        const drop = new DropClass(itemId, x, y, count, dropId);
+        droppedItems.push(drop);
+        if (typeof window !== 'undefined') {
+            window.droppedItems = droppedItems;
+        }
+        return drop;
+    }
+}
 export function toggleBackgroundBuildMode(mode) { if (typeof window !== 'undefined' && typeof window.toggleBackgroundBuildMode === 'function' && window.toggleBackgroundBuildMode !== toggleBackgroundBuildMode) return window.toggleBackgroundBuildMode(mode); }
 export function isMultiplayerAuthority() { if (typeof window !== 'undefined' && typeof window.isMultiplayerAuthority === 'function' && window.isMultiplayerAuthority !== isMultiplayerAuthority) return window.isMultiplayerAuthority(); return true; }
 export let currentAccentColor = (typeof window !== 'undefined' && window.currentAccentColor) ? window.currentAccentColor : '#e5a823';
@@ -158,7 +276,7 @@ export const TERMINAL_VELOCITY = 15;
 export const JUMP_FORCE = -8.5;
 export const MOVE_SPEED = 3.6;
 export const REACH = 4.2;
-export const DAY_LENGTH_FRAMES = 60 * 60 * 8;
+export const DAY_LENGTH_FRAMES = 60 * 60 * 20; // 72,000 frames = 20 minutes (Minecraft standard day cycle)
 export const DAY_LENGTH = 24000;
 export const CAVE_SKY_START_TILES = 6;
 export const CAVE_SKY_FADE_TILES = 3;
@@ -172,31 +290,36 @@ export const WATER_FLOW_MAX = 5;
 export const LAVA_FLOW_MAX = 3;
 export const WATER_FLOW_INTERVAL = 4;
 export const LAVA_FLOW_INTERVAL = 16;
-export let WORLD_WIDTH = 512;
-export let WORLD_HEIGHT = 256;
+export let WORLD_WIDTH = 1024;
+export let WORLD_HEIGHT = 320;
 export let currentWorldSize = 'small';
 
-export function setWorldDimensions(size) {
-    currentWorldSize = size === 'big' ? 'big' : 'small';
-    if (currentWorldSize === 'big') {
+export function setWorldDimensions(size, explicitWidth, explicitHeight) {
+    currentWorldSize = (size === 'big' || (explicitWidth && explicitWidth > 1200)) ? 'big' : 'small';
+    if (explicitWidth && explicitHeight) {
+        WORLD_WIDTH = explicitWidth;
+        WORLD_HEIGHT = explicitHeight;
+    } else if (currentWorldSize === 'big') {
+        WORLD_WIDTH = 2048;
+        WORLD_HEIGHT = 512;
+    } else {
         WORLD_WIDTH = 1024;
         WORLD_HEIGHT = 320;
-    } else {
-        WORLD_WIDTH = 512;
-        WORLD_HEIGHT = 256;
     }
     if (typeof window !== 'undefined') {
         window.currentWorldSize = currentWorldSize;
         window.WORLD_WIDTH = WORLD_WIDTH;
         window.WORLD_HEIGHT = WORLD_HEIGHT;
+        if (typeof window.isOffscreenMapDirty !== 'undefined') window.isOffscreenMapDirty = true;
     }
 }
+export let worldBiomes = null;
 
 export function getMaxAnimals() {
     if (isMultiplayer) {
-        return currentWorldSize === 'big' ? 18 : 10;
+        return currentWorldSize === 'big' ? 40 : 30;
     } else {
-        return currentWorldSize === 'big' ? 22 : 12;
+        return 40;
     }
 }
 
@@ -209,15 +332,32 @@ export function getMaxAnimals() {
     export let currentFps = 60;
     export let frameDeltaMs = 16.6;
 
-    export const FPS_CAP_OPTIONS = [60, 120, 0, 30];
+    export const FPS_CAP_OPTIONS = [60, 90, 120, 144, 240, 0, 30];
     export let fpsCap = typeof localStorage !== 'undefined' ? parseInt(localStorage.getItem('swc_fps_cap') || '60', 10) : 60;
     if (!FPS_CAP_OPTIONS.includes(fpsCap)) fpsCap = 60;
 
-    export function getFpsCapText() {
-        return fpsCap === 0 ? "Unlimited" : `${fpsCap} FPS`;
+    export function setEngineFpsCap(newCap) {
+        if (FPS_CAP_OPTIONS.includes(newCap)) {
+            fpsCap = newCap;
+        } else {
+            fpsCap = 60;
+        }
+        if (typeof localStorage !== 'undefined') {
+            try {
+                localStorage.setItem('swc_fps_cap', String(fpsCap));
+            } catch (e) {}
+        }
+        if (typeof window !== 'undefined') {
+            window.fpsCap = fpsCap;
+        }
+        return fpsCap;
     }
 
-    export const LIGHT_SCALE = 0.5;
+    export function getFpsCapText(cap = fpsCap) {
+        return cap === 0 ? "Unlimited" : `${cap} FPS`;
+    }
+
+    export const LIGHT_SCALE = 1.0;
     export let canvas = typeof document !== 'undefined' ? document.getElementById('gameCanvas') : null;
     export let ctx = canvas ? canvas.getContext('2d', { alpha: false }) : null;
     export let menuBgCanvas = typeof document !== 'undefined' ? document.getElementById('menuBgCanvas') : null;
@@ -321,20 +461,68 @@ export function getMaxAnimals() {
         }
     }
 
-    // Pre-rendered reusable light falloff stamp (GPU texture blit)
-    export const cachedTorchLightCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-    if (cachedTorchLightCanvas) {
-        cachedTorchLightCanvas.width = 256;
-        cachedTorchLightCanvas.height = 256;
-        const torchLightCtx = cachedTorchLightCanvas.getContext('2d');
-        const tGrad = torchLightCtx.createRadialGradient(128, 128, 0, 128, 128, 128);
-        tGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-        tGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        torchLightCtx.fillStyle = tGrad;
-        torchLightCtx.beginPath();
-        torchLightCtx.arc(128, 128, 128, 0, Math.PI * 2);
-        torchLightCtx.fill();
+    // 4x4 Bayer Dither Matrix for retro stepped pixel-art gradient transitions
+    const BAYER_4X4 = [
+        [  0/16,  8/16,  2/16, 10/16 ],
+        [ 12/16,  4/16, 14/16,  6/16 ],
+        [  3/16, 11/16,  1/16,  9/16 ],
+        [ 15/16,  7/16, 13/16,  5/16 ]
+    ];
+
+    // Pre-rendered Light Stamp: normal bright smooth circle with subtle pixel-art edge
+    export function generatePixelArtLightStamp(size = 256) {
+        if (typeof document === 'undefined') return null;
+        const c = document.createElement('canvas');
+        c.width = size;
+        c.height = size;
+        const ctx = c.getContext('2d');
+        if (!ctx) return c;
+
+        const imgData = ctx.createImageData(size, size);
+        const data = imgData.data;
+        const center = (size - 1) / 2;
+        const maxRadius = (size / 2) - 1;
+
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const dx = x - center;
+                const dy = y - center;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const u = dist / maxRadius;
+
+                if (u <= 1.0) {
+                    let alpha;
+                    if (u <= 0.80) {
+                        // Normal, smooth continuous gradient in the interior for maximum visibility like before
+                        alpha = Math.max(0, 1.0 - u);
+                    } else {
+                        // Subtle pixel-art stepped edge at the outer perimeter
+                        const t = (1.0 - u) / 0.20;
+                        const steps = 4;
+                        const scaled = t * steps;
+                        const band = Math.floor(scaled);
+                        const frac = scaled - band;
+                        const threshold = BAYER_4X4[y % 4][x % 4];
+                        const dithered = (frac > threshold) ? Math.min(steps, band + 1) : band;
+                        alpha = 0.20 * (dithered / steps);
+                    }
+
+                    if (alpha > 0.005) {
+                        const idx = (y * size + x) * 4;
+                        data[idx] = 255;
+                        data[idx + 1] = 255;
+                        data[idx + 2] = 255;
+                        data[idx + 3] = Math.round(alpha * 255);
+                    }
+                }
+            }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        return c;
     }
+
+    // Pre-rendered reusable light falloff stamp (256x256 high-resolution with smooth interior and pixel-art edge)
+    export const cachedTorchLightCanvas = typeof document !== 'undefined' ? generatePixelArtLightStamp(256) : null;
 
     // Pre-rendered reusable warm torch aura glow stamp
     export const cachedTorchGlowCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
@@ -347,6 +535,32 @@ export function getMaxAnimals() {
         gGrad.addColorStop(1, 'rgba(255, 82, 18, 0)');
         torchGlowCtx.fillStyle = gGrad;
         torchGlowCtx.fillRect(0, 0, 128, 128);
+    }
+
+    // Pre-rendered reusable radiant lava aura glow stamp
+    export const cachedLavaGlowCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedLavaGlowCanvas) {
+        cachedLavaGlowCanvas.width = 128;
+        cachedLavaGlowCanvas.height = 128;
+        const lavaGlowCtx = cachedLavaGlowCanvas.getContext('2d');
+        const lGrad = lavaGlowCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        lGrad.addColorStop(0, 'rgba(255, 110, 20, 0.36)');
+        lGrad.addColorStop(1, 'rgba(255, 60, 0, 0)');
+        lavaGlowCtx.fillStyle = lGrad;
+        lavaGlowCtx.fillRect(0, 0, 128, 128);
+    }
+
+    // Pre-rendered reusable bloom aura stamp
+    export const cachedBloomAuraCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    if (cachedBloomAuraCanvas) {
+        cachedBloomAuraCanvas.width = 128;
+        cachedBloomAuraCanvas.height = 128;
+        const bloomCtx = cachedBloomAuraCanvas.getContext('2d');
+        const bGrad = bloomCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        bGrad.addColorStop(0, 'rgba(255, 230, 150, 0.22)');
+        bGrad.addColorStop(1, 'rgba(255, 160, 50, 0)');
+        bloomCtx.fillStyle = bGrad;
+        bloomCtx.fillRect(0, 0, 128, 128);
     }
 
     // Pre-rendered reusable screen vignette stamp for Fabulous Graphics
@@ -420,20 +634,30 @@ export function getMaxAnimals() {
         moonGlowCtx.beginPath(); moonGlowCtx.arc(90, 90, 80, 0, Math.PI * 2); moonGlowCtx.fill();
     }
 
-    // Pre-rendered Soft Entity Drop Shadow Sprite
+    // Pre-rendered Pixel-Art Entity Drop Shadow Sprite (Retro Minecraft pixelated disc)
     export const cachedShadowCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
     if (cachedShadowCanvas) {
-        cachedShadowCanvas.width = 64;
-        cachedShadowCanvas.height = 16;
+        cachedShadowCanvas.width = 24;
+        cachedShadowCanvas.height = 8;
         const shadowCtx = cachedShadowCanvas.getContext('2d');
-        const shGrad = shadowCtx.createRadialGradient(32, 8, 0, 32, 8, 32);
-        shGrad.addColorStop(0, 'rgba(0, 0, 0, 0.42)');
-        shGrad.addColorStop(0.7, 'rgba(0, 0, 0, 0.35)');
-        shGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        shadowCtx.fillStyle = shGrad;
-        shadowCtx.beginPath();
-        shadowCtx.ellipse(32, 8, 30, 7, 0, 0, Math.PI * 2);
-        shadowCtx.fill();
+        if (shadowCtx) {
+            shadowCtx.imageSmoothingEnabled = false;
+            // Rasterize crisp stepped pixel-art ellipse with dark core and translucent outer rim
+            for (let y = 0; y < 8; y++) {
+                for (let x = 0; x < 24; x++) {
+                    const dx = (x - 11.5) / 11;
+                    const dy = (y - 3.5) / 3.5;
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq <= 0.55) {
+                        shadowCtx.fillStyle = 'rgba(0, 0, 0, 0.45)'; // Dark core
+                        shadowCtx.fillRect(x, y, 1, 1);
+                    } else if (distSq <= 1.0) {
+                        shadowCtx.fillStyle = 'rgba(0, 0, 0, 0.22)'; // Stepped pixel rim
+                        shadowCtx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+        }
     }
 
     // Persistent offscreen canvas and ImageData for pixel-art aurora rendering
@@ -467,6 +691,20 @@ export function getMaxAnimals() {
     export let lastHotbarItemId = null;
     export let sleepStartTime = 0;
     export let sleepTransitionMs = 3000;
+    export const PATCH_NOTES_0_1_5 = {
+        title: 'Beta 0.1.5 (Pigeon Wildlife, Flight Physics & Tree Perching)',
+        items: [
+            'Sweet Avian Wildlife (Pigeons): Populated biomes with sweet, innocent Pigeons featuring charming pixel art, shimmering emerald-violet neck collars, and expressive animations.',
+            'Aerodynamic Flight Physics: Pigeons possess genuine flight dynamics, flapping wings to soar effortlessly above tree canopies, smoothly banking into turns, and gliding gracefully.',
+            'Tree Foliage & Leaf Perching AI: Pigeons seek out tree canopies, landing softly on leaves to perch, look around with curious head tilts, and rest before taking flight again.',
+            'Ground Foraging & Pecking: Pigeons land on open fields to hunt for seeds, walking with realistic head bobs and rhythmically pecking the earth.',
+            'Skittish Startle Reflexes: Quick to startle—running close without seeds causes wild pigeons to scatter with fluttering wings and swiftly launch into the sky.',
+            'Seed Temptation & Flocking Calls: Holding seeds in your hand pacifies pigeons and tempts them to approach. An attracted pigeon signals companions within range, gathering a friendly flock.',
+            'Social Pairing: Pigeons often roam and fly in synchronized pairs, sticking close together across trees and meadows.',
+            'Bittersweet Master Achievement: Defeating an innocent pigeon unlocks the bittersweet Master achievement "Why Would You Do That?"... they drop no loot, and the world feels a little quieter.'
+        ]
+    };
+
     export const PATCH_NOTES_0_1_4_PATCH_1 = {
         title: 'Beta 0.1.4 (Patch 1 - Visuals, Combat & UI Polish)',
         items: [
@@ -540,8 +778,8 @@ export function getMaxAnimals() {
         ]
     };
 
-    export const LATEST_PATCH_NOTES = PATCH_NOTES_0_1_4_PATCH_1;
-    export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_1_4_PATCH_1, PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3];
+    export const LATEST_PATCH_NOTES = PATCH_NOTES_0_1_5;
+    export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_1_5, PATCH_NOTES_0_1_4_PATCH_1, PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3];
 
     export let mapSeed = Math.floor(Math.random() * 1000000);
     export function seededRandom() {
@@ -566,11 +804,13 @@ export function getMaxAnimals() {
     }
 
     export function getDayHungerDrainMultiplier() {
-        if (currentDifficulty === 'peaceful') return 1.0;
+        if (currentDifficulty === 'peaceful') return 0;
         const currentDays = Math.max(1, dayCount);
         // Slowly increases hunger exhaustion drain: +1.5% per day past day 1, capped at 1.75x (around day 51)
         const progress = Math.min(50, currentDays - 1);
-        return 1 + (progress * 0.015);
+        const baseMult = 1 + (progress * 0.015);
+        if (currentDifficulty === 'easy') return 0.5 * baseMult;
+        return baseMult;
     }
 
     export const diffDescriptions = {
@@ -591,6 +831,11 @@ export function getMaxAnimals() {
         PLOWED_DIRT: 36, FARMLAND: 36,
         WHEAT_STAGE_1: 37, WHEAT_STAGE_2: 38, WHEAT_STAGE_3: 39, WHEAT_STAGE_4: 40,
         JUKEBOX: 41,
+        JUNGLE_WOOD: 42, JUNGLE_LEAVES: 43, JUNGLE_PLANKS: 44, JUNGLE_SAPLING: 45,
+        JUNGLE_DOOR: 46, JUNGLE_DOOR_TOP: 47, JUNGLE_DOOR_OPEN: 48, JUNGLE_DOOR_OPEN_TOP: 49,
+        VINES: 50, MELON: 51, FERN: 52, BAMBOO: 53, MELON_STEM: 54,
+        EMERALD_ORE: 55, PRISM_GLASS: 56, VOID_STONE_BRICK: 57, ASTRAL_INFUSER: 58, VOID_BERRY_BUSH: 59, SUNBURST_MELON: 60,
+        SIGN: 61,
         STICK: 100, WOOD_PICKAXE: 101, STONE_PICKAXE: 102, 
         WOOD_SWORD: 103, STONE_SWORD: 104, WOOD_AXE: 105, 
         COAL: 106, GOLD_INGOT: 107,
@@ -608,7 +853,16 @@ export function getMaxAnimals() {
         WOOD_HOE: 152, STONE_HOE: 153, IRON_HOE: 154, GOLD_HOE: 155, DIAMOND_HOE: 156,
         WHEAT: 157, BREAD: 158,
         RAW_BEEF: 159, COOKED_BEEF: 160, LEATHER: 161,
-        EMPTY_VINYL: 162, VINYL_DISC: 162
+        EMPTY_VINYL: 162, VINYL_DISC: 162,
+        MELON_SLICE: 163, MELON_SEEDS: 164,
+        ASTRAL_EMERALD: 165, ASTRAL_SHARD: 166,
+        VOID_BERRY_SPORES: 167, VOID_BERRY: 168,
+        SUNBURST_MELON_SEEDS: 169, SUNBURST_MELON_SLICE: 170,
+        MUSIC_DISC_SYNTHWAVE: 171, MUSIC_DISC_AMBIENT: 172,
+        KINETIC_SHEARS: 173, STRIDER_BOOTS: 174,
+        ASTRAL_SWORD: 175, ASTRAL_PICKAXE: 176, ASTRAL_AXE: 177, ASTRAL_SHOVEL: 178,
+        ASTRAL_HELMET: 179, ASTRAL_CHESTPLATE: 180, ASTRAL_LEGGINGS: 181, ASTRAL_BOOTS: 182,
+        EMERALD: 183
     };
 
 
@@ -649,6 +903,26 @@ export function getMaxAnimals() {
     MINIMAP_COLOR_32[IDS.DOOR_OPEN] = 0xFF3D6B9E;
     MINIMAP_COLOR_32[IDS.DOOR_OPEN_TOP] = 0xFF3D6B9E;
     MINIMAP_COLOR_32[IDS.WOOL] = 0xFFF5F5F5;
+    MINIMAP_COLOR_32[IDS.JUNGLE_WOOD] = 0xFF33405C;
+    MINIMAP_COLOR_32[IDS.JUNGLE_LEAVES] = 0xFF347E1E;
+    MINIMAP_COLOR_32[IDS.JUNGLE_PLANKS] = 0xFF4F82B8;
+    MINIMAP_COLOR_32[IDS.JUNGLE_SAPLING] = 0xFF449E2E;
+    MINIMAP_COLOR_32[IDS.JUNGLE_DOOR] = 0xFF365D8D;
+    MINIMAP_COLOR_32[IDS.JUNGLE_DOOR_TOP] = 0xFF365D8D;
+    MINIMAP_COLOR_32[IDS.JUNGLE_DOOR_OPEN] = 0xFF365D8D;
+    MINIMAP_COLOR_32[IDS.JUNGLE_DOOR_OPEN_TOP] = 0xFF365D8D;
+    MINIMAP_COLOR_32[IDS.VINES] = 0xFF297A2D;
+    MINIMAP_COLOR_32[IDS.MELON] = 0xFF327D2E;
+    MINIMAP_COLOR_32[IDS.FERN] = 0xFF3C8E38;
+    MINIMAP_COLOR_32[IDS.BAMBOO] = 0xFF47A043;
+    MINIMAP_COLOR_32[IDS.MELON_STEM] = 0xFF42B37C;
+    MINIMAP_COLOR_32[IDS.EMERALD_ORE] = 0xFF50D050;
+    MINIMAP_COLOR_32[IDS.PRISM_GLASS] = 0xFFF0E0D0;
+    MINIMAP_COLOR_32[IDS.VOID_STONE_BRICK] = 0xFF4A1838;
+    MINIMAP_COLOR_32[IDS.ASTRAL_INFUSER] = 0xFF8A3070;
+    MINIMAP_COLOR_32[IDS.VOID_BERRY_BUSH] = 0xFFB04090;
+    MINIMAP_COLOR_32[IDS.SUNBURST_MELON] = 0xFF20A0F0;
+    MINIMAP_COLOR_32[IDS.SIGN] = 0xFF3A5579;
 
     export const HARDNESS = {
         [IDS.DIRT]: 20, [IDS.PLOWED_DIRT]: 20, [IDS.GRASS]: 25, [IDS.STONE]: 150, [IDS.COBBLESTONE]: 150,
@@ -662,10 +936,17 @@ export function getMaxAnimals() {
         [IDS.DOOR]: 45, [IDS.DOOR_TOP]: 45, [IDS.DOOR_OPEN]: 45, [IDS.DOOR_OPEN_TOP]: 45, [IDS.CHEST]: 45,
         [IDS.LADDER]: 10, [IDS.WOODEN_STAIRS]: 60, [IDS.WOODEN_STAIRS_RIGHT]: 60,
         [IDS.COBBLESTONE_STAIRS]: 150, [IDS.COBBLESTONE_STAIRS_RIGHT]: 150,
-        [IDS.WATER]: 1, [IDS.LAVA]: 1
+        [IDS.WATER]: 1, [IDS.LAVA]: 1,
+        [IDS.JUNGLE_WOOD]: 60, [IDS.JUNGLE_LEAVES]: 5, [IDS.JUNGLE_PLANKS]: 60, [IDS.JUNGLE_SAPLING]: 5,
+        [IDS.JUNGLE_DOOR]: 45, [IDS.JUNGLE_DOOR_TOP]: 45, [IDS.JUNGLE_DOOR_OPEN]: 45, [IDS.JUNGLE_DOOR_OPEN_TOP]: 45,
+        [IDS.VINES]: 5, [IDS.MELON]: 30, [IDS.FERN]: 1, [IDS.BAMBOO]: 15, [IDS.MELON_STEM]: 1,
+        [IDS.EMERALD_ORE]: 240, [IDS.PRISM_GLASS]: 15, [IDS.VOID_STONE_BRICK]: 200,
+        [IDS.ASTRAL_INFUSER]: 250, [IDS.VOID_BERRY_BUSH]: 10, [IDS.SUNBURST_MELON]: 30,
+        [IDS.SIGN]: 15
     };
 
     export const ID_NAMES = Object.fromEntries(Object.entries(IDS).map(([k, v]) => [v, k.replace(/_/g, ' ')]));
+    ID_NAMES[IDS.SAPLING] = 'Oak Sapling';
     ID_NAMES[IDS.JUKEBOX] = 'Jukebox';
     ID_NAMES[IDS.EMPTY_VINYL] = 'Vinyl Disc';
     ID_NAMES[IDS.SHORT_GRASS] = 'Short Grass';
@@ -707,6 +988,21 @@ export function getMaxAnimals() {
     ID_NAMES[IDS.LEGGINGS_IRON] = 'Iron Leggings';
     ID_NAMES[IDS.BOOTS_IRON] = 'Iron Boots';
     ID_NAMES[IDS.HELMET_GOLD] = 'Golden Helmet';
+    ID_NAMES[IDS.JUNGLE_WOOD] = 'Jungle Wood';
+    ID_NAMES[IDS.JUNGLE_LEAVES] = 'Jungle Leaves';
+    ID_NAMES[IDS.JUNGLE_PLANKS] = 'Jungle Planks';
+    ID_NAMES[IDS.JUNGLE_SAPLING] = 'Jungle Sapling';
+    ID_NAMES[IDS.JUNGLE_DOOR] = 'Jungle Door';
+    ID_NAMES[IDS.JUNGLE_DOOR_TOP] = 'Jungle Door';
+    ID_NAMES[IDS.JUNGLE_DOOR_OPEN] = 'Jungle Door';
+    ID_NAMES[IDS.JUNGLE_DOOR_OPEN_TOP] = 'Jungle Door';
+    ID_NAMES[IDS.VINES] = 'Vines';
+    ID_NAMES[IDS.MELON] = 'Melon';
+    ID_NAMES[IDS.FERN] = 'Fern';
+    ID_NAMES[IDS.BAMBOO] = 'Bamboo';
+    ID_NAMES[IDS.MELON_STEM] = 'Melon Stem';
+    ID_NAMES[IDS.MELON_SLICE] = 'Melon Slice';
+    ID_NAMES[IDS.MELON_SEEDS] = 'Melon Seeds';
     ID_NAMES[IDS.CHESTPLATE_GOLD] = 'Golden Chestplate';
     ID_NAMES[IDS.LEGGINGS_GOLD] = 'Golden Leggings';
     ID_NAMES[IDS.BOOTS_GOLD] = 'Golden Boots';
@@ -714,6 +1010,32 @@ export function getMaxAnimals() {
     ID_NAMES[IDS.CHESTPLATE_DIAMOND] = 'Diamond Chestplate';
     ID_NAMES[IDS.LEGGINGS_DIAMOND] = 'Diamond Leggings';
     ID_NAMES[IDS.BOOTS_DIAMOND] = 'Diamond Boots';
+    ID_NAMES[IDS.EMERALD_ORE] = 'Emerald Ore';
+    ID_NAMES[IDS.PRISM_GLASS] = 'Prism Glass';
+    ID_NAMES[IDS.VOID_STONE_BRICK] = 'Void Stone Brick';
+    ID_NAMES[IDS.ASTRAL_INFUSER] = 'Astral Infuser';
+    ID_NAMES[IDS.VOID_BERRY_BUSH] = 'Void Berry Bush';
+    ID_NAMES[IDS.SUNBURST_MELON] = 'Sunburst Melon';
+    ID_NAMES[IDS.ASTRAL_EMERALD] = 'Astral Emerald';
+    ID_NAMES[IDS.ASTRAL_SHARD] = 'Astral Shard';
+    ID_NAMES[IDS.VOID_BERRY_SPORES] = 'Void Berry Spores';
+    ID_NAMES[IDS.VOID_BERRY] = 'Void Berry';
+    ID_NAMES[IDS.SUNBURST_MELON_SEEDS] = 'Sunburst Melon Seeds';
+    ID_NAMES[IDS.SUNBURST_MELON_SLICE] = 'Sunburst Melon Slice';
+    ID_NAMES[IDS.MUSIC_DISC_SYNTHWAVE] = 'Audio Relic - Neon Horizon';
+    ID_NAMES[IDS.MUSIC_DISC_AMBIENT] = 'Audio Relic - Echoes of the Void';
+    ID_NAMES[IDS.KINETIC_SHEARS] = 'Kinetic Shears';
+    ID_NAMES[IDS.STRIDER_BOOTS] = 'Strider Boots';
+    ID_NAMES[IDS.ASTRAL_SWORD] = 'Astral Sword';
+    ID_NAMES[IDS.ASTRAL_PICKAXE] = 'Astral Pickaxe';
+    ID_NAMES[IDS.ASTRAL_AXE] = 'Astral Axe';
+    ID_NAMES[IDS.ASTRAL_SHOVEL] = 'Astral Shovel';
+    ID_NAMES[IDS.ASTRAL_HELMET] = 'Astral Helmet';
+    ID_NAMES[IDS.ASTRAL_CHESTPLATE] = 'Astral Chestplate';
+    ID_NAMES[IDS.ASTRAL_LEGGINGS] = 'Astral Leggings';
+    ID_NAMES[IDS.ASTRAL_BOOTS] = 'Astral Boots';
+    ID_NAMES[IDS.EMERALD] = 'Emerald';
+    ID_NAMES[IDS.SIGN] = 'Sign';
 
     export const TOOL_DURABILITY = {
         [IDS.WOOD_PICKAXE]: 60, [IDS.WOOD_AXE]: 60, [IDS.WOOD_SWORD]: 60,
@@ -725,26 +1047,33 @@ export function getMaxAnimals() {
         [IDS.GOLD_PICKAXE]: 180, [IDS.GOLD_AXE]: 180, [IDS.GOLD_SWORD]: 180,
         [IDS.GOLD_SHOVEL]: 180, [IDS.GOLD_HOE]: 180,
         [IDS.DIAMOND_PICKAXE]: 480, [IDS.DIAMOND_AXE]: 480, [IDS.DIAMOND_SWORD]: 480,
-        [IDS.DIAMOND_SHOVEL]: 480, [IDS.DIAMOND_HOE]: 480
+        [IDS.DIAMOND_SHOVEL]: 480, [IDS.DIAMOND_HOE]: 480,
+        [IDS.ASTRAL_PICKAXE]: 750, [IDS.ASTRAL_AXE]: 750, [IDS.ASTRAL_SWORD]: 750,
+        [IDS.ASTRAL_SHOVEL]: 750, [IDS.KINETIC_SHEARS]: 500
     };
 
     export const ARMOR_DURABILITY = {
         [IDS.HELMET_IRON]: 165, [IDS.CHESTPLATE_IRON]: 240, [IDS.LEGGINGS_IRON]: 225, [IDS.BOOTS_IRON]: 195,
         [IDS.HELMET_GOLD]: 77, [IDS.CHESTPLATE_GOLD]: 112, [IDS.LEGGINGS_GOLD]: 105, [IDS.BOOTS_GOLD]: 91,
-        [IDS.HELMET_DIAMOND]: 363, [IDS.CHESTPLATE_DIAMOND]: 528, [IDS.LEGGINGS_DIAMOND]: 495, [IDS.BOOTS_DIAMOND]: 429
+        [IDS.HELMET_DIAMOND]: 363, [IDS.CHESTPLATE_DIAMOND]: 528, [IDS.LEGGINGS_DIAMOND]: 495, [IDS.BOOTS_DIAMOND]: 429,
+        [IDS.ASTRAL_HELMET]: 520, [IDS.ASTRAL_CHESTPLATE]: 650, [IDS.ASTRAL_LEGGINGS]: 600, [IDS.ASTRAL_BOOTS]: 540,
+        [IDS.STRIDER_BOOTS]: 500
     };
 
     export const ARMOR_DEFENSE = {
         [IDS.HELMET_IRON]: 2, [IDS.CHESTPLATE_IRON]: 6, [IDS.LEGGINGS_IRON]: 5, [IDS.BOOTS_IRON]: 2,
         [IDS.HELMET_GOLD]: 2, [IDS.CHESTPLATE_GOLD]: 5, [IDS.LEGGINGS_GOLD]: 3, [IDS.BOOTS_GOLD]: 1,
-        [IDS.HELMET_DIAMOND]: 3, [IDS.CHESTPLATE_DIAMOND]: 8, [IDS.LEGGINGS_DIAMOND]: 6, [IDS.BOOTS_DIAMOND]: 3
+        [IDS.HELMET_DIAMOND]: 3, [IDS.CHESTPLATE_DIAMOND]: 8, [IDS.LEGGINGS_DIAMOND]: 6, [IDS.BOOTS_DIAMOND]: 3,
+        [IDS.ASTRAL_HELMET]: 4, [IDS.ASTRAL_CHESTPLATE]: 9, [IDS.ASTRAL_LEGGINGS]: 7, [IDS.ASTRAL_BOOTS]: 4,
+        [IDS.STRIDER_BOOTS]: 2
     };
 
     export const ARMOR_SLOT_TYPE = {
-        [IDS.HELMET_IRON]: 0, [IDS.HELMET_GOLD]: 0, [IDS.HELMET_DIAMOND]: 0,
-        [IDS.CHESTPLATE_IRON]: 1, [IDS.CHESTPLATE_GOLD]: 1, [IDS.CHESTPLATE_DIAMOND]: 1,
-        [IDS.LEGGINGS_IRON]: 2, [IDS.LEGGINGS_GOLD]: 2, [IDS.LEGGINGS_DIAMOND]: 2,
-        [IDS.BOOTS_IRON]: 3, [IDS.BOOTS_GOLD]: 3, [IDS.BOOTS_DIAMOND]: 3
+        [IDS.HELMET_IRON]: 0, [IDS.HELMET_GOLD]: 0, [IDS.HELMET_DIAMOND]: 0, [IDS.ASTRAL_HELMET]: 0,
+        [IDS.CHESTPLATE_IRON]: 1, [IDS.CHESTPLATE_GOLD]: 1, [IDS.CHESTPLATE_DIAMOND]: 1, [IDS.ASTRAL_CHESTPLATE]: 1,
+        [IDS.LEGGINGS_IRON]: 2, [IDS.LEGGINGS_GOLD]: 2, [IDS.LEGGINGS_DIAMOND]: 2, [IDS.ASTRAL_LEGGINGS]: 2,
+        [IDS.BOOTS_IRON]: 3, [IDS.BOOTS_GOLD]: 3, [IDS.BOOTS_DIAMOND]: 3, [IDS.ASTRAL_BOOTS]: 3,
+        [IDS.STRIDER_BOOTS]: 3
     };
 
 
@@ -784,13 +1113,14 @@ export function getMaxAnimals() {
         [IDS.STONE_PICKAXE]: 2,
         [IDS.IRON_PICKAXE]: 3,
         [IDS.GOLD_PICKAXE]: 4,
-        [IDS.DIAMOND_PICKAXE]: 5
+        [IDS.DIAMOND_PICKAXE]: 5,
+        [IDS.ASTRAL_PICKAXE]: 6
     };
 
     export function getRequiredMiningTier(blockId) {
         if (blockId === IDS.STONE || blockId === IDS.COAL_ORE || blockId === IDS.COBBLESTONE || blockId === IDS.FURNACE || blockId === IDS.COBBLESTONE_STAIRS || blockId === IDS.COBBLESTONE_STAIRS_LEFT || blockId === IDS.COBBLESTONE_STAIRS_RIGHT) return 1;
-        if (blockId === IDS.IRON_ORE) return 2;
-        if (blockId === IDS.GOLD_ORE || blockId === IDS.DIAMOND_ORE) return 3;
+        if (blockId === IDS.IRON_ORE || blockId === IDS.VOID_STONE_BRICK) return 2;
+        if (blockId === IDS.GOLD_ORE || blockId === IDS.DIAMOND_ORE || blockId === IDS.EMERALD_ORE || blockId === IDS.ASTRAL_INFUSER) return 3;
         return 0;
     }
 
@@ -1036,7 +1366,9 @@ export function getMaxAnimals() {
     export const BACKGROUND_BUILDING_BLOCKS = new Set([
         IDS.DIRT, IDS.GRASS, IDS.STONE, IDS.COBBLESTONE, IDS.WOOD, IDS.PLANKS,
         IDS.SAND, IDS.SNOW, IDS.WOOL, IDS.WOODEN_STAIRS, IDS.COBBLESTONE_STAIRS,
-        IDS.WOODEN_STAIRS_RIGHT, IDS.COBBLESTONE_STAIRS_RIGHT
+        IDS.WOODEN_STAIRS_RIGHT, IDS.COBBLESTONE_STAIRS_RIGHT,
+        IDS.JUNGLE_WOOD, IDS.JUNGLE_PLANKS,
+        IDS.VOID_STONE_BRICK, IDS.PRISM_GLASS
     ]);
     export function isBackgroundBuildingBlock(id) {
         return BACKGROUND_BUILDING_BLOCKS.has(id);
@@ -1045,18 +1377,22 @@ export function getMaxAnimals() {
         return id === IDS.RAW_PORKCHOP || id === IDS.COOKED_PORKCHOP || id === IDS.APPLE ||
                id === IDS.RAW_CHICKEN || id === IDS.COOKED_CHICKEN || id === IDS.RAW_MUTTON ||
                id === IDS.COOKED_MUTTON || id === IDS.BREAD ||
-               id === IDS.RAW_BEEF || id === IDS.COOKED_BEEF;
+               id === IDS.RAW_BEEF || id === IDS.COOKED_BEEF || id === IDS.MELON_SLICE ||
+               id === IDS.VOID_BERRY || id === IDS.SUNBURST_MELON_SLICE;
     }
     export let surfaceHeights = [];
     export let nonCollidableTreeWood = new Set();
     export function isWoodPartOfTree(wx, wy) {
-        if (!world || !world[wx] || world[wx][wy] !== IDS.WOOD) return false;
-        for (let dx = -3; dx <= 3; dx++) {
-            for (let dy = -8; dy <= 3; dy++) {
+        if (!world || !world[wx]) return false;
+        const b = world[wx][wy];
+        if (b !== IDS.WOOD && b !== IDS.JUNGLE_WOOD) return false;
+        for (let dx = -4; dx <= 4; dx++) {
+            for (let dy = -16; dy <= 4; dy++) {
                 const nx = wx + dx;
                 const ny = wy + dy;
                 if (nx >= 0 && nx < WORLD_WIDTH && ny >= 0 && ny < WORLD_HEIGHT) {
-                    if (world[nx]?.[ny] === IDS.LEAVES) return true;
+                    const leaf = world[nx]?.[ny];
+                    if (leaf === IDS.LEAVES || leaf === IDS.JUNGLE_LEAVES) return true;
                 }
             }
         }
@@ -1067,13 +1403,15 @@ export function getMaxAnimals() {
         for (let x = 0; x < WORLD_WIDTH; x++) {
             if (!world[x]) continue;
             for (let y = 0; y < WORLD_HEIGHT; y++) {
-                if (world[x][y] === IDS.WOOD && isWoodPartOfTree(x, y)) {
+                const b = world[x][y];
+                if ((b === IDS.WOOD || b === IDS.JUNGLE_WOOD) && isWoodPartOfTree(x, y)) {
                     nonCollidableTreeWood.add(`${x}_${y}`);
                 }
             }
         }
     }
     export let leafDecayQueue = new Map();
+    export let treeDecayClusters = new Map();
     export let saplingGrowthQueue = new Map();
     export let cropGrowthQueue = new Map();
     export let saplingBlockedWarnings = new Set();
@@ -1088,6 +1426,11 @@ export function getMaxAnimals() {
     export let chests = new Map();
     export let openedChest = null;
     export let jukeboxes = [];
+    export let signs = new Map();
+    export function setEngineSigns(m) {
+        signs = m instanceof Map ? m : new Map(Object.entries(m || {}));
+        if (typeof window !== 'undefined') window.signs = signs;
+    }
     
     export let isInventoryOpen = false;
     export let hotbarWheelLockUntil = 0;
@@ -1147,7 +1490,8 @@ export function getMaxAnimals() {
             [IDS.COAL_ORE]: { 1: '#3e3e3e', 2: '#222222', 3: '#111111' },
             [IDS.IRON_ORE]: { 1: '#f4d7c5', 2: '#d8af93', 3: '#8a6249' },
             [IDS.GOLD_ORE]: { 1: '#fff99a', 2: '#fcee4b', 3: '#b88d18' },
-            [IDS.DIAMOND_ORE]: { 1: '#c8ffff', 2: '#5decf2', 3: '#198c94' }
+            [IDS.DIAMOND_ORE]: { 1: '#c8ffff', 2: '#5decf2', 3: '#198c94' },
+            [IDS.EMERALD_ORE]: { 1: '#a7f3d0', 2: '#10b981', 3: '#047857' }
         };
         
         function getOakWoodPixel(px, py) {
@@ -1602,7 +1946,7 @@ export function getMaxAnimals() {
                     p(x, y, getPlowedDirtPixel(x, y));
                 }
                 else if (id === IDS.GRASS) p(x, y, getGrassBlockPixel(x, y));
-                else if (id === IDS.STONE || id === IDS.COAL_ORE || id === IDS.IRON_ORE || id === IDS.GOLD_ORE || id === IDS.DIAMOND_ORE) {
+                else if (id === IDS.STONE || id === IDS.COAL_ORE || id === IDS.IRON_ORE || id === IDS.GOLD_ORE || id === IDS.DIAMOND_ORE || id === IDS.EMERALD_ORE) {
                     p(x, y, getStonePixel(x, y));
                 }
                 else if (id === IDS.COBBLESTONE) {
@@ -1803,11 +2147,12 @@ export function getMaxAnimals() {
                     if (x === y + 1 && x >= 4 && x <= 13) p(x, y, '#4a3017');
                     if ((x === 7 && y === 7) || (x === 11 && y === 11)) p(x, y, '#3b2410');
                 }
-                else if ([IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE].includes(id)) {
+                else if ([IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE, IDS.ASTRAL_PICKAXE].includes(id)) {
                     const pal = id === IDS.WOOD_PICKAXE ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
                               : id === IDS.STONE_PICKAXE ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
                               : id === IDS.IRON_PICKAXE ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
                               : id === IDS.GOLD_PICKAXE ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : id === IDS.ASTRAL_PICKAXE ? { base: '#a855f7', light: '#f3e8ff', dark: '#6b21a8', border: '#3b0764' }
                               : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
                     // Handle
                     if (x === y && x >= 5 && x <= 13) p(x, y, '#855a30');
@@ -1823,11 +2168,12 @@ export function getMaxAnimals() {
                     if ((x === 2 && y === 8) || (x === 3 && y === 7) || (x === 7 && y === 3) || (x === 8 && y === 2)) p(x, y, pal.border);
                     if (x === 5 && y === 5) p(x, y, pal.dark);
                 }
-                else if ([IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD].includes(id)) {
+                else if ([IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD, IDS.ASTRAL_SWORD].includes(id)) {
                     const pal = id === IDS.WOOD_SWORD ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
                               : id === IDS.STONE_SWORD ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
                               : id === IDS.IRON_SWORD ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
                               : id === IDS.GOLD_SWORD ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : id === IDS.ASTRAL_SWORD ? { base: '#a855f7', light: '#f3e8ff', dark: '#6b21a8', border: '#3b0764' }
                               : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
                     // Pommel & Grip
                     if (x === 14 && y === 14) p(x, y, pal.dark);
@@ -1847,11 +2193,12 @@ export function getMaxAnimals() {
                     if ((x === 2 && y === 4) || (x === 3 && y === 5) || (x === 4 && y === 6) || (x === 5 && y === 7) || (x === 6 && y === 8)) p(x, y, pal.border);
                     if ((x === 4 && y === 2) || (x === 5 && y === 3) || (x === 6 && y === 4) || (x === 7 && y === 5) || (x === 8 && y === 6)) p(x, y, pal.border);
                 }
-                else if ([IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE].includes(id)) {
+                else if ([IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE, IDS.ASTRAL_AXE].includes(id)) {
                     const pal = id === IDS.WOOD_AXE ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
                               : id === IDS.STONE_AXE ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
                               : id === IDS.IRON_AXE ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
                               : id === IDS.GOLD_AXE ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : id === IDS.ASTRAL_AXE ? { base: '#a855f7', light: '#f3e8ff', dark: '#6b21a8', border: '#3b0764' }
                               : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
                     // Handle
                     if (x === y && x >= 4 && x <= 13) p(x, y, '#855a30');
@@ -1870,11 +2217,12 @@ export function getMaxAnimals() {
                     if (x === 4 && y === 4) p(x, y, pal.dark);
                     if (x === 5 && y === 4) p(x, y, pal.border);
                 }
-                else if ([IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL].includes(id)) {
+                else if ([IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL, IDS.ASTRAL_SHOVEL].includes(id)) {
                     const pal = id === IDS.WOOD_SHOVEL ? { base: '#9e7b4f', light: '#bda077', dark: '#73542f', border: '#4a3318' }
                               : id === IDS.STONE_SHOVEL ? { base: '#808080', light: '#a6a6a6', dark: '#595959', border: '#383838' }
                               : id === IDS.IRON_SHOVEL ? { base: '#d8d8d8', light: '#ffffff', dark: '#a8a8a8', border: '#6b7280' }
                               : id === IDS.GOLD_SHOVEL ? { base: '#facc15', light: '#fef08a', dark: '#ca8a04', border: '#854d0e' }
+                              : id === IDS.ASTRAL_SHOVEL ? { base: '#a855f7', light: '#f3e8ff', dark: '#6b21a8', border: '#3b0764' }
                               : { base: '#38bdf8', light: '#bae6fd', dark: '#0284c7', border: '#0369a1' };
                     // Handle
                     if (x === y && x >= 6 && x <= 13) p(x, y, '#855a30');
@@ -1996,25 +2344,134 @@ export function getMaxAnimals() {
                     }
                 }
                 else if (id === IDS.RAW_PORKCHOP) {
-                    if(Math.hypot(x-8, y-8) < 5) p(x, y, randColor(['#ff99cc', '#ff66aa']));
-                    if(x > 9 && y > 9 && Math.hypot(x-11, y-11) < 3) p(x, y, '#fff'); 
+                    const porkPixels = [
+                        "................",
+                        "....OOOO........",
+                        "...OFFFFOO......",
+                        "..OFFLLMMFOO....",
+                        ".OFLLMMMMLLFO...",
+                        ".OFLMMDDMMLLFO..",
+                        ".OLMMDDDDMMMbBO.",
+                        ".OLMDDDDDDMbbbBO",
+                        ".OLMMDDDDMMMbBO.",
+                        ".OFLLMMMMLLFO...",
+                        "..OFLLMMLLFO....",
+                        "...OFFFFFOO.....",
+                        "....OOOOOO......",
+                        "................",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#4c0519', 'F': '#fff1f2', 'f': '#ffe4e6', 'L': '#fda4af',
+                        'M': '#fb7185', 'D': '#e11d48', 'B': '#ffffff', 'b': '#cbd5e1'
+                    };
+                    const row = porkPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.COOKED_PORKCHOP) {
-                    if(Math.hypot(x-8, y-8) < 5) p(x, y, randColor(['#8B4513', '#A0522D']));
-                    if(x > 9 && y > 9 && Math.hypot(x-11, y-11) < 3) p(x, y, '#ccc');
+                    const cookedPorkPixels = [
+                        "................",
+                        "....OOOO........",
+                        "...OCCCCOO......",
+                        "..OCCLLMMCOO....",
+                        ".OCLLMMMMLLCO...",
+                        ".OCLMMDDMMLLCO..",
+                        ".OLMGDDDDMMMbBO.",
+                        ".OLMDDGGDDMbbbBO",
+                        ".OLMMDDDDMMMbBO.",
+                        ".OCLLMMMMLLCO...",
+                        "..OCLLMMLLCO....",
+                        "...OCCCCCOO.....",
+                        "....OOOOOO......",
+                        "................",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#271202', 'C': '#fef3c7', 'L': '#d97706', 'M': '#b45309',
+                        'D': '#78350f', 'G': '#451a03', 'B': '#f8fafc', 'b': '#94a3b8'
+                    };
+                    const row = cookedPorkPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.APPLE) {
-                    if(Math.hypot(x-8, y-9) < 4.5) p(x, y, randColor(['#ff3333', '#e60000', '#cc0000']));
-                    if(x===8 && y>4 && y<7) p(x, y, '#4a2c11'); 
-                    if(x===9 && y===5) p(x, y, '#33cc33'); 
+                    const applePixels = [
+                        "................",
+                        ".......sE.......",
+                        "......SGG.......",
+                        ".....SOOO.......",
+                        "....OLLRRO......",
+                        "...OLRRRRRO.....",
+                        "..OLRRRRRRRRO...",
+                        "..ORRRRRRRRRRO..",
+                        "..OMMRRRRRMMMD..",
+                        "..OMMMRRMMMMMD..",
+                        "..OMMMMMMMMMMD..",
+                        "...OMMMMMMMMD...",
+                        "...ODDMMMMDDD...",
+                        "....ODDDDDDDO...",
+                        ".....OOOOOO.....",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#450a0a', 'S': '#542609', 's': '#78350f', 'E': '#86efac',
+                        'G': '#22c55e', 'L': '#ffffff', 'R': '#ef4444', 'M': '#dc2626', 'D': '#991b1b'
+                    };
+                    const row = applePixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.RAW_CHICKEN) {
-                    if(Math.hypot(x-8, y-8) < 4) p(x, y, randColor(['#ffcccc', '#ffb3b3']));
-                    if(x > 9 && y > 9 && Math.hypot(x-11, y-11) < 2) p(x, y, '#fff'); 
+                    const rawChickenPixels = [
+                        "................",
+                        "...OOOO.........",
+                        "..OPLLMMO.......",
+                        ".OPLLMMMMO......",
+                        ".OPLMMMMDDO.....",
+                        ".OPMMMMMDDO.....",
+                        "..OMMMMDDO......",
+                        "...OMMDDO.......",
+                        "....OMDO........",
+                        ".....OBO........",
+                        "......ObBO......",
+                        ".......ObBO.....",
+                        "......ObbbBO....",
+                        "......OBBBB.....",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#3f1d1d', 'P': '#fed7aa', 'L': '#fca5a5', 'M': '#f87171',
+                        'D': '#dc2626', 'B': '#f8fafc', 'b': '#cbd5e1'
+                    };
+                    const row = rawChickenPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.COOKED_CHICKEN) {
-                    if(Math.hypot(x-8, y-8) < 4) p(x, y, randColor(['#d98c53', '#cc7a3d']));
-                    if(x > 9 && y > 9 && Math.hypot(x-11, y-11) < 2) p(x, y, '#e6ccb3');
+                    const cookedChickenPixels = [
+                        "................",
+                        "...OOOO.........",
+                        "..OKGGMMO.......",
+                        ".OKGGMMMMO......",
+                        ".OKGMMMMDDO.....",
+                        ".OKMMMMMDDO.....",
+                        "..OMMMMDDO......",
+                        "...OMMDDO.......",
+                        "....OMDO........",
+                        ".....OBO........",
+                        "......ObBO......",
+                        ".......ObBO.....",
+                        "......ObbbBO....",
+                        "......OBBBB.....",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#271202', 'K': '#fef08a', 'G': '#f59e0b', 'M': '#d97706',
+                        'D': '#78350f', 'B': '#f8fafc', 'b': '#cbd5e1'
+                    };
+                    const row = cookedChickenPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.FEATHER) {
                     if (x+y>8 && x+y<24 && Math.abs(x-y)<3) p(x,y, '#ffffff');
@@ -2026,12 +2483,56 @@ export function getMaxAnimals() {
                     if ((x + y) % 4 === 0 && x > 1 && x < 14 && y > 2 && y < 14) p(x, y, '#d0d0d0');
                 }
                 else if (id === IDS.RAW_MUTTON) {
-                    if (Math.hypot(x-8, y-8) < 5) p(x, y, randColor(['#d98282', '#c96f6f', '#ed9b9b']));
-                    if (x > 9 && y > 9 && Math.hypot(x-11, y-11) < 2) p(x, y, '#fff');
+                    const rawMuttonPixels = [
+                        "................",
+                        "....OOOO........",
+                        "...OFFFFOO......",
+                        "..OFFLLMMFOO....",
+                        ".OFLLMMMMMDDO...",
+                        ".OFLMMDDDDDDDDO.",
+                        ".OLMDDDDDDMMMbBO",
+                        ".OLMDDDDDDMMbbbB",
+                        "..OMDDDDMMMMObBO",
+                        "...OMMMMMMMFO...",
+                        "....OMMMMMFO....",
+                        ".....OFFFFO.....",
+                        "......OOOO......",
+                        "................",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#360808', 'F': '#f8fafc', 'f': '#e2e8f0', 'L': '#e11d48',
+                        'M': '#be123c', 'D': '#881337', 'B': '#ffffff', 'b': '#94a3b8'
+                    };
+                    const row = rawMuttonPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.COOKED_MUTTON) {
-                    if (Math.hypot(x-8, y-8) < 5) p(x, y, randColor(['#8c4a38', '#733828', '#a65d49']));
-                    if (x > 9 && y > 9 && Math.hypot(x-11, y-11) < 2) p(x, y, '#e6ccb3');
+                    const cookedMuttonPixels = [
+                        "................",
+                        "....OOOO........",
+                        "...OCCCCOO......",
+                        "..OCCLLMMCOO....",
+                        ".OCLLMMMMMDDO...",
+                        ".OCLMMDDDDDDDDO.",
+                        ".OLMDDDDDDMMMbBO",
+                        ".OLMDDDDDDMMbbbB",
+                        "..OMDDDDMMMMObBO",
+                        "...OMMMMMMCO....",
+                        "....OMMMMMCO....",
+                        ".....OCCCCO.....",
+                        "......OOOO......",
+                        "................",
+                        "................",
+                        "................"
+                    ];
+                    const col = {
+                        'O': '#1c0c04', 'C': '#d97706', 'L': '#b45309', 'M': '#78350f',
+                        'D': '#451a03', 'B': '#f8fafc', 'b': '#94a3b8'
+                    };
+                    const row = cookedMuttonPixels[y];
+                    if (row && row[x] && col[row[x]]) p(x, y, col[row[x]]);
                 }
                 else if (id === IDS.RAW_BEEF) {
                     const beefPixels = [
@@ -2249,6 +2750,24 @@ export function getMaxAnimals() {
                         p(x, y, '#5c3e1e');
                     }
                 }
+                else if (id === IDS.SIGN) {
+                    // Wooden post in center bottom (x: 7-8, y: 10-15)
+                    if ((x === 7 || x === 8) && y >= 10 && y <= 15) {
+                        p(x, y, x === 7 ? '#6b4931' : '#523720');
+                    }
+                    // Wooden sign board on top (x: 1 to 14, y: 1 to 9)
+                    else if (x >= 1 && x <= 14 && y >= 1 && y <= 9) {
+                        if (x === 1 || x === 14 || y === 1 || y === 9) {
+                            p(x, y, '#4a3318'); // border outline
+                        } else {
+                            p(x, y, (x + y) % 2 === 0 ? '#9e7b4f' : '#a68254'); // oak plank surface
+                        }
+                        // Subtle text lines on board
+                        if ((y === 4 || y === 6) && x >= 3 && x <= 12 && x !== 6 && x !== 9) {
+                            p(x, y, '#59442a');
+                        }
+                    }
+                }
                 else if (id === IDS.WOODEN_STAIRS_RIGHT) {
                     const isSolidPart = (y >= 8) || (x >= 8);
                     if (isSolidPart) {
@@ -2290,10 +2809,10 @@ export function getMaxAnimals() {
                     if ((x === 3 && (y === 11 || y === 13)) || (x === 4 && y === 12) || (x === 2 && y === 12)) p(x, y, '#d0d0d0');
                     if ((x === 12 && (y === 2 || y === 4)) || (x === 13 && y === 3) || (x === 11 && y === 3)) p(x, y, '#ffffff');
                 }
-                else if ([IDS.HELMET_IRON, IDS.HELMET_GOLD, IDS.HELMET_DIAMOND].includes(id)) {
-                    let base = id === IDS.HELMET_IRON ? '#d0d0d0' : id === IDS.HELMET_GOLD ? '#ffcf33' : '#55e6e6';
-                    let highlight = id === IDS.HELMET_IRON ? '#ffffff' : id === IDS.HELMET_GOLD ? '#fff3a8' : '#b8ffff';
-                    let shadow = id === IDS.HELMET_IRON ? '#888888' : id === IDS.HELMET_GOLD ? '#b38600' : '#1d8f99';
+                else if ([IDS.HELMET_IRON, IDS.HELMET_GOLD, IDS.HELMET_DIAMOND, IDS.ASTRAL_HELMET].includes(id)) {
+                    let base = id === IDS.HELMET_IRON ? '#d0d0d0' : id === IDS.HELMET_GOLD ? '#ffcf33' : id === IDS.ASTRAL_HELMET ? '#9333ea' : '#55e6e6';
+                    let highlight = id === IDS.HELMET_IRON ? '#ffffff' : id === IDS.HELMET_GOLD ? '#fff3a8' : id === IDS.ASTRAL_HELMET ? '#f3e8ff' : '#b8ffff';
+                    let shadow = id === IDS.HELMET_IRON ? '#888888' : id === IDS.HELMET_GOLD ? '#b38600' : id === IDS.ASTRAL_HELMET ? '#3b0764' : '#1d8f99';
                     if (y >= 3 && y <= 12 && x >= 3 && x <= 12) {
                         if (y <= 8 || x <= 5 || x >= 10 || (y === 9 && (x === 6 || x === 9))) {
                             let c = base;
@@ -2302,11 +2821,12 @@ export function getMaxAnimals() {
                             p(x, y, c);
                         }
                     }
+                    if (id === IDS.ASTRAL_HELMET && ((x === 7 || x === 8) && y === 4)) p(x, y, '#c084fc');
                 }
-                else if ([IDS.CHESTPLATE_IRON, IDS.CHESTPLATE_GOLD, IDS.CHESTPLATE_DIAMOND].includes(id)) {
-                    let base = id === IDS.CHESTPLATE_IRON ? '#d0d0d0' : id === IDS.CHESTPLATE_GOLD ? '#ffcf33' : '#55e6e6';
-                    let highlight = id === IDS.CHESTPLATE_IRON ? '#ffffff' : id === IDS.CHESTPLATE_GOLD ? '#fff3a8' : '#b8ffff';
-                    let shadow = id === IDS.CHESTPLATE_IRON ? '#888888' : id === IDS.CHESTPLATE_GOLD ? '#b38600' : '#1d8f99';
+                else if ([IDS.CHESTPLATE_IRON, IDS.CHESTPLATE_GOLD, IDS.CHESTPLATE_DIAMOND, IDS.ASTRAL_CHESTPLATE].includes(id)) {
+                    let base = id === IDS.CHESTPLATE_IRON ? '#d0d0d0' : id === IDS.CHESTPLATE_GOLD ? '#ffcf33' : id === IDS.ASTRAL_CHESTPLATE ? '#9333ea' : '#55e6e6';
+                    let highlight = id === IDS.CHESTPLATE_IRON ? '#ffffff' : id === IDS.CHESTPLATE_GOLD ? '#fff3a8' : id === IDS.ASTRAL_CHESTPLATE ? '#f3e8ff' : '#b8ffff';
+                    let shadow = id === IDS.CHESTPLATE_IRON ? '#888888' : id === IDS.CHESTPLATE_GOLD ? '#b38600' : id === IDS.ASTRAL_CHESTPLATE ? '#3b0764' : '#1d8f99';
                     if (y >= 2 && y <= 13 && x >= 2 && x <= 13) {
                         if (y <= 5 || (x >= 4 && x <= 11) || (y <= 8 && (x <= 3 || x >= 12))) {
                             if (!(y <= 4 && x >= 6 && x <= 9)) {
@@ -2317,11 +2837,12 @@ export function getMaxAnimals() {
                             }
                         }
                     }
+                    if (id === IDS.ASTRAL_CHESTPLATE && ((x === 7 || x === 8) && (y === 7 || y === 8))) p(x, y, '#c084fc');
                 }
-                else if ([IDS.LEGGINGS_IRON, IDS.LEGGINGS_GOLD, IDS.LEGGINGS_DIAMOND].includes(id)) {
-                    let base = id === IDS.LEGGINGS_IRON ? '#d0d0d0' : id === IDS.LEGGINGS_GOLD ? '#ffcf33' : '#55e6e6';
-                    let highlight = id === IDS.LEGGINGS_IRON ? '#ffffff' : id === IDS.LEGGINGS_GOLD ? '#fff3a8' : '#b8ffff';
-                    let shadow = id === IDS.LEGGINGS_IRON ? '#888888' : id === IDS.LEGGINGS_GOLD ? '#b38600' : '#1d8f99';
+                else if ([IDS.LEGGINGS_IRON, IDS.LEGGINGS_GOLD, IDS.LEGGINGS_DIAMOND, IDS.ASTRAL_LEGGINGS].includes(id)) {
+                    let base = id === IDS.LEGGINGS_IRON ? '#d0d0d0' : id === IDS.LEGGINGS_GOLD ? '#ffcf33' : id === IDS.ASTRAL_LEGGINGS ? '#9333ea' : '#55e6e6';
+                    let highlight = id === IDS.LEGGINGS_IRON ? '#ffffff' : id === IDS.LEGGINGS_GOLD ? '#fff3a8' : id === IDS.ASTRAL_LEGGINGS ? '#f3e8ff' : '#b8ffff';
+                    let shadow = id === IDS.LEGGINGS_IRON ? '#888888' : id === IDS.LEGGINGS_GOLD ? '#b38600' : id === IDS.ASTRAL_LEGGINGS ? '#3b0764' : '#1d8f99';
                     if (y >= 2 && y <= 13 && x >= 3 && x <= 12) {
                         if (y <= 5 || x <= 6 || x >= 9) {
                             let c = base;
@@ -2330,17 +2851,419 @@ export function getMaxAnimals() {
                             p(x, y, c);
                         }
                     }
+                    if (id === IDS.ASTRAL_LEGGINGS && ((x === 5 || x === 10) && y === 8)) p(x, y, '#c084fc');
                 }
-                else if ([IDS.BOOTS_IRON, IDS.BOOTS_GOLD, IDS.BOOTS_DIAMOND].includes(id)) {
-                    let base = id === IDS.BOOTS_IRON ? '#d0d0d0' : id === IDS.BOOTS_GOLD ? '#ffcf33' : '#55e6e6';
-                    let highlight = id === IDS.BOOTS_IRON ? '#ffffff' : id === IDS.BOOTS_GOLD ? '#fff3a8' : '#b8ffff';
-                    let shadow = id === IDS.BOOTS_IRON ? '#888888' : id === IDS.BOOTS_GOLD ? '#b38600' : '#1d8f99';
+                else if ([IDS.BOOTS_IRON, IDS.BOOTS_GOLD, IDS.BOOTS_DIAMOND, IDS.ASTRAL_BOOTS, IDS.STRIDER_BOOTS].includes(id)) {
+                    let base = id === IDS.BOOTS_IRON ? '#d0d0d0' : id === IDS.BOOTS_GOLD ? '#ffcf33' : id === IDS.ASTRAL_BOOTS ? '#9333ea' : id === IDS.STRIDER_BOOTS ? '#059669' : '#55e6e6';
+                    let highlight = id === IDS.BOOTS_IRON ? '#ffffff' : id === IDS.BOOTS_GOLD ? '#fff3a8' : id === IDS.ASTRAL_BOOTS ? '#f3e8ff' : id === IDS.STRIDER_BOOTS ? '#6ee7b7' : '#b8ffff';
+                    let shadow = id === IDS.BOOTS_IRON ? '#888888' : id === IDS.BOOTS_GOLD ? '#b38600' : id === IDS.ASTRAL_BOOTS ? '#3b0764' : id === IDS.STRIDER_BOOTS ? '#064e3b' : '#1d8f99';
                     if (y >= 7 && y <= 13 && ((x >= 3 && x <= 6) || (x >= 9 && x <= 12))) {
                         let c = base;
                         if (x === 3 || x === 9 || y === 7) c = highlight;
                         else if (x === 6 || x === 12 || y === 13) c = shadow;
                         p(x, y, c);
                     }
+                    if (id === IDS.STRIDER_BOOTS) {
+                        // Winged heels
+                        if ((x === 1 && y === 9) || (x === 2 && (y === 8 || y === 9))) p(x, y, '#e0f2fe');
+                        if ((x === 14 && y === 9) || (x === 13 && (y === 8 || y === 9))) p(x, y, '#e0f2fe');
+                        if (x === 2 && y === 10) p(x, y, '#38bdf8');
+                        if (x === 13 && y === 10) p(x, y, '#38bdf8');
+                    }
+                }
+                else if (id === IDS.JUNGLE_WOOD) {
+                    let c = ['#564228', '#5e482c', '#4d3b24'][(x + Math.floor(y / 2)) % 3];
+                    if (y % 4 === 0 || (y % 4 === 2 && x % 4 === 0)) c = '#3c2e1c';
+                    else if ((x + y * 3) % 11 === 0) c = '#3d5228';
+                    p(x, y, c);
+                }
+                else if (id === IDS.JUNGLE_LEAVES) {
+                    if (Math.random() > 0.12) {
+                        p(x, y, randColor(['#1e7e34', '#28a745', '#155724', '#2d6a4f', '#38b000']));
+                    }
+                }
+                else if (id === IDS.JUNGLE_PLANKS) {
+                    let c = ['#b8824f', '#bf8956'][(x + Math.floor(y / 4)) % 2];
+                    if (y % 4 === 0 || (y % 4 === 2 && x % 8 === 0)) c = '#8a5c32';
+                    else if (y % 4 === 1 && x % 8 === 1) c = '#cca06e';
+                    p(x, y, c);
+                }
+                else if (id === IDS.JUNGLE_SAPLING) {
+                    if (x >= 7 && x <= 8 && y >= 6 && y <= 14) p(x, y, '#564228');
+                    if (x >= 4 && x <= 11 && y >= 3 && y <= 8 && (x + y) % 2 === 0) p(x, y, '#28a745');
+                    if (x >= 5 && x <= 10 && y >= 2 && y <= 7) p(x, y, '#38b000');
+                    if (x === 6 && y === 4) p(x, y, '#20c997');
+                }
+                else if (id === IDS.JUNGLE_DOOR_TOP || id === IDS.JUNGLE_DOOR) {
+                    let isEdge = (x === 0 || x === 15 || y === 0 || (id === IDS.JUNGLE_DOOR && y === 15));
+                    let c = isEdge ? '#633e1c' : ['#b8824f', '#bf8956'][x % 2];
+                    p(x, y, c);
+                    if (id === IDS.JUNGLE_DOOR_TOP) {
+                        let dx = x - 7.5, dy = y - 7.5;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 3.2) p(x, y, dist > 2.2 ? '#452a12' : '#38bdf8');
+                    }
+                    if (id === IDS.JUNGLE_DOOR && y === 2 && (x === 12 || x === 13)) p(x, y, '#facc15');
+                }
+                else if (id === IDS.JUNGLE_DOOR_OPEN_TOP || id === IDS.JUNGLE_DOOR_OPEN) {
+                    if (x <= 3) {
+                        let c = (x === 0 || x === 3) ? '#633e1c' : '#b8824f';
+                        p(x, y, c);
+                        if (id === IDS.JUNGLE_DOOR_OPEN_TOP && y >= 5 && y <= 10 && (x === 1 || x === 2)) p(x, y, '#38bdf8');
+                    }
+                }
+                else if (id === IDS.VINES) {
+                    const vineMask = (
+                        (x === 3 && y % 3 !== 0) || (x === 4 && (y >= 2 && y <= 14)) ||
+                        (x === 5 && (y === 4 || y === 8 || y === 12)) ||
+                        (x === 10 && (y >= 1 && y <= 15)) || (x === 11 && y % 4 !== 1) ||
+                        (x === 12 && (y === 3 || y === 7 || y === 11)) ||
+                        (x === 7 && (y >= 6 && y <= 13)) || (x === 8 && y % 2 === 0)
+                    );
+                    if (vineMask) {
+                        let c = (x + y) % 3 === 0 ? '#1b5e20' : ((x + y) % 2 === 0 ? '#2e7d32' : '#43a047');
+                        p(x, y, c);
+                    }
+                }
+                else if (id === IDS.MELON) {
+                    let stripe = Math.sin(x * 0.9 + Math.sin(y * 0.4) * 0.7);
+                    let c;
+                    if (stripe > 0.25) c = (x + y) % 4 === 0 ? '#4caf50' : '#388e3c';
+                    else if (stripe < -0.25) c = (x + y) % 4 === 0 ? '#1b5e20' : '#2e7d32';
+                    else c = '#28692c';
+                    if (x === 0 || x === 15 || y === 0 || y === 15) {
+                        if ((x + y) % 2 === 0) c = '#1b5e20';
+                    }
+                    p(x, y, c);
+                }
+                else if (id === IDS.MELON_SLICE) {
+                    if (y >= 3 && y <= 13 && x >= 2 && x <= 13) {
+                        let inWedge = (x + y >= 9 && x + y <= 21 && y - x <= 7 && x - y <= 7);
+                        if (inWedge) {
+                            let isRind = (x === 2 || y === 13 || (x + y === 9) || (x + y === 10));
+                            let isRindWhite = (x === 3 || y === 12 || x + y === 11);
+                            if (isRind) p(x, y, '#2e7d32');
+                            else if (isRindWhite) p(x, y, '#e8f5e9');
+                            else {
+                                let isSeed = (x === 7 && y === 8) || (x === 10 && y === 7) || (x === 8 && y === 10);
+                                p(x, y, isSeed ? '#1a1a1a' : ((x + y) % 3 === 0 ? '#d32f2f' : '#ef5350'));
+                            }
+                        }
+                    }
+                }
+                else if (id === IDS.MELON_SEEDS) {
+                    const mSeedDots = [
+                        [5, 9, '#262626'], [6, 8, '#404040'], [7, 7, '#d97706'], [7, 8, '#262626'],
+                        [9, 10, '#262626'], [10, 9, '#404040'], [11, 8, '#d97706'], [11, 9, '#262626'],
+                        [7, 12, '#262626'], [8, 11, '#404040'], [9, 11, '#262626']
+                    ];
+                    mSeedDots.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.FERN) {
+                    if (x >= 7 && x <= 8 && y >= 9 && y <= 15) p(x, y, '#2e7d32');
+                    if ((x >= 4 && x <= 11) && (y >= 4 && y <= 12)) {
+                        let isFrond = (Math.abs(x - 7.5) <= (14 - y) * 0.7);
+                        if (isFrond && (x + y) % 2 === 0) {
+                            p(x, y, (x + y) % 3 === 0 ? '#43a047' : '#2e7d32');
+                        }
+                    }
+                }
+                else if (id === IDS.BAMBOO) {
+                    if (x >= 6 && x <= 9) {
+                        let isNode = (y === 3 || y === 8 || y === 13);
+                        let c = isNode ? '#2e7d32' : ((x === 6) ? '#66bb6a' : (x === 9 ? '#388e3c' : '#4caf50'));
+                        p(x, y, c);
+                    }
+                    if ((y === 4 && (x === 5 || x === 10)) || (y === 3 && (x === 4 || x === 11))) p(x, y, '#81c784');
+                    if ((y === 9 && (x === 5 || x === 10)) || (y === 8 && (x === 4 || x === 11))) p(x, y, '#81c784');
+                }
+                else if (id === IDS.MELON_STEM) {
+                    if (x >= 7 && x <= 8 && y >= 11 && y <= 15) p(x, y, '#2e7d32');
+                    if (x >= 5 && x <= 10 && y >= 7 && y <= 10 && (x + y) % 2 === 0) p(x, y, '#66bb6a');
+                    if (x >= 3 && x <= 6 && y >= 5 && y <= 8) p(x, y, '#43a047');
+                }
+                else if (id === IDS.PRISM_GLASS) {
+                    const isBorder = (x === 0 || x === 15 || y === 0 || y === 15);
+                    const isInnerBorder = (x === 1 || x === 14 || y === 1 || y === 14);
+                    if (isBorder) {
+                        p(x, y, (x <= 1 || y <= 1) ? '#ffffff' : ((x >= 14 || y >= 14) ? '#6366f1' : '#c084fc'));
+                    } else if (isInnerBorder) {
+                        p(x, y, '#e0e7ff');
+                    } else {
+                        // Refractive translucent glass lattice
+                        let isGlint1 = (x + y === 7 || x + y === 8) && (x >= 2 && x <= 6);
+                        let isGlint2 = (x + y === 19 || x + y === 20) && (x >= 8 && x <= 13);
+                        let isSpark = (x === 4 && y === 4) || (x === 11 && y === 11);
+                        if (isSpark) p(x, y, '#ffffff');
+                        else if (isGlint1 || isGlint2) p(x, y, '#c7d2fe');
+                        else if ((x + y) % 5 === 0) p(x, y, '#a5b4fc');
+                        else if ((x * 3 + y * 7) % 11 === 0) p(x, y, '#fbcfe8');
+                    }
+                }
+                else if (id === IDS.VOID_STONE_BRICK) {
+                    const isMortarH = (y === 3 || y === 7 || y === 11 || y === 15);
+                    const isMortarV = ((y < 3 && x === 8) || (y > 3 && y < 7 && (x === 4 || x === 12)) ||
+                                       (y > 7 && y < 11 && x === 8) || (y > 11 && y < 15 && (x === 4 || x === 12)));
+                    if (isMortarH || isMortarV) {
+                        p(x, y, ((x + y) % 3 === 0) ? '#8b5cf6' : '#581c87');
+                    } else {
+                        const brickNoise = (x * 7 + y * 13) % 7;
+                        if (brickNoise === 0) p(x, y, '#3b0764');
+                        else if (brickNoise === 1) p(x, y, '#4c1d95');
+                        else if (brickNoise === 2) p(x, y, '#2e1065');
+                        else if (brickNoise === 3) p(x, y, '#1e102d');
+                        else if (brickNoise === 4) p(x, y, '#6b21a8');
+                        else p(x, y, '#241038');
+                    }
+                }
+                else if (id === IDS.ASTRAL_INFUSER) {
+                    // Heavy obsidian station with gold brackets and floating celestial core
+                    if (y >= 8) {
+                        // Obsidian Base
+                        let isCornerGold = (x <= 2 || x >= 13) && (y >= 13);
+                        let isRune = (y === 11 && (x === 5 || x === 7 || x === 10)) || (y === 10 && x === 8);
+                        if (isCornerGold) p(x, y, (x + y) % 2 === 0 ? '#fbbf24' : '#d97706');
+                        else if (isRune) p(x, y, '#c084fc');
+                        else p(x, y, (x + y) % 3 === 0 ? '#1e102d' : ((x + y) % 2 === 0 ? '#2e1065' : '#0f0919'));
+                    } else if (y >= 6) {
+                        // Altar Rim
+                        p(x, y, (x === 0 || x === 15) ? '#fbbf24' : ((x >= 5 && x <= 10) ? '#581c87' : '#3b0764'));
+                    } else {
+                        // Floating Astral Singularity Gem
+                        let dx = Math.abs(x - 7.5);
+                        let dy = Math.abs(y - 2.5);
+                        if (dx + dy <= 3) {
+                            if (dx + dy <= 1) p(x, y, '#ffffff');
+                            else if (dx <= 1 && dy <= 1) p(x, y, '#f3e8ff');
+                            else p(x, y, (x + y) % 2 === 0 ? '#c084fc' : '#38bdf8');
+                        }
+                    }
+                }
+                else if (id === IDS.VOID_BERRY_BUSH) {
+                    const bushMask = (
+                        (x >= 2 && x <= 13 && y >= 3 && y <= 15) &&
+                        !((x <= 3 || x >= 12) && y <= 4)
+                    );
+                    if (bushMask) {
+                        // Twilight leaf base
+                        let leafCol = (x + y) % 3 === 0 ? '#1e1b4b' : ((x + y) % 2 === 0 ? '#312e81' : '#172554');
+                        p(x, y, leafCol);
+                    }
+                    // Glowing violet berries
+                    const berryDots = [
+                        [4, 6, '#c084fc', '#ffffff'], [5, 6, '#a855f7', '#f3e8ff'], [4, 7, '#7c3aed', '#c084fc'],
+                        [10, 5, '#c084fc', '#ffffff'], [11, 5, '#a855f7', '#f3e8ff'], [11, 6, '#7c3aed', '#c084fc'],
+                        [7, 9, '#c084fc', '#ffffff'], [8, 9, '#a855f7', '#f3e8ff'], [8, 10, '#7c3aed', '#c084fc'],
+                        [5, 12, '#a855f7', '#c084fc'], [10, 11, '#c084fc', '#f3e8ff']
+                    ];
+                    berryDots.forEach(([bx, by, b1, b2]) => {
+                        p(bx, by, b1);
+                        if (bx > 0 && by > 0 && Math.random() < 0.3) p(bx, by, b2);
+                    });
+                }
+                else if (id === IDS.SUNBURST_MELON) {
+                    let stripe = Math.sin(x * 0.9 + Math.sin(y * 0.4) * 0.7);
+                    let c;
+                    if (stripe > 0.25) c = (x + y) % 4 === 0 ? '#fef08a' : '#fde047';
+                    else if (stripe < -0.25) c = (x + y) % 4 === 0 ? '#b45309' : '#d97706';
+                    else c = '#f59e0b';
+                    if (x === 0 || x === 15 || y === 0 || y === 15) {
+                        if ((x + y) % 2 === 0) c = '#78350f';
+                    }
+                    p(x, y, c);
+                }
+                else if (id === IDS.ASTRAL_EMERALD) {
+                    // Authentic Minecraft diamond-cut gem in celestial Astral Violet
+                    // 1. Dark Void Outline
+                    const outline = [
+                        [5,1],[6,1],[7,1],[8,1],[9,1],[10,1],
+                        [4,2],[11,2],[3,3],[12,3],[2,4],[13,4],
+                        [1,5],[1,6],[1,7],[1,8],[1,9],[1,10],
+                        [14,5],[14,6],[14,7],[14,8],[14,9],[14,10],
+                        [2,11],[13,11],[3,12],[12,12],[4,13],[11,13],
+                        [5,14],[6,14],[7,14],[8,14],[9,14],[10,14]
+                    ];
+                    outline.forEach(([gx, gy]) => p(gx, gy, '#140528'));
+
+                    // 2. Exact interior facet fills strictly bounded by outline
+                    const astralPalette = {
+                        W: '#ffffff', // Starlight glint
+                        H: '#f3e8ff', // Celestial highlight
+                        L: '#d8b4fe', // Light lavender
+                        V: '#c084fc', // Bright violet
+                        P: '#a855f7', // Astral purple
+                        M: '#9333ea', // Core purple
+                        D: '#7e22ce', // Deep purple
+                        S: '#581c87', // Shaded void
+                        Z: '#3b0764', // Dark void facet
+                        B: '#1e0836'  // Deepest void base
+                    };
+
+                    const astralRows = [
+                        { y: 2,  startX: 5, cols: ['V','V','V','V','V','M'] },
+                        { y: 3,  startX: 4, cols: ['W','W','W','H','H','P','M','M'] },
+                        { y: 4,  startX: 3, cols: ['W','W','W','H','V','V','P','P','D','D'] },
+                        { y: 5,  startX: 2, cols: ['H','V','V','P','P','P','P','M','M','D','D','D'] },
+                        { y: 6,  startX: 2, cols: ['H','V','V','P','P','P','P','M','M','S','S','S'] },
+                        { y: 7,  startX: 2, cols: ['V','P','P','M','M','M','M','D','D','S','S','S'] },
+                        { y: 8,  startX: 2, cols: ['V','P','P','M','M','M','M','D','D','Z','Z','Z'] },
+                        { y: 9,  startX: 2, cols: ['P','M','M','D','D','D','S','S','S','Z','Z','Z'] },
+                        { y: 10, startX: 2, cols: ['P','M','M','D','D','D','S','S','S','Z','Z','Z'] },
+                        { y: 11, startX: 3, cols: ['M','M','D','D','D','S','S','Z','Z','Z'] },
+                        { y: 12, startX: 4, cols: ['D','D','S','S','S','Z','Z','Z'] },
+                        { y: 13, startX: 5, cols: ['S','S','S','B','B','B'] }
+                    ];
+
+                    astralRows.forEach(row => {
+                        row.cols.forEach((code, idx) => {
+                            p(row.startX + idx, row.y, astralPalette[code]);
+                        });
+                    });
+                }
+                else if (id === IDS.EMERALD) {
+                    // Authentic Minecraft diamond-cut gem in radiant Emerald Green
+                    // 1. Dark Jade Outline
+                    const outline = [
+                        [5,1],[6,1],[7,1],[8,1],[9,1],[10,1],
+                        [4,2],[11,2],[3,3],[12,3],[2,4],[13,4],
+                        [1,5],[1,6],[1,7],[1,8],[1,9],[1,10],
+                        [14,5],[14,6],[14,7],[14,8],[14,9],[14,10],
+                        [2,11],[13,11],[3,12],[12,12],[4,13],[11,13],
+                        [5,14],[6,14],[7,14],[8,14],[9,14],[10,14]
+                    ];
+                    outline.forEach(([gx, gy]) => p(gx, gy, '#0a2e16'));
+
+                    // 2. Exact interior facet fills strictly bounded by outline
+                    const emeraldPalette = {
+                        W: '#ffffff', // Pure glint shine
+                        H: '#86efac', // Mint highlight
+                        L: '#4ade80', // Light emerald
+                        E: '#22c55e', // Vivid pure emerald
+                        M: '#16a34a', // Rich emerald body
+                        D: '#15803d', // Mid jade body
+                        S: '#166534', // Deep jade shadow
+                        Z: '#0f4a24', // Dark shadow facet
+                        B: '#0a2e16'  // Deepest base facet
+                    };
+
+                    const emeraldRows = [
+                        { y: 2,  startX: 5, cols: ['L','L','L','L','L','M'] },
+                        { y: 3,  startX: 4, cols: ['W','W','W','H','H','E','M','M'] },
+                        { y: 4,  startX: 3, cols: ['W','W','W','H','L','L','E','E','D','D'] },
+                        { y: 5,  startX: 2, cols: ['H','L','L','E','E','E','E','M','M','D','D','D'] },
+                        { y: 6,  startX: 2, cols: ['H','L','L','E','E','E','E','M','M','S','S','S'] },
+                        { y: 7,  startX: 2, cols: ['L','E','E','M','M','M','M','D','D','S','S','S'] },
+                        { y: 8,  startX: 2, cols: ['L','E','E','M','M','M','M','D','D','Z','Z','Z'] },
+                        { y: 9,  startX: 2, cols: ['E','M','M','D','D','D','S','S','S','Z','Z','Z'] },
+                        { y: 10, startX: 2, cols: ['E','M','M','D','D','D','S','S','S','Z','Z','Z'] },
+                        { y: 11, startX: 3, cols: ['M','M','D','D','D','S','S','Z','Z','Z'] },
+                        { y: 12, startX: 4, cols: ['D','D','S','S','S','Z','Z','Z'] },
+                        { y: 13, startX: 5, cols: ['S','S','S','B','B','B'] }
+                    ];
+
+                    emeraldRows.forEach(row => {
+                        row.cols.forEach((code, idx) => {
+                            p(row.startX + idx, row.y, emeraldPalette[code]);
+                        });
+                    });
+                }
+                else if (id === IDS.ASTRAL_SHARD) {
+                    const shardPixels = [
+                        [11, 2, '#ffffff'], [12, 2, '#ffffff'], [10, 3, '#f3e8ff'], [11, 3, '#c084fc'], [12, 3, '#38bdf8'],
+                        [9, 4, '#e9d5ff'], [10, 4, '#a855f7'], [11, 4, '#7c3aed'], [12, 4, '#38bdf8'],
+                        [8, 5, '#c084fc'], [9, 5, '#9333ea'], [10, 5, '#6b21a8'], [11, 5, '#0284c7'],
+                        [7, 6, '#a855f7'], [8, 6, '#7c3aed'], [9, 6, '#581c87'], [10, 6, '#0369a1'],
+                        [6, 7, '#c084fc'], [7, 7, '#9333ea'], [8, 7, '#6b21a8'], [9, 7, '#075985'],
+                        [6, 8, '#a855f7'], [7, 8, '#7c3aed'], [8, 8, '#581c87'], [9, 8, '#0c4a6e'],
+                        [5, 9, '#9333ea'], [6, 9, '#7c3aed'], [7, 9, '#3b0764'],
+                        [4, 10, '#7c3aed'], [5, 10, '#581c87'], [6, 10, '#2e1065'],
+                        [4, 11, '#6b21a8'], [5, 11, '#3b0764'],
+                        [3, 12, '#581c87'], [4, 12, '#2e1065'],
+                        [3, 13, '#3b0764']
+                    ];
+                    shardPixels.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.VOID_BERRY_SPORES) {
+                    const sporeDots = [
+                        [7, 8, '#ffffff'], [8, 8, '#c084fc'], [7, 9, '#a855f7'], [8, 9, '#581c87'],
+                        [5, 10, '#ffffff'], [6, 10, '#c084fc'], [5, 11, '#a855f7'], [6, 11, '#581c87'],
+                        [10, 9, '#ffffff'], [11, 9, '#c084fc'], [10, 10, '#a855f7'], [11, 10, '#581c87'],
+                        [4, 7, '#38bdf8'], [12, 7, '#c084fc'], [8, 5, '#e9d5ff'], [9, 13, '#38bdf8']
+                    ];
+                    sporeDots.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.VOID_BERRY) {
+                    // Small stem
+                    p(7, 4, '#06b6d4'); p(8, 3, '#0891b2'); p(9, 4, '#06b6d4');
+                    // Berries
+                    const berries = [
+                        [5, 7, '#c084fc'], [6, 6, '#ffffff'], [7, 6, '#e9d5ff'], [6, 7, '#a855f7'], [7, 7, '#7c3aed'], [6, 8, '#581c87'], [7, 8, '#3b0764'],
+                        [9, 6, '#c084fc'], [10, 6, '#ffffff'], [9, 7, '#a855f7'], [10, 7, '#7c3aed'], [10, 8, '#581c87'],
+                        [7, 9, '#c084fc'], [8, 9, '#ffffff'], [7, 10, '#a855f7'], [8, 10, '#7c3aed'], [8, 11, '#3b0764']
+                    ];
+                    berries.forEach(([bx, by, bcol]) => p(bx, by, bcol));
+                }
+                else if (id === IDS.SUNBURST_MELON_SEEDS) {
+                    const smSeedDots = [
+                        [5, 9, '#78350f'], [6, 8, '#b45309'], [7, 7, '#fef08a'], [7, 8, '#d97706'],
+                        [9, 10, '#78350f'], [10, 9, '#b45309'], [11, 8, '#fef08a'], [11, 9, '#d97706'],
+                        [7, 12, '#78350f'], [8, 11, '#b45309'], [9, 11, '#f59e0b']
+                    ];
+                    smSeedDots.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.SUNBURST_MELON_SLICE) {
+                    if (y >= 3 && y <= 13 && x >= 2 && x <= 13) {
+                        let inWedge = (x + y >= 9 && x + y <= 21 && y - x <= 7 && x - y <= 7);
+                        if (inWedge) {
+                            let isRind = (x === 2 || y === 13 || (x + y === 9) || (x + y === 10));
+                            let isRindWhite = (x === 3 || y === 12 || x + y === 11);
+                            if (isRind) p(x, y, '#78350f');
+                            else if (isRindWhite) p(x, y, '#fef08a');
+                            else {
+                                let isSeed = (x === 7 && y === 8) || (x === 10 && y === 7) || (x === 8 && y === 10);
+                                p(x, y, isSeed ? '#262626' : ((x + y) % 3 === 0 ? '#f59e0b' : '#fbbf24'));
+                            }
+                        }
+                    }
+                }
+                else if (id === IDS.MUSIC_DISC_SYNTHWAVE || id === IDS.MUSIC_DISC_AMBIENT) {
+                    const isSynth = (id === IDS.MUSIC_DISC_SYNTHWAVE);
+                    // Vinyl circular outline & grooves
+                    for (let vy = 1; vy <= 14; vy++) {
+                        for (let vx = 1; vx <= 14; vx++) {
+                            let dist = Math.hypot(vx - 7.5, vy - 7.5);
+                            if (dist <= 6.8) {
+                                if (dist <= 2.2) {
+                                    // Center label
+                                    if (dist <= 0.8) p(vx, vy, '#ffffff'); // Center hole
+                                    else p(vx, vy, isSynth ? '#ec4899' : '#06b6d4');
+                                } else if (dist <= 2.8) {
+                                    p(vx, vy, isSynth ? '#06b6d4' : '#6366f1');
+                                } else if (dist <= 6.2) {
+                                    // Vinyl groove lines
+                                    let isGroove = (Math.floor(dist * 2) % 2 === 0);
+                                    p(vx, vy, isGroove ? '#27272a' : '#18181b');
+                                } else {
+                                    p(vx, vy, '#09090b');
+                                }
+                            }
+                        }
+                    }
+                    // Vinyl sheen reflection
+                    p(4, 3, '#52525b'); p(5, 3, '#71717a'); p(10, 12, '#52525b'); p(11, 12, '#71717a');
+                }
+                else if (id === IDS.KINETIC_SHEARS) {
+                    // Brass pivot bolt
+                    p(7, 8, '#f59e0b'); p(8, 8, '#fbbf24');
+                    // Handles
+                    p(4, 11, '#3b0764'); p(5, 10, '#3b0764'); p(4, 12, '#581c87'); p(5, 12, '#581c87');
+                    p(11, 11, '#3b0764'); p(10, 10, '#3b0764'); p(11, 12, '#581c87'); p(10, 12, '#581c87');
+                    // Left blade
+                    p(6, 7, '#7c3aed'); p(5, 6, '#9333ea'); p(5, 5, '#a855f7'); p(4, 4, '#c084fc'); p(4, 3, '#ffffff');
+                    p(7, 6, '#581c87'); p(6, 5, '#7c3aed'); p(5, 4, '#9333ea');
+                    // Right blade
+                    p(9, 7, '#7c3aed'); p(10, 6, '#9333ea'); p(10, 5, '#a855f7'); p(11, 4, '#c084fc'); p(11, 3, '#ffffff');
+                    p(8, 6, '#581c87'); p(9, 5, '#7c3aed'); p(10, 4, '#9333ea');
                 }
             }
         }
@@ -2355,6 +3278,29 @@ export function getMaxAnimals() {
         textures[id] = tempCanvas;
     }
     Object.values(IDS).forEach(id => { if (id !== IDS.AIR) generateTexture(id); });
+
+    // Pre-rendered subterranean cavern wall backdrop textures
+    export const cachedCavernWallStone = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const cachedCavernWallDirt = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    export const cachedCavernWallSand = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+
+    export function initCavernWallTextures() {
+        if (typeof document === 'undefined') return;
+        const prepareWall = (targetCanvas, baseTex, darkTint) => {
+            if (!targetCanvas || !baseTex) return;
+            targetCanvas.width = 16;
+            targetCanvas.height = 16;
+            const wCtx = targetCanvas.getContext('2d');
+            wCtx.imageSmoothingEnabled = false;
+            wCtx.drawImage(baseTex, 0, 0, 16, 16);
+            wCtx.fillStyle = darkTint;
+            wCtx.fillRect(0, 0, 16, 16);
+        };
+        if (textures[IDS.STONE]) prepareWall(cachedCavernWallStone, textures[IDS.STONE], 'rgba(4, 4, 8, 0.78)');
+        if (textures[IDS.DIRT]) prepareWall(cachedCavernWallDirt, textures[IDS.DIRT], 'rgba(7, 5, 4, 0.75)');
+        if (textures[IDS.SAND]) prepareWall(cachedCavernWallSand, textures[IDS.SAND], 'rgba(12, 9, 6, 0.72)');
+    }
+    initCavernWallTextures();
 
     export const largeChestTexture = typeof document !== 'undefined' ? document.createElement('canvas') : null;
     if (largeChestTexture) {
@@ -2478,13 +3424,31 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX + 1 * sX, -pivotY, 2 * sX, 1 * sY);
             ctx.fillStyle = chestPal.trim;
             ctx.fillRect(-pivotX, -pivotY + 5 * sY, 4 * sX, 1 * sY);
+
+            if (chestPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY, 4 * sX, 6 * sY);
+            }
         }
 
         // 3. Draw Held Item
         if (renderItem && heldItemId && textures[heldItemId]) {
             ctx.translate(-pivotX + (4 * sX) / 2, -pivotY + (12 * sY)); 
-            ctx.rotate(-Math.PI / 4); // point outward
-            ctx.drawImage(textures[heldItemId], -10, -20, 24, 24);
+            const isHandheld = (typeof isTool === 'function' && isTool(heldItemId)) || [
+                IDS.STICK, IDS.TORCH, IDS.BOW, IDS.BONE, IDS.FEATHER,
+                IDS.ASTRAL_SHARD, IDS.CHRONO_ANCHOR, IDS.CELESTIAL_COMPASS, IDS.VOID_BEACON
+            ].includes(heldItemId);
+
+            if (isHandheld) {
+                // Diagonal handheld tool/weapon: pivot at grip (handle at hand), angled 45° forward & up in player facing direction
+                ctx.rotate(Math.PI * 0.5);
+                ctx.drawImage(textures[heldItemId], -20, -20, 24, 24);
+            } else {
+                // Blocks, food, and generic items held upright in front of the hand
+                ctx.rotate(Math.PI * 0.1);
+                ctx.drawImage(textures[heldItemId], -6, -18, 18, 18);
+            }
         }
         ctx.restore();
     }
@@ -2505,6 +3469,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX + 1 * sX, -pivotY + 1 * sY, 2 * sX, 4 * sY);
             ctx.fillStyle = legPal.trim;
             ctx.fillRect(-pivotX, -pivotY + 5 * sY, 4 * sX, 1 * sY);
+
+            if (legPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220 + 1) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY, 4 * sX, 6 * sY);
+            }
         }
 
         // 3. Draw Boot Armor (Attached directly to each individual swinging foot)
@@ -2517,6 +3487,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX, -pivotY + 7 * sY, 4 * sX, 1 * sY);
             ctx.fillStyle = bootPal.dark;
             ctx.fillRect(-pivotX, -pivotY + 11 * sY, 4 * sX, 1 * sY); // Boot sole
+
+            if (bootPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220 + 2) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY + 7 * sY, 4 * sX, 5 * sY);
+            }
         }
 
         ctx.restore();
@@ -2540,6 +3516,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX, -pivotY + 9 * sY, 8 * sX, 1 * sY);
             ctx.fillStyle = chestPal.dark;
             ctx.fillRect(-pivotX + 3 * sX, -pivotY + 3 * sY, 2 * sX, 6 * sY);
+
+            if (chestPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220 + 0.5) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY, 8 * sX, 10 * sY);
+            }
         }
 
         // 3. Draw Leggings Pelvis / Waistband on Lower Torso
@@ -2548,6 +3530,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX, -pivotY + 10 * sY, 8 * sX, 2 * sY);
             ctx.fillStyle = legPal.trim;
             ctx.fillRect(-pivotX, -pivotY + 10 * sY, 8 * sX, 1 * sY);
+
+            if (legPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220 + 1.5) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY + 10 * sY, 8 * sX, 2 * sY);
+            }
         }
 
         ctx.restore();
@@ -2571,6 +3559,12 @@ export const SKIN_H = 32;
             ctx.fillRect(-pivotX + 1 * sX, -pivotY, 6 * sX, 1 * sY); // Brow highlight
             ctx.fillStyle = helmetPal.dark;
             ctx.fillRect(-pivotX + 3 * sX, -pivotY + 3 * sY, 2 * sX, 3 * sY); // Nose guard
+
+            if (helmetPal.isAstral) {
+                const glintAlpha = 0.25 + Math.sin(Date.now() / 220) * 0.15;
+                ctx.fillStyle = `rgba(216, 180, 254, ${glintAlpha})`;
+                ctx.fillRect(-pivotX, -pivotY, 8 * sX, 6 * sY);
+            }
         }
 
         ctx.restore();
@@ -2588,11 +3582,62 @@ export const SKIN_H = 32;
         if (id === IDS.HELMET_DIAMOND || id === IDS.CHESTPLATE_DIAMOND || id === IDS.LEGGINGS_DIAMOND || id === IDS.BOOTS_DIAMOND) {
             return { base: '#22d3ee', trim: '#0891b2', highlight: '#cffafe', dark: '#164e63' };
         }
+        if (id === IDS.ASTRAL_HELMET || id === IDS.ASTRAL_CHESTPLATE || id === IDS.ASTRAL_LEGGINGS || id === IDS.ASTRAL_BOOTS) {
+            return { base: '#7c3aed', trim: '#5b21b6', highlight: '#e9d5ff', dark: '#2e1065', isAstral: true };
+        }
+        if (id === IDS.STRIDER_BOOTS) {
+            return { base: '#059669', trim: '#047857', highlight: '#6ee7b7', dark: '#064e3b', isAstral: true };
+        }
         return null;
     }
 
     // Central drawing function for local & remote characters with limb segmentation and armor overlays
-    export function drawCharacter(ctx, skinCanvas, x, y, w, h, facingRight, walkAnim, isMoving, isDamage, headTargetX, headTargetY, isAttacking, heldItemId, isClimbing = false, armorList = null) {
+    export function drawShoulderParrot(ctx, parrot, px, py, sX, sY) {
+        if (!parrot) return;
+        ctx.save();
+        ctx.translate(px, py);
+
+        const v = parrot.variant || 0;
+        let cBody = '#dc2626', cWing = '#eab308', cFlight = '#2563eb', cBeak = '#1e293b', cCrest = null;
+        if (v === 1) { cBody = '#16a34a'; cWing = '#ef4444'; cFlight = '#0d9488'; cBeak = '#fef08a'; }
+        else if (v === 2) { cBody = '#0284c7'; cWing = '#38bdf8'; cFlight = '#1d4ed8'; cBeak = '#111827'; }
+        else if (v === 3) { cBody = '#64748b'; cWing = '#f8fafc'; cFlight = '#475569'; cBeak = '#d1d5db'; cCrest = '#fde047'; }
+
+        // Tail
+        ctx.fillStyle = cFlight;
+        ctx.fillRect(-1.5 * sX, 3.5 * sY, 2.5 * sX, 3.5 * sY);
+
+        // Body
+        ctx.fillStyle = cBody;
+        ctx.fillRect(-1 * sX, 0, 3.5 * sX, 4.5 * sY);
+
+        // Head
+        ctx.fillRect(0.5 * sX, -3 * sY, 3 * sX, 3 * sY);
+
+        // Crest if cockatiel
+        if (cCrest) {
+            ctx.fillStyle = cCrest;
+            ctx.fillRect(0.5 * sX, -4.8 * sY, 1.5 * sX, 2 * sY);
+        }
+
+        // Eye
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(1.8 * sX, -2.2 * sY, 1.2 * sX, 1.2 * sY);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(2.2 * sX, -2.2 * sY, 0.8 * sX, 1.2 * sY);
+
+        // Beak
+        ctx.fillStyle = cBeak;
+        ctx.fillRect(3.5 * sX, -1.8 * sY, 1.2 * sX, 1.2 * sY);
+
+        // Wing
+        ctx.fillStyle = cWing;
+        ctx.fillRect(-0.2 * sX, 0.8 * sY, 2.2 * sX, 2.6 * sY);
+
+        ctx.restore();
+    }
+
+    export function drawCharacter(ctx, skinCanvas, x, y, w, h, facingRight, walkAnim, isMoving, isDamage, headTargetX, headTargetY, isAttacking, heldItemId, isClimbing = false, armorList = null, shoulderParrots = null, walkBlend = null) {
         const activeArmor = (STATE === 'MENU') ? (armorList || [null, null, null, null]) : (armorList !== null ? armorList : equippedArmor);
         ctx.save();
         ctx.translate(x, y);
@@ -2604,8 +3649,9 @@ export const SKIN_H = 32;
         let sX = w / 16;
         let sY = h / 32;
 
-        let swing = isClimbing ? Math.sin(walkAnim) * Math.PI / 7 : Math.sin(walkAnim) * Math.PI / 4.2;
-        let armSwing = isClimbing ? -Math.PI / 1.5 + Math.sin(walkAnim) * Math.PI / 7 : Math.sin(walkAnim) * Math.PI / 6;
+        const blend = (walkBlend !== null && typeof walkBlend === 'number') ? Math.max(0, Math.min(1, walkBlend)) : (isMoving ? 1 : 0);
+        let swing = (!isMoving && !isClimbing && blend <= 0) ? 0 : (isClimbing ? Math.sin(walkAnim) * Math.PI / 7 : Math.sin(walkAnim) * (Math.PI / 4.2) * blend);
+        let armSwing = (!isMoving && !isClimbing && blend <= 0) ? 0 : (isClimbing ? -Math.PI / 1.5 + Math.sin(walkAnim) * Math.PI / 7 : Math.sin(walkAnim) * (Math.PI / 6) * blend);
         let frontArmSwing = isAttacking ? -Math.PI / 2 - Math.sin(frameCount * 0.4) * 0.5 : (isClimbing ? -Math.PI / 1.5 - Math.sin(walkAnim) * Math.PI / 7 : -armSwing);
 
         if (!facingRight) {
@@ -2625,6 +3671,11 @@ export const SKIN_H = 32;
         // 1. Back Arm (with shoulder sleeve armor)
         drawCharacterArm(ctx, skinCanvas, 12, 8, 6 * sX, 8 * sY, 2 * sX, 2 * sY, armSwing, sX, sY, chestPal, false, null);
         
+        // Back shoulder parrot (if any)
+        if (shoulderParrots && shoulderParrots.left) {
+            drawShoulderParrot(ctx, shoulderParrots.left, 2 * sX, 4 * sY, sX, sY);
+        }
+
         // 2. Back Leg (with back thigh armor and back boot moving with swinging foot)
         drawCharacterLeg(ctx, skinCanvas, 8, 20, 6 * sX, 20 * sY, 2 * sX, 2 * sY, -swing, sX, sY, legPal, bootPal);
         
@@ -2639,6 +3690,11 @@ export const SKIN_H = 32;
         
         // 6. Front Arm ON EXTERIOR (with shoulder sleeve armor, hands on the exterior, and held item)
         drawCharacterArm(ctx, skinCanvas, 0, 8, 6 * sX, 8 * sY, 2 * sX, 2 * sY, frontArmSwing, sX, sY, chestPal, true, heldItemId);
+
+        // Front shoulder parrot (if any)
+        if (shoulderParrots && shoulderParrots.right) {
+            drawShoulderParrot(ctx, shoulderParrots.right, 9 * sX, 4 * sY, sX, sY);
+        }
 
         ctx.restore();
     }
@@ -2798,6 +3854,31 @@ export const SKIN_H = 32;
         }
     }
 
+    export const NOTE_PATTERNS = [
+        // 0: Single Eighth Note ♪ (8x8)
+        [
+            "....###.",
+            "....###.",
+            "....##.#",
+            "....##..",
+            "....##..",
+            "..####..",
+            ".######.",
+            "..####.."
+        ],
+        // 1: Beamed Double Note ♫ (9x8)
+        [
+            ".#######.",
+            ".#######.",
+            ".##...##.",
+            ".##...##.",
+            ".##...##.",
+            "####.####",
+            "#########",
+            ".###..###"
+        ]
+    ];
+
     export class NoteParticle {
         constructor(x = 0, y = 0) {
             this.init(x, y);
@@ -2806,8 +3887,7 @@ export const SKIN_H = 32;
             this.startX = x;
             this.x = x;
             this.y = y;
-            const symbols = ['♪', '♫', '♬', '♩'];
-            this.symbol = symbols[Math.floor(Math.random() * symbols.length)];
+            this.patternIndex = Math.random() < 0.5 ? 0 : 1;
             const colors = ['#f43f5e', '#ec4899', '#a855f7', '#6366f1', '#3b82f6', '#06b6d4', '#10b981', '#eab308'];
             this.color = colors[Math.floor(Math.random() * colors.length)];
             this.life = 55 + Math.random() * 25;
@@ -2816,7 +3896,7 @@ export const SKIN_H = 32;
             this.freq = 0.08 + Math.random() * 0.06;
             this.amp = 8 + Math.random() * 8;
             this.time = Math.random() * 100;
-            this.size = 20 + Math.random() * 6;
+            this.pSize = 2;
             this.alive = true;
         }
         update() {
@@ -2830,13 +3910,35 @@ export const SKIN_H = 32;
         draw(ctx, camX, camY) {
             if (!this.alive) return;
             const alpha = Math.max(0, Math.min(1, this.life / (this.maxLife * 0.25)));
+            const pattern = NOTE_PATTERNS[this.patternIndex] || NOTE_PATTERNS[0];
+            const rows = pattern.length;
+            const cols = pattern[0].length;
+            const pSize = this.pSize;
+            const originX = Math.round(this.x - camX - (cols * pSize) / 2);
+            const originY = Math.round(this.y - camY - (rows * pSize) / 2);
+
             ctx.save();
             ctx.globalAlpha = alpha;
-            ctx.font = `bold ${Math.round(this.size)}px "VT323", monospace`;
+            // 1) 1-texel black pixel drop-shadow
+            ctx.fillStyle = '#000000';
+            for (let r = 0; r < rows; r++) {
+                const rowStr = pattern[r];
+                for (let c = 0; c < cols; c++) {
+                    if (rowStr[c] === '#') {
+                        ctx.fillRect(originX + c * pSize + 1, originY + r * pSize + 1, pSize, pSize);
+                    }
+                }
+            }
+            // 2) Main colored pixel note
             ctx.fillStyle = this.color;
-            ctx.shadowColor = '#000000';
-            ctx.shadowBlur = 4;
-            ctx.fillText(this.symbol, Math.round(this.x - camX), Math.round(this.y - camY));
+            for (let r = 0; r < rows; r++) {
+                const rowStr = pattern[r];
+                for (let c = 0; c < cols; c++) {
+                    if (rowStr[c] === '#') {
+                        ctx.fillRect(originX + c * pSize, originY + r * pSize, pSize, pSize);
+                    }
+                }
+            }
             ctx.restore();
         }
     }
@@ -2878,15 +3980,44 @@ export const SKIN_H = 32;
         if (id === IDS.BED) return '#d83b3b';
         if (id === IDS.JUKEBOX) return '#5c3a21';
         if ([IDS.DOOR, IDS.DOOR_TOP, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP].includes(id)) return '#9e6b3d';
+        if ([IDS.JUNGLE_DOOR, IDS.JUNGLE_DOOR_TOP, IDS.JUNGLE_DOOR_OPEN, IDS.JUNGLE_DOOR_OPEN_TOP].includes(id)) return '#8d5d36';
         if (id === IDS.WOOL) return '#f5f5f5';
         return '#7d7d7d'; 
     }
 
+    export function isClimbableBlock(block) {
+        return block === IDS.LADDER || block === IDS.VINES;
+    }
+
     export function isSolidWorldBlock(x, y, block) {
-        if (block === IDS.AIR || block === IDS.TORCH || block === IDS.LEAVES || block === IDS.SAPLING || block === IDS.WATER || block === IDS.LAVA || block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || block === IDS.LADDER) return false;
+        if (block === IDS.AIR || block === IDS.TORCH || block === IDS.LEAVES || block === IDS.JUNGLE_LEAVES ||
+            block === IDS.SAPLING || block === IDS.JUNGLE_SAPLING || block === IDS.WATER || block === IDS.LAVA ||
+            block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW ||
+            block === IDS.LADDER || block === IDS.VINES || block === IDS.FERN || block === IDS.MELON_STEM ||
+            block === IDS.VOID_BERRY_BUSH || block === IDS.BAMBOO || block === IDS.SIGN) return false;
         if (block === IDS.WHEAT_STAGE_1 || block === IDS.WHEAT_STAGE_2 || block === IDS.WHEAT_STAGE_3 || block === IDS.WHEAT_STAGE_4) return false;
-        if (block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP) return false;
-        return block !== IDS.WOOD || !nonCollidableTreeWood.has(`${x}_${y}`);
+        if (block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP || block === IDS.JUNGLE_DOOR_OPEN || block === IDS.JUNGLE_DOOR_OPEN_TOP) return false;
+        if (block === IDS.WOOD || block === IDS.JUNGLE_WOOD) {
+            return !nonCollidableTreeWood.has(`${x}_${y}`);
+        }
+        return true;
+    }
+
+    export function isNonSurfaceBlock(block) {
+        if (block === undefined || block === IDS.AIR) return true;
+        if (block === IDS.LEAVES || block === IDS.JUNGLE_LEAVES) return true;
+        if (block === IDS.WOOD || block === IDS.JUNGLE_WOOD) return true;
+        if (block === IDS.SAPLING || block === IDS.JUNGLE_SAPLING) return true;
+        if (block === IDS.TORCH || block === IDS.LADDER || block === IDS.SIGN) return true;
+        if (block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS) return true;
+        if (block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || block === IDS.FERN) return true;
+        if (block === IDS.VINES || block === IDS.BAMBOO || block === IDS.CACTUS) return true;
+        if (block === IDS.MELON || block === IDS.MELON_STEM || block === IDS.SUNBURST_MELON) return true;
+        if (block === IDS.VOID_BERRY_BUSH || block === IDS.PRISM_GLASS) return true;
+        if (block >= IDS.WHEAT_STAGE_1 && block <= IDS.WHEAT_STAGE_4) return true;
+        if (block >= IDS.DOOR && block <= IDS.DOOR_OPEN_TOP) return true;
+        if (block >= IDS.JUNGLE_DOOR && block <= IDS.JUNGLE_DOOR_OPEN_TOP) return true;
+        return false;
     }
 
     export function getFluidKey(x, y) { return `${x}_${y}`; }
@@ -2930,14 +4061,36 @@ export const SKIN_H = 32;
         return fluids.get(getFluidKey(x, y)) || null;
     }
 
-    export function isWater(x, y) {
-        if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
-        return world[x]?.[y] === IDS.WATER || fluids.get(getFluidKey(x, y))?.type === IDS.WATER;
+    export function getActivePhysicsWorld(entity = null) {
+        if (entity?.isMenuEntity || (typeof STATE !== 'undefined' && STATE === 'MENU')) {
+            return (typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null;
+        }
+        return (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
     }
 
-    export function isLava(x, y) {
-        if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
-        return world[x]?.[y] === IDS.LAVA || fluids.get(getFluidKey(x, y))?.type === IDS.LAVA;
+    export function getActivePhysicsTerrain(entity = null) {
+        if (entity?.isMenuEntity || (typeof STATE !== 'undefined' && STATE === 'MENU')) {
+            return (typeof menuWorld !== 'undefined' && menuWorld && (menuWorld.surfaceHeights || menuWorld.terrain)) ? (menuWorld.surfaceHeights || menuWorld.terrain) : null;
+        }
+        return (typeof surfaceHeights !== 'undefined' && surfaceHeights && surfaceHeights.length) ? surfaceHeights : ((typeof menuWorld !== 'undefined' && menuWorld && (menuWorld.surfaceHeights || menuWorld.terrain)) ? (menuWorld.surfaceHeights || menuWorld.terrain) : null);
+    }
+
+    export function isWater(x, y, entity = null) {
+        const activeWorld = getActivePhysicsWorld(entity);
+        if (!activeWorld) return false;
+        const curWorldW = activeWorld.length;
+        const curWorldH = activeWorld[0]?.length || 0;
+        if (x < 0 || x >= curWorldW || y < 0 || y >= curWorldH) return false;
+        return activeWorld[x]?.[y] === IDS.WATER || (typeof fluids !== 'undefined' && fluids.get(getFluidKey(x, y))?.type === IDS.WATER);
+    }
+
+    export function isLava(x, y, entity = null) {
+        const activeWorld = getActivePhysicsWorld(entity);
+        if (!activeWorld) return false;
+        const curWorldW = activeWorld.length;
+        const curWorldH = activeWorld[0]?.length || 0;
+        if (x < 0 || x >= curWorldW || y < 0 || y >= curWorldH) return false;
+        return activeWorld[x]?.[y] === IDS.LAVA || (typeof fluids !== 'undefined' && fluids.get(getFluidKey(x, y))?.type === IDS.LAVA);
     }
 
     export function setFluid(x, y, fluid) {
@@ -3050,11 +4203,11 @@ export const SKIN_H = 32;
                     hasFeeder = true;
                 } else {
                     const left = getFluid(x - 1, y);
-                    if (left && left.type === fluid.type && (left.source || left.level < fluid.level)) {
+                    if (left && left.type === fluid.type && (left.source || (!left.falling && left.level < fluid.level))) {
                         hasFeeder = true;
                     }
                     const right = getFluid(x + 1, y);
-                    if (right && right.type === fluid.type && (right.source || right.level < fluid.level)) {
+                    if (right && right.type === fluid.type && (right.source || (!right.falling && right.level < fluid.level))) {
                         hasFeeder = true;
                     }
                 }
@@ -3065,10 +4218,19 @@ export const SKIN_H = 32;
                 }
             }
 
-            // 2. Downward Flow (Gravity)
+            // 2. Downward Flow (Gravity) & Resting State Transitions
             const belowY = y + 1;
-            if (belowY < WORLD_HEIGHT && !isSolidWorldBlock(x, belowY, world[x]?.[belowY])) {
-                const belowFluid = getFluid(x, belowY);
+            const isBelowSolid = belowY >= WORLD_HEIGHT || isSolidWorldBlock(x, belowY, world[x]?.[belowY]);
+            const belowFluid = getFluid(x, belowY);
+            const isResting = isBelowSolid || (belowFluid && belowFluid.type === fluid.type && !belowFluid.falling);
+
+            // If previously marked as falling but now resting on solid ground or resting fluid, clear falling flag
+            if (isResting && fluid.falling) {
+                toSet.push([x, y, { ...fluid, falling: false }]);
+                fluid.falling = false;
+            }
+
+            if (!isBelowSolid) {
                 if (!belowFluid) {
                     // Flow straight down
                     toSet.push([x, belowY, { type: fluid.type, source: false, level: 0, falling: true }]);
@@ -3083,29 +4245,41 @@ export const SKIN_H = 32;
                         toSolidify.push([x, belowY, IDS.STONE]);
                     }
                     continue;
-                } else if (!belowFluid.falling && !belowFluid.source) {
+                } else if (!belowFluid.falling && !belowFluid.source && !isSolidWorldBlock(x, belowY + 1, world[x]?.[belowY + 1])) {
                     toSet.push([x, belowY, { type: fluid.type, source: false, level: 0, falling: true }]);
                 }
             }
 
             // 3. Horizontal Spread (Only when resting on a solid block or fluid beneath)
-            const isResting = belowY >= WORLD_HEIGHT || isSolidWorldBlock(x, belowY, world[x]?.[belowY]) || (getFluid(x, belowY)?.type === fluid.type);
             if (isResting && fluid.level < maxFlow) {
-                const nextLevel = fluid.level + 1;
+                const nextLevel = fluid.source ? 1 : fluid.level + 1;
                 for (const dir of [-1, 1]) {
                     const nx = x + dir;
                     if (nx < 0 || nx >= WORLD_WIDTH) continue;
                     if (isSolidWorldBlock(nx, y, world[nx]?.[y])) continue;
 
                     const nbrFluid = getFluid(nx, y);
+                    const willDropBelow = (y + 1 < WORLD_HEIGHT && !isSolidWorldBlock(nx, y + 1, world[nx]?.[y + 1]));
                     if (!nbrFluid) {
-                        toSet.push([nx, y, { type: fluid.type, source: false, level: nextLevel, falling: false }]);
+                        toSet.push([nx, y, { type: fluid.type, source: false, level: nextLevel, falling: willDropBelow }]);
                     } else if (nbrFluid.type !== fluid.type) {
                         // Horizontal meeting of Water and Lava -> Cobblestone
                         toSolidify.push([nx, y, IDS.COBBLESTONE]);
                     } else if (!nbrFluid.source && nbrFluid.level > nextLevel) {
-                        toSet.push([nx, y, { type: fluid.type, source: false, level: nextLevel, falling: false }]);
+                        toSet.push([nx, y, { type: fluid.type, source: false, level: nextLevel, falling: willDropBelow }]);
                     }
+                }
+            }
+
+            // 4. Classic 2-Source Infinite Water Spring
+            if (isWaterCell && !fluid.source && isResting) {
+                let adjacentSources = 0;
+                const left = getFluid(x - 1, y);
+                const right = getFluid(x + 1, y);
+                if (left && left.type === IDS.WATER && left.source) adjacentSources++;
+                if (right && right.type === IDS.WATER && right.source) adjacentSources++;
+                if (adjacentSources >= 2) {
+                    toSet.push([x, y, { type: IDS.WATER, source: true, level: 0, falling: false }]);
                 }
             }
         }
@@ -3133,15 +4307,25 @@ export const SKIN_H = 32;
     }
 
     export function isDoorBlock(block) {
-        return [IDS.DOOR, IDS.DOOR_TOP, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP].includes(block);
+        return [
+            IDS.DOOR, IDS.DOOR_TOP, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP,
+            IDS.JUNGLE_DOOR, IDS.JUNGLE_DOOR_TOP, IDS.JUNGLE_DOOR_OPEN, IDS.JUNGLE_DOOR_OPEN_TOP
+        ].includes(block);
     }
 
     export function isOpenDoorBlock(block) {
-        return block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP;
+        return block === IDS.DOOR_OPEN || block === IDS.DOOR_OPEN_TOP ||
+               block === IDS.JUNGLE_DOOR_OPEN || block === IDS.JUNGLE_DOOR_OPEN_TOP;
+    }
+
+    export function isJungleDoorBlock(block) {
+        return block === IDS.JUNGLE_DOOR || block === IDS.JUNGLE_DOOR_TOP ||
+               block === IDS.JUNGLE_DOOR_OPEN || block === IDS.JUNGLE_DOOR_OPEN_TOP;
     }
 
     export function getDoorBaseY(y, block) {
-        return block === IDS.DOOR_TOP || block === IDS.DOOR_OPEN_TOP ? y + 1 : y;
+        return (block === IDS.DOOR_TOP || block === IDS.DOOR_OPEN_TOP ||
+                block === IDS.JUNGLE_DOOR_TOP || block === IDS.JUNGLE_DOOR_OPEN_TOP) ? y + 1 : y;
     }
 
     export class Cloud {
@@ -3167,9 +4351,9 @@ export const SKIN_H = 32;
             if (drawX < -this.w) drawX += WORLD_WIDTH * TILE_SIZE;
             else if (drawX > canvas.width + this.w) drawX -= WORLD_WIDTH * TILE_SIZE;
 
-            let isSunset = (timeOfDay >= 0.35 && timeOfDay < 0.48);
-            let isSunrise = (timeOfDay >= 0.84 || timeOfDay < 0.04);
-            let isNight = (timeOfDay >= 0.48 && timeOfDay < 0.84);
+            let isSunset = (timeOfDay >= 0.58 && timeOfDay < 0.68);
+            let isSunrise = (timeOfDay >= 0.90 || timeOfDay < 0.04);
+            let isNight = (timeOfDay >= 0.68 && timeOfDay < 0.90);
 
             let bodyColor = 'rgba(255, 255, 255, 0.82)';
             let shadeColor = 'rgba(210, 225, 242, 0.88)';
@@ -3213,6 +4397,14 @@ export const SKIN_H = 32;
             this.fallStartY = y;
         }
 
+        getActiveWorld() {
+            return getActivePhysicsWorld(this);
+        }
+
+        getActiveTerrain() {
+            return getActivePhysicsTerrain(this);
+        }
+
         applyPhysics() {
             const wasGrounded = this.isGrounded;
             const prevVy = this.vy;
@@ -3235,7 +4427,7 @@ export const SKIN_H = 32;
             if (!wasGrounded && this.isGrounded && prevVy > 0 && !(this instanceof Player) && !(this instanceof Chicken) && this.health !== undefined) {
                 const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
                 const curGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
-                if (!isWater(curGx, curGy) && this.fallStartY !== undefined) {
+                if (!isWater(curGx, curGy, this) && this.fallStartY !== undefined) {
                     const fallTiles = (this.y - this.fallStartY) / TILE_SIZE;
                     if (fallTiles > 4) {
                         const fallDmg = Math.floor(fallTiles - 4);
@@ -3249,21 +4441,25 @@ export const SKIN_H = 32;
 
             if (this.health !== undefined && !(this instanceof Player)) checkCactusContact(this);
             
+            const activeWorld = this.getActiveWorld();
+            const maxWorldW = activeWorld ? activeWorld.length : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.width) ? menuWorld.width : WORLD_WIDTH);
             if (this.x < 0) this.x = 0;
-            if (this.x > WORLD_WIDTH * TILE_SIZE - this.width) this.x = WORLD_WIDTH * TILE_SIZE - this.width;
+            if (this.x > maxWorldW * TILE_SIZE - this.width) this.x = maxWorldW * TILE_SIZE - this.width;
         }
 
         checkObstacleJump(dir) {
             if (!this.isGrounded || this.vx === 0) return;
+            const activeWorld = this.getActiveWorld();
+            if (!activeWorld) return;
+            const curWorldW = activeWorld.length;
             const stepDir = dir !== undefined ? dir : (this.vx > 0 ? 1 : -1);
             const checkX = Math.floor((this.x + this.width / 2 + stepDir * (this.width / 2 + 5)) / TILE_SIZE);
             const footY = Math.floor((this.y + this.height - 5) / TILE_SIZE);
             const headY = Math.floor((this.y + 5) / TILE_SIZE);
-            if (checkX >= 0 && checkX < WORLD_WIDTH) {
-                const b = world[checkX]?.[footY];
-                const upperB = world[checkX]?.[headY - 1];
-                if (b !== undefined && b !== IDS.AIR && b !== IDS.TORCH && b !== IDS.WOOD && b !== IDS.LEAVES && 
-                    (upperB === IDS.AIR || upperB === IDS.TORCH || upperB === IDS.WOOD || upperB === IDS.LEAVES)) {
+            if (checkX >= 0 && checkX < curWorldW) {
+                const b = activeWorld[checkX]?.[footY];
+                const upperB = activeWorld[checkX]?.[headY - 1];
+                if (b !== undefined && isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1, this)) {
                     this.vy = JUMP_FORCE;
                     this.isGrounded = false;
                 }
@@ -3285,20 +4481,25 @@ export const SKIN_H = 32;
 
         handleCollisions(isAxisX) {
             const eps = 0.05; 
+            const activeWorld = this.getActiveWorld();
+            if (!activeWorld) return;
+            const curWorldW = activeWorld.length;
+            const curWorldH = activeWorld[0]?.length || 0;
+            if (!curWorldW || !curWorldH) return;
             
             let leftTile = Math.floor((this.x + (isAxisX ? 0 : eps)) / TILE_SIZE);
             let rightTile = Math.floor((this.x + this.width - (isAxisX ? 0 : eps)) / TILE_SIZE);
             let topTile = Math.floor((this.y + (isAxisX ? eps : 0)) / TILE_SIZE);
             let bottomTile = Math.floor((this.y + this.height - (isAxisX ? eps : 0)) / TILE_SIZE);
 
-            leftTile = Math.max(0, Math.min(leftTile, WORLD_WIDTH - 1));
-            rightTile = Math.max(0, Math.min(rightTile, WORLD_WIDTH - 1));
-            topTile = Math.max(0, Math.min(topTile, WORLD_HEIGHT - 1));
-            bottomTile = Math.max(0, Math.min(bottomTile, WORLD_HEIGHT - 1));
+            leftTile = Math.max(0, Math.min(leftTile, curWorldW - 1));
+            rightTile = Math.max(0, Math.min(rightTile, curWorldW - 1));
+            topTile = Math.max(0, Math.min(topTile, curWorldH - 1));
+            bottomTile = Math.max(0, Math.min(bottomTile, curWorldH - 1));
 
             for (let y = topTile; y <= bottomTile; y++) {
                 for (let x = leftTile; x <= rightTile; x++) {
-                    let block = world[x][y];
+                    let block = activeWorld[x][y];
                     if (isSolidWorldBlock(x, y, block)) {
                         let bMinX = x * TILE_SIZE;
                         let bMaxX = (x + 1) * TILE_SIZE;
@@ -3332,12 +4533,12 @@ export const SKIN_H = 32;
                                     else if (this.vx < 0) this.x = (hitStep ? stepMaxX : bMaxX) + 0.1;
                                     this.vx = 0;
                                 } else {
-                                    if (this.vy > 0) {
+                                    if (this.vy > 0 || this.vy === 0) {
                                         let floorY = (hitStep ? bMinY : slabMinY);
-                                        this.y = floorY - this.height - 0.1;
+                                        this.y = floorY - this.height - 0.05;
                                         this.isGrounded = true;
                                     } else if (this.vy < 0) {
-                                        this.y = bMaxY + 0.1;
+                                        this.y = bMaxY + 0.05;
                                     }
                                     this.vy = 0;
                                 }
@@ -3351,11 +4552,11 @@ export const SKIN_H = 32;
                                 else if (this.vx < 0) this.x = bMaxX + 0.1;
                                 this.vx = 0;
                             } else {
-                                if (this.vy > 0) {
-                                    this.y = bMinY - this.height - 0.1;
+                                if (this.vy > 0 || this.vy === 0) {
+                                    this.y = bMinY - this.height - 0.05;
                                     this.isGrounded = true;
                                 } else if (this.vy < 0) {
-                                    this.y = bMaxY + 0.1;
+                                    this.y = bMaxY + 0.05;
                                 }
                                 this.vy = 0;
                             }
@@ -3367,14 +4568,18 @@ export const SKIN_H = 32;
     }
 
     export function checkCactusContact(entity) {
+        const activeWorld = getActivePhysicsWorld(entity);
+        if (!activeWorld) return;
+        const curWorldW = activeWorld.length;
+        const curWorldH = activeWorld[0]?.length || 0;
         const padding = 2;
         const leftTile = Math.max(0, Math.floor((entity.x - padding) / TILE_SIZE));
-        const rightTile = Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.width + padding) / TILE_SIZE));
+        const rightTile = Math.min(curWorldW - 1, Math.floor((entity.x + entity.width + padding) / TILE_SIZE));
         const topTile = Math.max(0, Math.floor((entity.y - padding) / TILE_SIZE));
-        const bottomTile = Math.min(WORLD_HEIGHT - 1, Math.floor((entity.y + entity.height + padding) / TILE_SIZE));
+        const bottomTile = Math.min(curWorldH - 1, Math.floor((entity.y + entity.height + padding) / TILE_SIZE));
         for (let tileY = topTile; tileY <= bottomTile; tileY++) {
             for (let tileX = leftTile; tileX <= rightTile; tileX++) {
-                if (world[tileX][tileY] === IDS.CACTUS && entity.damageCooldown <= 0) {
+                if (activeWorld[tileX]?.[tileY] === IDS.CACTUS && entity.damageCooldown <= 0) {
                     entity.takeDamage(1, 0);
                     return;
                 }
@@ -3422,10 +4627,10 @@ export const SKIN_H = 32;
         const headGy = Math.floor(((p.y || 0) + 4) / TILE_SIZE);
         const belowGy = Math.floor(((p.y || 0) + (p.height || 48) + 2) / TILE_SIZE);
 
-        // 1. Ladder priority
+        // 1. Ladder / Vine priority
         for (let posX of xPositions) {
             const gx = Math.floor(posX / TILE_SIZE);
-            if (world[gx]?.[footGy] === IDS.LADDER || world[gx]?.[bodyGy] === IDS.LADDER || world[gx]?.[headGy] === IDS.LADDER) {
+            if (isClimbableBlock(world[gx]?.[footGy]) || isClimbableBlock(world[gx]?.[bodyGy]) || isClimbableBlock(world[gx]?.[headGy])) {
                 return 'ladder';
             }
         }
@@ -3846,9 +5051,12 @@ export const SKIN_H = 32;
             this.maxOxygen = 10; this.oxygen = this.maxOxygen;
             this.damageCooldown = 0; this.isDead = false; this.facingRight = true;
             this.walkAnimTime = 0;
+            this.walkBlend = 0;
             this.fallStartY = y;
             this.poisonTimer = 0;
             this.airborneTicks = 0;
+            this.leftShoulderParrot = null;
+            this.rightShoulderParrot = null;
         }
 
         update() {
@@ -3896,7 +5104,12 @@ export const SKIN_H = 32;
             }
 
             if (moveDir !== 0) {
-                let targetVx = moveDir * MOVE_SPEED;
+                let speedMult = 1.0;
+                const boots = (typeof equippedArmor !== 'undefined' && Array.isArray(equippedArmor)) ? equippedArmor[3] : (this.equippedArmor ? this.equippedArmor[3] : null);
+                if (boots && (boots.id === IDS.STRIDER_BOOTS || boots.id === IDS.ASTRAL_BOOTS)) {
+                    speedMult = 1.25;
+                }
+                let targetVx = moveDir * MOVE_SPEED * speedMult;
                 if (this.isGrounded) {
                     this.vx += (targetVx - this.vx) * 0.45;
                 } else {
@@ -3922,9 +5135,9 @@ export const SKIN_H = 32;
             const pFootGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
             const pBodyGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
             const pHeadGy = Math.floor((this.y + 4) / TILE_SIZE);
-            const onLadder = (world[pGx]?.[pFootGy] === IDS.LADDER) || 
-                             (world[pGx]?.[pBodyGy] === IDS.LADDER) || 
-                             (world[pGx]?.[pHeadGy] === IDS.LADDER);
+            const onLadder = isClimbableBlock(world[pGx]?.[pFootGy]) || 
+                             isClimbableBlock(world[pGx]?.[pBodyGy]) || 
+                             isClimbableBlock(world[pGx]?.[pHeadGy]);
 
             const footFluid = getFluid(pGx, pFootGy);
             const bodyFluid = getFluid(pGx, pBodyGy);
@@ -3976,12 +5189,22 @@ export const SKIN_H = 32;
                 this.airborneTicks++;
             }
 
-            if (moveDir !== 0 && (this.isGrounded || this.airborneTicks <= 4) && Math.abs(this.vx) > 0.15) {
+            const isWalking = moveDir !== 0 && (this.isGrounded || this.airborneTicks <= 4) && Math.abs(this.vx) > 0.15;
+            if (isWalking) {
                 this.walkAnimTime += (Math.abs(this.vx) / MOVE_SPEED) * 0.20;
+                this.walkBlend = Math.min(1.0, (this.walkBlend || 0) + 0.18);
             } else if (!this.isGrounded && this.airborneTicks > 4) {
                 this.walkAnimTime = Math.PI / 6;
+                this.walkBlend = Math.max(0.0, (this.walkBlend || 0) - 0.10);
             } else {
                 this.walkAnimTime = 0;
+                this.walkBlend = Math.max(0.0, (this.walkBlend || 0) - 0.20);
+                if (this.walkBlend <= 0.02) {
+                    this.walkBlend = 0;
+                    this.walkAnimTime = 0;
+                } else {
+                    this.walkAnimTime += 0.08;
+                }
             }
             if (advancedGraphics && Math.abs(this.vx) > 0.5 && this.isGrounded && frameCount % 7 === 0) {
                 let footDust = new Particle(this.x + this.width / 2, this.y + this.height - 2, '#b8a982');
@@ -4004,24 +5227,39 @@ export const SKIN_H = 32;
                 playSound('step', { material: 'water' });
             }
 
-            if (diff.starve && frameCount % 120 === 0 && hungerRate > 1.0) {
-                this.exhaustion += 0.012 * (hungerRate - 1);
-            }
-
-            const maxExhaustion = Math.max(2.4, 4 / hungerRate);
-            if (this.exhaustion >= maxExhaustion) {
+            if (currentDifficulty === 'peaceful') {
                 this.exhaustion = 0;
-                this.hunger = Math.max(0, this.hunger - 1);
-                updateHungerUI();
-                if(this.hunger === 0) document.getElementById('hunger-bar').classList.add('shake-ui');
-                else document.getElementById('hunger-bar').classList.remove('shake-ui');
-            }
+                // On Peaceful, hunger naturally regenerates to max (20) if depleted
+                if (this.hunger < 20 && frameCount % 20 === 0) {
+                    this.hunger++;
+                    updateHungerUI();
+                }
+                // On Peaceful, health always regenerates rapidly
+                if (this.health < this.maxHealth && frameCount % diff.hpRegen === 0) {
+                    this.health++;
+                    updateHealthUI();
+                }
+            } else {
+                if (diff.starve && frameCount % 120 === 0 && hungerRate > 1.0) {
+                    this.exhaustion += 0.012 * (hungerRate - 1);
+                }
 
-            if (this.hunger >= 18 && this.health < this.maxHealth && frameCount % diff.hpRegen === 0) {
-                this.health++; this.exhaustion += 2 * hungerRate; updateHealthUI(); 
-            }
-            if (this.hunger === 0 && diff.starve && frameCount % 60 === 0) {
-                this.takeDamage(1);
+                const exhaustionCap = (currentDifficulty === 'easy') ? 8.0 : 4.0;
+                const maxExhaustion = Math.max(2.4, exhaustionCap / Math.max(0.1, hungerRate));
+                if (this.exhaustion >= maxExhaustion) {
+                    this.exhaustion = 0;
+                    this.hunger = Math.max(0, this.hunger - 1);
+                    updateHungerUI();
+                    if(this.hunger === 0) document.getElementById('hunger-bar').classList.add('shake-ui');
+                    else document.getElementById('hunger-bar').classList.remove('shake-ui');
+                }
+
+                if (this.hunger >= 18 && this.health < this.maxHealth && frameCount % diff.hpRegen === 0) {
+                    this.health++; this.exhaustion += 2 * hungerRate; updateHealthUI(); 
+                }
+                if (this.hunger === 0 && diff.starve && frameCount % 60 === 0) {
+                    this.takeDamage(1);
+                }
             }
 
             // Head suffocation when inside solid blocks (e.g. sand lands on player's head)
@@ -4040,14 +5278,29 @@ export const SKIN_H = 32;
                 if (sel && isFoodItem(sel.id) && this.hunger < 20) {
                     this.eatTimer++;
                     if (this.eatTimer > 20) {
-                        this.eatTimer = 0;
-                        let val = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? 8 : (sel.id === IDS.COOKED_CHICKEN ? 6 : (sel.id === IDS.BREAD ? 5 : (sel.id === IDS.APPLE ? 4 : (sel.id === IDS.RAW_BEEF ? 3 : 2))));
+                        let val = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? 8 : 
+                                  (sel.id === IDS.COOKED_CHICKEN || sel.id === IDS.SUNBURST_MELON_SLICE ? 6 : 
+                                  (sel.id === IDS.BREAD ? 5 : 
+                                  (sel.id === IDS.APPLE || sel.id === IDS.VOID_BERRY ? 4 : 
+                                  (sel.id === IDS.RAW_BEEF ? 3 : 2))));
                         this.hunger = Math.min(20, this.hunger + val);
+                        if ((sel.id === IDS.MELON_SLICE || sel.id === IDS.SUNBURST_MELON_SLICE || sel.id === IDS.VOID_BERRY) && this.health < this.maxHealth) {
+                            const healAmt = (sel.id === IDS.SUNBURST_MELON_SLICE || sel.id === IDS.VOID_BERRY) ? 2 : 1;
+                            this.health = Math.min(this.maxHealth, this.health + healAmt);
+                            updateHealthUI();
+                        }
+                        const eatenId = sel.id;
                         sel.count--;
                         if (sel.count <= 0) inventory[selectedHotbarIndex] = null;
                         updateHungerUI(); updateUI();
                         playSound('eat');
-                        let pColor = (sel.id === IDS.COOKED_PORKCHOP || sel.id === IDS.COOKED_MUTTON || sel.id === IDS.COOKED_BEEF) ? '#8B4513' : (sel.id === IDS.RAW_BEEF ? '#991b1b' : (sel.id === IDS.COOKED_CHICKEN ? '#d98c53' : (sel.id === IDS.BREAD ? '#d2b48c' : (sel.id === IDS.APPLE ? '#ff3333' : '#ff99cc'))));
+                        if (typeof window !== 'undefined' && typeof window.trackDailyQuestProgress === 'function') {
+                            window.trackDailyQuestProgress('eat_food', { itemId: eatenId });
+                        }
+                        if (eatenId === IDS.VOID_BERRY) {
+                            unlockAchievement('void_nourishment');
+                        }
+                        let pColor = (eatenId === IDS.VOID_BERRY) ? '#c084fc' : ((eatenId === IDS.SUNBURST_MELON_SLICE) ? '#f59e0b' : ((eatenId === IDS.MELON_SLICE) ? '#ef4444' : ((eatenId === IDS.COOKED_PORKCHOP || eatenId === IDS.COOKED_MUTTON || eatenId === IDS.COOKED_BEEF) ? '#8B4513' : (eatenId === IDS.RAW_BEEF ? '#991b1b' : (eatenId === IDS.COOKED_CHICKEN ? '#d98c53' : (eatenId === IDS.BREAD ? '#d2b48c' : (eatenId === IDS.APPLE ? '#ff3333' : '#ff99cc')))))));
                         for(let i=0; i<10; i++) particles.push(new Particle(this.x+this.width/2, this.y, pColor));
                     }
                 } else { this.eatTimer = 0; }
@@ -4118,6 +5371,16 @@ export const SKIN_H = 32;
 
             this.applyPhysics();
 
+            // Shoulder parrots dismount if player enters water or falls/jumps violently
+            if (this.leftShoulderParrot || this.rightShoulderParrot) {
+                const px = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+                const py = Math.floor((this.y + this.height - 2) / TILE_SIZE);
+                const inWater = isWater(px, py) || isWater(px, py - 1);
+                if (inWater || this.vy > 4.5 || this.vy < -5.5) {
+                    dismountAllShoulderParrots();
+                }
+            }
+
             if (!wasGrounded && this.isGrounded && prevVy > 0) {
                 const landingInWater = isWater(Math.floor((this.x + this.width / 2) / TILE_SIZE), Math.floor((this.y + this.height - 2) / TILE_SIZE)) || isWater(Math.floor((this.x + this.width / 2) / TILE_SIZE), Math.floor((this.y + this.height / 2) / TILE_SIZE));
                 if (!landingInWater && this.fallStartY !== undefined) {
@@ -4161,6 +5424,10 @@ export const SKIN_H = 32;
         takeDamage(amt) {
             if (this.damageCooldown > 0 || this.isDead) return;
             let diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
+
+            if (this.leftShoulderParrot || this.rightShoulderParrot) {
+                dismountAllShoulderParrots();
+            }
             
             // Armor damage reduction calculation
             let reductionRatio = getArmorDamageReductionRatio();
@@ -4237,8 +5504,8 @@ export const SKIN_H = 32;
             if (item) ensureToolDurability(item);
             if (item && isTool(item.id) && item.durability <= 0) return 0;
             let id = item ? item.id : null;
-            if (targetBlock === IDS.WOOD || targetBlock === IDS.PLANKS || targetBlock === IDS.LADDER || targetBlock === IDS.WOODEN_STAIRS || targetBlock === IDS.WOODEN_STAIRS_LEFT || targetBlock === IDS.WOODEN_STAIRS_RIGHT) {
-                if (id === IDS.DIAMOND_AXE) return 18; if (id === IDS.GOLD_AXE) return 12; if (id === IDS.IRON_AXE) return 9; if (id === IDS.STONE_AXE) return 8; if (id === IDS.WOOD_AXE) return 5;
+            if (targetBlock === IDS.WOOD || targetBlock === IDS.PLANKS || targetBlock === IDS.LADDER || targetBlock === IDS.WOODEN_STAIRS || targetBlock === IDS.WOODEN_STAIRS_LEFT || targetBlock === IDS.WOODEN_STAIRS_RIGHT || targetBlock === IDS.JUNGLE_WOOD || targetBlock === IDS.JUNGLE_PLANKS || targetBlock === IDS.BAMBOO) {
+                if (id === IDS.DIAMOND_AXE || id === IDS.DIAMOND_SWORD) return 18; if (id === IDS.GOLD_AXE || id === IDS.GOLD_SWORD) return 12; if (id === IDS.IRON_AXE || id === IDS.IRON_SWORD) return 9; if (id === IDS.STONE_AXE || id === IDS.STONE_SWORD) return 8; if (id === IDS.WOOD_AXE || id === IDS.WOOD_SWORD) return 5;
             } else if (targetBlock === IDS.DIRT || targetBlock === IDS.PLOWED_DIRT || targetBlock === IDS.GRASS || targetBlock === IDS.SAND || targetBlock === IDS.SNOW) {
                 if (id === IDS.DIAMOND_SHOVEL) return 18; if (id === IDS.GOLD_SHOVEL) return 12; if (id === IDS.IRON_SHOVEL) return 9; if (id === IDS.STONE_SHOVEL) return 6; if (id === IDS.WOOD_SHOVEL) return 4;
             } else if (HARDNESS[targetBlock] >= 100) { 
@@ -4263,8 +5530,8 @@ export const SKIN_H = 32;
 
         draw(ctx, camX, camY) {
             if (this.isDead) return;
-            const drawX = Math.round(this.x) - camX;
-            const drawY = Math.round(this.y) - camY;
+            const drawX = Math.round(this.x - camX);
+            const drawY = Math.round(this.y - camY);
             
             if (advancedGraphics) {
                 ctx.drawImage(cachedShadowCanvas, drawX + this.width/2 - this.width/2.2, drawY + this.height - 6, this.width * (2/2.2), 8);
@@ -4272,15 +5539,46 @@ export const SKIN_H = 32;
 
             let isAttacking = attackAnimationTimer > 0;
             let activeItem = inventory[selectedHotbarIndex] ? inventory[selectedHotbarIndex].id : null;
+            const isMoving = (this.walkBlend || 0) > 0.05 || Math.abs(this.vx) > 0.15;
             
-            // Advanced segmented rendering!
+            // Advanced segmented rendering with perched shoulder parrots!
             drawCharacter(
                 ctx, skinCanvasObj, drawX, drawY, this.width, this.height, 
-                this.facingRight, this.walkAnimTime, this.vx !== 0, this.damageCooldown > 0,
+                this.facingRight, this.walkAnimTime, isMoving, this.damageCooldown > 0,
                 isInventoryOpen ? null : mouse.worldX - camX, 
                 isInventoryOpen ? null : mouse.worldY - camY, 
-                isAttacking, activeItem, this.isClimbing
+                isAttacking, activeItem, this.isClimbing, null,
+                { left: this.leftShoulderParrot, right: this.rightShoulderParrot },
+                this.walkBlend !== undefined ? this.walkBlend : 1.0
             );
+        }
+    }
+
+    export function dismountParrot(p, shoulder) {
+        if (!p) return;
+        p.isMounted = false;
+        p.mountedShoulder = null;
+        if (player) {
+            p.x = player.x + (shoulder === 'left' ? -12 : 12);
+            p.y = player.y - 12;
+        }
+        p.state = 'flying';
+        p.vy = -3.2;
+        p.vx = (shoulder === 'left' ? -2.2 : 2.2);
+        p.flightTimer = 200;
+        playSound('parrot_chirp', { vol: 0.7 });
+    }
+
+    export function dismountAllShoulderParrots() {
+        const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+        if (!curPlayer) return;
+        if (curPlayer.leftShoulderParrot) {
+            dismountParrot(curPlayer.leftShoulderParrot, 'left');
+            curPlayer.leftShoulderParrot = null;
+        }
+        if (curPlayer.rightShoulderParrot) {
+            dismountParrot(curPlayer.rightShoulderParrot, 'right');
+            curPlayer.rightShoulderParrot = null;
         }
     }
 
@@ -4305,11 +5603,13 @@ export const SKIN_H = 32;
             if (this.health <= 0) return;
 
             // Daytime Sunlight Burning: Zombies burn rapidly in daylight when exposed to open sky
-            const isDaytime = (timeOfDay < 0.42 || timeOfDay > 0.88);
+            const isDaytime = (timeOfDay < 0.58 || timeOfDay > 0.90);
             if (isDaytime) {
                 let headGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
                 let headGy = Math.max(0, Math.floor((this.y + 4) / TILE_SIZE));
-                if (typeof hasDirectSkyAccess === 'function' && hasDirectSkyAccess(headGx, headGy)) {
+                let footGy = Math.max(0, Math.floor((this.y + this.height - 2) / TILE_SIZE));
+                let inWater = (typeof isWater === 'function' && isWater(headGx, footGy));
+                if (!inWater && typeof hasDirectSkyAccess === 'function' && hasDirectSkyAccess(headGx, headGy, true)) {
                     this.onFire = true;
                     if (frameCount % 4 === 0) {
                         particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height * 0.8, Math.random() < 0.6 ? '#ff6600' : '#ffaa00'));
@@ -4335,15 +5635,15 @@ export const SKIN_H = 32;
                 } else { this.vx = 0; }
             } else { this.vx = 0; }
 
-            if (this.vx !== 0 && this.isGrounded) {
+            const prevX = this.x;
+            this.applyPhysics();
+            const actualMoved = Math.abs(this.x - prevX);
+
+            if (actualMoved > 0.05 && this.isGrounded) {
                 this.walkAnimTime += 0.18;
-            } else if (!this.isGrounded) {
-                this.walkAnimTime = Math.PI / 6;
             } else {
                 this.walkAnimTime = 0;
             }
-
-            this.applyPhysics();
 
             if (target && this.x < target.x + target.width && this.x + this.width > target.x &&
                 this.y < target.y + target.height && this.y + this.height > target.y) {
@@ -4380,7 +5680,7 @@ export const SKIN_H = 32;
             const sX = w / 16;
             const sY = h / 32;
 
-            const legSwing = Math.sin(this.walkAnimTime) * (Math.PI / 4.5);
+            const legSwing = (this.walkAnimTime > 0) ? Math.sin(this.walkAnimTime) * (Math.PI / 4.5) : 0;
             const armBob = Math.sin(frameCount * 0.08) * 0.06;
 
             // Authentic Zombie Color Palette
@@ -4557,20 +5857,22 @@ export const SKIN_H = 32;
 
         hasHazardAhead(dir) {
             if (dir === 0) return false;
+            const activeWorld = this.getActiveWorld();
+            if (!activeWorld) return false;
             const checkX = Math.floor((this.x + this.width / 2 + dir * (this.width / 2 + 10)) / TILE_SIZE);
             const footY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
             const bodyY = Math.floor((this.y + 4) / TILE_SIZE);
             const drop1Y = footY + 1;
             const drop2Y = footY + 2;
 
-            if (isWater(checkX, footY) || isWater(checkX, bodyY) || isWater(checkX, footY - 1)) return true;
-            if (world[checkX]?.[footY] === IDS.CACTUS || world[checkX]?.[bodyY] === IDS.CACTUS) return true;
+            if (isWater(checkX, footY, this) || isWater(checkX, bodyY, this) || isWater(checkX, footY - 1, this)) return true;
+            if (activeWorld[checkX]?.[footY] === IDS.CACTUS || activeWorld[checkX]?.[bodyY] === IDS.CACTUS) return true;
             if (getFluid(checkX, footY)?.type === IDS.LAVA || getFluid(checkX, bodyY)?.type === IDS.LAVA) return true;
 
-            const blockAtStep = world[checkX]?.[footY];
+            const blockAtStep = activeWorld[checkX]?.[footY];
             const isStepSolid = isSolidWorldBlock(checkX, footY, blockAtStep);
             if (!isStepSolid) {
-                if (isWater(checkX, drop1Y) || isWater(checkX, drop2Y)) return true;
+                if (isWater(checkX, drop1Y, this) || isWater(checkX, drop2Y, this)) return true;
                 if (getFluid(checkX, drop1Y)?.type === IDS.LAVA || getFluid(checkX, drop2Y)?.type === IDS.LAVA) return true;
             }
             return false;
@@ -4578,17 +5880,20 @@ export const SKIN_H = 32;
 
         hasLethalDropAhead(dir) {
             if (dir === 0) return false;
+            const activeWorld = this.getActiveWorld();
+            if (!activeWorld) return false;
+            const curH = activeWorld[0]?.length || WORLD_HEIGHT;
             const checkX = Math.floor((this.x + this.width / 2 + dir * (this.width / 2 + 8)) / TILE_SIZE);
             const footY = Math.floor((this.y + this.height - 2) / TILE_SIZE);
             
-            if (isSolidWorldBlock(checkX, footY, world[checkX]?.[footY])) return false;
+            if (isSolidWorldBlock(checkX, footY, activeWorld[checkX]?.[footY])) return false;
             
             let dropDist = 0;
             for (let dy = 1; dy <= 5; dy++) {
                 const testY = footY + dy;
-                if (testY >= WORLD_HEIGHT) break;
-                if (isSolidWorldBlock(checkX, testY, world[checkX]?.[testY])) break;
-                if (isWater(checkX, testY)) return false;
+                if (testY >= curH) break;
+                if (isSolidWorldBlock(checkX, testY, activeWorld[checkX]?.[testY])) break;
+                if (isWater(checkX, testY, this)) return false;
                 dropDist++;
             }
             return dropDist >= 3;
@@ -4600,10 +5905,13 @@ export const SKIN_H = 32;
             if (this.panicTimer > 0) this.panicTimer--;
             else this.panic = false;
 
+            const activeWorld = this.getActiveWorld();
+            const curWorldW = activeWorld ? activeWorld.length : WORLD_WIDTH;
+
             const curX = Math.floor((this.x + this.width / 2) / TILE_SIZE);
             const curFootY = Math.floor((this.y + this.height - 2) / TILE_SIZE);
             const curBodyY = Math.floor((this.y + this.height / 2) / TILE_SIZE);
-            const currentlyInWater = isWater(curX, curFootY) || isWater(curX, curBodyY);
+            const currentlyInWater = isWater(curX, curFootY, this) || isWater(curX, curBodyY, this);
 
             if (currentlyInWater) {
                 this.vy = Math.min(this.vy, -2.4);
@@ -4613,12 +5921,12 @@ export const SKIN_H = 32;
                 let rightLand = -1;
                 for (let d = 1; d <= 14; d++) {
                     if (leftLand < 0 && curX - d >= 0) {
-                        const b = world[curX - d]?.[curFootY];
+                        const b = activeWorld?.[curX - d]?.[curFootY];
                         if (isSolidWorldBlock(curX - d, curFootY, b) && !isWater(curX - d, curFootY - 1)) leftLand = d;
                         else if (!isWater(curX - d, curFootY) && !isWater(curX - d, curFootY - 1)) leftLand = d;
                     }
-                    if (rightLand < 0 && curX + d < WORLD_WIDTH) {
-                        const b = world[curX + d]?.[curFootY];
+                    if (rightLand < 0 && curX + d < curWorldW) {
+                        const b = activeWorld?.[curX + d]?.[curFootY];
                         if (isSolidWorldBlock(curX + d, curFootY, b) && !isWater(curX + d, curFootY - 1)) rightLand = d;
                         else if (!isWater(curX + d, curFootY) && !isWater(curX + d, curFootY - 1)) rightLand = d;
                     }
@@ -4705,9 +6013,9 @@ export const SKIN_H = 32;
                 const checkX = Math.floor((this.x + this.width / 2 + moveDir * (this.width / 2 + 5)) / TILE_SIZE);
                 const footY = Math.floor((this.y + this.height - 5) / TILE_SIZE);
                 const headY = Math.floor((this.y + 5) / TILE_SIZE);
-                if (checkX >= 0 && checkX < WORLD_WIDTH) {
-                    const b = world[checkX]?.[footY];
-                    const upperB = world[checkX]?.[headY - 1];
+                if (checkX >= 0 && checkX < curWorldW) {
+                    const b = activeWorld?.[checkX]?.[footY];
+                    const upperB = activeWorld?.[checkX]?.[headY - 1];
                     if (isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1)) {
                         this.vy = JUMP_FORCE * 0.85;
                         this.isGrounded = false;
@@ -4715,13 +6023,15 @@ export const SKIN_H = 32;
                 }
             }
 
-            if (this.vx !== 0) {
-                this.walkAnimTime = (this.walkAnimTime || 0) + (Math.abs(this.vx) / (this.baseSpeed || 1)) * 0.22;
+            const prevX = this.x;
+            this.applyPhysics();
+            const actualMoved = Math.abs(this.x - prevX);
+
+            if (actualMoved > 0.05 && (this.isGrounded || currentlyInWater)) {
+                this.walkAnimTime = (this.walkAnimTime || 0) + (actualMoved / (this.baseSpeed || 1)) * 0.22;
             } else {
                 this.walkAnimTime = 0;
             }
-
-            this.applyPhysics();
         }
     }
 
@@ -5036,6 +6346,1288 @@ export const SKIN_H = 32;
             // Near Foot / Claws
             ctx.fillStyle = clawDark;
             ctx.fillRect(w * 0.06 + rightLegSwing - 1, h * 0.48 - 1 - rightLegLift, 5, 2);
+
+            ctx.restore();
+        }
+    }
+
+    export class Pigeon extends Animal {
+        constructor(x, y) {
+            super(x, y, TILE_SIZE * 0.54, TILE_SIZE * 0.48, 20, MOVE_SPEED * 0.28);
+            this.state = 'ground'; // 'ground' | 'flying' | 'perching'
+            this.peckTimer = 0;
+            this.perchTimer = 0;
+            this.flightTimer = 0;
+            this.flyTargetX = x;
+            this.flyTargetY = y;
+            this.flapTime = Math.random() * 100;
+            this.targetLeaf = null;
+            this.partner = null;
+            this.headTilt = 0;
+            this.headTiltTimer = 0;
+            this.temptAlertTimer = 0;
+        }
+
+        isTemptedBy(itemId) {
+            return itemId === IDS.SEEDS;
+        }
+
+        startle(scareDir) {
+            if (this.state === 'perching') {
+                this.targetLeaf = null;
+            }
+            this.state = 'flying';
+            this.panic = true;
+            this.panicTimer = 180;
+            this.dir = scareDir || (Math.random() > 0.5 ? 1 : -1);
+            this.vy = -4.5;
+            this.vx = this.dir * (3.5 + Math.random() * 1.5);
+            this.isGrounded = false;
+            this.flightTimer = 350 + Math.random() * 300;
+            this.flyTargetX = this.x + this.dir * (200 + Math.random() * 150);
+            this.flyTargetY = Math.max(2 * TILE_SIZE, this.y - (120 + Math.random() * 100));
+
+            for (let i = 0; i < 5; i++) {
+                const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, '#94a3b8');
+                p.vx = (Math.random() - 0.5) * 3;
+                p.vy = (Math.random() - 0.5) * 3;
+                particles.push(p);
+            }
+
+            if (this.partner && !this.partner.panic && Math.hypot(this.partner.x - this.x, this.partner.y - this.y) < 300) {
+                this.partner.startle(this.dir);
+            }
+        }
+
+        alertTempted(playerX, playerY) {
+            this.temptAlertTimer = 80;
+            if (this.state === 'flying') {
+                this.flyTargetX = playerX + (this.x < playerX ? -50 : 50);
+                this.flyTargetY = playerY - 10;
+            } else if (this.state === 'perching') {
+                if (Math.random() < 0.05) {
+                    this.state = 'flying';
+                    this.targetLeaf = null;
+                    this.flightTimer = 200;
+                    this.flyTargetX = playerX + (this.x < playerX ? -50 : 50);
+                    this.flyTargetY = playerY - 10;
+                }
+            }
+        }
+
+        findNearbyTreeLeaf(searchRadiusTiles = 16) {
+            const activeWorld = this.getActiveWorld();
+            if (!activeWorld) return null;
+            const curWorldW = activeWorld.length;
+            const curWorldH = activeWorld[0]?.length || WORLD_HEIGHT;
+            const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const curGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+            const candidates = [];
+
+            const minX = Math.max(2, curGx - searchRadiusTiles);
+            const maxX = Math.min(curWorldW - 3, curGx + searchRadiusTiles);
+            const minY = Math.max(2, curGy - 14);
+            const maxY = Math.min(curWorldH - 3, curGy + 14);
+
+            for (let x = minX; x <= maxX; x++) {
+                if (!activeWorld[x]) continue;
+                for (let y = minY; y <= maxY; y++) {
+                    if (activeWorld[x][y] === IDS.LEAVES || activeWorld[x][y] === IDS.JUNGLE_LEAVES) {
+                        if (activeWorld[x][y - 1] === IDS.AIR) {
+                            candidates.push({ x, y });
+                        }
+                    }
+                }
+            }
+
+            if (candidates.length === 0) return null;
+            candidates.sort((a, b) => {
+                const distA = Math.hypot(a.x - curGx, a.y - curGy);
+                const distB = Math.hypot(b.x - curGx, b.y - curGy);
+                return distA - distB;
+            });
+            const pickIdx = Math.min(candidates.length - 1, Math.floor(Math.random() * Math.min(3, candidates.length)));
+            return candidates[pickIdx];
+        }
+
+        update() {
+            if (this.damageCooldown > 0) this.damageCooldown--;
+            if (this.panicTimer > 0) this.panicTimer--;
+            else this.panic = false;
+            if (this.peckTimer > 0) this.peckTimer--;
+            if (this.temptAlertTimer > 0) this.temptAlertTimer--;
+
+            const activeWorld = this.getActiveWorld();
+            const curWorldW = activeWorld ? activeWorld.length : WORLD_WIDTH;
+            const curWorldH = activeWorld ? (activeWorld[0]?.length || WORLD_HEIGHT) : WORLD_HEIGHT;
+            const activeHeights = this.getActiveTerrain();
+
+            if (this.headTiltTimer > 0) {
+                this.headTiltTimer--;
+            } else if (Math.random() < 0.02) {
+                this.headTilt = (Math.random() - 0.5) * 0.35;
+                this.headTiltTimer = Math.floor(Math.random() * 40 + 20);
+            } else {
+                this.headTilt = 0;
+            }
+
+            if (!this.partner || this.partner.health <= 0) {
+                this.partner = null;
+                if (Math.random() < 0.02) {
+                    const nearbyPigeons = entities.filter(e => e instanceof Pigeon && e !== this && !e.partner && Math.hypot(e.x - this.x, e.y - this.y) < 220);
+                    if (nearbyPigeons.length > 0) {
+                        const companion = nearbyPigeons[Math.floor(Math.random() * nearbyPigeons.length)];
+                        this.partner = companion;
+                        companion.partner = this;
+                    }
+                }
+            }
+
+            let pDist = 9999;
+            let isHoldingSeeds = false;
+            if (player && !player.isDead) {
+                pDist = Math.hypot(
+                    (player.x + player.width / 2) - (this.x + this.width / 2),
+                    (player.y + player.height / 2) - (this.y + this.height / 2)
+                );
+                const held = inventory[selectedHotbarIndex];
+                isHoldingSeeds = (held && this.isTemptedBy(held.id));
+            }
+
+            // 1. Skittish startle check
+            if (!this.panic && player && !player.isDead) {
+                if (!isHoldingSeeds && pDist < 95) {
+                    const scareDir = (player.x < this.x) ? 1 : -1;
+                    this.startle(scareDir);
+                } else if (isHoldingSeeds && pDist < 25) {
+                    const scareDir = (player.x < this.x) ? 1 : -1;
+                    this.startle(scareDir);
+                }
+            }
+
+            // 2. Seeds temptation & Flocking Call
+            let isTemptedNow = false;
+            if (isHoldingSeeds && pDist < 360 && !this.panic) {
+                isTemptedNow = true;
+                this.isTempted = true;
+
+                if (frameCount % 30 === 0) {
+                    const others = entities.filter(e => e instanceof Pigeon && e !== this && Math.hypot(e.x - this.x, e.y - this.y) < 280);
+                    others.forEach(p => p.alertTempted(player.x, player.y));
+                }
+
+                if (frameCount % 75 === 0 && Math.random() < 0.4) {
+                    particles.push(new Particle(this.x + this.width / 2, this.y - 4, '#ff80bf'));
+                }
+            } else {
+                this.isTempted = (this.temptAlertTimer > 0);
+            }
+
+            // 3. State Machine
+            if (this.state === 'perching') {
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = true;
+
+                if (this.targetLeaf) {
+                    const block = activeWorld?.[this.targetLeaf.x]?.[this.targetLeaf.y];
+                    if (block !== IDS.LEAVES && block !== IDS.JUNGLE_LEAVES) {
+                        this.targetLeaf = null;
+                        this.state = 'flying';
+                        this.flightTimer = 300;
+                    }
+                }
+
+                this.perchTimer--;
+                if (Math.random() < 0.01) this.dir = -this.dir;
+
+                if (this.perchTimer <= 0) {
+                    this.state = 'flying';
+                    this.targetLeaf = null;
+                    this.flightTimer = 350 + Math.random() * 450;
+                    this.vy = -3;
+                    this.vx = this.dir * (1.5 + Math.random());
+                    this.isGrounded = false;
+                }
+            }
+            else if (this.state === 'ground') {
+                if (this.panic) {
+                    this.state = 'flying';
+                    this.vy = -4.5;
+                    this.flightTimer = 350;
+                } else if (isTemptedNow) {
+                    const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+                    this.dir = dx > 0 ? 1 : -1;
+                    if (pDist > 55) {
+                        this.vx = this.dir * this.baseSpeed * 1.1;
+                    } else {
+                        this.vx = 0;
+                        if (Math.random() < 0.03 && this.peckTimer <= 0) this.peckTimer = 20;
+                    }
+                } else {
+                    this.timer--;
+                    if (this.timer <= 0) {
+                        const roll = Math.random();
+                        if (roll < 0.35) {
+                            this.dir = 0;
+                            this.peckTimer = 26;
+                            this.timer = Math.random() * 60 + 30;
+                        } else if (roll < 0.70) {
+                            let partnerDir = 0;
+                            if (this.partner && Math.hypot(this.partner.x - this.x, this.partner.y - this.y) > 40) {
+                                partnerDir = this.partner.x > this.x ? 1 : -1;
+                            }
+                            this.dir = partnerDir !== 0 ? partnerDir : (Math.random() > 0.5 ? 1 : -1);
+                            this.timer = Math.random() * 120 + 60;
+                        } else {
+                            this.state = 'flying';
+                            this.flightTimer = 400 + Math.random() * 500;
+                            this.vy = -3.8;
+                            this.isGrounded = false;
+                        }
+                    }
+
+                    if (this.dir !== 0 && (this.hasHazardAhead(this.dir) || this.hasLethalDropAhead(this.dir))) {
+                        this.dir = -this.dir;
+                        this.timer = 50;
+                    }
+
+                    this.vx = this.dir * this.baseSpeed;
+                }
+
+                if (this.vx !== 0 && this.isGrounded) {
+                    const moveDir = this.vx > 0 ? 1 : -1;
+                    const checkX = Math.floor((this.x + this.width / 2 + moveDir * (this.width / 2 + 4)) / TILE_SIZE);
+                    const footY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
+                    const headY = Math.floor((this.y + 4) / TILE_SIZE);
+                    if (checkX >= 0 && checkX < curWorldW) {
+                        const b = activeWorld?.[checkX]?.[footY];
+                        const upperB = activeWorld?.[checkX]?.[headY - 1];
+                        if (isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1)) {
+                            this.vy = JUMP_FORCE * 0.75;
+                            this.isGrounded = false;
+                        }
+                    }
+                }
+
+                const prevX = this.x;
+                this.applyPhysics();
+                const actualMoved = Math.abs(this.x - prevX);
+
+                if (actualMoved > 0.05 && this.isGrounded) {
+                    this.walkAnimTime = (this.walkAnimTime || 0) + (actualMoved / this.baseSpeed) * 0.25;
+                } else {
+                    this.walkAnimTime = 0;
+                }
+
+                if (!this.isGrounded && this.vy > 3.0) {
+                    this.state = 'flying';
+                    this.flightTimer = 300;
+                }
+            }
+            else {
+                this.flightTimer--;
+                this.flapTime += (this.panic ? 0.65 : 0.38);
+
+                const curGx = Math.max(0, Math.min(curWorldW - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
+                const groundY = (activeHeights && activeHeights[curGx] !== undefined) ? activeHeights[curGx] : Math.floor(curWorldH / 2);
+                const cruiseAltitudeY = Math.max(2 * TILE_SIZE, (groundY - 8) * TILE_SIZE);
+
+                if (this.panic) {
+                    this.flyTargetY = Math.max(2 * TILE_SIZE, cruiseAltitudeY - 3 * TILE_SIZE);
+                    this.flyTargetX = this.x + this.dir * 120;
+                } else if (isTemptedNow && player && !player.isDead) {
+                    this.flyTargetX = player.x + (this.x < player.x ? -45 : 45);
+                    this.flyTargetY = player.y - 12;
+                    this.targetLeaf = null;
+                } else if (this.targetLeaf) {
+                    this.flyTargetX = this.targetLeaf.x * TILE_SIZE + (TILE_SIZE - this.width) / 2;
+                    this.flyTargetY = (this.targetLeaf.y - 1) * TILE_SIZE + (TILE_SIZE - this.height);
+                } else {
+                    if (this.flightTimer % 120 === 0 || Math.abs(this.x - this.flyTargetX) < 30) {
+                        const roamDistance = (Math.random() - 0.5) * 250;
+                        this.flyTargetX = Math.max(50, Math.min(curWorldW * TILE_SIZE - 50, this.x + roamDistance));
+                        this.flyTargetY = cruiseAltitudeY + (Math.random() - 0.5) * 50;
+
+                        if (this.flightTimer < 250 && Math.random() < 0.45) {
+                            const leafSpot = this.findNearbyTreeLeaf(18);
+                            if (leafSpot) {
+                                this.targetLeaf = leafSpot;
+                            }
+                        } else if (this.flightTimer < 100 && Math.random() < 0.4) {
+                            this.flyTargetY = (groundY - 1) * TILE_SIZE;
+                        }
+                    }
+                }
+
+                const dx = this.flyTargetX - this.x;
+                const dy = this.flyTargetY - this.y;
+                const maxFlightSpeed = this.panic ? 4.2 : 2.4;
+                const maxClimbSpeed = this.panic ? 3.2 : 1.8;
+
+                const desiredVx = Math.sign(dx) * Math.min(Math.abs(dx) * 0.05, maxFlightSpeed);
+                const desiredVy = Math.sign(dy) * Math.min(Math.abs(dy) * 0.05, maxClimbSpeed);
+
+                this.vx += (desiredVx - this.vx) * 0.07;
+                this.vy += (desiredVy - this.vy) * 0.07;
+                this.vy += Math.sin(this.flapTime) * 0.18;
+
+                if (Math.abs(this.vx) > 0.1) {
+                    this.dir = this.vx > 0 ? 1 : -1;
+                }
+
+                this.x += this.vx;
+                this.handleCollisions(true);
+
+                this.y += this.vy;
+                this.handleCollisions(false);
+
+                if (this.targetLeaf) {
+                    const leafTargetX = this.targetLeaf.x * TILE_SIZE + (TILE_SIZE - this.width) / 2;
+                    const leafTargetY = (this.targetLeaf.y - 1) * TILE_SIZE + (TILE_SIZE - this.height);
+                    if (Math.hypot(this.x - leafTargetX, this.y - leafTargetY) < 8 && this.vy >= -0.5) {
+                        this.state = 'perching';
+                        this.x = leafTargetX;
+                        this.y = leafTargetY;
+                        this.vx = 0;
+                        this.vy = 0;
+                        this.isGrounded = true;
+                        this.perchTimer = 300 + Math.random() * 450;
+                    }
+                }
+
+                if (this.isGrounded && this.vy >= 0 && !this.targetLeaf) {
+                    this.state = 'ground';
+                    this.vx = 0;
+                    this.timer = 80 + Math.random() * 100;
+                }
+            }
+        }
+
+        takeDamage(amt, knockbackDir) {
+            if (this.damageCooldown > 0) return;
+            this.health -= amt;
+            this.damageCooldown = 20;
+            const escapeDir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
+            this.startle(escapeDir);
+
+            for (let i = 0; i < 6; i++) {
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#64748b'));
+            }
+            for (let i = 0; i < 3; i++) {
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ef4444'));
+            }
+            floatingTexts.push(new FloatingText(this.x + this.width / 2, this.y - 10, amt, "#ffcc00"));
+        }
+
+        draw(ctx, camX, camY) {
+            const drawX = this.x - camX;
+            const drawY = this.y - camY;
+            const w = this.width;
+            const h = this.height;
+
+            if (advancedGraphics && this.state !== 'flying') {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w * 0.45, drawY + h - 3, w * 0.9, 5);
+            }
+
+            ctx.save();
+            ctx.translate(drawX + w / 2, drawY + h / 2);
+            if (this.dir < 0) ctx.scale(-1, 1);
+
+            const isDamaged = this.damageCooldown > 0;
+            const isFlying = (this.state === 'flying');
+            const isGrounded = (this.state === 'ground' && this.isGrounded);
+            const isMoving = Math.abs(this.vx) > 0.05 && isGrounded;
+            const walk = this.walkAnimTime || 0;
+            const idle = Math.sin((frameCount + this.idleSeed) * 0.07);
+            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 190 < 6);
+
+            // Shimmering iridescent neck cycle
+            const shimmerTime = (frameCount * 0.09 + this.idleSeed);
+            const shimmerVal = (Math.sin(shimmerTime) + 1) * 0.5;
+
+            // Palette setup with damage flash override
+            const cHeadBase = isDamaged ? '#ff7070' : '#334155';
+            const cHeadTop = isDamaged ? '#ffa0a0' : '#475569';
+            const cHeadDark = isDamaged ? '#cc4444' : '#1e293b';
+
+            const cBreastBase = isDamaged ? '#ff8080' : '#4b5563';
+            const cBreastHigh = isDamaged ? '#ffa5a5' : '#64748b';
+            const cBreastDark = isDamaged ? '#cc4444' : '#334155';
+            const cBellyDark = isDamaged ? '#aa3333' : '#1e293b';
+
+            const cWingShield = isDamaged ? '#ffb0b0' : '#94a3b8';
+            const cWingLight = isDamaged ? '#ffd0d0' : '#cbd5e1';
+            const cWingBar = isDamaged ? '#991111' : '#0f172a';
+            const cWingPrimaries = isDamaged ? '#bb2222' : '#1e293b';
+
+            const cTailGrey = isDamaged ? '#ffa0a0' : '#475569';
+            const cTailBar = isDamaged ? '#880000' : '#0f172a';
+            const cTailEdge = isDamaged ? '#ffe0e0' : '#e2e8f0';
+
+            const cCereWhite = isDamaged ? '#ffcccc' : '#f8fafc';
+            const cBeakSlate = isDamaged ? '#333333' : '#1e293b';
+            const cBeakTip = isDamaged ? '#222222' : '#0f172a';
+
+            const cEyeOrange = isDamaged ? '#ff4444' : '#ea580c';
+            const cEyeRing = isDamaged ? '#ff8888' : '#64748b';
+
+            const cFootCoral = isDamaged ? '#ff4444' : '#f43f5e';
+            const cFootDark = isDamaged ? '#b91c1c' : '#9f1239';
+            const cClaw = isDamaged ? '#444444' : '#334155';
+
+            // Dynamic emerald and purple iridescence
+            const cIridGreen = isDamaged ? '#ff9999' : (shimmerVal > 0.4 ? '#10b981' : '#059669');
+            const cIridPurple = isDamaged ? '#ff7777' : (shimmerVal > 0.6 ? '#c084fc' : '#7c3aed');
+            const cIridGlint = isDamaged ? '#ffffff' : (shimmerVal > 0.5 ? '#34d399' : '#a855f7');
+
+            // Animations
+            const headBobX = isMoving ? Math.sin(walk) * 2.4 : (isFlying ? 1.2 : 0);
+            const peckBobY = (this.peckTimer > 0) ? Math.sin(this.peckTimer / 26 * Math.PI) * 4.5 : 0;
+            const headBobY = (isMoving ? Math.abs(Math.sin(walk)) * 1.3 : idle * 0.35) + peckBobY + (this.headTilt * 3);
+
+            let wingAngle = 0;
+            if (isFlying) {
+                wingAngle = Math.sin(this.flapTime) * 0.85;
+                const flyTilt = Math.max(-0.35, Math.min(0.35, this.vy * 0.08));
+                ctx.rotate(flyTilt);
+            } else if (this.panic) {
+                wingAngle = Math.sin(frameCount * 0.65) * 0.4;
+            }
+
+            const walkSwing = isMoving ? Math.sin(walk) * 3.2 : 0;
+            const walkLiftFar = (isMoving && Math.sin(walk) < 0) ? Math.abs(Math.sin(walk)) * 2.2 : 0;
+            const walkLiftNear = (isMoving && -Math.sin(walk) < 0) ? Math.abs(Math.sin(walk)) * 2.2 : 0;
+
+            // 1. Far Leg & Claws (Behind Body)
+            if (!isFlying) {
+                ctx.fillStyle = cFootDark;
+                // Shank
+                ctx.fillRect(-w * 0.12 + walkSwing, h * 0.20 - walkLiftFar, 2, h * 0.26);
+                // Back toe
+                ctx.fillRect(-w * 0.12 + walkSwing - 2, h * 0.46 - walkLiftFar - 1, 2, 1.5);
+                // Front toes with claws
+                ctx.fillRect(-w * 0.12 + walkSwing + 1, h * 0.46 - walkLiftFar - 1, 4, 1.5);
+                ctx.fillStyle = cClaw;
+                ctx.fillRect(-w * 0.12 + walkSwing + 4.5, h * 0.46 - walkLiftFar - 0.5, 1.5, 1);
+            }
+
+            // 2. Tail & Rump
+            const tailFlutter = isFlying ? Math.sin(this.flapTime * 0.5) * 0.5 : Math.sin(frameCount * 0.12) * 0.4;
+            ctx.save();
+            ctx.translate(-w * 0.42, -h * 0.05 + tailFlutter);
+            // Pale grey rump
+            ctx.fillStyle = cWingShield;
+            ctx.fillRect(0, -h * 0.14, 3, 3);
+            // Tail main body
+            ctx.fillStyle = cTailGrey;
+            ctx.fillRect(-w * 0.22, -h * 0.10, w * 0.24, 4.5);
+            // Dark terminal bar
+            ctx.fillStyle = cTailBar;
+            ctx.fillRect(-w * 0.22, -h * 0.10, 3.5, 4.5);
+            // White outer margin edge
+            ctx.fillStyle = cTailEdge;
+            ctx.fillRect(-w * 0.22, -h * 0.12, 1.5, 4.8);
+            ctx.restore();
+
+            // 3. Plump Breast & Belly Body
+            // Underbelly
+            ctx.fillStyle = cBellyDark;
+            ctx.fillRect(-w * 0.30, h * 0.14, w * 0.54, 3);
+            // Main breast / body mass
+            ctx.fillStyle = cBreastBase;
+            ctx.fillRect(-w * 0.32, -h * 0.22, w * 0.58, h * 0.40);
+            // Puffed breast curve
+            ctx.fillStyle = cBreastHigh;
+            ctx.fillRect(w * 0.10, -h * 0.18, 4, h * 0.30);
+            ctx.fillRect(-w * 0.15, -h * 0.20, w * 0.32, 2.5);
+            // Feather scallops on breast (curved plumage markings as in photo)
+            ctx.fillStyle = cBreastDark;
+            ctx.fillRect(-w * 0.08, -h * 0.08, 2.5, 2);
+            ctx.fillRect(w * 0.04, -h * 0.04, 2.5, 2);
+            ctx.fillRect(-w * 0.02, h * 0.06, 2.5, 2);
+            ctx.fillRect(w * 0.12, -h * 0.12, 2, 2);
+
+            // 4. Head, Throat & Neck
+            const hx = w * 0.16 + headBobX;
+            const hy = -h * 0.46 + headBobY;
+
+            // Neck connecting body to head
+            ctx.fillStyle = cHeadBase;
+            ctx.fillRect(hx - 3, hy + h * 0.16, w * 0.32, h * 0.28);
+            ctx.fillStyle = cHeadDark;
+            ctx.fillRect(hx - 4, hy + h * 0.22, 2, h * 0.22); // Throat/nape shadow
+
+            // Metallic Iridescent Neck Patch (Emerald Green + Purple Shimmer)
+            ctx.fillStyle = cIridGreen;
+            ctx.fillRect(hx - 1, hy + h * 0.18, 3.5, 3.5);
+            ctx.fillRect(hx + 3, hy + h * 0.24, 3, 3);
+            ctx.fillStyle = cIridPurple;
+            ctx.fillRect(hx - 2, hy + h * 0.26, 3, 3);
+            ctx.fillRect(hx + 2, hy + h * 0.18, 2.5, 2);
+            ctx.fillStyle = cIridGlint;
+            ctx.fillRect(hx, hy + h * 0.20, 1.5, 1.5);
+            ctx.fillRect(hx + 3, hy + h * 0.27, 1.5, 1.5);
+
+            // Sleek Rounded Head
+            ctx.fillStyle = cHeadBase;
+            ctx.fillRect(hx - 2, hy, w * 0.34, h * 0.32);
+            // Head crown highlight
+            ctx.fillStyle = cHeadTop;
+            ctx.fillRect(hx - 1, hy, w * 0.30, 2);
+            // Subtle throat shade
+            ctx.fillStyle = cHeadDark;
+            ctx.fillRect(hx + 3, hy + h * 0.26, 4, 2);
+
+            // Fiery Amber-Orange Eye
+            const eyeX = hx + 4;
+            const eyeY = hy + 3;
+            if (isBlinking) {
+                ctx.fillStyle = cHeadDark;
+                ctx.fillRect(eyeX - 1, eyeY + 1, 4, 1.5);
+            } else {
+                // Orbital skin ring
+                ctx.fillStyle = cEyeRing;
+                ctx.fillRect(eyeX - 0.5, eyeY - 0.5, 4.5, 4.5);
+                // Fiery orange iris
+                ctx.fillStyle = cEyeOrange;
+                ctx.fillRect(eyeX, eyeY, 3.5, 3.5);
+                // Black pupil
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(eyeX + 1, eyeY + 1, 2, 2);
+                // Crisp white catchlight gleam
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(eyeX + 1, eyeY, 1, 1);
+            }
+
+            // Beak & White Cere
+            const beakX = hx + w * 0.32;
+            const beakY = hy + 4;
+            // Prominent White / Ivory Cere (signature pigeon feature!)
+            ctx.fillStyle = cCereWhite;
+            ctx.fillRect(beakX - 1, beakY - 1, 2.5, 2);
+            // Slate bill
+            ctx.fillStyle = cBeakSlate;
+            ctx.fillRect(beakX + 1, beakY + 0.5, 4, 2.2);
+            // Curved dark tip
+            ctx.fillStyle = cBeakTip;
+            ctx.fillRect(beakX + 3.5, beakY + 1.8, 1.8, 1.4);
+
+            // 5. Wing (Checkered Wing Coverts + Two Black Wing Bars + Primaries)
+            ctx.save();
+            ctx.translate(-w * 0.04, -h * 0.08);
+            ctx.rotate(wingAngle);
+
+            if (isFlying) {
+                // Expanded Aerodynamic Wing
+                // Wing coverts
+                ctx.fillStyle = cWingShield;
+                ctx.fillRect(-w * 0.24, -h * 0.28, w * 0.52, h * 0.46);
+                // Dual black wing bars
+                ctx.fillStyle = cWingBar;
+                ctx.fillRect(-w * 0.20, h * 0.02, w * 0.46, 2.5);
+                ctx.fillRect(-w * 0.16, -h * 0.10, w * 0.42, 2.5);
+                // Dark primaries with spread feather tips
+                ctx.fillStyle = cWingPrimaries;
+                ctx.fillRect(-w * 0.24, h * 0.12, w * 0.54, 3.5);
+                ctx.fillRect(-w * 0.20, h * 0.20, 3, 2.5);
+                ctx.fillRect(-w * 0.10, h * 0.22, 3, 2.5);
+                ctx.fillRect(0, h * 0.22, 3, 2.5);
+                ctx.fillRect(w * 0.10, h * 0.20, 3, 2.5);
+                // Inner wing lining highlight
+                ctx.fillStyle = cWingLight;
+                ctx.fillRect(-w * 0.18, -h * 0.24, w * 0.38, 2);
+            } else {
+                // Folded Wing with Checker Marks and Two Bars
+                // Silvery lavender wing shield
+                ctx.fillStyle = cWingShield;
+                ctx.fillRect(-w * 0.24, -h * 0.14, w * 0.46, h * 0.34);
+                ctx.fillStyle = cWingLight;
+                ctx.fillRect(-w * 0.20, -h * 0.12, w * 0.38, 2.5);
+
+                // Checker feather spots on upper wing
+                ctx.fillStyle = cWingPrimaries;
+                ctx.fillRect(-w * 0.16, -h * 0.06, 2, 2);
+                ctx.fillRect(-w * 0.06, -h * 0.08, 2, 2);
+                ctx.fillRect(w * 0.04, -h * 0.04, 2, 2);
+                ctx.fillRect(-w * 0.10, 0, 2, 2);
+
+                // Two Iconic Black Wing Bars
+                ctx.fillStyle = cWingBar;
+                ctx.fillRect(-w * 0.20, h * 0.04, w * 0.38, 2.5); // First broad bar
+                ctx.fillRect(-w * 0.14, h * 0.12, w * 0.32, 2.5); // Second broad bar
+
+                // Folded Dark Primary Flight Feathers extending back
+                ctx.fillStyle = cWingPrimaries;
+                ctx.fillRect(-w * 0.32, h * 0.08, w * 0.22, 4);
+                ctx.fillStyle = cBeakTip;
+                ctx.fillRect(-w * 0.36, h * 0.10, 3, 3);
+            }
+            ctx.restore();
+
+            // 6. Near Leg & Claws (In Front)
+            if (!isFlying) {
+                ctx.fillStyle = cFootCoral;
+                // Shank
+                ctx.fillRect(w * 0.06 - walkSwing, h * 0.20 - walkLiftNear, 2.2, h * 0.26);
+                // Back toe
+                ctx.fillRect(w * 0.06 - walkSwing - 2, h * 0.46 - walkLiftNear - 1, 2, 1.5);
+                // Front toes with claws
+                ctx.fillRect(w * 0.06 - walkSwing + 1, h * 0.46 - walkLiftNear - 1, 4.5, 1.5);
+                ctx.fillStyle = cClaw;
+                ctx.fillRect(w * 0.06 - walkSwing + 5.2, h * 0.46 - walkLiftNear - 0.5, 1.5, 1);
+            } else {
+                // Tucked feet in flight
+                ctx.fillStyle = cFootCoral;
+                ctx.fillRect(-w * 0.10, h * 0.16, 3.5, 2);
+                ctx.fillRect(w * 0.04, h * 0.16, 3.5, 2);
+                ctx.fillStyle = cClaw;
+                ctx.fillRect(-w * 0.12, h * 0.17, 1.5, 1);
+                ctx.fillRect(w * 0.02, h * 0.17, 1.5, 1);
+            }
+
+            ctx.restore();
+        }
+    }
+
+    export class Parrot extends Animal {
+        constructor(x, y, variant = null) {
+            super(x, y, TILE_SIZE * 0.48, TILE_SIZE * 0.52, 6, MOVE_SPEED * 0.32);
+            this.state = 'ground'; // 'ground' | 'flying' | 'perching'
+            this.variant = (variant !== null && variant >= 0 && variant <= 3) ? variant : Math.floor(Math.random() * 4);
+            this.isTamed = false;
+            this.owner = null;
+            this.isSitting = false;
+            this.isMounted = false;
+            this.mountedShoulder = null;
+            this.peckTimer = 0;
+            this.perchTimer = 0;
+            this.flightTimer = 0;
+            this.flyTargetX = x;
+            this.flyTargetY = y;
+            this.flapTime = Math.random() * 100;
+            this.targetLeaf = null;
+            this.headTilt = 0;
+            this.headTiltTimer = 0;
+            this.temptAlertTimer = 0;
+            this.chirpTimer = Math.floor(Math.random() * 300 + 200);
+            this.hopTimer = 0;
+        }
+
+        isTemptedBy(itemId) {
+            return itemId === IDS.SEEDS || itemId === IDS.MELON_SEEDS;
+        }
+
+        startle(scareDir) {
+            if (this.isMounted || this.isSitting) return;
+            if (this.state === 'perching') this.targetLeaf = null;
+            this.state = 'flying';
+            this.panic = true;
+            this.panicTimer = 160;
+            this.dir = scareDir || (Math.random() > 0.5 ? 1 : -1);
+            this.vy = -4.5;
+            this.vx = this.dir * (3.5 + Math.random() * 1.5);
+            this.isGrounded = false;
+            this.flightTimer = 300 + Math.random() * 250;
+            this.flyTargetX = this.x + this.dir * (180 + Math.random() * 120);
+            this.flyTargetY = Math.max(2 * TILE_SIZE, this.y - (100 + Math.random() * 80));
+
+            for (let i = 0; i < 5; i++) {
+                const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, this.getFeatherParticleColor());
+                p.vx = (Math.random() - 0.5) * 3;
+                p.vy = (Math.random() - 0.5) * 3;
+                particles.push(p);
+            }
+        }
+
+        getFeatherParticleColor() {
+            switch (this.variant) {
+                case 0: return '#ef4444';
+                case 1: return '#22c55e';
+                case 2: return '#0ea5e9';
+                case 3: return '#eab308';
+                default: return '#ef4444';
+            }
+        }
+
+        findNearbyTreeLeaf(searchRadiusTiles = 16) {
+            const activeWorld = this.getActiveWorld();
+            if (!activeWorld) return null;
+            const curWorldW = activeWorld.length;
+            const curWorldH = activeWorld[0]?.length || WORLD_HEIGHT;
+            const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const curGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+            const candidates = [];
+
+            const minX = Math.max(2, curGx - searchRadiusTiles);
+            const maxX = Math.min(curWorldW - 3, curGx + searchRadiusTiles);
+            const minY = Math.max(2, curGy - 14);
+            const maxY = Math.min(curWorldH - 3, curGy + 14);
+
+            for (let x = minX; x <= maxX; x++) {
+                if (!activeWorld[x]) continue;
+                for (let y = minY; y <= maxY; y++) {
+                    const block = activeWorld[x][y];
+                    if (block === IDS.JUNGLE_LEAVES || block === IDS.LEAVES) {
+                        if (activeWorld[x][y - 1] === IDS.AIR) candidates.push({ x, y });
+                    }
+                }
+            }
+
+            if (candidates.length === 0) return null;
+            candidates.sort((a, b) => {
+                const distA = Math.hypot(a.x - curGx, a.y - curGy);
+                const distB = Math.hypot(b.x - curGx, b.y - curGy);
+                return distA - distB;
+            });
+            const pickIdx = Math.min(candidates.length - 1, Math.floor(Math.random() * Math.min(3, candidates.length)));
+            return candidates[pickIdx];
+        }
+
+        interact(curPlayer, inv, slotIdx) {
+            const held = inv ? inv[slotIdx] : null;
+            if (!this.isTamed) {
+                if (held && this.isTemptedBy(held.id) && held.count > 0) {
+                    held.count--;
+                    if (held.count <= 0) inv[slotIdx] = null;
+                    if (typeof updateUI === 'function') updateUI();
+
+                    if (Math.random() < 0.33) {
+                        this.isTamed = true;
+                        this.owner = 'player';
+                        this.isSitting = false;
+                        playSound('parrot_tame');
+                        for (let i = 0; i < 7; i++) {
+                            const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ef4444');
+                            p.vx = (Math.random() - 0.5) * 2.5;
+                            p.vy = -Math.random() * 2.5 - 0.5;
+                            particles.push(p);
+                        }
+                        if (typeof showToast === 'function') showToast('Parrot tamed!');
+                        if (typeof unlockAchievement === 'function') unlockAchievement('best_friends_forever');
+                    } else {
+                        playSound('pop');
+                        for (let i = 0; i < 4; i++) {
+                            const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, '#9ca3af');
+                            p.vx = (Math.random() - 0.5) * 2;
+                            p.vy = -Math.random() * 2;
+                            particles.push(p);
+                        }
+                    }
+                    if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
+                    return true;
+                }
+            } else {
+                if (this.isMounted) {
+                    if (curPlayer.leftShoulderParrot === this) curPlayer.leftShoulderParrot = null;
+                    if (curPlayer.rightShoulderParrot === this) curPlayer.rightShoulderParrot = null;
+                    this.isMounted = false;
+                    this.mountedShoulder = null;
+                    this.state = 'flying';
+                    this.vy = -3;
+                    this.flightTimer = 150;
+                    playSound('parrot_chirp', { vol: 0.6 });
+                    return true;
+                }
+
+                this.isSitting = !this.isSitting;
+                if (this.isSitting) {
+                    this.state = 'ground';
+                    this.vx = 0;
+                    this.vy = 0;
+                    if (typeof showToast === 'function') showToast('Parrot is sitting.');
+                } else {
+                    if (typeof showToast === 'function') showToast('Parrot is standing.');
+                }
+                playSound('parrot_chirp', { vol: 0.6 });
+                if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
+                return true;
+            }
+            return false;
+        }
+
+        update() {
+            if (this.isMounted) {
+                const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+                if (!curPlayer || curPlayer.isDead || curPlayer.health <= 0) {
+                    this.isMounted = false;
+                    this.mountedShoulder = null;
+                    this.state = 'flying';
+                    this.vy = -3;
+                    return;
+                }
+                this.x = curPlayer.x;
+                this.y = curPlayer.y;
+                this.vx = 0;
+                this.vy = 0;
+                return;
+            }
+
+            if (this.damageCooldown > 0) this.damageCooldown--;
+            if (this.panicTimer > 0) this.panicTimer--;
+            else this.panic = false;
+            if (this.peckTimer > 0) this.peckTimer--;
+            if (this.temptAlertTimer > 0) this.temptAlertTimer--;
+            if (this.hopTimer > 0) this.hopTimer--;
+
+            const activeWorld = this.getActiveWorld();
+            const curWorldW = activeWorld ? activeWorld.length : WORLD_WIDTH;
+            const curWorldH = activeWorld ? (activeWorld[0]?.length || WORLD_HEIGHT) : WORLD_HEIGHT;
+            const activeHeights = this.getActiveTerrain();
+
+            if (this.chirpTimer > 0) {
+                this.chirpTimer--;
+            } else {
+                this.chirpTimer = Math.floor(Math.random() * 450 + 350);
+                const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+                if (curPlayer && !curPlayer.isDead && Math.hypot(this.x - curPlayer.x, this.y - curPlayer.y) < 380) {
+                    playSound('parrot_chirp', { vol: 0.5 });
+                }
+            }
+
+            if (this.headTiltTimer > 0) {
+                this.headTiltTimer--;
+            } else if (Math.random() < 0.02) {
+                this.headTilt = (Math.random() - 0.5) * 0.4;
+                this.headTiltTimer = Math.floor(Math.random() * 40 + 20);
+            } else {
+                this.headTilt = 0;
+            }
+
+            const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+            let pDist = 9999;
+            let isHoldingSeeds = false;
+            if (curPlayer && !curPlayer.isDead) {
+                pDist = Math.hypot(
+                    (curPlayer.x + curPlayer.width / 2) - (this.x + this.width / 2),
+                    (curPlayer.y + curPlayer.height / 2) - (this.y + this.height / 2)
+                );
+                const held = inventory[selectedHotbarIndex];
+                isHoldingSeeds = (held && this.isTemptedBy(held.id));
+            }
+
+            if (!this.isTamed && !this.panic && curPlayer && !curPlayer.isDead && !isHoldingSeeds) {
+                if (pDist < 75 && Math.abs(curPlayer.vx) > 1.5) {
+                    const scareDir = (curPlayer.x < this.x) ? 1 : -1;
+                    this.startle(scareDir);
+                }
+            }
+
+            let isTemptedNow = false;
+            if (!this.isSitting && isHoldingSeeds && pDist < 350 && !this.panic) {
+                isTemptedNow = true;
+                this.isTempted = true;
+                if (frameCount % 60 === 0 && Math.random() < 0.4) {
+                    particles.push(new Particle(this.x + this.width / 2, this.y - 4, '#ff80bf'));
+                }
+            } else {
+                this.isTempted = false;
+            }
+
+            if (this.isTamed && !this.isSitting && curPlayer && !curPlayer.isDead) {
+                const px = Math.floor((curPlayer.x + curPlayer.width / 2) / TILE_SIZE);
+                const py = Math.floor((curPlayer.y + curPlayer.height - 2) / TILE_SIZE);
+                const isPlayerInWater = isWater(px, py) || isWater(px, py - 1);
+
+                if (!isPlayerInWater && Math.abs(curPlayer.vy) < 2 && pDist < 32) {
+                    if (!curPlayer.leftShoulderParrot) {
+                        curPlayer.leftShoulderParrot = this;
+                        this.isMounted = true;
+                        this.mountedShoulder = 'left';
+                        playSound('parrot_chirp', { vol: 0.6 });
+                        return;
+                    } else if (!curPlayer.rightShoulderParrot && curPlayer.leftShoulderParrot !== this) {
+                        curPlayer.rightShoulderParrot = this;
+                        this.isMounted = true;
+                        this.mountedShoulder = 'right';
+                        playSound('parrot_chirp', { vol: 0.6 });
+                        return;
+                    }
+                }
+
+                if (pDist > 48) {
+                    if (this.state !== 'flying') {
+                        this.state = 'flying';
+                        this.flightTimer = 300;
+                        this.vy = -3;
+                        this.isGrounded = false;
+                    }
+                    this.flyTargetX = curPlayer.x + (this.x < curPlayer.x ? -24 : 24);
+                    this.flyTargetY = curPlayer.y - 8;
+                }
+            }
+
+            if (this.isSitting) {
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = true;
+                this.applyPhysics();
+                return;
+            }
+
+            if (this.state === 'perching') {
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = true;
+
+                if (this.targetLeaf) {
+                    const block = activeWorld?.[this.targetLeaf.x]?.[this.targetLeaf.y];
+                    if (block !== IDS.LEAVES && block !== IDS.JUNGLE_LEAVES) {
+                        this.targetLeaf = null;
+                        this.state = 'flying';
+                        this.flightTimer = 300;
+                    }
+                }
+
+                this.perchTimer--;
+                if (Math.random() < 0.01) this.dir = -this.dir;
+
+                if (this.perchTimer <= 0) {
+                    this.state = 'flying';
+                    this.targetLeaf = null;
+                    this.flightTimer = 300 + Math.random() * 400;
+                    this.vy = -3;
+                    this.vx = this.dir * (1.5 + Math.random());
+                    this.isGrounded = false;
+                }
+            }
+            else if (this.state === 'ground') {
+                if (this.panic) {
+                    this.state = 'flying';
+                    this.vy = -4.5;
+                    this.flightTimer = 300;
+                } else if (isTemptedNow) {
+                    const dx = (curPlayer.x + curPlayer.width / 2) - (this.x + this.width / 2);
+                    this.dir = dx > 0 ? 1 : -1;
+                    if (pDist > 45) {
+                        this.vx = this.dir * this.baseSpeed * 1.2;
+                        if (this.isGrounded && this.hopTimer <= 0 && Math.random() < 0.08) {
+                            this.vy = -2.5;
+                            this.hopTimer = 25;
+                        }
+                    } else {
+                        this.vx = 0;
+                        if (Math.random() < 0.03 && this.peckTimer <= 0) this.peckTimer = 20;
+                    }
+                } else {
+                    this.timer--;
+                    if (this.timer <= 0) {
+                        const roll = Math.random();
+                        if (roll < 0.35) {
+                            this.dir = 0;
+                            this.peckTimer = 24;
+                            this.timer = Math.random() * 60 + 30;
+                        } else if (roll < 0.70) {
+                            this.dir = Math.random() > 0.5 ? 1 : -1;
+                            this.timer = Math.random() * 100 + 50;
+                            if (this.isGrounded && Math.random() < 0.5) {
+                                this.vy = -2.4;
+                            }
+                        } else {
+                            this.state = 'flying';
+                            this.flightTimer = 350 + Math.random() * 450;
+                            this.vy = -3.8;
+                            this.isGrounded = false;
+                        }
+                    }
+
+                    if (this.dir !== 0 && (this.hasHazardAhead(this.dir) || this.hasLethalDropAhead(this.dir))) {
+                        this.dir = -this.dir;
+                        this.timer = 50;
+                    }
+
+                    this.vx = this.dir * this.baseSpeed;
+                }
+
+                if (this.vx !== 0 && this.isGrounded) {
+                    const moveDir = this.vx > 0 ? 1 : -1;
+                    const checkX = Math.floor((this.x + this.width / 2 + moveDir * (this.width / 2 + 4)) / TILE_SIZE);
+                    const footY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
+                    const headY = Math.floor((this.y + 4) / TILE_SIZE);
+                    if (checkX >= 0 && checkX < curWorldW) {
+                        const b = activeWorld?.[checkX]?.[footY];
+                        const upperB = activeWorld?.[checkX]?.[headY - 1];
+                        if (isSolidWorldBlock(checkX, footY, b) && !isSolidWorldBlock(checkX, headY - 1, upperB) && !isWater(checkX, headY - 1)) {
+                            this.vy = JUMP_FORCE * 0.75;
+                            this.isGrounded = false;
+                        }
+                    }
+                }
+
+                const prevX = this.x;
+                this.applyPhysics();
+                const actualMoved = Math.abs(this.x - prevX);
+
+                if (actualMoved > 0.05 && this.isGrounded) {
+                    this.walkAnimTime = (this.walkAnimTime || 0) + (actualMoved / this.baseSpeed) * 0.25;
+                } else {
+                    this.walkAnimTime = 0;
+                }
+
+                if (!this.isGrounded && this.vy > 3.0) {
+                    this.state = 'flying';
+                    this.flightTimer = 250;
+                }
+            }
+            else {
+                this.flightTimer--;
+                this.flapTime += (this.panic ? 0.7 : 0.42);
+
+                const curGx = Math.max(0, Math.min(curWorldW - 1, Math.floor((this.x + this.width / 2) / TILE_SIZE)));
+                const groundY = (activeHeights && activeHeights[curGx] !== undefined) ? activeHeights[curGx] : Math.floor(curWorldH / 2);
+                const cruiseAltitudeY = Math.max(2 * TILE_SIZE, (groundY - 8) * TILE_SIZE);
+
+                if (this.panic) {
+                    this.flyTargetY = Math.max(2 * TILE_SIZE, cruiseAltitudeY - 3 * TILE_SIZE);
+                    this.flyTargetX = this.x + this.dir * 120;
+                } else if (isTemptedNow && curPlayer && !curPlayer.isDead) {
+                    this.flyTargetX = curPlayer.x + (this.x < curPlayer.x ? -35 : 35);
+                    this.flyTargetY = curPlayer.y - 10;
+                    this.targetLeaf = null;
+                } else if (this.isTamed && !this.isSitting && curPlayer && !curPlayer.isDead) {
+                    this.flyTargetX = curPlayer.x + (this.x < curPlayer.x ? -20 : 20);
+                    this.flyTargetY = curPlayer.y - 12;
+                    this.targetLeaf = null;
+                } else if (this.targetLeaf) {
+                    this.flyTargetX = this.targetLeaf.x * TILE_SIZE + (TILE_SIZE - this.width) / 2;
+                    this.flyTargetY = (this.targetLeaf.y - 1) * TILE_SIZE + (TILE_SIZE - this.height);
+                } else {
+                    if (this.flightTimer % 100 === 0 || Math.abs(this.x - this.flyTargetX) < 30) {
+                        const roamDistance = (Math.random() - 0.5) * 220;
+                        this.flyTargetX = Math.max(50, Math.min(curWorldW * TILE_SIZE - 50, this.x + roamDistance));
+                        this.flyTargetY = cruiseAltitudeY + (Math.random() - 0.5) * 40;
+
+                        if (this.flightTimer < 250 && Math.random() < 0.5) {
+                            const leafSpot = this.findNearbyTreeLeaf(16);
+                            if (leafSpot) this.targetLeaf = leafSpot;
+                        } else if (this.flightTimer < 100 && Math.random() < 0.4) {
+                            this.flyTargetY = (groundY - 1) * TILE_SIZE;
+                        }
+                    }
+                }
+
+                const dx = this.flyTargetX - this.x;
+                const dy = this.flyTargetY - this.y;
+                const maxFlightSpeed = this.panic ? 4.5 : 2.6;
+                const maxClimbSpeed = this.panic ? 3.5 : 2.0;
+
+                const desiredVx = Math.sign(dx) * Math.min(Math.abs(dx) * 0.05, maxFlightSpeed);
+                const desiredVy = Math.sign(dy) * Math.min(Math.abs(dy) * 0.05, maxClimbSpeed);
+
+                this.vx += (desiredVx - this.vx) * 0.08;
+                this.vy += (desiredVy - this.vy) * 0.08;
+                this.vy += Math.sin(this.flapTime) * 0.16;
+
+                if (Math.abs(this.vx) > 0.1) this.dir = this.vx > 0 ? 1 : -1;
+
+                this.x += this.vx;
+                this.handleCollisions(true);
+                this.y += this.vy;
+                this.handleCollisions(false);
+
+                if (this.targetLeaf) {
+                    const leafTargetX = this.targetLeaf.x * TILE_SIZE + (TILE_SIZE - this.width) / 2;
+                    const leafTargetY = (this.targetLeaf.y - 1) * TILE_SIZE + (TILE_SIZE - this.height);
+                    if (Math.hypot(this.x - leafTargetX, this.y - leafTargetY) < 8 && this.vy >= -0.5) {
+                        this.state = 'perching';
+                        this.x = leafTargetX;
+                        this.y = leafTargetY;
+                        this.vx = 0;
+                        this.vy = 0;
+                        this.isGrounded = true;
+                        this.perchTimer = 280 + Math.random() * 400;
+                    }
+                }
+
+                if (this.isGrounded && this.vy >= 0 && !this.targetLeaf) {
+                    this.state = 'ground';
+                    this.vx = 0;
+                    this.timer = 70 + Math.random() * 90;
+                }
+            }
+        }
+
+        takeDamage(amt, knockbackDir) {
+            if (this.damageCooldown > 0) return;
+            this.health -= amt;
+            this.damageCooldown = 20;
+
+            const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
+            if (this.isMounted && curPlayer) {
+                if (curPlayer.leftShoulderParrot === this) curPlayer.leftShoulderParrot = null;
+                if (curPlayer.rightShoulderParrot === this) curPlayer.rightShoulderParrot = null;
+                this.isMounted = false;
+                this.mountedShoulder = null;
+            }
+
+            playSound('parrot_hurt', { vol: 0.8 });
+            const escapeDir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
+            this.startle(escapeDir);
+
+            for (let i = 0; i < 6; i++) {
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, this.getFeatherParticleColor()));
+            }
+            for (let i = 0; i < 3; i++) {
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ef4444'));
+            }
+            floatingTexts.push(new FloatingText(this.x + this.width / 2, this.y - 10, amt, "#ffcc00"));
+        }
+
+        draw(ctx, camX, camY) {
+            if (this.isMounted) return;
+
+            const drawX = this.x - camX;
+            const drawY = this.y - camY;
+            const w = this.width;
+            const h = this.height;
+
+            if (advancedGraphics && this.state !== 'flying') {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w * 0.45, drawY + h - 3, w * 0.9, 5);
+            }
+
+            ctx.save();
+            ctx.translate(drawX + w / 2, drawY + h / 2);
+            if (this.dir < 0) ctx.scale(-1, 1);
+
+            const isDamaged = this.damageCooldown > 0;
+            const isFlying = (this.state === 'flying');
+            const isGrounded = (this.state === 'ground' && this.isGrounded);
+            const isMoving = Math.abs(this.vx) > 0.05 && isGrounded;
+            const walk = this.walkAnimTime || 0;
+            const idle = Math.sin((frameCount + this.idleSeed) * 0.08);
+            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 180 < 6);
+
+            let cBody, cWingAccent, cWingFlight, cBeak, cEyeRing, cEyeIris, cTail, cCrest = null;
+            if (this.variant === 0) {
+                cBody = isDamaged ? '#ff6666' : '#dc2626';
+                cWingAccent = isDamaged ? '#ffcc00' : '#eab308';
+                cWingFlight = isDamaged ? '#60a5fa' : '#2563eb';
+                cBeak = isDamaged ? '#475569' : '#1e293b';
+                cEyeRing = '#ffffff';
+                cEyeIris = '#0f172a';
+                cTail = '#2563eb';
+            } else if (this.variant === 1) {
+                cBody = isDamaged ? '#86efac' : '#16a34a';
+                cWingAccent = isDamaged ? '#fca5a5' : '#ef4444';
+                cWingFlight = isDamaged ? '#5eead4' : '#0d9488';
+                cBeak = isDamaged ? '#fef08a' : '#fef08a';
+                cEyeRing = '#dcfce7';
+                cEyeIris = '#0f172a';
+                cTail = '#15803d';
+            } else if (this.variant === 2) {
+                cBody = isDamaged ? '#7dd3fc' : '#0284c7';
+                cWingAccent = isDamaged ? '#38bdf8' : '#0369a1';
+                cWingFlight = isDamaged ? '#93c5fd' : '#1d4ed8';
+                cBeak = isDamaged ? '#475569' : '#111827';
+                cEyeRing = '#facc15';
+                cEyeIris = '#0f172a';
+                cTail = '#1e40af';
+            } else {
+                cBody = isDamaged ? '#cbd5e1' : '#64748b';
+                cWingAccent = '#f8fafc';
+                cWingFlight = '#475569';
+                cBeak = '#d1d5db';
+                cEyeRing = '#fef08a';
+                cEyeIris = '#1e293b';
+                cTail = '#475569';
+                cCrest = '#fde047';
+            }
+
+            const cFeet = '#4b5563';
+
+            let wingAngle = 0;
+            if (isFlying) {
+                wingAngle = Math.sin(this.flapTime) * 0.9;
+                const flyTilt = Math.max(-0.35, Math.min(0.35, this.vy * 0.08));
+                ctx.rotate(flyTilt);
+            } else if (this.panic) {
+                wingAngle = Math.sin(frameCount * 0.65) * 0.4;
+            }
+
+            const headBobX = isMoving ? Math.sin(walk) * 2 : 0;
+            const peckBobY = (this.peckTimer > 0) ? Math.sin(this.peckTimer / 24 * Math.PI) * 3.5 : 0;
+            const headBobY = (isMoving ? Math.abs(Math.sin(walk)) * 1.2 : idle * 0.4) + peckBobY + (this.headTilt * 3);
+
+            // Tail
+            ctx.save();
+            ctx.translate(-w * 0.35, h * 0.1);
+            ctx.fillStyle = cTail;
+            ctx.fillRect(-w * 0.35, 0, w * 0.45, 3.5);
+            ctx.fillRect(-w * 0.25, 2, w * 0.3, 2.5);
+            ctx.restore();
+
+            // Feet
+            if (!isFlying && !this.isSitting) {
+                ctx.fillStyle = cFeet;
+                ctx.fillRect(-w * 0.12, h * 0.35, 2, h * 0.15);
+                ctx.fillRect(w * 0.08, h * 0.35, 2, h * 0.15);
+                ctx.fillRect(-w * 0.15, h * 0.48, 4, 1.5);
+                ctx.fillRect(w * 0.05, h * 0.48, 4, 1.5);
+            }
+
+            // Body
+            const bodyY = this.isSitting ? 2 : 0;
+            ctx.fillStyle = cBody;
+            ctx.fillRect(-w * 0.28, -h * 0.25 + bodyY, w * 0.55, h * 0.55);
+
+            // Head
+            const hx = w * 0.05 + headBobX;
+            const hy = -h * 0.48 + headBobY + bodyY;
+            ctx.fillStyle = cBody;
+            ctx.fillRect(hx, hy, w * 0.45, h * 0.42);
+
+            if (cCrest) {
+                ctx.fillStyle = cCrest;
+                ctx.fillRect(hx - 2, hy - 4, 3.5, 5);
+                ctx.fillRect(hx + 1, hy - 6, 2.5, 6);
+                ctx.fillStyle = '#f97316';
+                ctx.fillRect(hx + 2, hy + 5, 3, 3);
+            } else {
+                ctx.fillStyle = cWingAccent;
+                ctx.fillRect(hx - 1, hy - 2, 2.5, 3);
+            }
+
+            // Eye
+            const eyeX = hx + w * 0.22;
+            const eyeY = hy + 3;
+            if (isBlinking) {
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(eyeX, eyeY + 1, 3, 1);
+            } else {
+                ctx.fillStyle = cEyeRing;
+                ctx.fillRect(eyeX - 0.5, eyeY - 0.5, 4, 4);
+                ctx.fillStyle = cEyeIris;
+                ctx.fillRect(eyeX, eyeY, 2.5, 2.5);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(eyeX, eyeY, 1, 1);
+            }
+
+            // Beak
+            ctx.fillStyle = cBeak;
+            ctx.fillRect(hx + w * 0.42, hy + 3, 3.5, 3.5);
+            ctx.fillRect(hx + w * 0.42 + 1.5, hy + 5.5, 2, 2);
+
+            // Wing
+            ctx.save();
+            ctx.translate(-w * 0.05, -h * 0.12 + bodyY);
+            ctx.rotate(wingAngle);
+
+            if (isFlying) {
+                ctx.fillStyle = cBody;
+                ctx.fillRect(-w * 0.25, -h * 0.3, w * 0.55, h * 0.4);
+                ctx.fillStyle = cWingAccent;
+                ctx.fillRect(-w * 0.2, -h * 0.1, w * 0.5, 2.5);
+                ctx.fillStyle = cWingFlight;
+                ctx.fillRect(-w * 0.25, 0, w * 0.55, 3.5);
+            } else {
+                ctx.fillStyle = cBody;
+                ctx.fillRect(-w * 0.22, -h * 0.15, w * 0.44, h * 0.4);
+                ctx.fillStyle = cWingAccent;
+                ctx.fillRect(-w * 0.18, -h * 0.05, w * 0.36, 2.5);
+                ctx.fillStyle = cWingFlight;
+                ctx.fillRect(-w * 0.22, h * 0.05, w * 0.4, 3);
+            }
+            ctx.restore();
 
             ctx.restore();
         }
@@ -5788,11 +8380,631 @@ export const SKIN_H = 32;
         }
     }
 
+    export let kaelSkinCanvas = null;
+    export function getKaelSkinCanvas() {
+        if (kaelSkinCanvas) return kaelSkinCanvas;
+        if (typeof document === 'undefined') return null;
+        const c = document.createElement('canvas');
+        c.width = 16;
+        c.height = 32;
+        const ctx = c.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
 
+        const p = (x, y, col) => {
+            ctx.fillStyle = col;
+            ctx.fillRect(x, y, 1, 1);
+        };
+        const rect = (x, y, w, h, col) => {
+            ctx.fillStyle = col;
+            ctx.fillRect(x, y, w, h);
+        };
+
+        // --- 1. HEAD (8x8 at x: 4, y: 0) - Human face matching player build ---
+        // Base human skin
+        rect(4, 0, 8, 8, '#e8b188');
+        // Facial shading & jawline
+        rect(4, 6, 8, 2, '#dba075');
+        rect(6, 7, 4, 1, '#c68b59');
+        // Windswept dark chestnut traveler hair
+        rect(4, 0, 8, 2, '#4a2e1b');
+        p(4, 2, '#4a2e1b'); p(11, 2, '#4a2e1b');
+        p(5, 2, '#6e4428'); // Hair highlight
+        p(6, 2, '#4a2e1b'); p(7, 2, '#362012'); // Bangs
+        // Explorer brass goggles resting on forehead
+        p(6, 1, '#fbbf24'); p(7, 1, '#0284c7'); // Left goggle brass rim & cyan lens
+        p(8, 1, '#fbbf24'); p(9, 1, '#0284c7'); // Right goggle
+        // Human Eyes (white sclera with celestial cyan iris & dark pupil)
+        // Left eye at (5, 4)
+        p(5, 4, '#ffffff'); p(6, 4, '#0284c7');
+        p(5, 3, '#362012'); // Eyebrow
+        // Right eye at (9, 4)
+        p(9, 4, '#0284c7'); p(10, 4, '#ffffff');
+        p(10, 3, '#362012'); // Eyebrow
+        // Nose & mouth
+        p(7, 5, '#c68a5f');
+        p(7, 6, '#995832'); p(8, 6, '#995832');
+
+        // --- 2. TORSO (8x12 at x: 4, y: 8) ---
+        // Celestial indigo tunic base
+        rect(4, 8, 8, 12, '#1e1b4b');
+        // Open rugged leather traveler vest
+        rect(4, 8, 2, 9, '#582d12');
+        rect(10, 8, 2, 9, '#582d12');
+        p(5, 8, '#783d19'); p(10, 8, '#783d19');
+        // Celestial collar / scarf
+        rect(6, 8, 4, 2, '#312e81');
+        p(7, 9, '#fbbf24'); // Gold celestial star clasp
+        // Diagonal leather explorer sash
+        p(5, 10, '#451a03'); p(6, 11, '#451a03'); p(7, 12, '#fbbf24'); p(8, 13, '#451a03'); p(9, 14, '#451a03');
+        // Sturdy belt with brass buckle
+        rect(4, 16, 8, 2, '#2e1102');
+        p(7, 16, '#fbbf24'); p(8, 16, '#fbbf24');
+        p(5, 17, '#0284c7'); // Astrolabe pouch charm
+
+        // --- 3. FRONT ARM (4x12 at x: 0, y: 8) ---
+        // Leather adventurer coat shoulder sleeve
+        rect(0, 8, 4, 4, '#582d12');
+        p(1, 8, '#783d19');
+        // Folded tunic sleeve
+        rect(0, 12, 4, 3, '#1e1b4b');
+        // Bare human forearm / wrist wrap
+        rect(0, 15, 4, 2, '#dba075');
+        // Traveler's fingerless glove & hand
+        rect(0, 17, 4, 3, '#451a03');
+        rect(1, 18, 2, 2, '#e8b188'); // Exposed human fingers
+
+        // --- 4. BACK ARM (4x12 at x: 12, y: 8) ---
+        rect(12, 8, 4, 4, '#3d1a08'); // Shadowed shoulder
+        rect(12, 12, 4, 3, '#161928'); // Shadowed sleeve
+        rect(12, 15, 4, 2, '#c68a5f'); // Forearm
+        rect(12, 17, 4, 3, '#2e1102'); // Glove
+
+        // --- 5. FRONT LEG (4x12 at x: 4, y: 20) ---
+        // Deep indigo traveler trousers
+        rect(4, 20, 4, 6, '#1e2337');
+        p(5, 21, '#272f48'); p(6, 23, '#161928');
+        // Sturdy laced explorer boots
+        rect(4, 26, 4, 6, '#451a03');
+        p(5, 27, '#d97706'); p(5, 29, '#d97706'); // Brass lace buckles
+        rect(4, 31, 4, 1, '#1e0c01'); // Boot sole
+
+        // --- 6. BACK LEG (4x12 at x: 8, y: 20) ---
+        // Shadowed trousers
+        rect(8, 20, 4, 6, '#141826');
+        // Shadowed boots
+        rect(8, 26, 4, 6, '#2e1102');
+        p(9, 27, '#b45309'); p(9, 29, '#b45309');
+        rect(8, 31, 4, 1, '#130700');
+
+        kaelSkinCanvas = c;
+        return kaelSkinCanvas;
+    }
+
+    export class AtlasExplorer extends PhysicsEntity {
+        constructor(x, y) {
+            super(x, y, TILE_SIZE * 0.75, TILE_SIZE * 1.8);
+            this.health = 9999;
+            this.name = 'Kael, The Atlas Explorer';
+            this.title = 'Planar Cartographer';
+            this.warpState = 'warping_in'; // 'warping_in', 'active', 'warping_out'
+            this.warpProgress = 0.05;
+            this.warpInTotalFrames = 200; // ~3.3 seconds (extended cinematic arrival)
+            this.warpOutTotalFrames = 150; // ~2.5 seconds (extended departure)
+            this.stayTimer = 0;
+            this.maxStayDuration = 18000; // ~5 minutes of active stay in 20-min day cycle
+            this.isDeparted = false;
+            this.facingRight = true;
+            this.tetherX = x;
+            this.paceTimer = 180;
+            this.isPacing = false;
+            this.mapReadingTimer = 120;
+            this.walkAnimTime = 0;
+            this.damageCooldown = 0;
+        }
+
+        takeDamage(amt, knockbackDir) {
+            // Invincible planar explorer: absorbs all physical attacks with cosmic ripple
+            this.spawnPlanarRipple();
+            return false;
+        }
+
+        spawnPlanarRipple() {
+            const cx = this.x + this.width / 2;
+            const cy = this.y + this.height / 2;
+            for (let i = 0; i < 8; i++) {
+                const p = new Particle(cx, cy, (i % 2 === 0) ? '#c084fc' : '#38bdf8');
+                p.vx = (Math.random() - 0.5) * 4;
+                p.vy = (Math.random() - 0.5) * 4;
+                particles.push(p);
+            }
+        }
+
+        interact(interactor) {
+            if (typeof window !== 'undefined') {
+                if (typeof window.hasPlayerTalkedToKael === 'function' && window.hasPlayerTalkedToKael()) {
+                    if (typeof window.openAtlasMarket === 'function') {
+                        window.openAtlasMarket(this);
+                        return true;
+                    }
+                } else if (typeof window.openAtlasDialogue === 'function') {
+                    window.openAtlasDialogue(this);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        update() {
+            if (this.isDeparted) return;
+
+            if (this.warpState === 'warping_in') {
+                this.warpProgress += (1 / this.warpInTotalFrames);
+                if (frameCount % 3 === 0) {
+                    const cx = this.x + this.width / 2 + (Math.random() - 0.5) * 28;
+                    const cy = this.y + this.height / 2 + (Math.random() - 0.5) * 44;
+                    const p = new Particle(cx, cy, (Math.random() > 0.4) ? '#c084fc' : '#38bdf8');
+                    p.vy = -0.5 - Math.random() * 0.8;
+                    particles.push(p);
+                }
+                if (this.warpProgress >= 1) {
+                    this.warpProgress = 1;
+                    this.warpState = 'active';
+                }
+                return;
+            }
+
+            if (this.warpState === 'warping_out') {
+                this.warpProgress -= (1 / this.warpOutTotalFrames);
+                if (frameCount % 3 === 0) {
+                    const cx = this.x + this.width / 2 + (Math.random() - 0.5) * 28;
+                    const cy = this.y + this.height / 2 + (Math.random() - 0.5) * 44;
+                    const p = new Particle(cx, cy, '#38bdf8');
+                    p.vy = -0.6 - Math.random() * 0.8;
+                    particles.push(p);
+                }
+                if (this.warpProgress <= 0) {
+                    this.warpProgress = 0;
+                    this.isDeparted = true;
+                    const entList = (typeof entities !== 'undefined' && Array.isArray(entities)) ? entities : (typeof window !== 'undefined' && Array.isArray(window.entities) ? window.entities : []);
+                    const idx = entList.indexOf(this);
+                    if (idx !== -1) entList.splice(idx, 1);
+                }
+                return;
+            }
+
+            // Active state
+            this.stayTimer++;
+            if (this.stayTimer >= this.maxStayDuration) {
+                this.warpState = 'warping_out';
+                if (typeof playSound === 'function') playSound('portal_warp');
+                if (typeof window !== 'undefined' && typeof window.showKaelDepartureBanner === 'function') {
+                    window.showKaelDepartureBanner();
+                }
+                if (isMultiplayer && isMultiplayerAuthority() && typeof broadcastDataPacket === 'function') {
+                    broadcastDataPacket({ type: 'ATLAS_EXPLORER_DEPARTED' });
+                }
+                return;
+            }
+
+            // Ambient planar stardust
+            if (frameCount % 24 === 0) {
+                const cx = this.x + this.width / 2 + (Math.random() - 0.5) * 16;
+                const cy = this.y + this.height - 4;
+                const p = new Particle(cx, cy, (Math.random() > 0.4) ? '#c084fc' : '#38bdf8');
+                p.vy = -0.8 - Math.random() * 0.6;
+                p.vx = (Math.random() - 0.5) * 0.5;
+                particles.push(p);
+            }
+
+            // Water Buoyancy
+            const centerGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const footGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
+            const inWater = (typeof isWater === 'function' && isWater(centerGx, footGy));
+            if (inWater) {
+                this.vy = Math.min(this.vy, -2.4);
+            }
+
+            const curPlayer = (typeof player !== 'undefined') ? player : window.player;
+            if (curPlayer) {
+                const dx = (curPlayer.x + curPlayer.width / 2) - (this.x + this.width / 2);
+                const dy = (curPlayer.y + curPlayer.height / 2) - (this.y + this.height / 2);
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < TILE_SIZE * 6) {
+                    // Smart gaze & posture towards player
+                    this.facingRight = (dx >= 0);
+                    this.vx = 0;
+                    this.isPacing = false;
+                    this.mapReadingTimer = Math.max(0, this.mapReadingTimer - 1);
+                } else {
+                    // Pacing and map reading cycle
+                    this.paceTimer--;
+                    if (this.paceTimer <= 0) {
+                        if (this.isPacing) {
+                            this.isPacing = false;
+                            this.vx = 0;
+                            this.mapReadingTimer = 160 + Math.floor(Math.random() * 80);
+                            this.paceTimer = 220 + Math.floor(Math.random() * 100);
+                        } else {
+                            this.isPacing = true;
+                            // Check distance from tether
+                            const distFromTether = this.x - this.tetherX;
+                            if (distFromTether > TILE_SIZE * 3) this.facingRight = false;
+                            else if (distFromTether < -TILE_SIZE * 3) this.facingRight = true;
+                            else this.facingRight = (Math.random() > 0.5);
+
+                            this.vx = this.facingRight ? (MOVE_SPEED * 0.28) : (-MOVE_SPEED * 0.28);
+                            this.paceTimer = 120 + Math.floor(Math.random() * 80);
+                        }
+                    }
+
+                    if (this.isPacing) {
+                        this.walkAnimTime += 0.18;
+                        this.checkObstacleJump();
+                        // Intelligent pathfinding: check front obstacles, drops, hazards
+                        const stepDir = this.facingRight ? 1 : -1;
+                        const frontGx = Math.floor((this.x + this.width / 2 + stepDir * (this.width / 2 + 5)) / TILE_SIZE);
+                        const frontFootGy = Math.floor((this.y + this.height - 4) / TILE_SIZE);
+                        const frontHeadGy = Math.floor((this.y + 4) / TILE_SIZE);
+
+                        const activeWorld = (typeof world !== 'undefined' && world) ? world : null;
+                        if (activeWorld && frontGx >= 0 && frontGx < activeWorld.length) {
+                            const bFoot = activeWorld[frontGx]?.[frontFootGy];
+                            const bHead = activeWorld[frontGx]?.[frontHeadGy];
+                            const isFootSolid = bFoot !== undefined && isSolidWorldBlock(frontGx, frontFootGy, bFoot);
+                            const isHeadSolid = bHead !== undefined && isSolidWorldBlock(frontGx, frontHeadGy, bHead);
+                            const isUpperSolid = isSolidWorldBlock(frontGx, frontHeadGy - 1, activeWorld[frontGx]?.[frontHeadGy - 1]);
+
+                            // 1. 2-block high barrier or ceiling block ahead: stop and turn around
+                            if (isHeadSolid || (isFootSolid && isUpperSolid)) {
+                                this.facingRight = !this.facingRight;
+                                this.vx = this.facingRight ? (MOVE_SPEED * 0.28) : (-MOVE_SPEED * 0.28);
+                                this.isPacing = false;
+                                this.mapReadingTimer = 90;
+                                this.paceTimer = 110;
+                            } else if (isFootSolid) {
+                                // 1-block step up: jump over it smoothly!
+                                this.checkObstacleJump();
+                            } else {
+                                // 2. Check for lethal drop or lava/cactus ahead
+                                let dropDist = 0;
+                                while (dropDist < 5 && (!isSolidWorldBlock(frontGx, frontFootGy + 1 + dropDist, activeWorld[frontGx]?.[frontFootGy + 1 + dropDist]))) {
+                                    dropDist++;
+                                }
+                                const landingB = activeWorld[frontGx]?.[frontFootGy + 1 + dropDist];
+                                const isHazard = (landingB === IDS.LAVA || landingB === IDS.CACTUS || (typeof isWater === 'function' && isWater(frontGx, frontFootGy + 1)));
+                                if (dropDist >= 3 || isHazard) {
+                                    // Turn around before falling
+                                    this.facingRight = !this.facingRight;
+                                    this.vx = this.facingRight ? (MOVE_SPEED * 0.28) : (-MOVE_SPEED * 0.28);
+                                    this.isPacing = false;
+                                    this.mapReadingTimer = 80;
+                                    this.paceTimer = 100;
+                                }
+                            }
+                        }
+                    } else {
+                        this.vx = 0;
+                        if (this.mapReadingTimer > 0) this.mapReadingTimer--;
+                    }
+                }
+            }
+
+            const prevX = this.x;
+            this.applyPhysics();
+            const actualMoved = Math.abs(this.x - prevX);
+
+            // Detect if blocked against a wall while pacing
+            if (this.isPacing) {
+                if (actualMoved < 0.05) {
+                    this.stuckTimer = (this.stuckTimer || 0) + 1;
+                    if (this.stuckTimer > 15) {
+                        this.stuckTimer = 0;
+                        this.facingRight = !this.facingRight;
+                        this.isPacing = false;
+                        this.mapReadingTimer = 90;
+                        this.paceTimer = 110;
+                    }
+                } else {
+                    this.stuckTimer = 0;
+                }
+            } else {
+                this.stuckTimer = 0;
+            }
+
+            if (this.isPacing && actualMoved > 0.05 && (this.isGrounded || inWater)) {
+                this.walkAnimTime += 0.18;
+            } else {
+                this.walkAnimTime = 0;
+            }
+        }
+
+        drawPixelRiftPortal(ctx, cx, cy, progress, state) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+
+            const pixelSize = 4;
+            const fullW = 44;
+            const fullH = 76;
+
+            // Animate portal width and height based on warp progress
+            let scaleX = state === 'active' ? 1.0 : Math.min(1.0, progress * 1.5);
+            let scaleY = state === 'active' ? 1.0 : Math.min(1.0, Math.max(0.08, progress * 1.25));
+
+            const curW = Math.max(8, Math.floor((fullW * scaleX) / pixelSize) * pixelSize);
+            const curH = Math.max(16, Math.floor((fullH * scaleY) / pixelSize) * pixelSize);
+
+            const halfW = curW / 2;
+            const halfH = curH / 2;
+            const startY = Math.round(cy - halfH);
+
+            const animTick = Math.floor(frameCount * 0.18);
+
+            // 1. Stepped Pixel Aperture & Dimensional Void Frame
+            for (let py = 0; py < curH; py += pixelSize) {
+                const normY = (py - halfH) / halfH; // -1 to 1
+                const sliceRatio = Math.sqrt(Math.max(0, 1 - normY * normY));
+                const sliceHalfW = Math.floor((halfW * sliceRatio) / pixelSize) * pixelSize;
+                if (sliceHalfW <= 0) continue;
+
+                const rowX1 = Math.round(cx - sliceHalfW);
+                const rowW = sliceHalfW * 2;
+
+                // Outer cosmic void rim
+                ctx.fillStyle = '#090312';
+                ctx.fillRect(rowX1 - pixelSize, startY + py, rowW + pixelSize * 2, pixelSize);
+
+                // Astral Amethyst stepped boundary ring
+                const ringPhase = Math.sin(normY * 4 + animTick * 0.4);
+                ctx.fillStyle = ringPhase > 0 ? '#6b21a8' : '#7e22ce';
+                ctx.fillRect(rowX1, startY + py, rowW, pixelSize);
+
+                // Inner Dimensional Swirling Energy
+                const innerHalfW = Math.max(0, sliceHalfW - pixelSize);
+                if (innerHalfW > 0) {
+                    const innerX = Math.round(cx - innerHalfW);
+                    const innerW = innerHalfW * 2;
+
+                    for (let px = 0; px < innerW; px += pixelSize) {
+                        const colIdx = Math.floor(px / pixelSize);
+                        const wave = Math.sin(colIdx * 0.85 + normY * 2.8 - animTick * 0.45);
+                        let col = '#a855f7';
+                        if (wave > 0.65) col = '#fde047'; // Starlight gold spark
+                        else if (wave > 0.25) col = '#38bdf8'; // Cyan rift glow
+                        else if (wave > -0.25) col = '#c084fc'; // Bright lilac
+                        else col = '#581c87'; // Deep void purple
+
+                        ctx.fillStyle = col;
+                        ctx.fillRect(innerX + px, startY + py, pixelSize, pixelSize);
+                    }
+                }
+            }
+
+            // 2. Swirling Pixel Orbiting Runes (4 stepped orbiting pixel crystals)
+            const numRunes = 4;
+            const orbitRadius = Math.max(16, halfW + 6);
+            for (let r = 0; r < numRunes; r++) {
+                const angle = (animTick * 0.12) + (r * (Math.PI * 2 / numRunes));
+                const rx = Math.round((cx + Math.cos(angle) * orbitRadius) / pixelSize) * pixelSize;
+                const ry = Math.round((cy + Math.sin(angle) * (halfH * 0.85)) / pixelSize) * pixelSize;
+
+                ctx.fillStyle = (r % 2 === 0) ? '#38bdf8' : '#fde047';
+                ctx.fillRect(rx - 2, ry - 2, 4, 4);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(rx - 1, ry - 1, 2, 2);
+            }
+
+            ctx.restore();
+        }
+
+        draw(ctx, camX, camY) {
+            if (this.isDeparted) return;
+            const drawX = Math.round(this.x - camX);
+            const drawY = Math.round(this.y - camY);
+            const w = this.width;
+            const h = this.height;
+
+            ctx.save();
+
+            // 1. Draw Stepped Pixel-Art Planar Rift Vortex Behind Kael
+            if (this.warpProgress < 1 || this.warpState !== 'active') {
+                const cx = drawX + w / 2;
+                const cy = drawY + h / 2;
+                this.drawPixelRiftPortal(ctx, cx, cy, this.warpProgress, this.warpState);
+            }
+
+            // Kael materializes as portal establishes itself
+            const kaelAlpha = (this.warpState === 'warping_in') 
+                ? Math.max(0.0, Math.min(1.0, (this.warpProgress - 0.35) / 0.65))
+                : Math.min(1.0, Math.max(0.0, this.warpProgress));
+            ctx.globalAlpha = kaelAlpha;
+
+            if (advancedGraphics) {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - 14, drawY + h - 5, 28, 7);
+            }
+
+            // Draw Kael using the standard player humanoid character renderer
+            const kCanvas = getKaelSkinCanvas();
+            const isReallyMoving = this.isPacing && (this.walkAnimTime > 0);
+            if (kCanvas) {
+                drawCharacter(
+                    ctx, kCanvas, drawX, drawY, w, h,
+                    this.facingRight, this.walkAnimTime, isReallyMoving, false,
+                    null, null, false, null,
+                    false, null, null, null
+                );
+            }
+
+            // Extra traveler accessories: held celestial star map or rolled map tube
+            const sx = w / 16;
+            const sy = h / 32;
+            ctx.save();
+            ctx.translate(drawX + w / 2, drawY);
+            if (!this.facingRight) ctx.scale(-1, 1);
+            ctx.translate(-w / 2, 0);
+
+            if (this.mapReadingTimer > 0) {
+                // Open parchment map held in front
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(6 * sx, 13 * sy, 8 * sx, 6 * sy);
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(7 * sx, 14 * sy, 2 * sx, 1 * sy);
+                ctx.fillStyle = '#a855f7';
+                ctx.fillRect(10 * sx, 15 * sy, 3 * sx, 1 * sy);
+                // Gloves holding edges
+                ctx.fillStyle = '#451a03';
+                ctx.fillRect(5 * sx, 15 * sy, 2 * sx, 2 * sy);
+                ctx.fillRect(13 * sx, 15 * sy, 2 * sx, 2 * sy);
+            } else {
+                // Rolled star map tube strapped to back
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(2 * sx, 9 * sy, 2.5 * sx, 9 * sy);
+                ctx.fillStyle = '#451a03';
+                ctx.fillRect(1.5 * sx, 12 * sy, 3.5 * sx, 2 * sy); // Leather strap
+            }
+            ctx.restore();
+
+            // Overhead Nameplate & Pop-up Tooltip (Authentic Webcraft Pixel-Art Style)
+            if (this.warpState === 'active') {
+                const nameCX = Math.round(drawX + w / 2);
+                const nameY = Math.round(drawY - 22);
+
+                ctx.font = 'bold 14px "VT323", monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const titleStr = 'Kael, The Atlas Explorer';
+                const subStr = '[Planar Cartographer]';
+                const titleWidth = ctx.measureText(titleStr).width;
+                const bgW = Math.round(Math.max(titleWidth + 28, 172));
+                const bgH = 26;
+                const bgX = Math.round(nameCX - bgW / 2);
+                const bgY = Math.round(nameY - bgH / 2);
+
+                // Pixel-Art Slate Nameplate (Crisp 9-slice / Minecraft slate style with sharp corners)
+                // 1. Drop shadow & outer border (1px black/slate)
+                ctx.fillStyle = '#080a0c';
+                ctx.fillRect(bgX - 1, bgY - 1, bgW + 2, bgH + 2);
+
+                // 2. Slate inner base
+                ctx.fillStyle = 'rgba(18, 14, 28, 0.95)';
+                ctx.fillRect(bgX, bgY, bgW, bgH);
+
+                // 3. Pixel Bevel Borders (Authentic Webcraft/Minecraft highlight & shadow)
+                ctx.fillStyle = '#a855f7'; // Top highlight
+                ctx.fillRect(bgX, bgY, bgW, 1);
+                ctx.fillRect(bgX, bgY, 1, bgH); // Left highlight
+                ctx.fillStyle = '#3b0764'; // Bottom shadow
+                ctx.fillRect(bgX, bgY + bgH - 1, bgW, 1);
+                ctx.fillRect(bgX + bgW - 1, bgY, 1, bgH); // Right shadow
+
+                // Corner pixel dots
+                ctx.fillStyle = '#c084fc';
+                ctx.fillRect(bgX + 1, bgY + 1, 1, 1);
+                ctx.fillRect(bgX + bgW - 2, bgY + 1, 1, 1);
+
+                // Title & Subtitle text
+                // Pixel Diamond Badges (replacing non-pixelart unicode stars)
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillRect(bgX + 9, nameY - 6, 3, 1);
+                ctx.fillRect(bgX + 8, nameY - 5, 5, 1);
+                ctx.fillRect(bgX + 9, nameY - 4, 3, 1);
+                ctx.fillRect(bgX + 10, nameY - 7, 1, 3);
+                ctx.fillRect(bgX + bgW - 12, nameY - 6, 3, 1);
+                ctx.fillRect(bgX + bgW - 13, nameY - 5, 5, 1);
+                ctx.fillRect(bgX + bgW - 12, nameY - 4, 3, 1);
+                ctx.fillRect(bgX + bgW - 11, nameY - 7, 1, 3);
+
+                ctx.fillStyle = '#f5f3ff'; // Clean crisp white/lilac
+                ctx.fillText('Kael, The Atlas Explorer', nameCX, nameY - 4);
+
+                ctx.font = '11px "VT323", monospace';
+                ctx.fillStyle = '#38bdf8'; // Sky blue
+                ctx.fillText(subStr, nameCX, nameY + 7);
+
+                // Proximity Interaction Pop-up if player is near
+                const curP = (typeof player !== 'undefined') ? player : window.player;
+                if (curP) {
+                    const dToP = Math.hypot((curP.x + curP.width / 2) - (this.x + this.width / 2), (curP.y + curP.height / 2) - (this.y + this.height / 2));
+                    if (dToP < TILE_SIZE * 3.5) {
+                        const hasTalked = (typeof window !== 'undefined' && typeof window.hasPlayerTalkedToKael === 'function') ? window.hasPlayerTalkedToKael() : false;
+                        const actionWord = hasTalked ? 'Trade' : 'Speak';
+                        const promptText = `Press [E] to ${actionWord}`;
+
+                        // Measure prompt text dynamically so box perfectly bounds the content
+                        ctx.font = 'bold 15px "VT323", monospace';
+                        const textW = Math.ceil(ctx.measureText(promptText).width);
+                        const popW = Math.max(154, textW + 40);
+                        const popH = 22;
+                        const popX = Math.round(nameCX - popW / 2);
+                        const popY = Math.round(bgY - popH - 5);
+
+                        // Pop-up outer pixel border
+                        ctx.fillStyle = '#080a0c';
+                        ctx.fillRect(popX - 1, popY - 1, popW + 2, popH + 2);
+
+                        // Pop-up dark slate background
+                        ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
+                        ctx.fillRect(popX, popY, popW, popH);
+
+                        // Pop-up crisp amber/gold highlight border
+                        const pulse = (Math.sin(Date.now() * 0.007) + 1) * 0.5;
+                        ctx.fillStyle = (pulse > 0.5) ? '#fbbf24' : '#d97706';
+                        ctx.fillRect(popX, popY, popW, 1);
+                        ctx.fillRect(popX, popY, 1, popH);
+                        ctx.fillStyle = '#78350f';
+                        ctx.fillRect(popX, popY + popH - 1, popW, 1);
+                        ctx.fillRect(popX + popW - 1, popY, 1, popH);
+
+                        // Pixel downward arrow pointer (pointing at nameplate)
+                        ctx.fillStyle = '#080a0c';
+                        ctx.fillRect(nameCX - 3, popY + popH, 6, 2);
+                        ctx.fillRect(nameCX - 2, popY + popH + 2, 4, 1);
+                        ctx.fillRect(nameCX - 1, popY + popH + 3, 2, 1);
+                        ctx.fillStyle = '#fbbf24';
+                        ctx.fillRect(nameCX - 2, popY + popH, 4, 1);
+                        ctx.fillRect(nameCX - 1, popY + popH + 1, 2, 1);
+
+                        // Pixel Key Badge [E]
+                        const keyX = popX + 8;
+                        const keyY = popY + 4;
+                        const keyW = 14;
+                        const keyH = 14;
+
+                        // Key cap outer shadow
+                        ctx.fillStyle = '#020617';
+                        ctx.fillRect(keyX - 1, keyY - 1, keyW + 2, keyH + 2);
+                        // Key cap face
+                        ctx.fillStyle = '#1e293b';
+                        ctx.fillRect(keyX, keyY, keyW, keyH);
+                        // Key cap top highlight
+                        ctx.fillStyle = '#64748b';
+                        ctx.fillRect(keyX, keyY, keyW, 1);
+                        ctx.fillRect(keyX, keyY, 1, keyH);
+                        // Key letter E
+                        ctx.font = 'bold 12px "VT323", monospace';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#fef08a';
+                        ctx.fillText('E', keyX + keyW / 2, keyY + keyH / 2 + 1);
+
+                        // Pop-up text with guaranteed spacing
+                        ctx.font = 'bold 15px "VT323", monospace';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#fef08a';
+                        ctx.fillText(promptText, keyX + keyW + 7, popY + popH / 2 + 1);
+                    }
+                }
+            }
+
+            ctx.restore();
+        }
+    }
 
     export function getInitialSpawnPoint() {
         const centerCol = Math.floor(WORLD_WIDTH / 2);
-        const nonSolid = new Set([IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP, IDS.WATER, IDS.LAVA, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW]);
+        const nonSolid = new Set([IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.JUNGLE_SAPLING, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP, IDS.JUNGLE_DOOR_OPEN, IDS.JUNGLE_DOOR_OPEN_TOP, IDS.WATER, IDS.LAVA, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.FERN, IDS.BAMBOO, IDS.VINES, IDS.LEAVES, IDS.JUNGLE_LEAVES]);
         const hazard = new Set([IDS.LAVA, IDS.CACTUS]);
 
         for (let r = 0; r < Math.floor(WORLD_WIDTH / 2); r++) {
@@ -5842,12 +9054,13 @@ export const SKIN_H = 32;
         
         world = Array.from({ length: WORLD_WIDTH }, () => Array(WORLD_HEIGHT).fill(IDS.AIR));
         bgWorld = Array.from({ length: WORLD_WIDTH }, () => Array(WORLD_HEIGHT).fill(IDS.AIR));
-        window.world = world; window.bgWorld = bgWorld;
+        if (typeof window !== 'undefined') { window.world = world; window.bgWorld = bgWorld; }
         if (typeof toggleBackgroundBuildMode === 'function') toggleBackgroundBuildMode(false);
         fluids = new Map();
         fluidTick = 0;
         fluidWakeQueue = new Set();
         leafDecayQueue = new Map();
+        treeDecayClusters = new Map();
         saplingGrowthQueue = new Map();
         cropGrowthQueue = new Map();
         dirtToGrassQueue = new Map();
@@ -5856,50 +9069,92 @@ export const SKIN_H = 32;
         activeProjectiles = [];
         chests = new Map();
         openedChest = null;
+        signs = new Map();
+        if (typeof window !== 'undefined') window.signs = signs;
         
         const baseHeight = Math.floor(WORLD_HEIGHT / 2);
         const worldSeed = seededRandom() * 10000;
-        const biomeSeed = seededRandom() * 10000;
-        const biomes = new Array(WORLD_WIDTH);
+        const tempSeed = seededRandom() * 10000;
+        const humidSeed = seededRandom() * 10000;
+        const mountainSeed = seededRandom() * 10000;
+        worldBiomes = new Array(WORLD_WIDTH);
+        if (typeof window !== 'undefined') window.worldBiomes = worldBiomes;
+        const biomes = worldBiomes;
         const rawSurfaceHeights = new Array(WORLD_WIDTH);
         nonCollidableTreeWood = new Set();
         let lastTreeX = -10;
 
+        // Guaranteed Biome Distribution & Mountain Corner Rule:
+        // Ensures all 6 biomes generate in every world, and no matter the world size,
+        // mountains are guaranteed to generate anchored to either the LEFT or RIGHT corner/end of the map!
+        const mountainSide = (Math.floor(worldSeed) % 2 === 0) ? 'left' : 'right';
+
+        let activeBiomeList;
+        if (mountainSide === 'left') {
+            // Mountains anchored to the far left corner (index 0).
+            // Natural climatic gradient: Mountains -> Snow -> Forest/Plains (player spawn) -> Jungle -> Desert
+            activeBiomeList = (Math.floor(worldSeed * 0.5) % 2 === 0)
+                ? ['mountains', 'snow', 'forest', 'plains', 'jungle', 'desert']
+                : ['mountains', 'snow', 'plains', 'forest', 'jungle', 'desert'];
+        } else {
+            // Mountains anchored to the far right corner (index 5).
+            // Natural climatic gradient: Desert -> Jungle -> Plains/Forest (player spawn) -> Snow -> Mountains
+            activeBiomeList = (Math.floor(worldSeed * 0.5) % 2 === 0)
+                ? ['desert', 'jungle', 'plains', 'forest', 'snow', 'mountains']
+                : ['desert', 'jungle', 'forest', 'plains', 'snow', 'mountains'];
+        }
+        const numBiomes = activeBiomeList.length;
+
         for (let x = 0; x < WORLD_WIDTH; x++) {
-            let bx = x + biomeSeed;
-            // Rich multi-frequency biome noise
-            let biomeNoise = Math.sin(bx * 0.007) + Math.sin(bx * 0.016) * 0.6 + Math.sin(bx * 0.032) * 0.25;
-            
-            let biome = "plains";
-            if (biomeNoise > 0.85) biome = "mountains";
-            else if (biomeNoise < -0.85) biome = "desert";
-            else if (biomeNoise > 0.35) biome = "forest";
-            else if (biomeNoise < -0.35) biome = "snow";
+            // Multi-octave organic domain warping for undulating natural biome borders
+            let warp = Math.sin(x * 0.012 + worldSeed * 0.4) * 35 +
+                       Math.cos(x * 0.028 + tempSeed * 0.6) * 18 +
+                       Math.sin(x * 0.065 + humidSeed * 0.8) * 10;
+
+            // Dampen warp near map corners (first & last 45 tiles) so corner biomes stay firmly anchored to the edges of the map
+            let distFromCorner = Math.min(x, WORLD_WIDTH - 1 - x);
+            let cornerDampen = Math.min(1.0, distFromCorner / 45);
+            let warpedX = Math.max(0, Math.min(WORLD_WIDTH - 1, x + warp * cornerDampen));
+
+            let sectorFraction = (warpedX / WORLD_WIDTH) * numBiomes;
+            let sectorIndex = Math.max(0, Math.min(numBiomes - 1, Math.floor(sectorFraction)));
+            let sectorProgress = sectorFraction - sectorIndex; // 0.0 to 1.0 within sector
+            let biome = activeBiomeList[sectorIndex];
             biomes[x] = biome;
 
-            let tx = x + worldSeed;
-            // Layered organic fractal terrain (continental landmasses + rolling topography + micro detail roughness)
-            let continental = Math.sin(tx * 0.005) * 26 + Math.cos(tx * 0.012 + worldSeed * 0.3) * 16;
-            let hills = Math.sin(tx * 0.024 + worldSeed * 0.5) * 9 + Math.sin(tx * 0.052) * 4.5;
-            let detail = Math.sin(tx * 0.11 + worldSeed * 0.8) * 1.6 + Math.cos(tx * 0.21) * 0.8;
-            
+            let wx = x + worldSeed;
+            // Layered organic fractal terrain (continental + hills + detail)
+            let continental = Math.sin(wx * 0.004) * 28 + Math.cos(wx * 0.01 + worldSeed * 0.3) * 18;
+            let hills = Math.sin(wx * 0.02 + worldSeed * 0.5) * 10 + Math.sin(wx * 0.045) * 5;
+            let detail = Math.sin(wx * 0.1 + worldSeed * 0.8) * 2 + Math.cos(wx * 0.18) * 0.9;
+
             let surfaceY = baseHeight + continental + hills + detail;
 
             if (biome === "mountains") {
-                let intensity = Math.min(1.0, (biomeNoise - 0.7) * 2.8);
-                let mountainSpikes = Math.abs(Math.sin(tx * 0.032 + worldSeed * 0.4) * 62 + Math.sin(tx * 0.075 + worldSeed * 0.6) * 24 + Math.sin(tx * 0.14) * 8);
-                surfaceY -= mountainSpikes * intensity;
+                // Determine progress from the outer map corner (0.0 at corner/end of map, 1.0 at inland biome border)
+                let progressFromCorner = (mountainSide === 'left')
+                    ? Math.max(0, Math.min(1.0, sectorProgress))
+                    : Math.max(0, Math.min(1.0, 1.0 - sectorProgress));
+
+                // Smooth inland transition (0.0 at inland border -> rises smoothly to 1.0 towards corner)
+                let mountainEnvelope = Math.sin((1.0 - progressFromCorner) * Math.PI * 0.5);
+                let heightScale = WORLD_HEIGHT / 320;
+                let mountainSpikes = Math.abs(Math.sin(wx * 0.028 + worldSeed * 0.4) * 65 + Math.sin(wx * 0.065 + worldSeed * 0.6) * 25 + Math.sin(wx * 0.12) * 10);
+                surfaceY -= (32 + mountainSpikes) * mountainEnvelope * heightScale;
             } else if (biome === "desert") {
-                let dunes = Math.sin(tx * 0.022 + worldSeed * 0.7) * 10 + Math.abs(Math.sin(tx * 0.048)) * 6;
-                surfaceY = baseHeight + (continental * 0.4) + dunes + detail;
+                let dunes = Math.sin(wx * 0.02 + worldSeed * 0.7) * 9 + Math.abs(Math.sin(wx * 0.045)) * 5;
+                surfaceY = baseHeight + (continental * 0.35) + dunes + detail;
+            } else if (biome === "jungle") {
+                let jungleHills = Math.sin(wx * 0.028 + worldSeed * 0.2) * 12 + Math.cos(wx * 0.055) * 6;
+                surfaceY += jungleHills;
             } else if (biome === "forest") {
-                surfaceY += Math.sin(tx * 0.038) * 7 - 3;
+                surfaceY += Math.sin(wx * 0.035) * 7 - 2;
             } else if (biome === "snow") {
-                surfaceY += Math.sin(tx * 0.042) * 8 + 2;
+                surfaceY += Math.sin(wx * 0.038) * 8 + 2;
             } else if (biome === "plains") {
-                surfaceY += Math.sin(tx * 0.028) * 5;
+                surfaceY += Math.sin(wx * 0.025) * 5;
             }
-            
+
             rawSurfaceHeights[x] = surfaceY;
         }
 
@@ -5928,14 +9183,14 @@ export const SKIN_H = 32;
                 else if (y === surfaceY) {
                     if (biome === "desert") world[x][y] = IDS.SAND;
                     else if (biome === "snow") world[x][y] = IDS.SNOW;
-                    else if (biome === "mountains" && y < baseHeight - 35) world[x][y] = IDS.SNOW;
-                    else if (biome === "mountains" && y >= baseHeight - 14) world[x][y] = IDS.GRASS;
+                    else if (biome === "mountains" && y < baseHeight - 45) world[x][y] = IDS.SNOW;
+                    else if (biome === "mountains" && y >= baseHeight - 18) world[x][y] = IDS.GRASS;
                     else if (biome === "mountains") world[x][y] = IDS.STONE;
                     else world[x][y] = IDS.GRASS;
                 }
                 else if (y > surfaceY && y < surfaceY + seededRandom() * 3 + 3) {
                     if (biome === "desert") world[x][y] = IDS.SAND;
-                    else if (biome === "snow" || biome === "plains" || biome === "forest" || (biome === "mountains" && surfaceY >= baseHeight - 14)) world[x][y] = IDS.DIRT;
+                    else if (biome === "snow" || biome === "plains" || biome === "forest" || biome === "jungle" || (biome === "mountains" && surfaceY >= baseHeight - 18)) world[x][y] = IDS.DIRT;
                     else world[x][y] = IDS.STONE;
                 }
                 else {
@@ -5976,12 +9231,35 @@ export const SKIN_H = 32;
                     if (isCave) {
                         world[x][y] = IDS.AIR;
                     } else {
-                        // Ore generation embedded in stone and cave walls
+                        // Ore generation embedded in stone and cave walls:
+                        // Deep ore layer thresholds dynamically scaled to world depth:
+                        // Gold strictly in lower half of underground; Diamonds strictly in deepest ~20% abyss.
+                        const undergroundDepth = WORLD_HEIGHT - baseHeight;
+                        const goldMinY = baseHeight + Math.floor(undergroundDepth * 0.52);
+                        const diamondMinY = baseHeight + Math.floor(undergroundDepth * 0.80);
+                        const emeraldMinY = baseHeight + Math.floor(undergroundDepth * 0.65);
+
                         let oreRoll = seededRandom();
-                        if (oreRoll < 0.035) world[x][y] = IDS.COAL_ORE;
-                        else if (oreRoll < 0.065) world[x][y] = IDS.IRON_ORE;
-                        else if (y > baseHeight + 35 && oreRoll < 0.088) world[x][y] = IDS.GOLD_ORE;
-                        else if (y > baseHeight + 70 && oreRoll < 0.100) world[x][y] = IDS.DIAMOND_ORE;
+                        if (oreRoll < 0.035) {
+                            world[x][y] = IDS.COAL_ORE;
+                        } else if (oreRoll < 0.065) {
+                            world[x][y] = IDS.IRON_ORE;
+                        } else if (oreRoll < 0.080) {
+                            // Gold only generates in the deep lower half
+                            if (y >= goldMinY) {
+                                world[x][y] = IDS.GOLD_ORE;
+                            }
+                        } else if (oreRoll < 0.084) {
+                            // Rare Diamonds (0.4% chance, reduced from 1.2%), strictly in the bottom 20% abyss
+                            if (y >= diamondMinY) {
+                                world[x][y] = IDS.DIAMOND_ORE;
+                            }
+                        } else if (oreRoll < 0.089) {
+                            // Emeralds in mountains or deep underground
+                            if (biome === "mountains" || y >= emeraldMinY) {
+                                world[x][y] = IDS.EMERALD_ORE;
+                            }
+                        }
                     }
                 }
             }
@@ -6079,57 +9357,189 @@ export const SKIN_H = 32;
             }
         }
 
-        // 1. Surface Lakes in Plains & Valleys (generated BEFORE trees)
+        function buildJungleTree(tx, sy, treeType = 'giant') {
+            const setTrunk = (bx, by) => {
+                if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
+                if (isWater(bx, by) || getFluid(bx, by)) return;
+                world[bx][by] = IDS.JUNGLE_WOOD;
+                nonCollidableTreeWood.add(`${bx}_${by}`);
+            };
+            const setLeaf = (bx, by) => {
+                if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
+                if (isWater(bx, by) || getFluid(bx, by)) return;
+                if (world[bx][by] === IDS.AIR) world[bx][by] = IDS.JUNGLE_LEAVES;
+            };
+            const setVine = (bx, by) => {
+                if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
+                if (isWater(bx, by) || getFluid(bx, by)) return;
+                if (world[bx][by] === IDS.AIR) world[bx][by] = IDS.VINES;
+            };
+
+            if (treeType === 'jungle_bush') {
+                setTrunk(tx, sy - 1);
+                for (let lx = -1; lx <= 1; lx++) {
+                    for (let ly = -2; ly <= -1; ly++) {
+                        setLeaf(tx + lx, sy + ly);
+                    }
+                }
+                setLeaf(tx, sy - 3);
+                return;
+            }
+
+            // Giant Jungle Tree: 12 to 20 blocks high
+            const th = Math.floor(seededRandom() * 9) + 12;
+            const is2x2 = seededRandom() < 0.65;
+            const trunkWidth = is2x2 ? 2 : 1;
+
+            // Grow main trunk
+            for (let i = 1; i <= th; i++) {
+                for (let tw = 0; tw < trunkWidth; tw++) {
+                    setTrunk(tx + tw, sy - i);
+                }
+            }
+
+            // Spreading branch arms midway up
+            const branchY1 = sy - Math.floor(th * 0.55);
+            setTrunk(tx - 1, branchY1);
+            setLeaf(tx - 2, branchY1);
+            setLeaf(tx - 2, branchY1 - 1);
+            setLeaf(tx - 1, branchY1 - 1);
+
+            const branchY2 = sy - Math.floor(th * 0.75);
+            setTrunk(tx + trunkWidth, branchY2);
+            setLeaf(tx + trunkWidth + 1, branchY2);
+            setLeaf(tx + trunkWidth + 1, branchY2 - 1);
+            setLeaf(tx + trunkWidth, branchY2 - 1);
+
+            // Broad canopy at top (radius 4 to 6)
+            const top = sy - th;
+            const canopyRadius = is2x2 ? 5 : 4;
+            for (let ly = -4; ly <= 2; ly++) {
+                const layerY = top + ly;
+                const r = canopyRadius - Math.abs(ly + 1);
+                for (let lx = -r; lx <= r + (is2x2 ? 1 : 0); lx++) {
+                    if (Math.abs(lx) === r && Math.abs(ly + 1) >= 2 && seededRandom() < 0.4) continue;
+                    setLeaf(tx + lx, layerY);
+                }
+            }
+
+            // Hanging Vines on trunk sides and under canopy
+            for (let side of [-1, trunkWidth]) {
+                const vineX = tx + side;
+                const startVineY = top + 2;
+                const vineLen = Math.floor(seededRandom() * 6) + 3;
+                for (let v = 0; v < vineLen; v++) {
+                    const vy = startVineY + v;
+                    if (vy < sy - 1) {
+                        setVine(vineX, vy);
+                    }
+                }
+            }
+            // Hanging vines under outer canopy edges
+            for (let offset of [-canopyRadius + 1, canopyRadius + (is2x2 ? 0 : -1)]) {
+                const vineX = tx + offset;
+                const startVineY = top + 3;
+                const vineLen = Math.floor(seededRandom() * 5) + 2;
+                for (let v = 0; v < vineLen; v++) {
+                    const vy = startVineY + v;
+                    if (vy < sy - 1) {
+                        setVine(vineX, vy);
+                    }
+                }
+            }
+        }
+
+        // 1. Surface Lakes in Plains & Valleys (Natural sealed concave basins with level waterlines)
         const fillPool = (centerX, width, depth) => {
-            const startX = Math.max(4, centerX - Math.floor(width / 2));
-            const endX = Math.min(WORLD_WIDTH - 5, startX + width - 1);
-            let maxSurfaceY = 0;
-            for (let x = startX; x <= endX; x++) maxSurfaceY = Math.max(maxSurfaceY, surfaceHeights[x]);
-            const waterline = maxSurfaceY;
+            const halfW = Math.floor(width / 2);
+            const startX = Math.max(5, centerX - halfW);
+            const endX = Math.min(WORLD_WIDTH - 6, startX + width - 1);
+            if (endX <= startX + 2) return false;
+
+            const yLeftRim = surfaceHeights[startX - 1];
+            const yRightRim = surfaceHeights[endX + 1];
+            if (yLeftRim === undefined || yRightRim === undefined) return false;
+
+            // Waterline is set strictly below (larger Y) the lower rim so water is naturally contained
+            const waterline = Math.max(yLeftRim, yRightRim) + 1;
             let placed = 0;
+
             for (let x = startX; x <= endX; x++) {
-                const surfaceY = surfaceHeights[x];
-                const edgeDistance = Math.abs(x - (startX + endX) / 2) / Math.max(1, width / 2);
-                const targetFloorY = waterline + 1 + Math.floor(depth * Math.max(0, 1 - edgeDistance));
-                let floorY = Math.max(surfaceY + 1, targetFloorY);
-                if (floorY <= surfaceY) continue;
-                
-                for (let y = surfaceY; y < floorY; y++) {
+                const progress = (x - startX + 0.5) / (endX - startX + 1);
+                const bowlFactor = Math.sin(progress * Math.PI);
+                const bowlDepth = Math.max(1, Math.round(depth * bowlFactor));
+                const bedY = waterline + bowlDepth;
+
+                // 1. Clear open sky above the waterline
+                const originalSurface = surfaceHeights[x] || waterline;
+                for (let y = Math.min(originalSurface, waterline - 1); y < waterline; y++) {
+                    world[x][y] = IDS.AIR;
+                }
+
+                // 2. Fill concave basin with water source blocks
+                for (let y = waterline; y < bedY; y++) {
                     world[x][y] = IDS.AIR;
                     setFluid(x, y, { type: IDS.WATER, level: 0, source: true, falling: false });
                     placed++;
                 }
-                if (floorY < WORLD_HEIGHT && !isSolidWorldBlock(x, floorY, world[x][floorY])) {
-                    world[x][floorY] = IDS.SAND;
+
+                // 3. Line the lake bed with sand or clay and reinforce watertight base
+                const bedBlock = seededRandom() < 0.25 ? IDS.CLAY : IDS.SAND;
+                for (let by = bedY; by <= Math.min(WORLD_HEIGHT - 1, bedY + 2); by++) {
+                    if (!isSolidWorldBlock(x, by, world[x]?.[by])) {
+                        world[x][by] = (by === bedY) ? bedBlock : IDS.DIRT;
+                    }
+                }
+
+                // 4. Update surface height to waterline so vegetation and mobs don't generate inside water
+                surfaceHeights[x] = waterline;
+            }
+
+            // 5. Seal containment banks on left and right borders
+            for (let by = Math.min(yLeftRim, waterline); by <= waterline + depth + 1; by++) {
+                if (startX - 1 >= 0 && !isSolidWorldBlock(startX - 1, by, world[startX - 1]?.[by])) {
+                    world[startX - 1][by] = IDS.SAND;
+                }
+                if (endX + 1 < WORLD_WIDTH && !isSolidWorldBlock(endX + 1, by, world[endX + 1]?.[by])) {
+                    world[endX + 1][by] = IDS.SAND;
                 }
             }
+
             return placed > 0;
         };
 
         let poolsPlaced = 0;
-        for (let x = 12; x < WORLD_WIDTH - 12 && poolsPlaced < 6; x += 6) {
+        for (let x = 12; x < WORLD_WIDTH - 12 && poolsPlaced < 7; x += 6) {
             const localFloor = surfaceHeights[x];
             const leftRim = Math.min(surfaceHeights[x - 4], surfaceHeights[x - 2]);
             const rightRim = Math.min(surfaceHeights[x + 2], surfaceHeights[x + 4]);
-            const isValley = localFloor >= leftRim + 1 && localFloor >= rightRim + 1;
+            const isValley = localFloor >= leftRim + 2 && localFloor >= rightRim + 2;
             const biomeAllowsWater = biomes[x] !== 'desert' && biomes[x] !== 'snow';
-            if (isValley && biomeAllowsWater && seededRandom() < 0.65) {
-                const width = 4 + Math.floor(seededRandom() * 6);
+            if (isValley && biomeAllowsWater && seededRandom() < 0.70) {
+                const width = 5 + Math.floor(seededRandom() * 6);
                 const depth = 2 + Math.floor(seededRandom() * 3);
                 if (fillPool(x, width, depth)) poolsPlaced++;
             }
         }
 
-        // Mountain waterfall springs
+        // Mountain waterfall springs with open downhill cascade outlet
         let springsPlaced = 0;
         for (let x = 12; x < WORLD_WIDTH - 12 && springsPlaced < 4; x += 8) {
             if (biomes[x] === 'mountains' && seededRandom() < 0.45) {
                 const peakY = surfaceHeights[x];
                 if (peakY > 10 && peakY < WORLD_HEIGHT - 20) {
-                    world[x][peakY] = IDS.AIR;
-                    world[x - 1][peakY] = IDS.STONE;
-                    world[x + 1][peakY] = IDS.STONE;
+                    const leftSlopeY = surfaceHeights[x - 1] ?? peakY;
+                    const rightSlopeY = surfaceHeights[x + 1] ?? peakY;
+                    const flowRight = rightSlopeY >= leftSlopeY;
                     world[x][peakY + 1] = IDS.STONE;
+                    world[x][peakY] = IDS.AIR;
+                    if (flowRight) {
+                        world[x - 1][peakY] = IDS.STONE;
+                        world[x + 1][peakY] = IDS.AIR; // Downhill open outlet creates cliff waterfall
+                    } else {
+                        world[x + 1][peakY] = IDS.STONE;
+                        world[x - 1][peakY] = IDS.AIR; // Downhill open outlet
+                    }
                     setFluid(x, peakY, { type: IDS.WATER, level: 0, source: true, falling: false });
                     springsPlaced++;
                 }
@@ -6176,7 +9586,12 @@ export const SKIN_H = 32;
             let topBlock = world[x][surfaceY];
             if (isNearWater(x)) continue;
 
-            if (biome === "forest" && topBlock === IDS.GRASS && x - lastTreeX >= 2 && seededRandom() < 0.52) {
+            if (biome === "jungle" && topBlock === IDS.GRASS && x - lastTreeX >= 3 && seededRandom() < 0.65) {
+                let roll = seededRandom();
+                let treeType = roll < 0.80 ? 'giant' : 'jungle_bush';
+                buildJungleTree(x, surfaceY, treeType);
+                lastTreeX = x + (treeType === 'giant' ? 3 : 1);
+            } else if (biome === "forest" && topBlock === IDS.GRASS && x - lastTreeX >= 2 && seededRandom() < 0.52) {
                 let roll = seededRandom();
                 let treeType = roll < 0.40 ? 'oak' : (roll < 0.70 ? 'tall_oak' : (roll < 0.88 ? 'fancy' : 'bush'));
                 buildTree(x, surfaceY, treeType);
@@ -6202,7 +9617,24 @@ export const SKIN_H = 32;
                 const flowerCluster = Math.sin(x * 0.22 + worldSeed * 1.7);
                 let vegRoll = seededRandom();
 
-                if (biome === "plains") {
+                if (biome === "jungle") {
+                    // Jungle floor: Bamboo clumps, Ferns, Melons, and tall foliage
+                    if (vegRoll < 0.25) {
+                        world[x][surfaceY - 1] = IDS.FERN;
+                    } else if (vegRoll < 0.45) {
+                        world[x][surfaceY - 1] = IDS.TALL_GRASS;
+                    } else if (vegRoll < 0.60) {
+                        world[x][surfaceY - 1] = IDS.SHORT_GRASS;
+                    } else if (vegRoll < 0.75) {
+                        // Bamboo shoot/stalk (2-5 blocks tall)
+                        let bambooHeight = Math.floor(seededRandom() * 4) + 2;
+                        for (let b = 1; b <= bambooHeight; b++) {
+                            if (surfaceY - b > 0 && world[x][surfaceY - b] === IDS.AIR) {
+                                world[x][surfaceY - b] = IDS.BAMBOO;
+                            }
+                        }
+                    }
+                } else if (biome === "plains") {
                     // Wildflower patches in plains
                     if (flowerCluster > 0.82 && vegRoll < 0.45) {
                         world[x][surfaceY - 1] = IDS.FLOWER_RED;
@@ -6237,13 +9669,33 @@ export const SKIN_H = 32;
                 }
             }
         }
+
+        // Natural Wild Melon Patches in Jungle clearings
+        for (let x = 10; x < WORLD_WIDTH - 10; x += 14) {
+            if (biomes[x] === 'jungle' && seededRandom() < 0.48) {
+                let sy = surfaceHeights[x];
+                if (sy && world[x][sy] === IDS.GRASS && world[x][sy - 1] === IDS.AIR && !isNearWater(x)) {
+                    let patchSize = Math.floor(seededRandom() * 4) + 2;
+                    for (let p = 0; p < patchSize; p++) {
+                        let mx = x + (p % 3) - 1;
+                        if (mx >= 5 && mx < WORLD_WIDTH - 5) {
+                            let my = surfaceHeights[mx];
+                            if (my && world[mx][my] === IDS.GRASS && world[mx][my - 1] === IDS.AIR) {
+                                world[mx][my - 1] = IDS.MELON;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         ensureTreeWoodNonCollidable();
         ensureDesertScorpions();
     }
 
     export function spawnAnimals(count = 1, nearPlayerBias = 0.35) {
         let maxAnimals = getMaxAnimals();
-        let currentAnimals = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow).length;
+        let currentAnimals = entities.filter(e => e instanceof Animal).length;
         if (currentAnimals >= maxAnimals) return;
 
         let activePlayers = [{ x: player.x, y: player.y }];
@@ -6253,8 +9705,8 @@ export const SKIN_H = 32;
             });
         }
 
-        const validGround = new Set([IDS.GRASS, IDS.SNOW, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.DIRT]);
-        const nonSolid = new Set([IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP]);
+        const validGround = new Set([IDS.GRASS, IDS.SNOW, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.DIRT, IDS.JUNGLE_LEAVES, IDS.LEAVES]);
+        const nonSolid = new Set([IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.JUNGLE_SAPLING, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP, IDS.BAMBOO, IDS.FERN, IDS.VINES]);
 
         for (let i = 0; i < count && currentAnimals < maxAnimals; i++) {
             let chosenPlayer = activePlayers[Math.floor(Math.random() * activePlayers.length)];
@@ -6281,18 +9733,57 @@ export const SKIN_H = 32;
                 headBlock !== undefined && nonSolid.has(headBlock) && 
                 torsoBlock !== undefined && nonSolid.has(torsoBlock)) {
                 
-                let roll = Math.random();
-                let animalType = roll < 0.25 ? 'Sheep' : roll < 0.50 ? 'Pig' : roll < 0.75 ? 'Cow' : 'Chicken';
+                const isJungle = typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(gx) === 'jungle';
+                let currentPigeons = entities.filter(e => e instanceof Pigeon).length;
+                let targetPigeons = Math.round(maxAnimals * 0.28); // 11 pigeons when maxAnimals is 40
+                let animalType;
+                if (isJungle && Math.random() < 0.65) {
+                    animalType = 'Parrot';
+                } else if (currentPigeons < targetPigeons) {
+                    let roll = Math.random();
+                    if (roll < 0.35) animalType = 'Pigeon';
+                    else if (roll < 0.51) animalType = 'Sheep';
+                    else if (roll < 0.67) animalType = 'Pig';
+                    else if (roll < 0.83) animalType = 'Cow';
+                    else animalType = 'Chicken';
+                } else {
+                    let roll = Math.random();
+                    if (roll < 0.25) animalType = 'Sheep';
+                    else if (roll < 0.50) animalType = 'Pig';
+                    else if (roll < 0.75) animalType = 'Cow';
+                    else animalType = 'Chicken';
+                }
                 let spawnWorldY = (gy - 2) * TILE_SIZE;
                 
                 if (animalType === 'Sheep') entities.push(new Sheep(spawnX, spawnWorldY));
                 else if (animalType === 'Pig') entities.push(new Pig(spawnX, spawnWorldY));
                 else if (animalType === 'Cow') entities.push(new Cow(spawnX, spawnWorldY));
-                else entities.push(new Chicken(spawnX, spawnWorldY));
+                else if (animalType === 'Chicken') entities.push(new Chicken(spawnX, spawnWorldY));
+                else if (animalType === 'Parrot') {
+                    const parrot = new Parrot(spawnX, spawnWorldY);
+                    entities.push(parrot);
+                    currentAnimals++;
+                    if (Math.random() < 0.45 && currentAnimals < maxAnimals) {
+                        entities.push(new Parrot(spawnX + 16, spawnWorldY));
+                        currentAnimals++;
+                    }
+                }
+                else {
+                    const p1 = new Pigeon(spawnX, spawnWorldY);
+                    entities.push(p1);
+                    currentAnimals++;
+                    if (Math.random() < 0.50 && currentAnimals < maxAnimals && (currentPigeons + 1) < 12) {
+                        const p2 = new Pigeon(spawnX + 16, spawnWorldY);
+                        p1.partner = p2;
+                        p2.partner = p1;
+                        entities.push(p2);
+                        currentAnimals++;
+                    }
+                }
                 currentAnimals++;
 
                 // Subtle herd bonus: 15% chance to spawn a single companion slightly nearby
-                if (Math.random() < 0.15 && currentAnimals < maxAnimals) {
+                if (animalType !== 'Pigeon' && animalType !== 'Parrot' && Math.random() < 0.15 && currentAnimals < maxAnimals) {
                     let herdOffset = (Math.random() > 0.5 ? 2 : -2);
                     let hgx = gx + herdOffset;
                     if (hgx >= 2 && hgx < WORLD_WIDTH - 2) {
@@ -6310,6 +9801,7 @@ export const SKIN_H = 32;
                 }
             }
         }
+        return true;
     }
 
     export function isNearTorch(gx, gy, radius = 4) {
@@ -6326,11 +9818,22 @@ export const SKIN_H = 32;
         return false;
     }
 
-    export function hasDirectSkyAccess(gx, gy) {
+    export function hasDirectSkyAccess(gx, gy, ignoreTranslucent = true) {
         if (gx < 0 || gx >= WORLD_WIDTH) return true;
+        const nonSunlightBlocking = new Set([
+            IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.JUNGLE_SAPLING,
+            IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.FERN, IDS.SHORT_GRASS,
+            IDS.TALL_GRASS, IDS.VINES, IDS.GLASS
+        ]);
+        if (ignoreTranslucent) {
+            nonSunlightBlocking.add(IDS.LEAVES);
+            nonSunlightBlocking.add(IDS.PINE_LEAVES);
+            nonSunlightBlocking.add(IDS.JUNGLE_LEAVES);
+            nonSunlightBlocking.add(IDS.BAMBOO);
+        }
         for (let y = gy; y >= 0; y--) {
             let b = world[gx]?.[y];
-            if (b !== undefined && b !== IDS.AIR && b !== IDS.TORCH && b !== IDS.SAPLING && b !== IDS.FLOWER_RED && b !== IDS.FLOWER_YELLOW) {
+            if (b !== undefined && !nonSunlightBlocking.has(b)) {
                 return false;
             }
         }
@@ -6340,11 +9843,11 @@ export const SKIN_H = 32;
     export function spawnMobs(forcePassive = false) {
         let diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
         if (diff.mobSpawn <= 0) {
-            entities = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow);
+            entities = entities.filter(e => (e instanceof Animal) || (e instanceof AtlasExplorer));
             if (!forcePassive) return;
         }
 
-        const isNight = timeOfDay > 0.42 && timeOfDay < 0.88;
+        const isNight = timeOfDay >= 0.68 && timeOfDay < 0.90;
         const isDay = !isNight;
 
         let activePlayerPositions = [{ x: player.x, y: player.y }];
@@ -6356,11 +9859,14 @@ export const SKIN_H = 32;
 
         // 1. Despawn burning mobs in daytime and distant hostile mobs so the mob cap dynamically refreshes around active players
         entities = entities.filter(e => {
+            if (e instanceof AtlasExplorer) return !e.isDeparted;
             if (e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion) {
                 if (isDay && e instanceof Zombie) {
                     let headGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((e.x + e.width / 2) / TILE_SIZE)));
                     let headGy = Math.max(0, Math.floor((e.y + 4) / TILE_SIZE));
-                    if (hasDirectSkyAccess(headGx, headGy)) {
+                    let footGy = Math.max(0, Math.floor((e.y + e.height - 2) / TILE_SIZE));
+                    let inWater = (typeof isWater === 'function' && isWater(headGx, footGy));
+                    if (!inWater && hasDirectSkyAccess(headGx, headGy, true)) {
                         if (frameCount % 15 === 0) {
                             e.takeDamage(3, 0);
                             for (let p = 0; p < 2; p++) particles.push(new Particle(e.x + Math.random() * e.width, e.y + Math.random() * e.height * 0.7, '#ffaa00'));
@@ -6381,10 +9887,7 @@ export const SKIN_H = 32;
             return;
         }
 
-        const currentAnimalCount = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow).length;
-        if (!isNight && currentAnimalCount < getMaxAnimals() && Math.random() < 0.04) {
-            spawnAnimals(1, 0.30);
-        }
+        // Passive animals follow the daily respawn cycle and do not trickle-spawn during daytime
 
         // Hostile mobs (Zombies, Creepers, Scorpions) strictly do NOT spawn during daytime
         if (!isNight) return;
@@ -6428,7 +9931,7 @@ export const SKIN_H = 32;
         let chosenPlayer = activePlayerPositions[Math.floor(Math.random() * activePlayerPositions.length)];
         let pGx = Math.floor((chosenPlayer.x + (chosenPlayer.width || 24) / 2) / TILE_SIZE);
         let pGy = Math.floor((chosenPlayer.y + (chosenPlayer.height || 48)) / TILE_SIZE);
-        let isPlayerInCave = pGy > getWorldSurfaceY(pGx) + CAVE_SKY_START_TILES;
+        let isPlayerInCave = pGy > getWorldSurfaceY(pGx) + CAVE_SKY_START_TILES && (typeof caveSkyOpacity === 'undefined' || caveSkyOpacity > 0.2);
 
         let tryCave = isPlayerInCave || isDay || Math.random() < 0.40;
         let spawnSide = Math.random() > 0.5 ? 1 : -1;
@@ -6446,18 +9949,21 @@ export const SKIN_H = 32;
                     continue;
                 }
                 let surfY = getWorldSurfaceY(candX);
-                let minY = isPlayerInCave ? Math.max(surfY + 2, pGy - 10) : surfY + 3;
+                // During daytime, hostiles MUST ONLY spawn deep subterranean (at least 8 blocks below surface)
+                let minY = isDay ? (surfY + 8) : (isPlayerInCave ? Math.max(surfY + 2, pGy - 10) : surfY + 3);
                 let maxY = isPlayerInCave ? Math.min(WORLD_HEIGHT - 3, pGy + 12) : WORLD_HEIGHT - 4;
                 if (minY >= maxY) continue;
 
                 let candY = minY + Math.floor(Math.random() * (maxY - minY));
+                if (isDay && candY < surfY + 8) continue;
+
                 let floorBlock = world[candX]?.[candY + 1];
                 let feetBlock = world[candX]?.[candY];
                 let headBlock = world[candX]?.[candY - 1];
 
                 if (feetBlock === IDS.AIR && headBlock === IDS.AIR && floorBlock !== undefined && floorBlock !== IDS.AIR && floorBlock !== IDS.WATER && floorBlock !== IDS.LAVA) {
-                    // MUST be sheltered underground with a roof overhead during the daytime
-                    if (isDay && hasDirectSkyAccess(candX, candY)) {
+                    // MUST be sheltered deep underground with a solid roof overhead during the daytime
+                    if (isDay && hasDirectSkyAccess(candX, candY, true)) {
                         continue;
                     }
                     if (!isNearTorch(candX, candY, 4)) {
@@ -6520,7 +10026,7 @@ export const SKIN_H = 32;
 
     export function ensureDesertScorpions() {
         if (typeof getActiveBiomeAt !== 'function' || !Array.isArray(entities)) return;
-        const isNight = timeOfDay > 0.42 && timeOfDay < 0.88;
+        const isNight = timeOfDay >= 0.68 && timeOfDay < 0.90;
         if (!isNight) return;
         const currentScorpions = entities.filter(e => e instanceof Scorpion).length;
         if (currentScorpions >= 3) return;
@@ -6588,7 +10094,8 @@ export const SKIN_H = 32;
                 const nx = lx + dx;
                 const ny = ly + dy;
                 if (nx >= 0 && nx < WORLD_WIDTH && ny >= 0 && ny < WORLD_HEIGHT) {
-                    if (world[nx][ny] === IDS.WOOD && Math.abs(dx) <= 1 && Math.abs(dy) <= 1) return true;
+                    const blk = world[nx][ny];
+                    if ((blk === IDS.WOOD || blk === IDS.JUNGLE_WOOD) && Math.abs(dx) <= 1 && Math.abs(dy) <= 1) return true;
                 }
             }
         }
@@ -6599,7 +10106,8 @@ export const SKIN_H = 32;
         
         while (queue.length > 0) {
             const [cx, cy, dist] = queue.shift();
-            if (world[cx]?.[cy] === IDS.WOOD) return true;
+            const cur = world[cx]?.[cy];
+            if (cur === IDS.WOOD || cur === IDS.JUNGLE_WOOD) return true;
             if (dist < maxDistance) {
                 const neighbors = [
                     [cx + 1, cy], [cx - 1, cy],
@@ -6611,8 +10119,8 @@ export const SKIN_H = 32;
                     const key = `${nx}_${ny}`;
                     if (!visited.has(key) && nx >= 0 && nx < WORLD_WIDTH && ny >= 0 && ny < WORLD_HEIGHT) {
                         const block = world[nx][ny];
-                        if (block === IDS.WOOD) return true;
-                        if (block === IDS.LEAVES) {
+                        if (block === IDS.WOOD || block === IDS.JUNGLE_WOOD) return true;
+                        if (block === IDS.LEAVES || block === IDS.JUNGLE_LEAVES) {
                             visited.add(key);
                             queue.push([nx, ny, dist + 1]);
                         }
@@ -6623,40 +10131,234 @@ export const SKIN_H = 32;
         return false;
     }
 
-    export function scheduleTreeLeafDecay(trunkX) {
-        for (let x = Math.max(0, trunkX - 5); x <= Math.min(WORLD_WIDTH - 1, trunkX + 5); x++) {
-            for (let y = 0; y < WORLD_HEIGHT; y++) {
-                if (world[x][y] === IDS.LEAVES && !isLeafConnectedToWood(x, y, 4)) {
-                    leafDecayQueue.set(`${x}_${y}`, LEAF_DECAY_MIN_FRAMES + Math.floor(Math.random() * LEAF_DECAY_RANDOM_FRAMES));
+    export function scheduleTreeLeafDecay(trunkX, trunkY = null) {
+        const minY = (trunkY !== null && typeof trunkY === 'number') ? Math.max(0, trunkY - 14) : 0;
+        const maxY = (trunkY !== null && typeof trunkY === 'number') ? Math.min(WORLD_HEIGHT - 1, trunkY + 4) : (WORLD_HEIGHT - 1);
+        const minX = Math.max(0, trunkX - 6);
+        const maxX = Math.min(WORLD_WIDTH - 1, trunkX + 6);
+
+        const unassignedLeaves = [];
+        for (let x = minX; x <= maxX; x++) {
+            for (let y = minY; y <= maxY; y++) {
+                const blk = world[x]?.[y];
+                if ((blk === IDS.LEAVES || blk === IDS.JUNGLE_LEAVES) && !leafDecayQueue.has(`${x}_${y}`)) {
+                    if (!isLeafConnectedToWood(x, y, 5)) {
+                        unassignedLeaves.push({ x, y, blk });
+                    }
                 }
+            }
+        }
+
+        if (unassignedLeaves.length === 0) return;
+
+        // Group newly disconnected leaves into connected canopy components
+        const visited = new Set();
+        const leafMap = new Map();
+        for (const leaf of unassignedLeaves) {
+            leafMap.set(`${leaf.x}_${leaf.y}`, leaf);
+        }
+
+        let clusterSeq = 0;
+        for (const leaf of unassignedLeaves) {
+            const key = `${leaf.x}_${leaf.y}`;
+            if (visited.has(key)) continue;
+
+            const component = [];
+            const queue = [leaf];
+            visited.add(key);
+
+            while (queue.length > 0) {
+                const cur = queue.shift();
+                component.push(cur);
+
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const nKey = `${cur.x + dx}_${cur.y + dy}`;
+                        if (leafMap.has(nKey) && !visited.has(nKey)) {
+                            visited.add(nKey);
+                            queue.push(leafMap.get(nKey));
+                        }
+                    }
+                }
+            }
+
+            const clusterId = `tree_decay_${Date.now()}_${trunkX}_${clusterSeq++}_${Math.floor(Math.random() * 10000)}`;
+
+            // Quota strictly between 0 and 2 oak saplings per tree!
+            // 20% chance: 0 saplings, 50% chance: 1 sapling, 30% chance: 2 saplings
+            const roll = Math.random();
+            let targetSaplings = roll < 0.20 ? 0 : (roll < 0.70 ? 1 : 2);
+            targetSaplings = Math.min(targetSaplings, component.length);
+
+            treeDecayClusters.set(clusterId, {
+                id: clusterId,
+                type: leaf.blk === IDS.JUNGLE_LEAVES ? 'jungle' : 'oak',
+                targetSaplings: targetSaplings,
+                droppedSaplings: 0,
+                leavesRemaining: component.length,
+                totalLeaves: component.length
+            });
+
+            for (const l of component) {
+                leafDecayQueue.set(`${l.x}_${l.y}`, {
+                    delay: LEAF_DECAY_MIN_FRAMES + Math.floor(Math.random() * LEAF_DECAY_RANDOM_FRAMES),
+                    clusterId: clusterId
+                });
             }
         }
     }
 
 
+    export function deliverLeafDecayItem(dropId, x, y, count = 1) {
+        if (!dropId) return;
+        const curPlayer = (typeof player !== 'undefined') ? player : (typeof window !== 'undefined' ? window.player : null);
+        
+        let targetPlayer = curPlayer;
+        if (isMultiplayer && typeof remotePlayers !== 'undefined' && remotePlayers) {
+            let pX = curPlayer ? curPlayer.x : 0;
+            let pY = curPlayer ? curPlayer.y : 0;
+            let minDist = Math.hypot(pX - (x * TILE_SIZE + TILE_SIZE / 2), pY - (y * TILE_SIZE + TILE_SIZE / 2));
+            Object.values(remotePlayers).forEach(rp => {
+                if (rp && !rp.isDead && rp.x !== undefined) {
+                    let d = Math.hypot(rp.x - (x * TILE_SIZE + TILE_SIZE / 2), rp.y - (y * TILE_SIZE + TILE_SIZE / 2));
+                    if (d < minDist) {
+                        minDist = d;
+                        targetPlayer = rp;
+                    }
+                }
+            });
+        }
+
+        if (targetPlayer === curPlayer && curPlayer) {
+            const given = giveItem(dropId, count);
+            if (given) {
+                if (typeof playSound === 'function') playSound('pop', { vol: 0.35 });
+                if (typeof particles !== 'undefined' && Array.isArray(particles)) {
+                    particles.push(new Particle(curPlayer.x + curPlayer.width / 2, curPlayer.y + 10, '#84cc16'));
+                }
+            } else {
+                // Inventory full: drop right near player
+                dropItemForWorld(dropId, curPlayer.x + curPlayer.width / 2, curPlayer.y, count);
+            }
+        } else if (isMultiplayer && isMultiplayerAuthority()) {
+            const targetX = targetPlayer ? targetPlayer.x + (targetPlayer.width || 24) / 2 : x * TILE_SIZE + TILE_SIZE / 2;
+            const targetY = targetPlayer ? targetPlayer.y + 10 : y * TILE_SIZE + TILE_SIZE / 2;
+            dropItemForWorld(dropId, targetX, targetY, count);
+        } else {
+            const given = giveItem(dropId, count);
+            if (!given && curPlayer) {
+                dropItemForWorld(dropId, curPlayer.x + curPlayer.width / 2, curPlayer.y, count);
+            }
+        }
+    }
+
     export function updateTreeLeafDecay() {
-        for (let [key, delay] of leafDecayQueue) {
+        for (let [key, val] of leafDecayQueue) {
+            let delay = typeof val === 'object' && val !== null ? val.delay : val;
+            const clusterId = typeof val === 'object' && val !== null ? val.clusterId : null;
+
             let [x, y] = key.split('_').map(Number);
-            if (world[x]?.[y] !== IDS.LEAVES) { leafDecayQueue.delete(key); continue; }
+            const blk = world[x]?.[y];
+            if (blk !== IDS.LEAVES && blk !== IDS.JUNGLE_LEAVES) {
+                if (clusterId && treeDecayClusters.has(clusterId)) {
+                    const c = treeDecayClusters.get(clusterId);
+                    c.leavesRemaining = Math.max(0, c.leavesRemaining - 1);
+                    if (c.leavesRemaining <= 0) treeDecayClusters.delete(clusterId);
+                }
+                leafDecayQueue.delete(key);
+                continue;
+            }
+
             delay--;
-            if (delay > 0) { leafDecayQueue.set(key, delay); continue; }
-            if (isLeafConnectedToWood(x, y, 4)) { leafDecayQueue.delete(key); continue; }
+            if (delay > 0) {
+                if (typeof val === 'object' && val !== null) {
+                    val.delay = delay;
+                    leafDecayQueue.set(key, val);
+                } else {
+                    leafDecayQueue.set(key, delay);
+                }
+                continue;
+            }
+
+            if (isLeafConnectedToWood(x, y, 5)) {
+                if (clusterId && treeDecayClusters.has(clusterId)) {
+                    const c = treeDecayClusters.get(clusterId);
+                    c.leavesRemaining = Math.max(0, c.leavesRemaining - 1);
+                    if (c.leavesRemaining <= 0) treeDecayClusters.delete(clusterId);
+                }
+                leafDecayQueue.delete(key);
+                continue;
+            }
+
             world[x][y] = IDS.AIR;
             syncBlock(x, y, IDS.AIR);
-            let roll = Math.random();
-            if (roll < 0.12) spawnDroppedItem(IDS.SAPLING, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-            else if (roll < 0.26) spawnDroppedItem(IDS.STICK, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
-            else if (roll < 0.30) spawnDroppedItem(IDS.APPLE, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+
+            let cluster = (clusterId && treeDecayClusters.has(clusterId)) ? treeDecayClusters.get(clusterId) : null;
+            if (cluster) {
+                cluster.leavesRemaining = Math.max(0, cluster.leavesRemaining - 1);
+                const saplingNeeded = cluster.targetSaplings - cluster.droppedSaplings;
+                let droppedSapling = false;
+
+                if (saplingNeeded > 0) {
+                    if (cluster.leavesRemaining < saplingNeeded) {
+                        droppedSapling = true;
+                    } else {
+                        const dropProb = saplingNeeded / (cluster.leavesRemaining + 1);
+                        if (Math.random() < dropProb) droppedSapling = true;
+                    }
+                }
+
+                if (droppedSapling) {
+                    cluster.droppedSaplings++;
+                    const dropId = (blk === IDS.JUNGLE_LEAVES) ? IDS.JUNGLE_SAPLING : IDS.SAPLING;
+                    deliverLeafDecayItem(dropId, x, y, 1);
+                } else {
+                    // Secondary drops: apples, sticks, melon seeds
+                    const roll = Math.random();
+                    if (blk === IDS.JUNGLE_LEAVES) {
+                        if (roll < 0.15) deliverLeafDecayItem(IDS.MELON_SEEDS, x, y, 1);
+                        else if (roll < 0.35) deliverLeafDecayItem(IDS.STICK, x, y, 1);
+                    } else {
+                        if (roll < 0.05) deliverLeafDecayItem(IDS.APPLE, x, y, 1);
+                        else if (roll < 0.25) deliverLeafDecayItem(IDS.STICK, x, y, 1);
+                    }
+                }
+
+                if (cluster.leavesRemaining <= 0) {
+                    treeDecayClusters.delete(clusterId);
+                }
+            } else {
+                let roll = Math.random();
+                if (blk === IDS.JUNGLE_LEAVES) {
+                    if (roll < 0.10) deliverLeafDecayItem(IDS.JUNGLE_SAPLING, x, y, 1);
+                    else if (roll < 0.25) deliverLeafDecayItem(IDS.MELON_SEEDS, x, y, 1);
+                    else if (roll < 0.40) deliverLeafDecayItem(IDS.STICK, x, y, 1);
+                } else {
+                    if (roll < 0.10) deliverLeafDecayItem(IDS.SAPLING, x, y, 1);
+                    else if (roll < 0.30) deliverLeafDecayItem(IDS.STICK, x, y, 1);
+                    else if (roll < 0.35) deliverLeafDecayItem(IDS.APPLE, x, y, 1);
+                }
+            }
+
             leafDecayQueue.delete(key);
         }
     }
 
     export function growSaplingAt(x, y) {
-        if (world[x]?.[y] !== IDS.SAPLING) return;
+        const sBlock = world[x]?.[y];
+        if (sBlock !== IDS.SAPLING && sBlock !== IDS.JUNGLE_SAPLING) return;
         if (!canSaplingGrowAt(x, y)) {
             return;
         }
         saplingBlockedWarnings.delete(`${x}_${y}`);
+        if (sBlock === IDS.JUNGLE_SAPLING) {
+            world[x][y] = IDS.AIR;
+            syncBlock(x, y, IDS.AIR);
+            buildJungleTree(x, y + 1, 'giant');
+            saplingGrowthQueue.delete(`${x}_${y}`);
+            return;
+        }
         const setTreeBlock = (blockX, blockY, blockId) => {
             if (blockX < 0 || blockX >= WORLD_WIDTH || blockY < 0 || blockY >= WORLD_HEIGHT) return;
             if (world[blockX][blockY] !== IDS.AIR && !(blockX === x && blockY === y)) return;
@@ -6695,7 +10397,14 @@ export const SKIN_H = 32;
     }
 
     export function canSaplingGrowAt(x, y) {
-        if (world[x]?.[y] !== IDS.SAPLING || ![IDS.DIRT, IDS.GRASS].includes(world[x]?.[y + 1])) return false;
+        const sBlock = world[x]?.[y];
+        if ((sBlock !== IDS.SAPLING && sBlock !== IDS.JUNGLE_SAPLING) || ![IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[x]?.[y + 1])) return false;
+        if (sBlock === IDS.JUNGLE_SAPLING) {
+            for (let dy = 1; dy <= 6; dy++) {
+                if (y - dy < 0 || world[x][y - dy] !== IDS.AIR) return false;
+            }
+            return true;
+        }
         const height = getSaplingGrowthHeight(x, y);
         const trunkCells = new Set();
         for (let trunkOffset = 0; trunkOffset <= height; trunkOffset++) trunkCells.add(`${x}_${y - trunkOffset}`);
@@ -6790,7 +10499,7 @@ export const SKIN_H = 32;
         for (let [key, info] of cropGrowthQueue) {
             const [x, y] = key.split('_').map(Number);
             const currentBlock = world[x]?.[y];
-            const isCrop = currentBlock === IDS.WHEAT_STAGE_1 || currentBlock === IDS.WHEAT_STAGE_2 || currentBlock === IDS.WHEAT_STAGE_3 || currentBlock === IDS.WHEAT_STAGE_4;
+            const isCrop = currentBlock === IDS.WHEAT_STAGE_1 || currentBlock === IDS.WHEAT_STAGE_2 || currentBlock === IDS.WHEAT_STAGE_3 || currentBlock === IDS.WHEAT_STAGE_4 || currentBlock === IDS.MELON_STEM;
             if (!isCrop) {
                 cropGrowthQueue.delete(key);
                 continue;
@@ -6798,7 +10507,9 @@ export const SKIN_H = 32;
 
             if (world[x]?.[y + 1] !== IDS.PLOWED_DIRT) {
                 cropGrowthQueue.delete(key);
-                if (currentBlock === IDS.WHEAT_STAGE_4) {
+                if (currentBlock === IDS.MELON_STEM) {
+                    spawnDroppedItem(IDS.MELON_SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
+                } else if (currentBlock === IDS.WHEAT_STAGE_4) {
                     spawnDroppedItem(IDS.WHEAT, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 1);
                     spawnDroppedItem(IDS.SEEDS, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 2);
                 } else if (currentBlock === IDS.WHEAT_STAGE_3) {
@@ -6808,6 +10519,26 @@ export const SKIN_H = 32;
                 }
                 world[x][y] = IDS.AIR;
                 syncBlock(x, y, IDS.AIR);
+                continue;
+            }
+
+            if (currentBlock === IDS.MELON_STEM) {
+                if (dayCount + timeOfDay >= info.nextStageAt) {
+                    const melonDirections = [-1, 1].sort(() => Math.random() - 0.5);
+                    for (let dx of melonDirections) {
+                        const mx = x + dx;
+                        if (mx >= 0 && mx < WORLD_WIDTH && world[mx]?.[y] === IDS.AIR && [IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[mx]?.[y + 1])) {
+                            world[mx][y] = IDS.MELON;
+                            syncBlock(mx, y, IDS.MELON);
+                            for (let p = 0; p < 4; p++) {
+                                particles.push(new Particle(mx * TILE_SIZE + Math.random() * TILE_SIZE, y * TILE_SIZE + Math.random() * TILE_SIZE, '#22c55e'));
+                            }
+                            break;
+                        }
+                    }
+                    const stageDuration = info.hasWater ? 1.5 : 2.5;
+                    info.nextStageAt = dayCount + timeOfDay + stageDuration;
+                }
                 continue;
             }
 
@@ -7065,16 +10796,16 @@ export const SKIN_H = 32;
     }
 
     export function drawDynamicSky(targetCtx, w, h, time) {
-        let duskAmount = time >= 0.34 && time < 0.48 ? smoothStep(Math.min(1, (time - 0.34) / 0.14)) : 0;
-        let dawnAmount = time >= 0.84 ? smoothStep(Math.min(1, (time - 0.84) / 0.14)) : time < 0.02 ? 1 : 0;
+        let duskAmount = time >= 0.58 && time < 0.68 ? smoothStep(Math.min(1, (time - 0.58) / 0.10)) : 0;
+        let dawnAmount = time >= 0.90 ? smoothStep(Math.min(1, (time - 0.90) / 0.10)) : time < 0.04 ? 1 : 0;
         let nightAmount = 0;
-        if (time >= 0.34 && time < 0.48) nightAmount = duskAmount;
-        else if (time >= 0.48 && time < 0.84) nightAmount = 1;
-        else if (time >= 0.84) nightAmount = 1 - dawnAmount;
-        else if (time < 0.02) nightAmount = 1 - smoothStep(time / 0.02);
+        if (time >= 0.58 && time < 0.68) nightAmount = duskAmount;
+        else if (time >= 0.68 && time < 0.90) nightAmount = 1;
+        else if (time >= 0.90) nightAmount = 1 - dawnAmount;
+        else if (time < 0.04) nightAmount = 1 - smoothStep(time / 0.04);
         let topColor = DAYLIGHT_TOP;
         let bottomColor = DAYLIGHT_BOTTOM;
-        if (time >= 0.34 && time < 0.48) {
+        if (time >= 0.58 && time < 0.68) {
             let sunsetProgress = duskAmount;
             if (sunsetProgress < 0.5) {
                 let sunsetBlend = smoothStep(sunsetProgress * 2);
@@ -7085,11 +10816,11 @@ export const SKIN_H = 32;
                 topColor = blendColor(TWILIGHT_TOP, NIGHT_TOP, nightBlend, skyTopColor);
                 bottomColor = blendColor(TWILIGHT_BOTTOM, NIGHT_BOTTOM, nightBlend, skyBottomColor);
             }
-        } else if (time >= 0.48 && time < 0.84) {
+        } else if (time >= 0.68 && time < 0.90) {
             topColor = NIGHT_TOP;
             bottomColor = NIGHT_BOTTOM;
-        } else if (time >= 0.84 || time < 0.02) {
-            let sunriseProgress = time >= 0.84 ? (time - 0.84) / 0.18 : (time + 0.16) / 0.18;
+        } else if (time >= 0.90 || time < 0.04) {
+            let sunriseProgress = time >= 0.90 ? (time - 0.90) / 0.14 : (time + 0.10) / 0.14;
             sunriseProgress = Math.max(0, Math.min(1, sunriseProgress));
             if (sunriseProgress < 0.5) {
                 let twilightBlend = smoothStep(sunriseProgress * 2);
@@ -7124,12 +10855,12 @@ export const SKIN_H = 32;
 
     export function drawMountains(targetCtx, camX, h, time, w, offsetX = 0, offsetY = 0) {
         let darkFactor = 1;
-        if (time > 0.38 && time <= 0.48) darkFactor = 1 - (time - 0.38) * 8; 
-        else if (time > 0.48 && time <= 0.84) darkFactor = 0.2;
-        else if (time > 0.84) darkFactor = 0.2 + (time - 0.84) * 8;
+        if (time >= 0.58 && time < 0.68) darkFactor = 1 - (time - 0.58) * 8; 
+        else if (time >= 0.68 && time < 0.90) darkFactor = 0.2;
+        else if (time >= 0.90) darkFactor = 0.2 + (time - 0.90) * 8;
         darkFactor = Math.max(0.12, Math.min(1, darkFactor));
 
-        const isSunset = (time > 0.35 && time < 0.48);
+        const isSunset = (time >= 0.58 && time < 0.68);
         const step = 8;
         const maxCols = Math.ceil(w / step) + 4;
 
@@ -7315,32 +11046,62 @@ export const SKIN_H = 32;
         }
     }
 
+    export const MENU_WORLD_WIDTH = 128;
+    export const MENU_WORLD_HEIGHT = 160;
+    export const MENU_SURFACE_Y = 56;
     export let menuCamX = 0;
     export let menuParallaxX = 0;
     export let menuParallaxY = 0;
     export let menuWorldSeed = (Math.random() * 0xffffffff) >>> 0;
     export let menuWorld = { terrain: [], surfaceHeights: [], blocks: [], trees: [], animals: [], fireflies: [], stars: [], width: 240 };
     export let menuWorldInitialized = false;
+    export let menuBackgroundRendered = false;
+
+    export function dismissBootLoadingScreen() {
+        if (typeof document === 'undefined') return;
+        const loader = document.getElementById('boot-loading-screen');
+        if (!loader || loader.classList.contains('dismissed')) return;
+        loader.classList.add('dismissed');
+        loader.style.opacity = '0';
+        loader.style.pointerEvents = 'none';
+        setTimeout(() => {
+            loader.style.display = 'none';
+            loader.classList.add('hidden');
+        }, 450);
+    }
     export let menuEntities = [];
     export let menuTime = 0.20 + Math.random() * 0.15;
     export let menuLastFrame = performance.now();
 
-    export let menuFireflies = Array.from({ length: 36 }, () => ({
+    export let menuFireflies = Array.from({ length: 48 }, (_, i) => ({
         x: Math.random() * 2000,
         y: Math.random() * 800,
+        type: i < 16 ? 'firefly' : (i < 34 ? 'spore' : 'leaf'),
         vx: (Math.random() - 0.5) * 0.35,
         vy: (Math.random() - 0.5) * 0.25,
         phase: Math.random() * Math.PI * 2,
-        size: 2 + Math.random() * 2
+        size: 2 + Math.random() * 2,
+        color: ['#bbf7d0', '#86efac', '#fef08a', '#4ade80'][Math.floor(Math.random() * 4)],
+        leafColor: ['#15803d', '#22c55e', '#4ade80'][Math.floor(Math.random() * 3)]
     }));
 
     export function drawMenuFireflies(targetCtx, w, h, camX, camY) {
         targetCtx.save();
         for (let i = 0; i < menuFireflies.length; i++) {
             const f = menuFireflies[i];
-            f.x += f.vx;
-            f.y += f.vy;
-            f.phase += 0.04;
+            f.phase += 0.035;
+
+            if (f.type === 'leaf') {
+                f.x += 0.35 + Math.sin(f.phase) * 0.6;
+                f.y += 0.55;
+            } else if (f.type === 'spore') {
+                f.x += 0.2 + Math.sin(f.phase) * 0.3;
+                f.y -= 0.15 + Math.cos(f.phase * 0.8) * 0.2;
+            } else {
+                f.x += f.vx;
+                f.y += f.vy;
+            }
+
             if (f.x < camX - 100) f.x = camX + w + 50;
             if (f.x > camX + w + 100) f.x = camX - 50;
             if (f.y < camY - 50) f.y = camY + h;
@@ -7349,12 +11110,25 @@ export const SKIN_H = 32;
             const screenX = f.x - camX;
             const screenY = f.y - camY;
             if (screenX >= -10 && screenX <= w + 10 && screenY >= -10 && screenY <= h + 10) {
-                const pulse = (Math.sin(f.phase) + 1) * 0.5;
-                if (pulse > 0.08) {
-                    targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.85})`;
+                if (f.type === 'leaf') {
+                    targetCtx.fillStyle = f.leafColor;
+                    targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), 3, 2);
+                    targetCtx.fillStyle = '#166534';
+                    targetCtx.fillRect(Math.floor(screenX + 1), Math.floor(screenY + 1), 2, 2);
+                } else if (f.type === 'spore') {
+                    const pulse = (Math.sin(f.phase) + 1) * 0.5;
+                    targetCtx.fillStyle = 'rgba(254, 240, 138, 0.35)';
+                    targetCtx.fillRect(Math.floor(screenX - 1), Math.floor(screenY - 1), f.size + 2, f.size + 2);
+                    targetCtx.fillStyle = f.color;
                     targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), f.size, f.size);
-                    targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.25})`;
-                    targetCtx.fillRect(Math.floor(screenX - 2), Math.floor(screenY - 2), f.size + 4, f.size + 4);
+                } else {
+                    const pulse = (Math.sin(f.phase) + 1) * 0.5;
+                    if (pulse > 0.08) {
+                        targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.85})`;
+                        targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), f.size, f.size);
+                        targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.25})`;
+                        targetCtx.fillRect(Math.floor(screenX - 2), Math.floor(screenY - 2), f.size + 4, f.size + 4);
+                    }
                 }
             }
         }
@@ -7367,32 +11141,32 @@ export const SKIN_H = 32;
     }
 
     export function generateMenuWorld() {
-        if ((menuWorldInitialized || (typeof window !== 'undefined' && window.menuWorldInitialized)) && menuWorld && menuWorld.blocks && menuWorld.blocks.length === WORLD_WIDTH) {
+        if ((menuWorldInitialized || (typeof window !== 'undefined' && window.menuWorldInitialized)) && menuWorld && menuWorld.blocks && menuWorld.blocks.length === MENU_WORLD_WIDTH && menuWorld.blocks[0]?.length === MENU_WORLD_HEIGHT) {
             return;
         }
 
         menuWorldSeed = (Math.random() * 0xffffffff) >>> 0;
         menuTime = 0.22;
-        const baseH = Math.floor(WORLD_HEIGHT / 2);
-        const terrain = new Array(WORLD_WIDTH);
-        const blocks = new Array(WORLD_WIDTH);
+        const baseH = MENU_SURFACE_Y;
+        const terrain = new Array(MENU_WORLD_WIDTH);
+        const blocks = new Array(MENU_WORLD_WIDTH);
 
-        // 1. Generate full terrain column for all columns (Surface down to WORLD_HEIGHT)
-        for (let x = 0; x < WORLD_WIDTH; x++) {
-            const h = baseH + Math.round(Math.sin(x * 0.035) * 6 + Math.cos(x * 0.07) * 3);
+        // 1. Generate full terrain column for all columns (Surface down to MENU_WORLD_HEIGHT)
+        for (let x = 0; x < MENU_WORLD_WIDTH; x++) {
+            const h = baseH + Math.round(Math.sin(x * 0.04) * 4 + Math.cos(x * 0.08) * 2);
             terrain[x] = h;
-            const col = new Array(WORLD_HEIGHT).fill(IDS.AIR);
+            const col = new Array(MENU_WORLD_HEIGHT).fill(IDS.AIR);
 
             // Grass surface
             col[h] = IDS.GRASS;
 
             // Dirt (3-4 layers below grass)
-            for (let y = h + 1; y < Math.min(WORLD_HEIGHT, h + 4); y++) {
+            for (let y = h + 1; y < Math.min(MENU_WORLD_HEIGHT, h + 4); y++) {
                 col[y] = IDS.DIRT;
             }
 
             // Stone & Ores (filling all the way down through the bottom of the world)
-            for (let y = h + 4; y < WORLD_HEIGHT; y++) {
+            for (let y = h + 4; y < MENU_WORLD_HEIGHT; y++) {
                 // Natural organic cave pockets
                 const caveNoise = Math.sin(x * 0.14 + y * 0.2) + Math.cos(x * 0.18 - y * 0.14);
                 if (y > h + 7 && caveNoise > 1.35) {
@@ -7405,74 +11179,207 @@ export const SKIN_H = 32;
                 else if (r < 0.09) col[y] = IDS.IRON_ORE;
                 else if (y > h + 10 && r < 0.115) col[y] = IDS.GOLD_ORE;
                 else if (y > h + 14 && r < 0.13) col[y] = IDS.DIAMOND_ORE;
+                else if (y > h + 12 && r < 0.14) col[y] = IDS.EMERALD_ORE;
                 else col[y] = IDS.STONE;
-            }
-
-            // Surface foliage: flowers and short grass
-            if (menuRandom() < 0.3) {
-                const flowerR = menuRandom();
-                col[h - 1] = flowerR < 0.35 ? IDS.FLOWER_RED : (flowerR < 0.65 ? IDS.FLOWER_YELLOW : IDS.SHORT_GRASS);
             }
 
             blocks[x] = col;
         }
 
-        // 2. Beautiful Oak trees with seamless bark trunks and full rounded leaf canopies
-        for (let x = 6; x < WORLD_WIDTH - 6; x += 7) {
-            if (menuRandom() < 0.70) {
-                const sy = terrain[x];
-                const treeH = 4 + Math.floor(menuRandom() * 3);
-                // Wood trunk
-                for (let ty = sy - treeH; ty < sy; ty++) {
-                    if (ty >= 0) blocks[x][ty] = IDS.WOOD;
-                }
-                const top = sy - treeH;
+        // 2. Exact in-game Jungle Trees matching buildJungleTree
+        const setTrunk = (bx, by) => {
+            if (bx < 0 || bx >= MENU_WORLD_WIDTH || by < 0 || by >= MENU_WORLD_HEIGHT) return;
+            blocks[bx][by] = IDS.JUNGLE_WOOD;
+            nonCollidableTreeWood.add(`${bx}_${by}`);
+        };
+        const setLeaf = (bx, by) => {
+            if (bx < 0 || bx >= MENU_WORLD_WIDTH || by < 0 || by >= MENU_WORLD_HEIGHT) return;
+            if (blocks[bx][by] === IDS.AIR || blocks[bx][by] === undefined) blocks[bx][by] = IDS.JUNGLE_LEAVES;
+        };
+        const setVine = (bx, by) => {
+            if (bx < 0 || bx >= MENU_WORLD_WIDTH || by < 0 || by >= MENU_WORLD_HEIGHT) return;
+            if (blocks[bx][by] === IDS.AIR || blocks[bx][by] === undefined) blocks[bx][by] = IDS.VINES;
+        };
 
-                // Base canopy layer (width 5, height 2)
-                for (let lx = -2; lx <= 2; lx++) {
-                    const wx = x + lx;
-                    if (wx < 0 || wx >= WORLD_WIDTH) continue;
-                    for (let ly = -1; ly <= 1; ly++) {
-                        const wy = top + ly;
-                        if (wy < 0) continue;
-                        if (Math.abs(lx) === 2 && Math.abs(ly) === 1 && menuRandom() < 0.35) continue;
-                        if (blocks[wx][wy] === IDS.AIR || blocks[wx][wy] === undefined) {
-                            blocks[wx][wy] = IDS.LEAVES;
-                        }
-                    }
-                }
-
-                // Upper dome layer (width 3, height 2)
+        function buildMenuJungleTree(tx, sy, treeType = 'giant') {
+            if (treeType === 'jungle_bush') {
+                setTrunk(tx, sy - 1);
                 for (let lx = -1; lx <= 1; lx++) {
-                    const wx = x + lx;
-                    if (wx < 0 || wx >= WORLD_WIDTH) continue;
-                    for (let ly = -3; ly <= -2; ly++) {
-                        const wy = top + ly;
-                        if (wy < 0) continue;
-                        if (Math.abs(lx) === 1 && ly === -3 && menuRandom() < 0.45) continue;
-                        if (blocks[wx][wy] === IDS.AIR || blocks[wx][wy] === undefined) {
-                            blocks[wx][wy] = IDS.LEAVES;
-                        }
+                    for (let ly = -2; ly <= -1; ly++) {
+                        setLeaf(tx + lx, sy + ly);
                     }
                 }
+                setLeaf(tx, sy - 3);
+                return;
+            }
 
-                // Crown peak top leaf
-                if (top - 4 >= 0 && (blocks[x][top - 4] === IDS.AIR || blocks[x][top - 4] === undefined)) {
-                    blocks[x][top - 4] = IDS.LEAVES;
+            // Giant Jungle Tree: 12 to 20 blocks high (exact match to buildJungleTree)
+            const th = Math.floor(menuRandom() * 9) + 12;
+            const is2x2 = menuRandom() < 0.65;
+            const trunkWidth = is2x2 ? 2 : 1;
+
+            // Grow main trunk
+            for (let i = 1; i <= th; i++) {
+                for (let tw = 0; tw < trunkWidth; tw++) {
+                    setTrunk(tx + tw, sy - i);
+                }
+            }
+
+            // Spreading branch arms midway up (exact match)
+            const branchY1 = sy - Math.floor(th * 0.55);
+            setTrunk(tx - 1, branchY1);
+            setLeaf(tx - 2, branchY1);
+            setLeaf(tx - 2, branchY1 - 1);
+            setLeaf(tx - 1, branchY1 - 1);
+
+            const branchY2 = sy - Math.floor(th * 0.75);
+            setTrunk(tx + trunkWidth, branchY2);
+            setLeaf(tx + trunkWidth + 1, branchY2);
+            setLeaf(tx + trunkWidth + 1, branchY2 - 1);
+            setLeaf(tx + trunkWidth, branchY2 - 1);
+
+            // Broad canopy at top (radius 4 to 6)
+            const top = sy - th;
+            const canopyRadius = is2x2 ? 5 : 4;
+            for (let ly = -4; ly <= 2; ly++) {
+                const layerY = top + ly;
+                const r = canopyRadius - Math.abs(ly + 1);
+                for (let lx = -r; lx <= r + (is2x2 ? 1 : 0); lx++) {
+                    if (Math.abs(lx) === r && Math.abs(ly + 1) >= 2 && menuRandom() < 0.4) continue;
+                    setLeaf(tx + lx, layerY);
+                }
+            }
+
+            // Hanging Vines on trunk sides and under canopy
+            for (let side of [-1, trunkWidth]) {
+                const vineX = tx + side;
+                const startVineY = top + 2;
+                const vineLen = Math.floor(menuRandom() * 6) + 3;
+                for (let v = 0; v < vineLen; v++) {
+                    const vy = startVineY + v;
+                    if (vy < sy - 1) {
+                        setVine(vineX, vy);
+                    }
+                }
+            }
+            // Hanging vines under outer canopy edges
+            for (let offset of [-canopyRadius + 1, canopyRadius + (is2x2 ? 0 : -1)]) {
+                const vineX = tx + offset;
+                const startVineY = top + 3;
+                const vineLen = Math.floor(menuRandom() * 5) + 2;
+                for (let v = 0; v < vineLen; v++) {
+                    const vy = startVineY + v;
+                    if (vy < sy - 1) {
+                        setVine(vineX, vy);
+                    }
                 }
             }
         }
 
-        // 3. Animals
+        let lastTreeX = -999;
+        for (let x = 3; x < MENU_WORLD_WIDTH - 4; x++) {
+            const surfaceY = terrain[x];
+            if (x - lastTreeX >= 3 && menuRandom() < 0.65) {
+                const roll = menuRandom();
+                const treeType = roll < 0.80 ? 'giant' : 'jungle_bush';
+                buildMenuJungleTree(x, surfaceY, treeType);
+                lastTreeX = x + (treeType === 'giant' ? 3 : 1);
+            }
+        }
+
+        // 3. Ground Cover & Understory: Bamboo clumps (2-5 blocks tall), Ferns, Tall & Short Grass
+        for (let x = 0; x < MENU_WORLD_WIDTH; x++) {
+            const h = terrain[x];
+            if (blocks[x][h] === IDS.GRASS && blocks[x][h - 1] === IDS.AIR) {
+                const vegRoll = menuRandom();
+                if (vegRoll < 0.25) {
+                    blocks[x][h - 1] = IDS.FERN;
+                } else if (vegRoll < 0.45) {
+                    blocks[x][h - 1] = IDS.TALL_GRASS;
+                } else if (vegRoll < 0.60) {
+                    blocks[x][h - 1] = IDS.SHORT_GRASS;
+                } else if (vegRoll < 0.75) {
+                    // Bamboo shoot/stalk (2-5 blocks tall)
+                    const bambooHeight = Math.floor(menuRandom() * 4) + 2;
+                    for (let b = 1; b <= bambooHeight; b++) {
+                        if (h - b >= 0 && blocks[x][h - b] === IDS.AIR) {
+                            blocks[x][h - b] = IDS.BAMBOO;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Wild Melon Patches (exact match to generateWorld)
+        for (let x = 5; x < MENU_WORLD_WIDTH - 5; x++) {
+            if (menuRandom() < 0.48) {
+                const sy = terrain[x];
+                if (sy && blocks[x][sy] === IDS.GRASS && blocks[x][sy - 1] === IDS.AIR) {
+                    const patchSize = Math.floor(menuRandom() * 4) + 2;
+                    for (let p = 0; p < patchSize; p++) {
+                        const mx = x + (p % 3) - 1;
+                        if (mx >= 2 && mx < MENU_WORLD_WIDTH - 2) {
+                            const my = terrain[mx];
+                            if (my && blocks[mx][my] === IDS.GRASS && blocks[mx][my - 1] === IDS.AIR) {
+                                blocks[mx][my - 1] = IDS.MELON;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5. Animals & Birds: Colorful Parrots, Pigeons, Sheep, Pigs, Cows, Chickens
         const animals = [];
-        ['sheep', 'pig', 'chicken', 'cow', 'sheep', 'pig', 'chicken', 'cow'].forEach((type, index) => {
-            const x = 12 + menuRandom() * (WORLD_WIDTH - 24);
-            const entity = type === 'sheep' ? new Sheep(x * TILE_SIZE, 0) : type === 'pig' ? new Pig(x * TILE_SIZE, 0) : type === 'cow' ? new Cow(x * TILE_SIZE, 0) : new Chicken(x * TILE_SIZE, 0);
+        const animalRoster = [
+            { type: 'parrot', variant: 0 },
+            { type: 'parrot', variant: 1 },
+            { type: 'pigeon', variant: null },
+            { type: 'parrot', variant: 2 },
+            { type: 'parrot', variant: 3 },
+            { type: 'pigeon', variant: null },
+            { type: 'sheep', variant: null },
+            { type: 'pig', variant: null },
+            { type: 'cow', variant: null },
+            { type: 'chicken', variant: null },
+            { type: 'parrot', variant: 0 },
+            { type: 'parrot', variant: 2 },
+            { type: 'pigeon', variant: null },
+            { type: 'sheep', variant: null },
+            { type: 'pig', variant: null },
+            { type: 'chicken', variant: null },
+            { type: 'cow', variant: null },
+            { type: 'pigeon', variant: null }
+        ];
+
+        animalRoster.forEach((spec, index) => {
+            let x;
+            if (index < 6) {
+                x = 10 + (index * 4) + menuRandom() * 3;
+            } else {
+                x = 8 + menuRandom() * (MENU_WORLD_WIDTH - 16);
+            }
+
+            let entity;
+            if (spec.type === 'parrot') {
+                entity = new Parrot(x * TILE_SIZE, 0, spec.variant);
+            } else if (spec.type === 'pigeon') {
+                entity = new Pigeon(x * TILE_SIZE, 0);
+            } else if (spec.type === 'sheep') {
+                entity = new Sheep(x * TILE_SIZE, 0);
+            } else if (spec.type === 'pig') {
+                entity = new Pig(x * TILE_SIZE, 0);
+            } else if (spec.type === 'cow') {
+                entity = new Cow(x * TILE_SIZE, 0);
+            } else {
+                entity = new Chicken(x * TILE_SIZE, 0);
+            }
+
             entity.dir = menuRandom() > 0.5 ? 1 : -1;
-            entity.menuSpeed = 0.7 + menuRandom() * 0.4;
             entity.y = (terrain[Math.floor(x)] || baseH) * TILE_SIZE - entity.height;
             entity.isGrounded = true;
-            animals.push({ type, entity, timer: 60 + menuRandom() * 120 });
+            entity.isMenuEntity = true;
+            animals.push({ type: spec.type, entity });
         });
         menuEntities = animals;
 
@@ -7481,14 +11388,18 @@ export const SKIN_H = 32;
             surfaceHeights: terrain,
             blocks,
             animals,
-            width: WORLD_WIDTH
+            width: MENU_WORLD_WIDTH
         };
         menuWorldInitialized = true;
-        if (typeof window !== 'undefined') window.menuWorldInitialized = true;
+        if (typeof window !== 'undefined') {
+            window.menuWorld = menuWorld;
+            window.menuEntities = animals;
+            window.menuWorldInitialized = true;
+        }
     }
 
     export function drawMenuBackground() {
-        if (!menuWorldInitialized || !menuWorld.blocks || !menuWorld.blocks.length) {
+        if (!menuWorldInitialized || !menuWorld.blocks || !menuWorld.blocks.length || menuWorld.blocks.length !== MENU_WORLD_WIDTH) {
             generateMenuWorld();
         }
         const now = performance.now();
@@ -7500,7 +11411,7 @@ export const SKIN_H = 32;
         const pointerY = Math.max(-1, Math.min(1, (mouse.clientY - window.innerHeight / 2) / Math.max(1, window.innerHeight / 2)));
         menuParallaxX += (pointerX * 24 - menuParallaxX) * 0.08;
         menuParallaxY += (pointerY * 14 - menuParallaxY) * 0.08;
-        menuCamX = (menuCamX + motion * 0.035) % (WORLD_WIDTH * TILE_SIZE);
+        menuCamX = (menuCamX + motion * 0.035) % (MENU_WORLD_WIDTH * TILE_SIZE);
         if (!menuBgCanvas && typeof document !== 'undefined') menuBgCanvas = document.getElementById('menuBgCanvas');
         if (menuBgCanvas && !menuCtx) menuCtx = menuBgCanvas.getContext('2d', { alpha: false });
         if (!menuBgCanvas || !menuCtx) return;
@@ -7516,10 +11427,30 @@ export const SKIN_H = 32;
         // 2. Parallax Mountain Ridges (Ultra-fast vector path filling)
         drawMountains(menuCtx, menuCamX, height, menuTime, width, menuParallaxX, menuParallaxY);
 
-        // 3. Drifting Clouds
+        // 3. Tropical Jungle Humidity Mist (Unconditional Fabulous Shader Layer)
+        menuCtx.save();
+        const mistLayers = [
+            { speed: 0.05, alpha: 0.22, yOffset: 0.18, hRatio: 0.65 },
+            { speed: 0.10, alpha: 0.18, yOffset: 0.35, hRatio: 0.60 },
+            { speed: 0.03, alpha: 0.15, yOffset: 0.05, hRatio: 0.90 }
+        ];
+        for (let l = 0; l < mistLayers.length; l++) {
+            const layer = mistLayers[l];
+            const a = layer.alpha;
+            const fogGrad = menuCtx.createLinearGradient(0, height * layer.yOffset, 0, height * (layer.yOffset + layer.hRatio));
+            fogGrad.addColorStop(0, 'rgba(180, 245, 205, 0)');
+            fogGrad.addColorStop(0.3, `rgba(160, 240, 195, ${a.toFixed(3)})`);
+            fogGrad.addColorStop(0.7, `rgba(140, 235, 180, ${(a * 1.15).toFixed(3)})`);
+            fogGrad.addColorStop(1, 'rgba(180, 245, 205, 0)');
+            menuCtx.fillStyle = fogGrad;
+            menuCtx.fillRect(0, height * layer.yOffset, width, height * layer.hRatio);
+        }
+        menuCtx.restore();
+
+        // 4. Drifting Clouds
         clouds.forEach(c => c.draw(menuCtx, menuCamX * 0.6));
 
-        // 4. Atmospheric Sun Glow / Godrays
+        // 5. Atmospheric Sun Glow
         const lightStrength = menuTime > 0.08 && menuTime < 0.42 ? 0.22 : (menuTime > 0.84 || menuTime < 0.08 ? 0.12 : 0.03);
         const sunX = width * 0.72 + menuParallaxX * 0.3;
         const sunY = height * 0.20 + menuParallaxY * 0.3;
@@ -7533,18 +11464,19 @@ export const SKIN_H = 32;
         menuCtx.fillRect(0, 0, width, height);
         menuCtx.restore();
 
-        // 5. Foreground Living World (Trees, Foliage, Grass, Dirt, Stone & Ore Strata)
+        // 6. Foreground Living World (Trees, Foliage, Grass, Dirt, Stone & Ore Strata)
+        // Camera is permanently anchored to the tropical jungle surface layer at MENU_SURFACE_Y
         const cameraX = menuCamX;
-        const cameraY = (WORLD_HEIGHT * TILE_SIZE / 2) - height * 0.38 + menuParallaxY * 0.8;
+        const cameraY = (MENU_SURFACE_Y * TILE_SIZE) - height * 0.52 + menuParallaxY * 0.8;
         const startCol = Math.floor(cameraX / TILE_SIZE) - 1;
         const endCol = startCol + Math.ceil(width / TILE_SIZE) + 2;
         const startRow = Math.max(0, Math.floor(cameraY / TILE_SIZE) - 2);
-        const endRow = Math.min(WORLD_HEIGHT - 1, Math.ceil((cameraY + height) / TILE_SIZE) + 1);
+        const endRow = Math.min(MENU_WORLD_HEIGHT - 1, Math.ceil((cameraY + height) / TILE_SIZE) + 1);
 
         menuCtx.imageSmoothingEnabled = false;
 
         for (let x = startCol; x <= endCol; x++) {
-            const wrappedX = ((x % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH;
+            const wrappedX = ((x % MENU_WORLD_WIDTH) + MENU_WORLD_WIDTH) % MENU_WORLD_WIDTH;
             const drawX = Math.round(x * TILE_SIZE - cameraX);
             const col = menuWorld.blocks?.[wrappedX];
             if (!col) continue;
@@ -7561,47 +11493,85 @@ export const SKIN_H = 32;
             }
         }
 
-        // 6. Draw Living Animated Animals (Smooth stepping, zero teleportation)
+        // 7. Living Animated Animals (Authentic in-game physics, AI, jumping, walking leg swings & bird flight)
         if (menuEntities && menuEntities.length) {
             menuEntities.forEach(entry => {
                 const entity = entry.entity;
-                entity.timer = (entity.timer || 60) - motion * 0.06;
-                if (entity.timer <= 0) {
-                    entity.dir = menuRandom() > 0.5 ? 1 : -1;
-                    if (menuRandom() < 0.35) entity.dir = 0;
-                    entity.timer = 60 + menuRandom() * 140;
-                }
+                entity.isMenuEntity = true;
                 
-                const curGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.width / 2) / TILE_SIZE)));
-                const groundY = (menuWorld.terrain && menuWorld.terrain[curGx] !== undefined) ? menuWorld.terrain[curGx] : Math.floor(WORLD_HEIGHT / 2);
-
-                if (entity.dir !== 0) {
-                    const nextGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((entity.x + entity.dir * 12 + entity.width / 2) / TILE_SIZE)));
-                    const nextGroundY = (menuWorld.terrain && menuWorld.terrain[nextGx] !== undefined) ? menuWorld.terrain[nextGx] : groundY;
-                    // Steep cliff or world bounds: turn around naturally
-                    if (Math.abs(nextGroundY - groundY) > 1 || nextGx <= 2 || nextGx >= WORLD_WIDTH - 3) {
-                        entity.dir = -entity.dir;
-                    }
+                // Turn around smoothly before hitting world boundaries
+                if (entity.x < 3 * TILE_SIZE) {
+                    entity.dir = 1;
+                    entity.vx = Math.abs(entity.speed || entity.baseSpeed || 1);
+                    entity.x = 3 * TILE_SIZE;
+                } else if (entity.x > (MENU_WORLD_WIDTH - 4) * TILE_SIZE) {
+                    entity.dir = -1;
+                    entity.vx = -Math.abs(entity.speed || entity.baseSpeed || 1);
+                    entity.x = (MENU_WORLD_WIDTH - 4) * TILE_SIZE;
                 }
 
-                entity.x += entity.dir * (entity.menuSpeed || 0.8) * (motion * 0.06);
-                entity.x = Math.max(TILE_SIZE * 2, Math.min((WORLD_WIDTH - 3) * TILE_SIZE, entity.x));
+                // Full in-game AI, physics, gravity, obstacle jumps & flight
+                entity.update();
 
-                const targetY = groundY * TILE_SIZE - entity.height;
-                if (entity.y === undefined || Math.abs(entity.y - targetY) > TILE_SIZE * 3) {
-                    entity.y = targetY;
-                } else {
-                    entity.y += (targetY - entity.y) * 0.20;
+                // Safety fallback if entity goes below terrain
+                const curGx = Math.max(0, Math.min(MENU_WORLD_WIDTH - 1, Math.floor((entity.x + entity.width / 2) / TILE_SIZE)));
+                const groundY = (menuWorld.terrain && menuWorld.terrain[curGx] !== undefined) ? menuWorld.terrain[curGx] : MENU_SURFACE_Y;
+                if (entity.y > (groundY + 2) * TILE_SIZE) {
+                    entity.y = groundY * TILE_SIZE - entity.height;
+                    entity.vy = 0;
+                    entity.isGrounded = true;
                 }
 
                 entity.draw(menuCtx, cameraX, cameraY);
             });
         }
 
-        // 7. Glowing Animated Fireflies
+        // 8. Tropical Canopy Sunbeams / Godrays (Unconditional Fabulous Shader)
+        menuCtx.save();
+        menuCtx.globalCompositeOperation = 'lighter';
+        const numMenuRays = 6;
+        const baseRaySpacing = width / (numMenuRays - 1);
+        const rayParallaxOffset = (cameraX * 0.12) % baseRaySpacing;
+        const rayPixelStep = 8;
+        const raySliceHeight = 16;
+        const rayTilt = 0.18;
+        const rayTime = now * 0.001;
+
+        for (let i = 0; i < numMenuRays; i++) {
+            const rayPulse = Math.sin(rayTime * 1.2 + i * 1.5) * 0.5 + 0.5;
+            const driftX = Math.floor(Math.sin(rayTime * 0.6 + i * 0.8) * 24 / rayPixelStep) * rayPixelStep;
+            const topCenterX = Math.floor((i * baseRaySpacing - rayParallaxOffset + driftX) / rayPixelStep) * rayPixelStep;
+            const topHalfWidth = 26 + Math.floor(Math.sin(i * 1.8) * 8 / rayPixelStep) * rayPixelStep;
+            const bottomHalfWidth = topHalfWidth * 1.6;
+
+            const baseAlpha = 0.024 + rayPulse * 0.014;
+            const r = 230, g = 255, b = 145; // Tropical canopy sunbeams
+
+            for (let y = 0; y < height; y += raySliceHeight) {
+                const yRatio = y / height;
+                const fade = Math.max(0, 1.0 - yRatio * 0.85);
+                const sliceAlpha = baseAlpha * fade;
+                if (sliceAlpha <= 0.002) continue;
+
+                const sliceCenterX = Math.floor((topCenterX + rayTilt * y) / rayPixelStep) * rayPixelStep;
+                const sliceHalfWidth = Math.floor((topHalfWidth + yRatio * (bottomHalfWidth - topHalfWidth)) / rayPixelStep) * rayPixelStep;
+
+                menuCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${sliceAlpha.toFixed(4)})`;
+                menuCtx.fillRect(sliceCenterX - sliceHalfWidth, y, sliceHalfWidth * 2, raySliceHeight);
+            }
+        }
+        menuCtx.restore();
+
+        // 9. Floating Bioluminescent Spores, Jungle Leaves & Fireflies (Fabulous Atmosphere)
         drawMenuFireflies(menuCtx, width, height, cameraX, cameraY);
 
-        // 8. Cinematic Dark Edge Vignette
+        // 10. Tropical Jungle Biome Color Grading (Unconditional Fabulous Shader)
+        menuCtx.save();
+        menuCtx.fillStyle = 'rgba(34, 197, 94, 0.15)'; // Vibrant tropical emerald-jade canopy grade
+        menuCtx.fillRect(0, 0, width, height);
+        menuCtx.restore();
+
+        // 11. Cinematic Dark Edge Vignette
         const vignette = menuCtx.createRadialGradient(width / 2, height * 0.46, height * 0.28, width / 2, height * 0.46, height * 0.85);
         vignette.addColorStop(0, 'rgba(0,0,0,0)');
         vignette.addColorStop(0.7, 'rgba(4,8,14,0.30)');
@@ -7609,16 +11579,35 @@ export const SKIN_H = 32;
         menuCtx.fillStyle = vignette;
         menuCtx.fillRect(0, 0, width, height);
         menuLastFrame = now;
+
+        if (!menuBackgroundRendered) {
+            menuBackgroundRendered = true;
+            if (typeof window !== 'undefined') window.menuBackgroundRendered = true;
+            dismissBootLoadingScreen();
+        }
     }
 
     export function getWorldSurfaceY(x) {
         const curWorld = world || window.world;
         if (!curWorld || !Array.isArray(curWorld) || x < 0 || x >= WORLD_WIDTH) return WORLD_HEIGHT;
         const curHeights = (surfaceHeights && surfaceHeights.length === WORLD_WIDTH) ? surfaceHeights : window.surfaceHeights;
-        if (curHeights && curHeights.length === WORLD_WIDTH && Number.isFinite(curHeights[x])) return curHeights[x];
+        if (curHeights && curHeights.length === WORLD_WIDTH && Number.isFinite(curHeights[x])) {
+            const recordedY = curHeights[x];
+            const blockAtRecorded = curWorld[x]?.[recordedY];
+            // If the recorded height points to valid ground/terrain (not air, tree, or foliage), use it!
+            if (blockAtRecorded !== undefined && !isNonSurfaceBlock(blockAtRecorded)) {
+                return recordedY;
+            }
+        }
+        // Fallback and self-healing: scan downward for the first true solid terrain block
         for (let y = 0; y < WORLD_HEIGHT; y++) {
             const block = curWorld[x]?.[y];
-            if (block !== undefined && block !== IDS.AIR && block !== IDS.LEAVES && block !== IDS.WOOD && block !== IDS.SAPLING && block !== IDS.TORCH) return y;
+            if (block !== undefined && !isNonSurfaceBlock(block)) {
+                if (curHeights && curHeights.length === WORLD_WIDTH) {
+                    curHeights[x] = y; // self-heal cache in place
+                }
+                return y;
+            }
         }
         return WORLD_HEIGHT;
     }
@@ -7627,7 +11616,46 @@ export const SKIN_H = 32;
         const curPlayer = player || window.player;
         const curWorld = world || window.world;
         if (!curPlayer || !curWorld) return 0;
-        const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((curPlayer.x || 0) + (curPlayer.width || 24) / 2) / TILE_SIZE)));
+
+        const playerCenterX = (curPlayer.x || 0) + (curPlayer.width || 24) / 2;
+        const playerFeetWorldY = (curPlayer.y || 0) + (curPlayer.height || 48);
+        const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(playerCenterX / TILE_SIZE)));
+        const playerHeadGridY = Math.max(0, Math.floor((curPlayer.y || 0) / TILE_SIZE));
+
+        // 1. Raycast upward directly above player to test for open sky access vs solid subterranean ceiling
+        const leftCol = Math.max(0, Math.floor(((curPlayer.x || 0) + 2) / TILE_SIZE));
+        const rightCol = Math.min(WORLD_WIDTH - 1, Math.floor(((curPlayer.x || 0) + (curPlayer.width || 24) - 2) / TILE_SIZE));
+
+        let maxCeilingThickness = 0;
+        let hasOpenSky = false;
+
+        for (let cx = leftCol; cx <= rightCol; cx++) {
+            let solidCount = 0;
+            for (let y = playerHeadGridY; y >= 0; y--) {
+                const b = curWorld[cx]?.[y];
+                if (b !== undefined && !isNonSurfaceBlock(b)) {
+                    solidCount++;
+                }
+            }
+            if (solidCount === 0) {
+                hasOpenSky = true;
+            }
+            if (solidCount > maxCeilingThickness) {
+                maxCeilingThickness = solidCount;
+            }
+        }
+
+        // Direct open sky or only foliage/canopy/air above means player is definitely not in a subterranean cave
+        if (hasOpenSky) {
+            return 0;
+        }
+
+        // A thin surface structure (e.g. 1-2 block wooden bridge or roof) does not constitute a subterranean cave
+        if (maxCeilingThickness < 3) {
+            return 0;
+        }
+
+        // 2. Measure depth below the local terrain surface
         let avgSurfaceY = 0;
         let count = 0;
         for (let ox = -2; ox <= 2; ox++) {
@@ -7636,9 +11664,17 @@ export const SKIN_H = 32;
             count++;
         }
         avgSurfaceY = (avgSurfaceY / count) * TILE_SIZE;
-        const playerFeetWorldY = (curPlayer.y || 0) + (curPlayer.height || 48);
+
         const caveDepthTiles = (playerFeetWorldY - avgSurfaceY) / TILE_SIZE;
-        return Math.max(0, Math.min(1, (caveDepthTiles - CAVE_SKY_START_TILES) / CAVE_SKY_FADE_TILES));
+        if (caveDepthTiles <= CAVE_SKY_START_TILES) {
+            return 0;
+        }
+
+        // Smoothly fade from 0 to 1 as player ventures deeper into subterranean cavern
+        const depthFactor = Math.max(0, Math.min(1, (caveDepthTiles - CAVE_SKY_START_TILES) / CAVE_SKY_FADE_TILES));
+        const ceilingFactor = Math.max(0, Math.min(1, (maxCeilingThickness - 2) / 3));
+
+        return Math.min(depthFactor, ceilingFactor);
     }
 
     export function getSnowBiomeRatio(centerGridX, radius = 18) {
@@ -7823,11 +11859,14 @@ export const SKIN_H = 32;
     export const MAX_FABULOUS_PARTICLES = 90;
 
     export function getActiveBiomeAt(gridX) {
-        if (!Array.isArray(world) || !Array.isArray(surfaceHeights) || surfaceHeights.length === 0) return 'plains';
         const gx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(gridX)));
+        if (worldBiomes && worldBiomes[gx]) return worldBiomes[gx];
+        if (typeof window !== 'undefined' && window.worldBiomes && window.worldBiomes[gx]) return window.worldBiomes[gx];
+        if (!Array.isArray(world) || !Array.isArray(surfaceHeights) || surfaceHeights.length === 0) return 'plains';
         let snowCount = 0;
         let sandCount = 0;
         let woodCount = 0;
+        let jungleCount = 0;
         const checkRadius = 8;
         const startX = Math.max(0, gx - checkRadius);
         const endX = Math.min(WORLD_WIDTH - 1, gx + checkRadius);
@@ -7839,23 +11878,32 @@ export const SKIN_H = 32;
             if (surfY < WORLD_HEIGHT) {
                 let b0 = world[x]?.[surfY];
                 let b1 = world[x]?.[surfY + 1];
+                let bAbove = world[x]?.[surfY - 1];
                 if (b0 === IDS.SNOW || b0 === IDS.ICE || b1 === IDS.SNOW || b1 === IDS.ICE) snowCount++;
                 else if (b0 === IDS.SAND || b1 === IDS.SAND) sandCount++;
-                else if (b0 === IDS.WOOD || b0 === IDS.LEAVES || b1 === IDS.WOOD) woodCount++;
+                else if (b0 === IDS.JUNGLE_WOOD || b0 === IDS.JUNGLE_LEAVES || b0 === IDS.BAMBOO || b0 === IDS.FERN || b0 === IDS.MELON || b0 === IDS.VINES || b1 === IDS.JUNGLE_WOOD || b1 === IDS.JUNGLE_LEAVES || bAbove === IDS.BAMBOO || bAbove === IDS.FERN || bAbove === IDS.MELON) jungleCount++;
+                else if (b0 === IDS.WOOD || b0 === IDS.LEAVES || b1 === IDS.WOOD || bAbove === IDS.WOOD || bAbove === IDS.LEAVES) woodCount++;
             }
         }
 
+        if (jungleCount >= 1) return 'jungle';
         if (totalChecked > 0 && snowCount / totalChecked > 0.30) return 'snow';
         if (totalChecked > 0 && sandCount / totalChecked > 0.30) return 'desert';
-        if (woodCount >= 2) return 'forest';
+        if (woodCount >= 1) return 'forest';
         const surfY = surfaceHeights[gx] !== undefined ? surfaceHeights[gx] : getWorldSurfaceY(gx);
-        if (surfY < 48) return 'mountains';
+        if (surfY < Math.floor(WORLD_HEIGHT * 0.32) || (world[gx]?.[surfY] === IDS.STONE)) return 'mountains';
         return 'plains';
     }
 
     export function initFabulousParticles() {
-        if (fabulousAmbientParticles.length > 0) return;
-        for (let i = 0; i < MAX_FABULOUS_PARTICLES; i++) {
+        const budget = getFabulousParticleBudget();
+        if (fabulousAmbientParticles.length >= budget) {
+            if (fabulousAmbientParticles.length > budget) {
+                fabulousAmbientParticles.length = budget;
+            }
+            return;
+        }
+        for (let i = fabulousAmbientParticles.length; i < budget; i++) {
             fabulousAmbientParticles.push({
                 x: Math.random() * 2000,
                 y: Math.random() * 1200,
@@ -7874,7 +11922,7 @@ export const SKIN_H = 32;
     export let cachedIsSnowy = false;
 
     export function updateBiomeAtmosphere() {
-        if (!fabulousGraphics || !player) {
+        if (!fabulousGraphics || !fabulousConfig.colorGrading || !player) {
             currentBiomeHue.a = 0;
             currentFogDensity = 0;
             return;
@@ -7882,7 +11930,7 @@ export const SKIN_H = 32;
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const playerFeetGridY = ((player.y || 0) + (player.height || 48)) / TILE_SIZE;
         const surfY = getWorldSurfaceY(playerGridX);
-        const isUnderground = playerFeetGridY > surfY + CAVE_SKY_START_TILES;
+        const isUnderground = playerFeetGridY > surfY + CAVE_SKY_START_TILES && caveSkyOpacity > 0.15;
 
         if (playerGridX !== cachedBiomeGridX || frameCount % 15 === 0) {
             cachedBiomeGridX = playerGridX;
@@ -7901,31 +11949,46 @@ export const SKIN_H = 32;
             targetR = 195; targetG = 230; targetB = 255; targetA = 0.16;
             targetFog = 0.55;
         } else if (activeBiome === 'desert') {
-            if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+            if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
                 targetR = 18; targetG = 32; targetB = 76; targetA = 0.14;
             } else {
                 targetR = 255; targetG = 175; targetB = 45; targetA = 0.16;
             }
+        } else if (activeBiome === 'jungle') {
+            // Tropical Jungle: Rich lush emerald-jade canopy grade with warm humidity mist
+            if (timeOfDay >= 0.58 && timeOfDay < 0.68) {
+                // Tropical Sunset: warm mango amber with humid glow
+                targetR = 255; targetG = 145; targetB = 35; targetA = 0.20;
+                targetFog = 0.25;
+            } else if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
+                // Rainforest Night: deep moonlit indigo-teal
+                targetR = 12; targetG = 45; targetB = 68; targetA = 0.17;
+                targetFog = 0.18;
+            } else {
+                // Daytime: vibrant tropical emerald-jade canopy filtering
+                targetR = 34; targetG = 197; targetB = 94; targetA = 0.17;
+                targetFog = 0.22;
+            }
         } else if (activeBiome === 'forest') {
             // Plain Woods: Rich lush emerald canopy grade with golden sun accents
-            if (timeOfDay >= 0.36 && timeOfDay < 0.48) {
+            if (timeOfDay >= 0.58 && timeOfDay < 0.68) {
                 targetR = 255; targetG = 155; targetB = 60; targetA = 0.18;
-            } else if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+            } else if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
                 targetR = 18; targetG = 38; targetB = 84; targetA = 0.15;
             } else {
                 targetR = 75; targetG = 215; targetB = 95; targetA = 0.14;
             }
         } else if (activeBiome === 'mountains') {
-            if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+            if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
                 targetR = 16; targetG = 28; targetB = 68; targetA = 0.13;
             } else {
                 targetR = 155; targetG = 190; targetB = 250; targetA = 0.11;
             }
         } else {
             // Open Plains: Warm sun-drenched golden-meadow tint
-            if (timeOfDay >= 0.36 && timeOfDay < 0.48) {
+            if (timeOfDay >= 0.58 && timeOfDay < 0.68) {
                 targetR = 255; targetG = 160; targetB = 65; targetA = 0.18;
-            } else if (timeOfDay >= 0.48 && timeOfDay < 0.84) {
+            } else if (timeOfDay >= 0.68 && timeOfDay < 0.90) {
                 targetR = 20; targetG = 42; targetB = 90; targetA = 0.15;
             } else {
                 targetR = 145; targetG = 225; targetB = 85; targetA = 0.13;
@@ -7946,7 +12009,7 @@ export const SKIN_H = 32;
     }
 
     export function drawBiomeGrading(targetCtx, w, h) {
-        if (!fabulousGraphics || currentBiomeHue.a <= 0.005 || w <= 0 || h <= 0) return;
+        if (!fabulousGraphics || !fabulousConfig.colorGrading || currentBiomeHue.a <= 0.005 || w <= 0 || h <= 0) return;
         targetCtx.save();
         targetCtx.fillStyle = `rgba(${Math.round(currentBiomeHue.r)}, ${Math.round(currentBiomeHue.g)}, ${Math.round(currentBiomeHue.b)}, ${currentBiomeHue.a.toFixed(3)})`;
         targetCtx.fillRect(0, 0, w, h);
@@ -7954,8 +12017,9 @@ export const SKIN_H = 32;
     }
 
     export function drawSnowFog(targetCtx, w, h, camX) {
-        if (!fabulousGraphics || currentFogDensity <= 0.01 || w <= 0 || h <= 0) return;
+        if (!fabulousGraphics || !fabulousConfig.volumetricFog || currentFogDensity <= 0.01 || w <= 0 || h <= 0) return;
         targetCtx.save();
+        const isJungle = cachedActiveBiome === 'jungle';
         const layers = [
             { speed: 0.8, alpha: 0.28, yOffset: 0.15, hRatio: 0.7 },
             { speed: 1.4, alpha: 0.22, yOffset: 0.35, hRatio: 0.65 },
@@ -7964,12 +12028,19 @@ export const SKIN_H = 32;
 
         for (let l = 0; l < layers.length; l++) {
             const layer = layers[l];
-            const a = layer.alpha * currentFogDensity;
+            const a = layer.alpha * currentFogDensity * (isJungle ? 0.70 : 1.0);
             const fogGrad = targetCtx.createLinearGradient(0, h * layer.yOffset, 0, h * (layer.yOffset + layer.hRatio));
-            fogGrad.addColorStop(0, `rgba(230, 245, 255, 0)`);
-            fogGrad.addColorStop(0.3, `rgba(225, 242, 255, ${a.toFixed(3)})`);
-            fogGrad.addColorStop(0.7, `rgba(215, 238, 255, ${(a * 1.2).toFixed(3)})`);
-            fogGrad.addColorStop(1, `rgba(230, 245, 255, 0)`);
+            if (isJungle) {
+                fogGrad.addColorStop(0, `rgba(180, 245, 205, 0)`);
+                fogGrad.addColorStop(0.3, `rgba(160, 240, 195, ${a.toFixed(3)})`);
+                fogGrad.addColorStop(0.7, `rgba(140, 235, 180, ${(a * 1.15).toFixed(3)})`);
+                fogGrad.addColorStop(1, `rgba(180, 245, 205, 0)`);
+            } else {
+                fogGrad.addColorStop(0, `rgba(230, 245, 255, 0)`);
+                fogGrad.addColorStop(0.3, `rgba(225, 242, 255, ${a.toFixed(3)})`);
+                fogGrad.addColorStop(0.7, `rgba(215, 238, 255, ${(a * 1.2).toFixed(3)})`);
+                fogGrad.addColorStop(1, `rgba(230, 245, 255, 0)`);
+            }
 
             targetCtx.fillStyle = fogGrad;
             targetCtx.fillRect(0, h * layer.yOffset, w, h * layer.hRatio);
@@ -7978,7 +12049,7 @@ export const SKIN_H = 32;
     }
 
     export function drawVignette(targetCtx, w, h) {
-        if (!showVignette || (!fabulousGraphics && !advancedGraphics) || w <= 0 || h <= 0) return;
+        if (!showVignette || (!fabulousGraphics && !advancedGraphics) || (fabulousGraphics && !fabulousConfig.vignette) || w <= 0 || h <= 0) return;
         targetCtx.save();
         const maxDim = Math.hypot(w / 2, h / 2);
         const vigGrad = targetCtx.createRadialGradient(w / 2, h / 2, Math.max(1, maxDim * 0.42), w / 2, h / 2, Math.max(2, maxDim));
@@ -7993,11 +12064,10 @@ export const SKIN_H = 32;
     }
 
     export function drawDesertHeatShimmer(targetCtx, w, h, camX) {
-        if (!fabulousGraphics || caveSkyOpacity > 0.5 || w <= 0 || h <= 0 || !player) return;
+        if (!fabulousGraphics || !fabulousConfig.heatShimmer || caveSkyOpacity > 0.5 || w <= 0 || h <= 0 || !player) return;
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const activeBiome = getActiveBiomeAt(playerGridX);
-        if (activeBiome !== 'desert' || timeOfDay < 0.08 || timeOfDay > 0.44) return;
-
+        if (activeBiome !== 'desert' || timeOfDay < 0.08 || timeOfDay > 0.58) return;
         targetCtx.save();
         targetCtx.fillStyle = 'rgba(255, 210, 110, 0.06)';
         const numWaves = 4;
@@ -8009,20 +12079,20 @@ export const SKIN_H = 32;
     }
 
     export function drawForestGodRays(targetCtx, w, h, camX, camY) {
-        if (!fabulousGraphics || caveSkyOpacity > 0.45 || w <= 0 || h <= 0 || !player) return;
+        if (!fabulousGraphics || !fabulousConfig.godRays || caveSkyOpacity > 0.45 || w <= 0 || h <= 0 || !player) return;
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const activeBiome = getActiveBiomeAt(playerGridX);
-        if (activeBiome !== 'forest' && activeBiome !== 'plains') return;
+        if (activeBiome !== 'forest' && activeBiome !== 'plains' && activeBiome !== 'jungle') return;
 
         // Intermittent presence: rays will not always appear (fades in and out during sunny intervals)
         const rayCycle = Math.sin(frameCount * 0.0018 + playerGridX * 0.05);
         if (rayCycle < 0.35) return;
         const presence = Math.max(0, Math.min(1.0, (rayCycle - 0.35) / 0.65));
 
-        const isDaytime = (timeOfDay > 0.88 || timeOfDay < 0.48);
-        const isSunset = (timeOfDay >= 0.38 && timeOfDay < 0.48);
-        const isSunrise = (timeOfDay >= 0.88 || timeOfDay <= 0.06);
-        const isNight = (timeOfDay >= 0.48 && timeOfDay < 0.88);
+        const isDaytime = (timeOfDay >= 0.90 || timeOfDay < 0.58);
+        const isSunset = (timeOfDay >= 0.58 && timeOfDay < 0.68);
+        const isSunrise = (timeOfDay >= 0.90 || timeOfDay <= 0.04);
+        const isNight = (timeOfDay >= 0.68 && timeOfDay < 0.90);
 
         // Subtle intensity based on daylight, presence & caveSkyOpacity
         const skyClear = Math.max(0, 1.0 - caveSkyOpacity * 2.2) * presence;
@@ -8034,18 +12104,18 @@ export const SKIN_H = 32;
         // Calculate sun/moon ray tilt angle across the sky
         let tilt = 0;
         if (isDaytime) {
-            if (timeOfDay > 0.88) {
-                tilt = 0.40 - ((timeOfDay - 0.88) / 0.12) * 0.30;
-            } else if (timeOfDay <= 0.20) {
-                tilt = 0.10 - (timeOfDay / 0.20) * 0.15;
+            if (timeOfDay >= 0.90) {
+                tilt = 0.40 - ((timeOfDay - 0.90) / 0.10) * 0.25;
+            } else if (timeOfDay <= 0.30) {
+                tilt = 0.15 - (timeOfDay / 0.30) * 0.20;
             } else {
-                tilt = -0.05 - ((timeOfDay - 0.20) / 0.28) * 0.40;
+                tilt = -0.05 - ((timeOfDay - 0.30) / 0.28) * 0.40;
             }
         } else if (isNight) {
-            tilt = Math.sin((timeOfDay - 0.5) * Math.PI * 3) * 0.20;
+            tilt = Math.sin((timeOfDay - 0.79) * Math.PI * 3) * 0.20;
         }
 
-        const numRays = 5;
+        const numRays = (activeBiome === 'jungle') ? 6 : 5;
         const baseSpacing = w / (numRays - 1);
         const parallaxOffset = (camX * 0.12) % baseSpacing;
         const pixelStep = 8;
@@ -8064,13 +12134,20 @@ export const SKIN_H = 32;
 
             if (isSunset) {
                 baseAlpha = (0.018 + rayPulse * 0.012) * skyClear;
-                r = 255; g = 165; b = 80;
+                r = (activeBiome === 'jungle') ? 255 : 255;
+                g = (activeBiome === 'jungle') ? 175 : 165;
+                b = (activeBiome === 'jungle') ? 70 : 80;
             } else if (isSunrise) {
                 baseAlpha = (0.016 + rayPulse * 0.010) * skyClear;
                 r = 255; g = 210; b = 130;
             } else if (isDaytime) {
-                baseAlpha = ((activeBiome === 'forest' ? 0.018 : 0.014) + rayPulse * 0.008) * skyClear;
-                r = 245; g = 250; b = 190;
+                if (activeBiome === 'jungle') {
+                    baseAlpha = (0.024 + rayPulse * 0.012) * skyClear;
+                    r = 230; g = 255; b = 145; // Tropical canopy sunbeams
+                } else {
+                    baseAlpha = ((activeBiome === 'forest' ? 0.018 : 0.014) + rayPulse * 0.008) * skyClear;
+                    r = 245; g = 250; b = 190;
+                }
             } else if (isNight) {
                 baseAlpha = (0.010 + rayPulse * 0.006) * skyClear;
                 r = 180; g = 210; b = 255;
@@ -8095,7 +12172,7 @@ export const SKIN_H = 32;
     }
 
     export function drawPlainsWindBreeze(targetCtx, w, h, camX, camY) {
-        if (!fabulousGraphics || caveSkyOpacity > 0.4 || w <= 0 || h <= 0 || !player) return;
+        if (!fabulousGraphics || !fabulousConfig.windBreeze || caveSkyOpacity > 0.4 || w <= 0 || h <= 0 || !player) return;
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const activeBiome = getActiveBiomeAt(playerGridX);
         if (activeBiome !== 'plains' && activeBiome !== 'forest') return;
@@ -8107,42 +12184,40 @@ export const SKIN_H = 32;
         for (let g = 0; g < numGusts; g++) {
             const gustSpeed = 1.4 + g * 0.5;
             const gustCycle = (frameCount * gustSpeed * 2.0 + g * 350) % (w + 600) - 300;
-            const startX = gustCycle;
-            const baseY = h * (0.55 + g * 0.12) + Math.sin(t + g * 2.0) * 18;
-            const gustLength = 180 + g * 60;
+            const startX = Math.floor(gustCycle);
+            const baseY = Math.floor(h * (0.55 + g * 0.12) + Math.sin(t + g * 2.0) * 18);
+            const numSegments = 6;
+            const segW = 28 + g * 8;
+            const barH = 3;
 
-            const breezeGrad = targetCtx.createLinearGradient(startX, baseY, startX + gustLength, baseY);
-            breezeGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-            breezeGrad.addColorStop(0.35, 'rgba(235, 255, 210, 0.08)');
-            breezeGrad.addColorStop(0.7, 'rgba(215, 250, 195, 0.06)');
-            breezeGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-            targetCtx.strokeStyle = breezeGrad;
-            targetCtx.lineWidth = 3 + g;
-            targetCtx.beginPath();
-            targetCtx.moveTo(startX, baseY);
-            targetCtx.bezierCurveTo(
-                startX + gustLength * 0.33, baseY - 8 + Math.sin(t * 2 + g) * 6,
-                startX + gustLength * 0.66, baseY + 8 - Math.cos(t * 2 + g) * 6,
-                startX + gustLength, baseY - 2
-            );
-            targetCtx.stroke();
+            for (let s = 0; s < numSegments; s++) {
+                const segX = Math.floor(startX + s * (segW + 6));
+                if (segX + segW < 0 || segX > w) continue;
+                const waveY = Math.floor(Math.sin(t * 2.2 + g + s * 0.45) * 5);
+                const drawY = Math.floor(baseY + waveY);
+                const fade = Math.sin((s / (numSegments - 1)) * Math.PI);
+                targetCtx.fillStyle = `rgba(235, 255, 215, ${(fade * 0.10).toFixed(3)})`;
+                targetCtx.fillRect(segX, drawY, segW, barH);
+            }
         }
         targetCtx.restore();
     }
 
     export function updateAndDrawFabulousParticles(targetCtx, camX, camY, w, h) {
-        if (!fabulousGraphics || w <= 0 || h <= 0 || !player) return;
+        if (!fabulousGraphics || !fabulousConfig.ambientParticles || w <= 0 || h <= 0 || !player) return;
+        const budget = getFabulousParticleBudget();
+        if (budget <= 0) return;
         initFabulousParticles();
 
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(((player.x || 0) + (player.width || 24) / 2) / TILE_SIZE)));
         const activeBiome = getActiveBiomeAt(playerGridX);
         const isSnowy = (activeBiome === 'snow') || (getSnowBiomeRatio(playerGridX, 10) > 0.25);
         const isUnderground = caveSkyOpacity > 0.4;
-        const isNight = timeOfDay >= 0.48 && timeOfDay <= 0.88;
+        const isNight = timeOfDay >= 0.68 && timeOfDay <= 0.90;
 
         targetCtx.save();
-        for (let i = 0; i < fabulousAmbientParticles.length; i++) {
+        const activeParticleCount = Math.min(fabulousAmbientParticles.length, budget);
+        for (let i = 0; i < activeParticleCount; i++) {
             const p = fabulousAmbientParticles[i];
             p.life--;
 
@@ -8170,12 +12245,40 @@ export const SKIN_H = 32;
                     p.color = 'rgba(235, 195, 110, 0.65)';
                     p.vx = 1.4 + Math.random() * 1.2;
                     p.vy = 0.2 + Math.random() * 0.4;
-                } else if (isNight && (activeBiome === 'forest' || activeBiome === 'plains')) {
+                } else if (isNight && (activeBiome === 'forest' || activeBiome === 'plains' || activeBiome === 'jungle')) {
                     p.type = 'firefly';
-                    p.size = 3.0 + Math.random() * 1.5;
-                    p.color = 'rgba(180, 255, 80, 0.75)';
+                    p.size = (activeBiome === 'jungle') ? (3.5 + Math.random() * 1.5) : (3.0 + Math.random() * 1.5);
+                    p.color = (activeBiome === 'jungle') ? 'rgba(160, 255, 120, 0.85)' : 'rgba(180, 255, 80, 0.75)';
                     p.vx = (Math.random() - 0.5) * 0.8;
                     p.vy = (Math.random() - 0.5) * 0.8;
+                } else if (activeBiome === 'jungle') {
+                    // Tropical Jungle: Glowing bioluminescent spores, broad lush jungle leaves, tropical orchid petals
+                    const jRoll = Math.random();
+                    if (jRoll < 0.48) {
+                        p.type = 'jungle_spore';
+                        p.size = 2.0 + Math.random() * 1.5;
+                        const sporeColors = ['#bbf7d0', '#86efac', '#fef08a', '#4ade80'];
+                        p.sporeColor = sporeColors[Math.floor(Math.random() * sporeColors.length)];
+                        p.swayPhase = Math.random() * Math.PI * 2;
+                        p.vx = 0.25 + Math.random() * 0.3;
+                        p.vy = -0.2 + (Math.random() - 0.5) * 0.3;
+                    } else if (jRoll < 0.80) {
+                        p.type = 'leaf';
+                        p.size = 3.5 + Math.random() * 1.5;
+                        p.swayPhase = Math.random() * Math.PI * 2;
+                        p.swaySpeed = 0.04 + Math.random() * 0.03;
+                        p.fallSpeed = 0.60 + Math.random() * 0.40;
+                        p.leafColorChoice = 4 + Math.floor(Math.random() * 3);
+                        p.vx = 0.3;
+                        p.vy = p.fallSpeed;
+                    } else {
+                        p.type = 'petal';
+                        p.size = 2.5 + Math.random() * 1.2;
+                        p.petalType = 3 + Math.floor(Math.random() * 3);
+                        p.swayPhase = Math.random() * Math.PI * 2;
+                        p.vx = 0.4 + Math.random() * 0.4;
+                        p.vy = 0.25 + Math.random() * 0.25;
+                    }
                 } else {
                     // Daytime Plains & Plain Woods (Forest)
                     const pRoll = Math.random();
@@ -8220,6 +12323,22 @@ export const SKIN_H = 32;
                 targetCtx.fillRect(fx - 2, fy - 2, p.size + 4, p.size + 4);
                 targetCtx.fillStyle = `rgba(225, 255, 140, ${(pulse * 0.9 + 0.1).toFixed(2)})`;
                 targetCtx.fillRect(fx, fy, p.size, p.size);
+            } else if (p.type === 'jungle_spore') {
+                p.swayPhase = (p.swayPhase || 0) + 0.035;
+                p.vx = 0.25 + Math.sin(p.swayPhase) * 0.35;
+                p.vy = -0.15 + Math.cos(p.swayPhase * 0.8) * 0.25;
+                p.x += p.vx;
+                p.y += p.vy;
+
+                const sx = Math.floor(p.x - camX);
+                const sy = Math.floor(p.y - camY);
+                const alpha = Math.max(0, Math.min(0.9, (p.life / p.maxLife) * 1.5));
+                targetCtx.globalAlpha = alpha;
+                targetCtx.fillStyle = 'rgba(254, 240, 138, 0.35)';
+                targetCtx.fillRect(sx - 1, sy - 1, p.size + 2, p.size + 2);
+                targetCtx.fillStyle = p.sporeColor || '#86efac';
+                targetCtx.fillRect(sx, sy, p.size, p.size);
+                targetCtx.globalAlpha = 1.0;
             } else if (p.type === 'leaf') {
                 p.swayPhase = (p.swayPhase || 0) + (p.swaySpeed || 0.06);
                 p.vx = 0.4 + Math.sin(p.swayPhase) * 1.1;
@@ -8233,10 +12352,13 @@ export const SKIN_H = 32;
                 targetCtx.globalAlpha = alpha;
 
                 const leafColors = [
-                    ['#388e3c', '#4caf50'], // Vibrant grass leaf
-                    ['#2e7d32', '#1b5e20'], // Deep forest oak leaf
-                    ['#7cb342', '#8bc34a'], // Golden sunlit leaf
-                    ['#f57f17', '#e65100']  // Autumn amber leaf
+                    ['#388e3c', '#4caf50'], // 0 Vibrant grass leaf
+                    ['#2e7d32', '#1b5e20'], // 1 Deep forest oak leaf
+                    ['#7cb342', '#8bc34a'], // 2 Golden sunlit leaf
+                    ['#f57f17', '#e65100'], // 3 Autumn amber leaf
+                    ['#15803d', '#22c55e'], // 4 Lush rainforest canopy leaf
+                    ['#166534', '#15803d'], // 5 Deep jungle understory leaf
+                    ['#4ade80', '#16a34a']  // 6 Sunlit jungle vine leaf
                 ];
                 const pair = leafColors[p.leafColorChoice || 0] || leafColors[0];
                 targetCtx.fillStyle = pair[0];
@@ -8273,7 +12395,10 @@ export const SKIN_H = 32;
                 const alpha = Math.max(0, Math.min(0.9, (p.life / p.maxLife) * 1.5));
                 targetCtx.globalAlpha = alpha;
 
-                const petalPalette = ['#e53935', '#fdd835', '#f48fb1'];
+                const petalPalette = [
+                    '#e53935', '#fdd835', '#f48fb1', // Standard flowers
+                    '#f43f5e', '#a855f7', '#fbbf24'  // Tropical jungle orchid / exotic flora
+                ];
                 targetCtx.fillStyle = petalPalette[p.petalType || 0] || '#e53935';
                 targetCtx.fillRect(px, py, 2, 2);
                 targetCtx.fillRect(px + 1, py + 1, 1, 2);
@@ -8313,17 +12438,17 @@ export const SKIN_H = 32;
         drawSnowFog(ctx, canvas.width, canvas.height, camX);
         clouds.forEach(c => c.draw(ctx, camX));
 
-        let timeAngle = (timeOfDay - 0.25) * Math.PI * 2; 
+        let timeAngle = (timeOfDay - 0.30) * Math.PI * 2; 
         let celX = canvas.width/2 - Math.sin(timeAngle) * (canvas.width * 0.45);
         let celY = canvas.height/2 + Math.cos(timeAngle) * (canvas.height * 0.45);
         
         ctx.imageSmoothingEnabled = false;
 
-        let isDaytime = (timeOfDay > 0.88 || timeOfDay < 0.44);
+        let isDaytime = (timeOfDay >= 0.90 || timeOfDay < 0.58);
         if (isDaytime) {
             let sunSize = 64;
-            let isSunset = (timeOfDay >= 0.34 && timeOfDay <= 0.44);
-            let isSunrise = (timeOfDay >= 0.88 || timeOfDay <= 0.06);
+            let isSunset = (timeOfDay >= 0.58 && timeOfDay < 0.68);
+            let isSunrise = (timeOfDay >= 0.90 || timeOfDay <= 0.04);
 
             // Sun radiant corona bloom (Pre-rendered GPU sprite blit)
             const sunGlowSprite = (isSunset || isSunrise) ? cachedSunGlowSunsetCanvas : cachedSunGlowDayCanvas;
@@ -8343,7 +12468,7 @@ export const SKIN_H = 32;
             ctx.fillStyle = (isSunset || isSunrise) ? '#fff4b8' : '#ffffff';
             ctx.fillRect(Math.floor(celX - coreSize/2), Math.floor(celY - coreSize/2), coreSize, coreSize);
         } else {
-            let moonAngle = (timeOfDay - 0.75) * Math.PI * 2;
+            let moonAngle = (timeOfDay - 0.81) * Math.PI * 2;
             let mX = canvas.width/2 - Math.sin(moonAngle) * (canvas.width * 0.45);
             let mY = canvas.height/2 + Math.cos(moonAngle) * (canvas.height * 0.45);
             let moonSize = 52;
@@ -8389,8 +12514,8 @@ export const SKIN_H = 32;
         }
 
 
-        if (advancedGraphics && (timeOfDay > 0.08 && timeOfDay < 0.4)) {
-            let flareAmount = Math.max(0, 1 - Math.abs(timeOfDay - 0.24) * 3.8);
+        if (advancedGraphics && (timeOfDay > 0.08 && timeOfDay < 0.58)) {
+            let flareAmount = Math.max(0, 1 - Math.abs(timeOfDay - 0.30) * 3.5);
             let flareCenterX = canvas.width / 2 + (canvas.width / 2 - celX) * 0.28;
             let flareCenterY = canvas.height / 2 + (canvas.height / 2 - celY) * 0.28;
             ctx.save();
@@ -8405,7 +12530,7 @@ export const SKIN_H = 32;
             ctx.fillRect(Math.floor(canvas.width / 2 - 5), Math.floor(canvas.height / 2 - 5), 10, 10);
             ctx.restore();
         }
-        if (advancedGraphics && timeOfDay >= 0.48 && timeOfDay <= 0.88) {
+        if (advancedGraphics && timeOfDay >= 0.68 && timeOfDay <= 0.90) {
             let starCycle = frameCount % 720;
             for (let shootingStar = 0; shootingStar < 3; shootingStar++) {
                 let starAge = starCycle - (shootingStar * 240 + 35);
@@ -8469,6 +12594,25 @@ export const SKIN_H = 32;
             for (let y = startRow; y <= endRow; y++) {
                 let block = world[x][y];
                 if (block === IDS.AIR) {
+                    // Cavern backdrop: prevent blue sky / parallax mountains from showing inside subterranean caves
+                    const hasPlayerBg = bgWorld && bgWorld[x] && bgWorld[x][y] !== IDS.AIR && bgWorld[x][y] !== undefined;
+                    if (!hasPlayerBg && x >= 0 && x < WORLD_WIDTH) {
+                        const surfY = (surfaceHeights && surfaceHeights[x] !== undefined) ? surfaceHeights[x] : getWorldSurfaceY(x);
+                        const topSolidY = getWorldSurfaceY(x);
+                        if (y >= surfY && (topSolidY < y || y >= surfY + 2)) {
+                            let drawY = Math.round(y * TILE_SIZE - camY);
+                            let cavernWall = cachedCavernWallStone;
+                            if (worldBiomes && worldBiomes[x] === 'desert') {
+                                cavernWall = cachedCavernWallSand || cachedCavernWallStone;
+                            } else if (y < surfY + 4) {
+                                cavernWall = cachedCavernWallDirt || cachedCavernWallStone;
+                            }
+                            if (cavernWall) {
+                                ctx.drawImage(cavernWall, drawX, drawY, TILE_SIZE, TILE_SIZE);
+                            }
+                        }
+                    }
+
                     // Natural Ambient Occlusion (AO) on cave ceilings, overhangs, walls, and inner corners
                     if (advancedGraphics && y > 0 && y >= surfaceHeights[x]) {
                         const hasCeiling = world[x][y - 1] !== undefined && isSolidWorldBlock(x, y - 1, world[x][y - 1]);
@@ -8525,7 +12669,7 @@ export const SKIN_H = 32;
                         }
                         if (textures[block]) ctx.drawImage(textures[block], -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE);
                         ctx.restore();
-                    } else if ((fabulousGraphics || advancedGraphics) && (
+                    } else if (((fabulousGraphics && fabulousConfig.foliageSway) || (!fabulousGraphics && advancedGraphics)) && (
                         block === IDS.SHORT_GRASS || block === IDS.TALL_GRASS || 
                         block === IDS.FLOWER_RED || block === IDS.FLOWER_YELLOW || 
                         block === IDS.SAPLING ||
@@ -8588,45 +12732,140 @@ export const SKIN_H = 32;
             else if (fluid.type === IDS.LAVA) visibleLava.push(entry);
         });
 
-        // 1. RENDER WATER (Translucent, wavy surface, animated highlights & waterfalls)
+        // 1. RENDER WATER (Translucent, wavy connected surface, sloping quads, caustics & waterfalls)
         if (visibleWater.length > 0) {
             ctx.save();
-            ctx.fillStyle = 'rgba(28, 120, 218, 0.72)';
             for (let i = 0; i < visibleWater.length; i++) {
                 const { fluid, fluidX, fluidY, drawX, drawY } = visibleWater[i];
-                const hasFluidAbove = (fluidY > 0 && world[fluidX]?.[fluidY - 1] === IDS.WATER);
-                
-                let hRatio = 1.0;
-                if (!hasFluidAbove && !fluid.source && !fluid.falling) {
-                    hRatio = Math.max(0.22, 1.0 - (fluid.level / (WATER_FLOW_MAX + 1)) * 0.72);
-                }
-                const cellHeight = Math.floor(TILE_SIZE * hRatio);
-                const cellTopY = drawY + (TILE_SIZE - cellHeight);
+                const fluidAbove = getFluid(fluidX, fluidY - 1);
+                const hasFluidAbove = (fluidAbove && fluidAbove.type === IDS.WATER);
 
-                // Body fill
-                ctx.fillRect(drawX, cellTopY, TILE_SIZE, cellHeight);
+                const isSolidBelow = isSolidWorldBlock(fluidX, fluidY + 1, world[fluidX]?.[fluidY + 1]);
+                const isSolidLeft = isSolidWorldBlock(fluidX - 1, fluidY, world[fluidX - 1]?.[fluidY]);
+                const isSolidRight = isSolidWorldBlock(fluidX + 1, fluidY, world[fluidX + 1]?.[fluidY]);
 
-                // Waterfall stream streaks
-                if (fluid.falling) {
-                    ctx.fillStyle = 'rgba(180, 240, 255, 0.55)';
-                    const streakOffset = (animTick * 2 + fluidX * 7) % 12;
-                    ctx.fillRect(drawX + 8, drawY + streakOffset, 4, 16);
-                    ctx.fillRect(drawX + 22, drawY + ((streakOffset + 6) % 24), 3, 14);
+                if (hasFluidAbove) {
+                    // Submerged Water Block: Full height, underwater caustics, and boundary shading
+                    ctx.fillStyle = 'rgba(28, 120, 218, 0.76)';
+                    ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
+
+                    // Gentle animated caustics (light refraction ribbons)
+                    if (!fabulousGraphics || fabulousConfig.waterEffects) {
+                        const causticsOffset = Math.sin(fluidX * 0.7 + fluidY * 0.9 + animTick * 0.05) * 4;
+                        ctx.fillStyle = 'rgba(110, 195, 255, 0.20)';
+                        ctx.fillRect(drawX + 4 + causticsOffset, drawY + 8, 14, 2);
+                        ctx.fillRect(drawX + 14 - causticsOffset, drawY + 22, 12, 2);
+                    }
+
+                    // Solid contact shading (connected border against floor / walls)
+                    if (isSolidBelow) {
+                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillRect(drawX, drawY + TILE_SIZE - 2, TILE_SIZE, 2);
+                    }
+                    if (isSolidLeft) {
+                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillRect(drawX, drawY, 2, TILE_SIZE);
+                    }
+                    if (isSolidRight) {
+                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillRect(drawX + TILE_SIZE - 2, drawY, 2, TILE_SIZE);
+                    }
+                } else if (fluid.falling) {
+                    // Falling waterfall stream column
+                    ctx.fillStyle = 'rgba(28, 120, 218, 0.68)';
+                    ctx.fillRect(drawX + 2, drawY, TILE_SIZE - 4, TILE_SIZE);
+
+                    ctx.fillStyle = 'rgba(190, 242, 255, 0.70)';
+                    const streakOffset = (animTick * 3 + fluidX * 11) % TILE_SIZE;
+                    ctx.fillRect(drawX + 6, drawY + streakOffset, 3, 14);
+                    ctx.fillRect(drawX + 18, drawY + ((streakOffset + 12) % TILE_SIZE), 3, 12);
+
+                    // Falling waterfall splash & mist when hitting ground or pool
+                    const belowF = getFluid(fluidX, fluidY + 1);
+                    if (isSolidBelow || (belowF && !belowF.falling)) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+                        const mistW = 6 + Math.sin(animTick * 0.2 + fluidX) * 3;
+                        ctx.fillRect(drawX + 6, drawY + TILE_SIZE - 3, mistW, 3);
+                        ctx.fillRect(drawX + 18, drawY + TILE_SIZE - 4, mistW * 0.8, 3);
+                        if (advancedGraphics && Math.random() < 0.06) {
+                            spawnParticle(fluidX * TILE_SIZE + 8 + Math.random() * 16, (fluidY + 1) * TILE_SIZE - 2, '#d7f0ff');
+                        }
+                    }
+                } else {
+                    // Surface Water Block: Connected sloping surface quad with seamless wave highlights
+                    const hSelf = fluid.source ? 1.0 : Math.max(0.25, 1.0 - (fluid.level / (WATER_FLOW_MAX + 1)) * 0.72);
+
+                    const leftFluid = getFluid(fluidX - 1, fluidY);
+                    const rightFluid = getFluid(fluidX + 1, fluidY);
+
+                    const getNeighborHeight = (nbr, isSolid) => {
+                        if (isSolid) return hSelf;
+                        if (!nbr || nbr.type !== IDS.WATER) return hSelf * 0.65;
+                        if (nbr.falling) return 1.0;
+                        if (nbr.source) return 1.0;
+                        return Math.max(0.25, 1.0 - (nbr.level / (WATER_FLOW_MAX + 1)) * 0.72);
+                    };
+
+                    const hLeftN = getNeighborHeight(leftFluid, isSolidLeft);
+                    const hRightN = getNeighborHeight(rightFluid, isSolidRight);
+
+                    const hLeft = (hLeftN + hSelf) * 0.5;
+                    const hRight = (hRightN + hSelf) * 0.5;
+
+                    // Continuous wave offsets based on world pixel coordinates (guarantees zero boundary seams)
+                    const worldPixelL = fluidX * TILE_SIZE;
+                    const worldPixelR = (fluidX + 1) * TILE_SIZE;
+                    const waveL = Math.sin(worldPixelL * 0.06 + animTick * 0.08) * 1.5;
+                    const waveR = Math.sin(worldPixelR * 0.06 + animTick * 0.08) * 1.5;
+
+                    const topYL = Math.floor(drawY + TILE_SIZE * (1.0 - hLeft) + waveL);
+                    const topYR = Math.floor(drawY + TILE_SIZE * (1.0 - hRight) + waveR);
+                    const botY = drawY + TILE_SIZE;
+
+                    // Render smooth trapezoid fluid quad
                     ctx.fillStyle = 'rgba(28, 120, 218, 0.72)';
-                }
+                    ctx.beginPath();
+                    ctx.moveTo(drawX, topYL);
+                    ctx.lineTo(drawX + TILE_SIZE, topYR);
+                    ctx.lineTo(drawX + TILE_SIZE, botY);
+                    ctx.lineTo(drawX, botY);
+                    ctx.closePath();
+                    ctx.fill();
 
-                // Top wave surface highlight
-                if (!hasFluidAbove) {
-                    ctx.fillStyle = 'rgba(215, 245, 255, 0.88)';
-                    const wave = Math.sin(fluidX * 0.6 + animTick * 0.08) * 1.5;
-                    ctx.fillRect(drawX, Math.floor(cellTopY + wave), TILE_SIZE, 3);
-                    
-                    // Foam crest specks
+                    // Wave surface highlight strip
+                    if (!fabulousGraphics || fabulousConfig.waterEffects) {
+                        ctx.strokeStyle = 'rgba(215, 245, 255, 0.88)';
+                        ctx.lineWidth = 2.5;
+                        ctx.beginPath();
+                        ctx.moveTo(drawX, topYL);
+                        ctx.lineTo(drawX + TILE_SIZE, topYR);
+                        ctx.stroke();
+                    }
+
+                    // Shoreline foam / meniscus where water touches solid terrain banks
+                    if (isSolidLeft) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                        const foamBob = Math.sin(animTick * 0.12 + fluidX) * 1.0;
+                        ctx.fillRect(drawX, Math.floor(topYL + foamBob - 1), 5, 3);
+                    }
+                    if (isSolidRight) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                        const foamBob = Math.sin(animTick * 0.12 + fluidX + 1) * 1.0;
+                        ctx.fillRect(drawX + TILE_SIZE - 5, Math.floor(topYR + foamBob - 1), 5, 3);
+                    }
+
+                    // Foam crest specks in wave centers
                     if ((fluidX + Math.floor(animTick / 8)) % 3 === 0) {
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                        ctx.fillRect(drawX + 10, Math.floor(cellTopY + wave - 1), 6, 2);
+                        const midTopY = (topYL + topYR) * 0.5;
+                        ctx.fillRect(drawX + 10, Math.floor(midTopY - 1), 6, 2);
                     }
-                    ctx.fillStyle = 'rgba(28, 120, 218, 0.72)';
+
+                    // Bottom and side boundary shading
+                    if (isSolidBelow) {
+                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillRect(drawX, botY - 2, TILE_SIZE, 2);
+                    }
                 }
             }
             ctx.restore();
@@ -8637,7 +12876,8 @@ export const SKIN_H = 32;
             ctx.save();
             for (let i = 0; i < visibleLava.length; i++) {
                 const { fluid, fluidX, fluidY, drawX, drawY } = visibleLava[i];
-                const hasFluidAbove = (fluidY > 0 && world[fluidX]?.[fluidY - 1] === IDS.LAVA);
+                const fluidAbove = getFluid(fluidX, fluidY - 1);
+                const hasFluidAbove = (fluidAbove && fluidAbove.type === IDS.LAVA);
 
                 let hRatio = 1.0;
                 if (!hasFluidAbove && !fluid.source && !fluid.falling) {
@@ -8674,8 +12914,10 @@ export const SKIN_H = 32;
                     const wave = Math.sin(fluidX * 0.5 + animTick * 0.06) * 1.2;
                     ctx.fillRect(drawX, Math.floor(cellTopY + wave), TILE_SIZE, 3);
                     
-                    // Random rising spark/smoke particle
-                    if (advancedGraphics && Math.random() < 0.015) {
+                    // Rising spark/smoke particles and embers
+                    if (fabulousGraphics && fabulousConfig.lavaGlow && Math.random() < 0.035) {
+                        spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 4, Math.random() < 0.5 ? '#ff4500' : '#ffaa00');
+                    } else if (advancedGraphics && Math.random() < 0.015) {
                         spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 4, '#ff4500');
                     }
                 }
@@ -8796,6 +13038,7 @@ export const SKIN_H = 32;
             }
         }
 
+        droppedItems.forEach(d => { if (d && typeof d.draw === 'function') d.draw(ctx, camX, camY); });
         entities.forEach(e => e.draw(ctx, camX, camY));
         player.draw(ctx, camX, camY);
         
@@ -8915,28 +13158,98 @@ export const SKIN_H = 32;
         lightCtx.clearRect(0, 0, lightCanvas.width, lightCanvas.height);
         
         let surfaceDarkness = 0;
-        if (timeOfDay > 0.4 && timeOfDay <= 0.5) surfaceDarkness = (timeOfDay - 0.4) * 8; 
-        else if (timeOfDay > 0.5 && timeOfDay <= 0.9) surfaceDarkness = 0.8;
-        else if (timeOfDay > 0.9) surfaceDarkness = 0.8 - ((timeOfDay - 0.9) * 8);
+        if (timeOfDay > 0.58 && timeOfDay <= 0.68) surfaceDarkness = (timeOfDay - 0.58) * 8; 
+        else if (timeOfDay > 0.68 && timeOfDay <= 0.90) surfaceDarkness = 0.8;
+        else if (timeOfDay > 0.90) surfaceDarkness = 0.8 - ((timeOfDay - 0.90) * 8);
         surfaceDarkness = Math.max(0, Math.min(0.85, surfaceDarkness));
 
-        // Depth darkness: Smoothly scales darker as you descend into deep underground caves
-        let ambientDarkness = Math.max(surfaceDarkness, caveSkyOpacity * 0.94);
-
-        if (ambientDarkness > 0) {
-            lightCtx.fillStyle = `rgba(0, 0, 15, ${ambientDarkness})`;
+        // Base surface night darkness fill across screen
+        if (surfaceDarkness > 0) {
+            lightCtx.fillStyle = `rgba(0, 0, 15, ${surfaceDarkness})`;
             lightCtx.fillRect(0, 0, lightCanvas.width, lightCanvas.height);
+        }
+
+        // Terraria-style subterranean depth shadow gradient
+        // Envelops subterranean blocks and caves in intense atmospheric darkness unless lit by light sources
+        const subDarkness = 0.988;
+        const depthSteps = [0.55, 0.90, 0.97];
+
+        for (let x = startCol; x <= endCol; x++) {
+            let drawX = x * TILE_SIZE - camX;
+            let drawW = TILE_SIZE;
+
+            let surfY = Math.floor(WORLD_HEIGHT / 2);
+            if (x >= 0 && x < WORLD_WIDTH) {
+                const natSurfY = (surfaceHeights && surfaceHeights[x] !== undefined) ? surfaceHeights[x] : getWorldSurfaceY(x);
+                const topSolidY = getWorldSurfaceY(x);
+                surfY = Math.max(natSurfY, topSolidY);
+            }
+
+            // Depth transition rows from surfY to surfY + 2
+            for (let d = 0; d < 3; d++) {
+                let gy = surfY + d;
+                if (gy >= startRow && gy <= endRow) {
+                    let dAlpha = surfaceDarkness + (subDarkness - surfaceDarkness) * depthSteps[d];
+
+                    // Soften darkness if this is an open cave mouth bordering exterior daylight horizontally
+                    if (x >= 0 && x < WORLD_WIDTH && world[x]?.[gy] === IDS.AIR) {
+                        const leftAir = x > 0 && world[x - 1]?.[gy] === IDS.AIR && gy < Math.max(surfaceHeights[x - 1] || surfY, getWorldSurfaceY(x - 1));
+                        const rightAir = x < WORLD_WIDTH - 1 && world[x + 1]?.[gy] === IDS.AIR && gy < Math.max(surfaceHeights[x + 1] || surfY, getWorldSurfaceY(x + 1));
+                        if (leftAir || rightAir) {
+                            dAlpha = Math.max(surfaceDarkness, dAlpha - 0.40);
+                        }
+                    }
+
+                    if (dAlpha > surfaceDarkness) {
+                        let drawY = gy * TILE_SIZE - camY;
+                        lightCtx.fillStyle = `rgba(0, 0, 6, ${dAlpha})`;
+                        lightCtx.fillRect(drawX, drawY, drawW, TILE_SIZE);
+                    }
+                }
+            }
+
+            // Deep subterranean shadow rows (surfY + 3 downward to endRow)
+            let deepStartRow = Math.max(startRow, surfY + 3);
+            if (deepStartRow <= endRow) {
+                let uniformStartRow = deepStartRow;
+                for (let gy = deepStartRow; gy <= Math.min(endRow, deepStartRow + 2); gy++) {
+                    if (x >= 0 && x < WORLD_WIDTH && world[x]?.[gy] === IDS.AIR) {
+                        const leftAir = x > 0 && world[x - 1]?.[gy] === IDS.AIR && gy < Math.max(surfaceHeights[x - 1] || surfY, getWorldSurfaceY(x - 1));
+                        const rightAir = x < WORLD_WIDTH - 1 && world[x + 1]?.[gy] === IDS.AIR && gy < Math.max(surfaceHeights[x + 1] || surfY, getWorldSurfaceY(x + 1));
+                        if (leftAir || rightAir) {
+                            let dAlpha = Math.max(surfaceDarkness, subDarkness - 0.35);
+                            let drawY = gy * TILE_SIZE - camY;
+                            lightCtx.fillStyle = `rgba(0, 0, 6, ${dAlpha})`;
+                            lightCtx.fillRect(drawX, drawY, drawW, TILE_SIZE);
+                            uniformStartRow = gy + 1;
+                        }
+                    }
+                }
+
+                if (uniformStartRow <= endRow) {
+                    let deepY0 = uniformStartRow * TILE_SIZE - camY;
+                    let deepY1 = (endRow + 1) * TILE_SIZE - camY;
+                    let deepH = deepY1 - deepY0;
+                    if (deepH > 0) {
+                        lightCtx.fillStyle = `rgba(0, 0, 6, ${subDarkness})`;
+                        lightCtx.fillRect(drawX, deepY0, drawW, deepH);
+                    }
+                }
+            }
         }
 
         lightCtx.globalCompositeOperation = 'destination-out';
         
         function drawLight(worldX, worldY, radius, intensity) {
-            let drawX = (worldX - camera.x) * LIGHT_SCALE;
-            let drawY = (worldY - camera.y) * LIGHT_SCALE;
-            let r = radius * LIGHT_SCALE;
+            let drawX = Math.round(worldX - camX);
+            let drawY = Math.round(worldY - camY);
+            let r = Math.round(radius);
             if (drawX < -r || drawX > lightCanvas.width + r || drawY < -r || drawY > lightCanvas.height + r) return;
+            lightCtx.imageSmoothingEnabled = false;
             lightCtx.globalAlpha = intensity;
-            lightCtx.drawImage(cachedTorchLightCanvas, drawX - r, drawY - r, r * 2, r * 2);
+            if (cachedTorchLightCanvas) {
+                lightCtx.drawImage(cachedTorchLightCanvas, drawX - r, drawY - r, r * 2, r * 2);
+            }
         }
 
         furnaces.forEach(f => {
@@ -8960,7 +13273,7 @@ export const SKIN_H = 32;
             }
         }
 
-        if (fabulousGraphics) {
+        if (fabulousGraphics && fabulousConfig.lavaGlow) {
             for (let i = 0; i < visibleFluids.length; i++) {
                 const vf = visibleFluids[i];
                 if (vf.fluid && vf.fluid.type === IDS.LAVA && i % 2 === 0) {
@@ -8993,23 +13306,43 @@ export const SKIN_H = 32;
             lightCtx.globalAlpha = 1.0;
         }
         ctx.globalCompositeOperation = 'source-over';
-        ctx.imageSmoothingEnabled = true;
-        ctx.drawImage(lightCanvas, 0, 0, canvas.width, canvas.height);
         ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(lightCanvas, 0, 0);
 
-        if (advancedGraphics) {
+        if (advancedGraphics || fabulousGraphics) {
             ctx.save();
+            ctx.imageSmoothingEnabled = false;
             ctx.globalCompositeOperation = 'lighter';
             const glowR = TILE_SIZE * 1.7;
             const glowD = glowR * 2;
             for (let i = 0; i < visibleLightSources.length; i++) {
                 const ls = visibleLightSources[i];
-                if (ls.type === 'torch') {
-                    let gx = ls.x - camera.x;
-                    let gy = ls.y - camera.y;
-                    ctx.drawImage(cachedTorchGlowCanvas, gx - glowR, gy - glowR, glowD, glowD);
+                let gx = Math.round(ls.x - camX);
+                let gy = Math.round(ls.y - camY);
+                if (gx < -glowR || gx > canvas.width + glowR || gy < -glowR || gy > canvas.height + glowR) continue;
+
+                if (ls.type === 'torch' || ls.type === 'player_torch' || ls.type === 'remote_torch') {
+                    if (cachedTorchGlowCanvas) ctx.drawImage(cachedTorchGlowCanvas, gx - glowR, gy - glowR, glowD, glowD);
                     ctx.fillStyle = 'rgba(255, 235, 160, 0.34)';
                     ctx.fillRect(Math.floor(gx - 3), Math.floor(gy - 3), 6, 6);
+                    if (fabulousGraphics && fabulousConfig.bloomAura && cachedBloomAuraCanvas) {
+                        const bR = Math.round(glowR * 1.45);
+                        ctx.drawImage(cachedBloomAuraCanvas, gx - bR, gy - bR, bR * 2, bR * 2);
+                    }
+                } else if (ls.type === 'furnace') {
+                    if (cachedTorchGlowCanvas) ctx.drawImage(cachedTorchGlowCanvas, gx - glowR, gy - glowR, glowD, glowD);
+                    if (fabulousGraphics && fabulousConfig.bloomAura && cachedBloomAuraCanvas) {
+                        const bR = Math.round(glowR * 1.35);
+                        ctx.drawImage(cachedBloomAuraCanvas, gx - bR, gy - bR, bR * 2, bR * 2);
+                    }
+                } else if (ls.type === 'lava' && (!fabulousGraphics || fabulousConfig.lavaGlow)) {
+                    if (cachedLavaGlowCanvas) {
+                        ctx.drawImage(cachedLavaGlowCanvas, gx - glowR, gy - glowR, glowD, glowD);
+                    }
+                    if (fabulousGraphics && fabulousConfig.bloomAura && cachedBloomAuraCanvas) {
+                        const bR = Math.round(glowR * 1.25);
+                        ctx.drawImage(cachedBloomAuraCanvas, gx - bR, gy - bR, bR * 2, bR * 2);
+                    }
                 }
             }
             ctx.restore();
@@ -9030,12 +13363,12 @@ export const SKIN_H = 32;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        if (showHeatShimmer) drawDesertHeatShimmer(ctx, canvas.width, canvas.height, camera.x);
-        drawForestGodRays(ctx, canvas.width, canvas.height, camera.x, camera.y);
-        drawPlainsWindBreeze(ctx, canvas.width, canvas.height, camera.x, camera.y);
-        updateAndDrawFabulousParticles(ctx, camera.x, camera.y, canvas.width, canvas.height);
-        if (showBiomeGrading) drawBiomeGrading(ctx, canvas.width, canvas.height);
-        if (showVignette) drawVignette(ctx, canvas.width, canvas.height);
+        if (showHeatShimmer && (!fabulousGraphics || fabulousConfig.heatShimmer)) drawDesertHeatShimmer(ctx, canvas.width, canvas.height, camera.x);
+        if (!fabulousGraphics || fabulousConfig.godRays) drawForestGodRays(ctx, canvas.width, canvas.height, camera.x, camera.y);
+        if (!fabulousGraphics || fabulousConfig.windBreeze) drawPlainsWindBreeze(ctx, canvas.width, canvas.height, camera.x, camera.y);
+        if (!fabulousGraphics || fabulousConfig.ambientParticles) updateAndDrawFabulousParticles(ctx, camera.x, camera.y, canvas.width, canvas.height);
+        if (showBiomeGrading && (!fabulousGraphics || fabulousConfig.colorGrading)) drawBiomeGrading(ctx, canvas.width, canvas.height);
+        if (showVignette && (!fabulousGraphics || fabulousConfig.vignette)) drawVignette(ctx, canvas.width, canvas.height);
 
         // Smoothly darken and illuminate orange frame in Background Build Mode
         const curBgModeForDarkness = (typeof window !== 'undefined' && window.isBackgroundBuildMode !== undefined) ? window.isBackgroundBuildMode : isBackgroundBuildMode;
@@ -9072,10 +13405,11 @@ export const SKIN_H = 32;
 
     export function updateTimeUI() {
         let t = "Morning";
-        if (timeOfDay > 0.3) t = "Afternoon";
-        if (timeOfDay > 0.4) t = "Sunset";
-        if (timeOfDay > 0.5) t = "Night";
-        if (timeOfDay > 0.9) t = "Sunrise";
+        if (timeOfDay >= 0.92 || timeOfDay < 0.04) t = "Sunrise";
+        else if (timeOfDay < 0.25) t = "Morning";
+        else if (timeOfDay < 0.60) t = "Afternoon";
+        else if (timeOfDay < 0.70) t = "Sunset";
+        else t = "Night";
         drawTimeClock(timeOfDay);
         document.getElementById('time-display').innerText = t;
         document.getElementById('day-counter').innerText = dayCount;
@@ -9147,8 +13481,8 @@ export const SKIN_H = 32;
         ctx.clip();
 
         // 5. Rotate Celestial Disc (Daytime Sky / Night Sky)
-        // timeOfDay: 0 = Dawn, 0.25 = High Noon, 0.5 = Sunset, 0.75 = Midnight
-        const rotAngle = (time - 0.25) * Math.PI * 2;
+        // timeOfDay: 0 = Dawn, 0.30 = High Noon, 0.65 = Sunset, 0.81 = Midnight
+        const rotAngle = (time - 0.30) * Math.PI * 2;
 
         ctx.save();
         ctx.translate(cx, cy);
@@ -9368,31 +13702,31 @@ export const SKIN_H = 32;
             offscreenMapCanvas.height = WORLD_HEIGHT;
         }
         
-        // Fill sky backdrop
-        offscreenMapCtx.fillStyle = '#101726';
-        offscreenMapCtx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-
         const curBgWorld = bgWorld || (typeof window !== 'undefined' && window.bgWorld);
+        const imgData = offscreenMapCtx.createImageData(WORLD_WIDTH, WORLD_HEIGHT);
+        const buf32 = new Uint32Array(imgData.data.buffer);
+        buf32.fill(0xFF261710); // #101726 sky background in ABGR
 
-        // Batch rasterize blocks and fluids
         for (let x = 0; x < WORLD_WIDTH; x++) {
+            const col = curWorld[x];
+            const bgCol = curBgWorld ? curBgWorld[x] : null;
+            if (!col) continue;
             for (let y = 0; y < WORLD_HEIGHT; y++) {
-                let block = curWorld[x]?.[y];
+                const block = col[y];
+                const idx = y * WORLD_WIDTH + x;
                 if (block !== undefined && block !== IDS.AIR && block !== IDS.TORCH) {
-                    offscreenMapCtx.fillStyle = getMapBlockColor(block);
-                    offscreenMapCtx.fillRect(x, y, 1, 1);
+                    buf32[idx] = MINIMAP_COLOR_32[block] || 0xFF7D7D7D;
                 } else {
-                    let fl = getFluid(x, y);
+                    const fl = getFluid(x, y);
                     if (fl) {
-                        offscreenMapCtx.fillStyle = fl.type === IDS.LAVA ? '#e85d04' : '#1e6bb8';
-                        offscreenMapCtx.fillRect(x, y, 1, 1);
-                    } else if (curBgWorld && curBgWorld[x]?.[y] !== undefined && curBgWorld[x][y] !== IDS.AIR) {
-                        offscreenMapCtx.fillStyle = '#1e2430';
-                        offscreenMapCtx.fillRect(x, y, 1, 1);
+                        buf32[idx] = fl.type === IDS.LAVA ? 0xFF045DE8 : 0xFFB86B1E;
+                    } else if (bgCol && bgCol[y] !== undefined && bgCol[y] !== IDS.AIR) {
+                        buf32[idx] = 0xFF30241E; // #1e2430 in ABGR
                     }
                 }
             }
         }
+        offscreenMapCtx.putImageData(imgData, 0, 0);
         isOffscreenMapDirty = false;
     }
 
@@ -9669,6 +14003,7 @@ try { if (typeof PHYSICS_TICK_RATE !== "undefined") window.PHYSICS_TICK_RATE = P
 try { if (typeof Particle !== "undefined") window.Particle = Particle; } catch(e) {}
 try { if (typeof PhysicsEntity !== "undefined") window.PhysicsEntity = PhysicsEntity; } catch(e) {}
 try { if (typeof Pig !== "undefined") window.Pig = Pig; } catch(e) {}
+try { if (typeof Pigeon !== "undefined") window.Pigeon = Pigeon; } catch(e) {}
 try { if (typeof Player !== "undefined") window.Player = Player; } catch(e) {}
 try { if (typeof SKIN_W !== "undefined") window.SKIN_W = SKIN_W; } catch(e) {}
 try { if (typeof SKY_STARS !== "undefined") window.SKY_STARS = SKY_STARS; } catch(e) {}
@@ -9796,6 +14131,7 @@ try { if (typeof isNearTorch !== "undefined") window.isNearTorch = isNearTorch; 
 try { if (typeof isOffscreenMapDirty !== "undefined") window.isOffscreenMapDirty = isOffscreenMapDirty; } catch(e) {}
 try { if (typeof isOpenDoorBlock !== "undefined") window.isOpenDoorBlock = isOpenDoorBlock; } catch(e) {}
 try { if (typeof isPreviewWalking !== "undefined") window.isPreviewWalking = isPreviewWalking; } catch(e) {}
+try { if (typeof isNonSurfaceBlock !== "undefined") window.isNonSurfaceBlock = isNonSurfaceBlock; } catch(e) {}
 try { if (typeof isSolidWorldBlock !== "undefined") window.isSolidWorldBlock = isSolidWorldBlock; } catch(e) {}
 try { if (typeof isWater !== "undefined") window.isWater = isWater; } catch(e) {}
 try { if (typeof isWoodPartOfTree !== "undefined") window.isWoodPartOfTree = isWoodPartOfTree; } catch(e) {}
@@ -9811,6 +14147,8 @@ try { if (typeof lastHotbarItemId !== "undefined") window.lastHotbarItemId = las
 try { if (typeof lastPlayerActivityAt !== "undefined") window.lastPlayerActivityAt = lastPlayerActivityAt; } catch(e) {}
 try { if (typeof lastRenderTime !== "undefined") window.lastRenderTime = lastRenderTime; } catch(e) {}
 try { if (typeof leafDecayQueue !== "undefined") window.leafDecayQueue = leafDecayQueue; } catch(e) {}
+try { if (typeof treeDecayClusters !== "undefined") window.treeDecayClusters = treeDecayClusters; } catch(e) {}
+try { if (typeof getKaelSkinCanvas !== "undefined") window.getKaelSkinCanvas = getKaelSkinCanvas; } catch(e) {}
 try { if (typeof mapAnimFrameId !== "undefined") window.mapAnimFrameId = mapAnimFrameId; } catch(e) {}
 try { if (typeof mapDragOriginPanX !== "undefined") window.mapDragOriginPanX = mapDragOriginPanX; } catch(e) {}
 try { if (typeof mapDragOriginPanY !== "undefined") window.mapDragOriginPanY = mapDragOriginPanY; } catch(e) {}
@@ -9924,10 +14262,19 @@ try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay
     export function setEngineIsBackgroundBuildMode(newMode) { isBackgroundBuildMode = newMode; if (typeof window !== 'undefined') window.isBackgroundBuildMode = newMode; }
     export function setEngineIsInventoryOpen(newOpen) { isInventoryOpen = newOpen; if (typeof window !== 'undefined') window.isInventoryOpen = newOpen; }
     export function setEngineCropGrowthQueue(newQueue) { cropGrowthQueue = newQueue; if (typeof window !== 'undefined') window.cropGrowthQueue = newQueue; }
+    export function setEngineSaplingGrowthQueue(newQueue) { saplingGrowthQueue = newQueue; if (typeof window !== 'undefined') window.saplingGrowthQueue = newQueue; }
+    export function setEngineDirtToGrassQueue(newQueue) { dirtToGrassQueue = newQueue; if (typeof window !== 'undefined') window.dirtToGrassQueue = newQueue; }
+    export function setEngineSnowRegrowthQueue(newQueue) { snowRegrowthQueue = newQueue; if (typeof window !== 'undefined') window.snowRegrowthQueue = newQueue; }
     export function setSelectedHotbarIndex(idx) { selectedHotbarIndex = idx; if (typeof window !== 'undefined') window.selectedHotbarIndex = idx; }
     export function setAttackAnimationTimer(t) { attackAnimationTimer = t; if (typeof window !== 'undefined') window.attackAnimationTimer = t; }
+    export function setEngineWorldBiomes(newBiomes) { worldBiomes = newBiomes; if (typeof window !== 'undefined') window.worldBiomes = newBiomes; }
 
+try { if (typeof setEngineWorldBiomes !== "undefined") window.setEngineWorldBiomes = setEngineWorldBiomes; } catch(e) {}
 try { if (typeof setEngineCropGrowthQueue !== "undefined") window.setEngineCropGrowthQueue = setEngineCropGrowthQueue; } catch(e) {}
+try { if (typeof setEngineSaplingGrowthQueue !== "undefined") window.setEngineSaplingGrowthQueue = setEngineSaplingGrowthQueue; } catch(e) {}
+try { if (typeof setEngineDirtToGrassQueue !== "undefined") window.setEngineDirtToGrassQueue = setEngineDirtToGrassQueue; } catch(e) {}
+try { if (typeof setEngineSnowRegrowthQueue !== "undefined") window.setEngineSnowRegrowthQueue = setEngineSnowRegrowthQueue; } catch(e) {}
+try { if (typeof spawnDroppedItem !== "undefined") window.spawnDroppedItem = spawnDroppedItem; } catch(e) {}
 try { if (typeof setEngineWorld !== "undefined") window.setEngineWorld = setEngineWorld; } catch(e) {}
 try { if (typeof setEngineBgWorld !== "undefined") window.setEngineBgWorld = setEngineBgWorld; } catch(e) {}
 try { if (typeof setEnginePlayer !== "undefined") window.setEnginePlayer = setEnginePlayer; } catch(e) {}
@@ -9967,6 +14314,9 @@ try { if (typeof updateCachedVignette !== "undefined") window.updateCachedVignet
 try { if (typeof cachedLightVignette !== "undefined") window.cachedLightVignette = cachedLightVignette; } catch(e) {}
 try { if (typeof cachedTorchLightCanvas !== "undefined") window.cachedTorchLightCanvas = cachedTorchLightCanvas; } catch(e) {}
 try { if (typeof cachedTorchGlowCanvas !== "undefined") window.cachedTorchGlowCanvas = cachedTorchGlowCanvas; } catch(e) {}
+try { if (typeof cachedBloomAuraCanvas !== "undefined") window.cachedBloomAuraCanvas = cachedBloomAuraCanvas; } catch(e) {}
+try { if (typeof generatePixelArtLightStamp !== "undefined") window.generatePixelArtLightStamp = generatePixelArtLightStamp; } catch(e) {}
+try { if (typeof generatePixelArtGlowStamp !== "undefined") window.generatePixelArtGlowStamp = generatePixelArtGlowStamp; } catch(e) {}
 try { if (typeof cachedFabulousVignetteCanvas !== "undefined") window.cachedFabulousVignetteCanvas = cachedFabulousVignetteCanvas; } catch(e) {}
 try { if (typeof cachedSnowFogCanvas !== "undefined") window.cachedSnowFogCanvas = cachedSnowFogCanvas; } catch(e) {}
 try { if (typeof cachedSunGlowDayCanvas !== "undefined") window.cachedSunGlowDayCanvas = cachedSunGlowDayCanvas; } catch(e) {}
@@ -9980,4 +14330,29 @@ try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropG
 try { if (typeof checkWaterNearCrop !== "undefined") window.checkWaterNearCrop = checkWaterNearCrop; } catch(e) {}
 try { if (typeof registerPlantedCrop !== "undefined") window.registerPlantedCrop = registerPlantedCrop; } catch(e) {}
 try { if (typeof updateCropGrowth !== "undefined") window.updateCropGrowth = updateCropGrowth; } catch(e) {}
-
+try { if (typeof isClimbableBlock !== "undefined") window.isClimbableBlock = isClimbableBlock; } catch(e) {}
+try { if (typeof isJungleDoorBlock !== "undefined") window.isJungleDoorBlock = isJungleDoorBlock; } catch(e) {}
+try { if (typeof Parrot !== "undefined") window.Parrot = Parrot; } catch(e) {}
+try { if (typeof drawShoulderParrot !== "undefined") window.drawShoulderParrot = drawShoulderParrot; } catch(e) {}
+try { if (typeof dismountParrot !== "undefined") window.dismountParrot = dismountParrot; } catch(e) {}
+try { if (typeof dismountAllShoulderParrots !== "undefined") window.dismountAllShoulderParrots = dismountAllShoulderParrots; } catch(e) {}
+try { if (typeof AtlasExplorer !== "undefined") window.AtlasExplorer = AtlasExplorer; } catch(e) {}
+try { if (typeof worldBiomes !== "undefined") window.worldBiomes = worldBiomes; } catch(e) {}
+try { if (typeof signs !== "undefined") window.signs = signs; } catch(e) {}
+try { if (typeof setEngineSigns !== "undefined") window.setEngineSigns = setEngineSigns; } catch(e) {}
+try { if (typeof deliverLeafDecayItem !== "undefined") window.deliverLeafDecayItem = deliverLeafDecayItem; } catch(e) {}
+try { if (typeof cachedCavernWallStone !== "undefined") window.cachedCavernWallStone = cachedCavernWallStone; } catch(e) {}
+try { if (typeof cachedCavernWallDirt !== "undefined") window.cachedCavernWallDirt = cachedCavernWallDirt; } catch(e) {}
+try { if (typeof cachedCavernWallSand !== "undefined") window.cachedCavernWallSand = cachedCavernWallSand; } catch(e) {}
+try { if (typeof initCavernWallTextures !== "undefined") window.initCavernWallTextures = initCavernWallTextures; } catch(e) {}
+try { if (typeof cachedLavaGlowCanvas !== "undefined") window.cachedLavaGlowCanvas = cachedLavaGlowCanvas; } catch(e) {}
+try { if (typeof setEngineFpsCap !== "undefined") window.setEngineFpsCap = setEngineFpsCap; } catch(e) {}
+try { if (typeof fabulousConfig !== "undefined") window.fabulousConfig = fabulousConfig; } catch(e) {}
+try { if (typeof DEFAULT_FABULOUS_CONFIG !== "undefined") window.DEFAULT_FABULOUS_CONFIG = DEFAULT_FABULOUS_CONFIG; } catch(e) {}
+try { if (typeof FABULOUS_PRESETS !== "undefined") window.FABULOUS_PRESETS = FABULOUS_PRESETS; } catch(e) {}
+try { if (typeof applyFabulousPreset !== "undefined") window.applyFabulousPreset = applyFabulousPreset; } catch(e) {}
+try { if (typeof setFabulousConfig !== "undefined") window.setFabulousConfig = setFabulousConfig; } catch(e) {}
+try { if (typeof loadFabulousConfig !== "undefined") window.loadFabulousConfig = loadFabulousConfig; } catch(e) {}
+try { if (typeof getFabulousParticleBudget !== "undefined") window.getFabulousParticleBudget = getFabulousParticleBudget; } catch(e) {}
+try { if (typeof menuBackgroundRendered !== "undefined") window.menuBackgroundRendered = menuBackgroundRendered; } catch(e) {}
+try { if (typeof dismissBootLoadingScreen !== "undefined") window.dismissBootLoadingScreen = dismissBootLoadingScreen; } catch(e) {}

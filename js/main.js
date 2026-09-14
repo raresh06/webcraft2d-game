@@ -7,6 +7,8 @@ import * as Network from './network.js';
 import * as Engine from './engine.js';
 import * as UI from './ui.js';
 import * as Gamepad from './gamepad.js';
+import { RiftExplorerSpawner } from './RiftExplorerSpawner.js';
+import { AtlasTradeManager } from './AtlasTradeManager.js';
 
 // Expose exports to window for HTML inline event handlers (e.g. onclick)
 import {
@@ -16,7 +18,7 @@ import {
     SAPLING_GROWTH_DAYS, SNOW_REGROWTH_DAYS, WATER_FLOW_INTERVAL, WATER_FLOW_MAX,
     canHarvestBlock, canSaplingGrowAt, checkSandFallAbove, currentWorldSize, getBedPairStart,
     getBlockColor, getChestGroup, getChestKey, getDayDifficultyMultiplier, getDayHungerDrainMultiplier,
-    getDoorBaseY, getMaxAnimals, getRequiredMiningTier, isBackgroundBuildingBlock, isDoorBlock,
+    getDoorBaseY, getMaxAnimals, getRequiredMiningTier, isBackgroundBuildingBlock, isDoorBlock, isJungleDoorBlock, isClimbableBlock,
     isFoodItem, isOpenDoorBlock, isSolidWorldBlock, isWorldMapOpen, notifyBlockedSaplings,
     scheduleDirtToGrass, scheduleSnowRegrowth, scheduleTreeLeafDecay, setWorldDimensions,
     showClouds, showDebug, autoJumpEnabled, graphicsMode, advancedGraphics,
@@ -24,14 +26,14 @@ import {
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
-    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile,
+    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon, Parrot,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
-    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
+    startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable, dismountAllShoulderParrots,
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY,
     setEngineWorld, setEngineBgWorld, setEnginePlayer, setEngineSurfaceHeights,
     setEngineInventory, setEngineEquippedArmor, setEngineEntities, setEngineFluids,
-    setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineState, setGameState as setEngineGameState,
+    setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineSaplingGrowthQueue, setEngineState, setGameState as setEngineGameState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
     setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
@@ -47,7 +49,7 @@ import {
     world, bgWorld, player, inventory, equippedArmor, entities, mobs, activeProjectiles, fallingBlocks,
     particles, noteParticles, spawnNoteParticle, floatingTexts, clouds, fluids, fluidTick, furnaces, jukeboxes, chests,
     mouse, keys, camera, isMultiplayer, currentMpRoom, currentMpWorldName, remotePlayers, isSleeping,
-    sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue,
+    sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue, treeDecayClusters,
     saplingGrowthQueue, saplingBlockedWarnings, cropGrowthQueue, dirtToGrassQueue, snowRegrowthQueue,
     hotbarWheelLockUntil,
     surfaceHeights, droppedItems, timeOfDay, dayCount, frameCount, STATE,
@@ -73,7 +75,7 @@ export {
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
-    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile,
+    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
@@ -96,7 +98,7 @@ export {
     world, bgWorld, player, inventory, equippedArmor, entities, mobs, activeProjectiles, fallingBlocks,
     particles, noteParticles, spawnNoteParticle, floatingTexts, clouds, fluids, fluidTick, furnaces, jukeboxes, chests,
     mouse, keys, camera, isMultiplayer, currentMpRoom, currentMpWorldName, remotePlayers, isSleeping,
-    sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue,
+    sleepStartTime, isBackgroundBuildMode, bgBuildDarknessAlpha, nonCollidableTreeWood, leafDecayQueue, treeDecayClusters,
     saplingGrowthQueue, saplingBlockedWarnings, cropGrowthQueue, dirtToGrassQueue, snowRegrowthQueue,
     hotbarWheelLockUntil,
     surfaceHeights, droppedItems, timeOfDay, dayCount, frameCount, STATE,
@@ -135,7 +137,6 @@ export function setGameState(newState) {
 try { if (typeof window !== 'undefined') window.setGameState = setGameState; } catch(e) {}
 
 export function setMainIsBackgroundBuildMode(mode) {
-    isBackgroundBuildMode = mode;
     if (typeof window !== 'undefined') window.isBackgroundBuildMode = mode;
     if (typeof setEngineIsBackgroundBuildMode === 'function') setEngineIsBackgroundBuildMode(mode);
 }
@@ -180,6 +181,26 @@ export function updateTutorialUI() {}
 export function updateArmorUI() { if (typeof window !== 'undefined' && typeof window.updateArmorUI === 'function' && window.updateArmorUI !== updateArmorUI) return window.updateArmorUI(); }
 export function updateHudArmorBar() { if (typeof window !== 'undefined' && typeof window.updateHudArmorBar === 'function' && window.updateHudArmorBar !== updateHudArmorBar) return window.updateHudArmorBar(); }
 export function saveCurrentWorld() { if (typeof window !== 'undefined' && typeof window.saveCurrentWorld === 'function' && window.saveCurrentWorld !== saveCurrentWorld) return window.saveCurrentWorld(); }
+export function quitToMenu() {
+    if (typeof UI !== 'undefined' && typeof UI.quitToMenu === 'function') return UI.quitToMenu();
+    if (typeof window !== 'undefined' && typeof window.quitToMenu === 'function' && window.quitToMenu !== quitToMenu) return window.quitToMenu();
+}
+try { if (typeof window !== 'undefined') window.quitToMenu = quitToMenu; } catch(e) {}
+export function cycleAutosaveInterval() {
+    if (typeof UI !== 'undefined' && typeof UI.cycleAutosaveInterval === 'function') return UI.cycleAutosaveInterval();
+    if (typeof window !== 'undefined' && typeof window.cycleAutosaveInterval === 'function' && window.cycleAutosaveInterval !== cycleAutosaveInterval) return window.cycleAutosaveInterval();
+}
+try { if (typeof window !== 'undefined') window.cycleAutosaveInterval = cycleAutosaveInterval; } catch(e) {}
+export function openShop(tab = 'cosmetics') {
+    if (typeof UI !== 'undefined' && typeof UI.openShop === 'function') return UI.openShop(tab);
+    if (typeof window !== 'undefined' && typeof window.openShop === 'function' && window.openShop !== openShop) return window.openShop(tab);
+}
+try { if (typeof window !== 'undefined') window.openShop = openShop; } catch(e) {}
+export function openProfileEditor() {
+    if (typeof UI !== 'undefined' && typeof UI.openProfileEditor === 'function') return UI.openProfileEditor();
+    if (typeof window !== 'undefined' && typeof window.openProfileEditor === 'function' && window.openProfileEditor !== openProfileEditor) return window.openProfileEditor();
+}
+try { if (typeof window !== 'undefined') window.openProfileEditor = openProfileEditor; } catch(e) {}
 export function showToast(msg, duration) { if (typeof window !== 'undefined' && typeof window.showToast === 'function' && window.showToast !== showToast) return window.showToast(msg, duration); }
 export function checkAutosave() { if (typeof window !== 'undefined' && typeof window.checkAutosave === 'function' && window.checkAutosave !== checkAutosave) return window.checkAutosave(); }
 export function isActionActive(action) { if (typeof window !== 'undefined' && typeof window.isActionActive === 'function' && window.isActionActive !== isActionActive) return window.isActionActive(action); return false; }
@@ -261,6 +282,15 @@ export let pendingMusicTarget = null; // { x, y, slotIndex }
 
 export function promptUploadMusic(gx, gy, slotIndex) {
     pendingMusicTarget = { x: gx, y: gy, slotIndex: slotIndex };
+    // Clear all mouse down flags so when OS file picker opens/closes, right-click does not get stuck down
+    if (typeof resetMouseInputState === 'function') resetMouseInputState();
+    else {
+        mouse.isDownRight = false;
+        mouse.isDownLeft = false;
+        continuousPlaceCooldown = 20;
+        lastPlacedCell.x = -1;
+        lastPlacedCell.y = -1;
+    }
     const input = document.getElementById('jukebox-file-input');
     if (input) {
         input.value = '';
@@ -271,8 +301,15 @@ export function promptUploadMusic(gx, gy, slotIndex) {
 export function initJukeboxFileInput() {
     const fileInput = document.getElementById('jukebox-file-input');
     if (!fileInput) return;
+
+    fileInput.addEventListener('cancel', () => {
+        pendingMusicTarget = null;
+        if (typeof resetMouseInputState === 'function') resetMouseInputState();
+    });
+
     fileInput.addEventListener('change', async (e) => {
         const files = e.target.files;
+        if (typeof resetMouseInputState === 'function') resetMouseInputState();
         if (!files || !files.length || !pendingMusicTarget) return;
         const file = files[0];
         const target = pendingMusicTarget;
@@ -529,6 +566,30 @@ export function initJukeboxFileInput() {
                 case 'eat':
                     playTone(ctx, 'sawtooth', 320 + Math.random() * 60, 120, 0.14 * effectiveVol, 0.05, null, now);
                     break;
+                case 'door':
+                    playTone(ctx, 'sine', 190, 110, 0.22 * effectiveVol, 0.09, null, now);
+                    break;
+                case 'parrot_chirp':
+                    playTone(ctx, 'sine', 1400 + Math.random() * 400, 900 + Math.random() * 300, 0.15 * effectiveVol, 0.08, null, now);
+                    break;
+                case 'parrot_tame':
+                    playTone(ctx, 'triangle', 600, 1200, 0.20 * effectiveVol, 0.25, null, now, false);
+                    break;
+                case 'parrot_hurt':
+                    playTone(ctx, 'sawtooth', 700, 250, 0.22 * effectiveVol, 0.12, null, now);
+                    break;
+                case 'portal_warp':
+                    playTone(ctx, 'sine', 180, 720, 0.25 * effectiveVol, 0.35, null, now, false);
+                    break;
+                case 'astral_exchange':
+                    playTone(ctx, 'triangle', 440, 880, 0.22 * effectiveVol, 0.28, null, now, false);
+                    break;
+                case 'infuser_forge':
+                    playTone(ctx, 'square', 130, 520, 0.30 * effectiveVol, 0.35, null, now, false);
+                    break;
+                case 'quest_complete':
+                    playTone(ctx, 'sine', 523.25, 1046.5, 0.22 * effectiveVol, 0.25, null, now, false);
+                    break;
             }
         } catch(e) {}
     }
@@ -542,22 +603,24 @@ export function initJukeboxFileInput() {
 
 
     export function selectWorldSize(size) {
-        selectedWorldSizeChoice = size;
+        selectedWorldSizeChoice = (size === 'big') ? 'big' : 'small';
+        if (typeof window !== 'undefined') window.selectedWorldSizeChoice = selectedWorldSizeChoice;
         document.querySelectorAll('#world-size-selector button').forEach(btn => {
-            if (btn.dataset.size === size) btn.classList.add('active');
+            if (btn.dataset.size === selectedWorldSizeChoice) btn.classList.add('active');
             else btn.classList.remove('active');
         });
     }
 
     export function selectMpWorldSize(size) {
-        selectedMpWorldSize = size;
+        selectedMpWorldSize = (size === 'big') ? 'big' : 'small';
+        if (typeof window !== 'undefined') window.selectedMpWorldSize = selectedMpWorldSize;
         document.querySelectorAll('#mp-world-size-selector button').forEach(btn => {
-            if (btn.dataset.size === size) btn.classList.add('active');
+            if (btn.dataset.size === selectedMpWorldSize) btn.classList.add('active');
             else btn.classList.remove('active');
         });
         const warningEl = document.getElementById('mp-world-size-warning');
         if (warningEl) {
-            if (size === 'big') warningEl.classList.remove('hidden');
+            if (selectedMpWorldSize === 'big') warningEl.classList.remove('hidden');
             else warningEl.classList.add('hidden');
         }
     }
@@ -628,6 +691,7 @@ export function initJukeboxFileInput() {
         if (isVisible('loading-screen')) { callClose('cancelMultiplayerConnection'); return true; }
         if (isVisible('kick-modal')) { callClose('dismissKickModal'); return true; }
         if (isVisible('accent-color-popover')) { callClose('closeAccentColorPicker'); return true; }
+        if (isVisible('sign-edit-modal')) { callClose('closeSignEditor', true); return true; }
 
         // 3. Dynamic Universal Stacking Scanner: Detect ALL visible modal overlays & dialogs
         const candidateOverlays = Array.from(document.querySelectorAll(
@@ -668,6 +732,7 @@ export function initJukeboxFileInput() {
                 if (overlayId === 'new-world-modal') { callClose('closeNewWorldModal'); return true; }
                 if (overlayId === 'create-room-modal' || overlayId === 'join-room-modal') { callClose('closeRoomDialogs'); return true; }
                 if (overlayId === 'world-map-modal' || isWorldMapOpen) { if (!callClose('toggleWorldMap', false)) topOverlay.classList.add('hidden'); return true; }
+                if (overlayId === 'fabulous-settings-modal') { callClose('closeFabulousSettingsModal'); return true; }
                 if (overlayId === 'settings-menu') { callClose('closeSettings'); return true; }
                 if (overlayId === 'achievements-modal') { callClose('closeAchievements'); return true; }
                 if (overlayId === 'whats-new-modal') { callClose('closeWhatsNew'); return true; }
@@ -684,6 +749,10 @@ export function initJukeboxFileInput() {
                 if (overlayId === 'worlds-menu') { callClose('closeWorldsMenu'); return true; }
                 if (overlayId === 'game-intro') { callClose('advanceIntro'); return true; }
                 if (overlayId === 'pause-menu') { callClose('resumeGame'); return true; }
+                if (overlayId === 'emerald-vault-modal') { callClose('closeCurrencyHubModal'); return true; }
+                if (overlayId === 'atlas-dialogue-modal') { callClose('closeAtlasDialogue'); return true; }
+                if (overlayId === 'atlas-market-modal') { callClose('closeAtlasMarket'); return true; }
+                if (overlayId === 'astral-infuser-modal') { callClose('closeAstralInfuser'); return true; }
 
                 // --- Universal Handler for ANY Future UI / Menu ---
                 // 1. Check for standard action attributes or class names:
@@ -830,6 +899,16 @@ export function initJukeboxFileInput() {
                 }
                 return;
             }
+            if (k === 'c' && !isInventoryOpen && !isWorldMapOpen) {
+                e.preventDefault();
+                const vaultModal = document.getElementById('emerald-vault-modal');
+                if (vaultModal && !vaultModal.classList.contains('hidden') && vaultModal.style.display !== 'none') {
+                    if (typeof UI !== 'undefined' && typeof UI.closeCurrencyHubModal === 'function') UI.closeCurrencyHubModal();
+                } else {
+                    if (typeof UI !== 'undefined' && typeof UI.openCurrencyHubModal === 'function') UI.openCurrencyHubModal();
+                }
+                return;
+            }
             if (k === dropKey && !isInventoryOpen) {
                 e.preventDefault();
                 let item = inventory[selectedHotbarIndex];
@@ -845,7 +924,49 @@ export function initJukeboxFileInput() {
             if (k === debugKey) {
                 e.preventDefault(); toggleDebug();
             }
-            else if (k === invKey || k === 'i') toggleInventory();
+            else if (k === invKey || k === 'e') {
+                const atlasDialogueModal = document.getElementById('atlas-dialogue-modal');
+                const isAtlasDialogueOpen = atlasDialogueModal && !atlasDialogueModal.classList.contains('hidden') && atlasDialogueModal.style.display !== 'none';
+                const atlasMarketModal = document.getElementById('atlas-market-modal');
+                const isAtlasMarketOpen = atlasMarketModal && !atlasMarketModal.classList.contains('hidden') && atlasMarketModal.style.display !== 'none';
+
+                if (isAtlasDialogueOpen || isAtlasMarketOpen) {
+                    e.preventDefault();
+                    if (isAtlasDialogueOpen && typeof UI !== 'undefined' && typeof UI.closeAtlasDialogue === 'function') UI.closeAtlasDialogue();
+                    if (isAtlasMarketOpen && typeof UI !== 'undefined' && typeof UI.closeAtlasMarket === 'function') UI.closeAtlasMarket();
+                    return;
+                }
+
+                const curEntities = (typeof entities !== 'undefined' && Array.isArray(entities)) ? entities : (typeof window !== 'undefined' && Array.isArray(window.entities) ? window.entities : []);
+                const pCX = player.x + player.width / 2;
+                const pCY = player.y + player.height / 2;
+                let nearbyKael = null;
+                for (let ent of curEntities) {
+                    if (ent && (ent instanceof Engine.AtlasExplorer || ent.constructor?.name === 'AtlasExplorer') && !ent.isDeparted && ent.warpState === 'active') {
+                        const entCX = ent.x + ent.width / 2;
+                        const entCY = ent.y + ent.height / 2;
+                        if (Math.hypot(pCX - entCX, pCY - entCY) <= TILE_SIZE * 3.5) {
+                            nearbyKael = ent;
+                            break;
+                        }
+                    }
+                }
+
+                if (nearbyKael && !isInventoryOpen) {
+                    e.preventDefault();
+                    if (typeof UI !== 'undefined') {
+                        if (typeof UI.hasPlayerTalkedToKael === 'function' && UI.hasPlayerTalkedToKael()) {
+                            if (typeof UI.openAtlasMarket === 'function') UI.openAtlasMarket(nearbyKael);
+                        } else if (typeof UI.openAtlasDialogue === 'function') {
+                            UI.openAtlasDialogue(nearbyKael);
+                        }
+                    }
+                    return;
+                }
+
+                toggleInventory();
+            }
+            else if (k === 'i') toggleInventory();
             else {
                 keys[k] = true;
                 if (e.code) keys[e.code] = true;
@@ -987,6 +1108,53 @@ export function initJukeboxFileInput() {
         }
     });
 
+    export function hideSignHoverTooltip() {
+        if (typeof document === 'undefined') return;
+        const tip = document.getElementById('sign-hover-tooltip');
+        if (tip) {
+            tip.classList.add('hidden');
+            tip.style.display = 'none';
+        }
+    }
+
+    export function updateSignHoverTooltip(clientX, clientY) {
+        if (typeof document === 'undefined') return;
+        const tip = document.getElementById('sign-hover-tooltip');
+        if (!tip) return;
+
+        const curInventoryOpen = isInventoryOpen || (typeof UI !== 'undefined' && UI.isInventoryOpen) || (typeof window !== 'undefined' && window.isInventoryOpen) || (document.getElementById('inventory-container') && !document.getElementById('inventory-container').classList.contains('hidden'));
+        if (STATE !== 'PLAYING' || curInventoryOpen) {
+            hideSignHoverTooltip();
+            return;
+        }
+
+        let gx = Math.floor(mouse.worldX / TILE_SIZE);
+        let gy = Math.floor(mouse.worldY / TILE_SIZE);
+        if (gx < 0 || gx >= WORLD_WIDTH || gy < 0 || gy >= WORLD_HEIGHT || !world || !world[gx] || world[gx][gy] !== IDS.SIGN) {
+            hideSignHoverTooltip();
+            return;
+        }
+
+        const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+        const signData = liveSigns ? liveSigns.get(`${gx}_${gy}`) : null;
+        const lines = signData?.lines || (signData?.text ? signData.text.split('\n') : []);
+        const nonEmptyLines = lines.filter(l => l && l.trim().length > 0);
+
+        if (nonEmptyLines.length > 0) {
+            tip.innerText = lines.join('\n');
+            tip.classList.remove('hidden');
+            tip.style.display = 'block';
+            tip.style.left = (clientX + 14) + 'px';
+            tip.style.top = (clientY + 14) + 'px';
+        } else {
+            tip.innerText = '[ Empty Sign ]\nRight-click to edit';
+            tip.classList.remove('hidden');
+            tip.style.display = 'block';
+            tip.style.left = (clientX + 14) + 'px';
+            tip.style.top = (clientY + 14) + 'px';
+        }
+    }
+
     let canvasListenersAttached = false;
     export function initCanvasMouseListeners() {
         if (typeof document === 'undefined') return;
@@ -999,6 +1167,11 @@ export function initJukeboxFileInput() {
             const r = curCanvas.getBoundingClientRect(); 
             mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; 
             mouse.worldX = mouse.x + camera.x; mouse.worldY = mouse.y + camera.y;
+            updateSignHoverTooltip(e.clientX, e.clientY);
+        });
+
+        curCanvas.addEventListener('mouseleave', () => {
+            hideSignHoverTooltip();
         });
 
         curCanvas.addEventListener('mousedown', (e) => {
@@ -1033,7 +1206,7 @@ export function initJukeboxFileInput() {
                 continuousPlaceCooldown = 0;
                 lastPlacedCell.x = -1;
                 lastPlacedCell.y = -1;
-                if (!handleBlockInteraction()) {
+                if (!handleEntityInteraction() && !handleBlockInteraction()) {
                     const placed = handleRightClickPlace();
                     if (placed) {
                         playSound('place');
@@ -1068,6 +1241,20 @@ export function initJukeboxFileInput() {
         initCanvasMouseListeners();
     }
 
+    export function resetMouseInputState() {
+        mouse.isDownLeft = false;
+        mouse.isDownRight = false;
+        mouse.down = false;
+        mouse.rightDown = false;
+        if (miningTarget) miningTarget.progress = 0;
+        if (player && typeof player.resetEat === 'function') player.resetEat();
+        continuousPlaceCooldown = 15;
+        lastPlacedCell.x = -1;
+        lastPlacedCell.y = -1;
+        Object.keys(keys).forEach(k => delete keys[k]);
+    }
+    if (typeof window !== 'undefined') window.resetMouseInputState = resetMouseInputState;
+
     window.addEventListener('mouseup', (e) => {
         if (e.button === 0) {
             mouse.isDownLeft = false;
@@ -1080,6 +1267,14 @@ export function initJukeboxFileInput() {
             lastPlacedCell.x = -1; 
             lastPlacedCell.y = -1; 
         }
+    });
+
+    window.addEventListener('blur', () => {
+        resetMouseInputState();
+    });
+
+    window.addEventListener('focus', () => {
+        resetMouseInputState();
     });
 
     document.addEventListener('selectstart', (e) => {
@@ -1112,13 +1307,24 @@ export function initJukeboxFileInput() {
         status.classList.remove('hidden');
     }
 
+    export function respawnDailyAnimals() {
+        const maxAnimals = getMaxAnimals();
+        const currentAnimals = entities.filter(e => 
+            e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon
+        ).length;
+        const deficit = Math.max(0, maxAnimals - currentAnimals);
+        if (deficit > 0) {
+            spawnAnimals(deficit, 0.40);
+        }
+    }
+
     export function completeSleepTransition() {
         if (!isMultiplayer) {
-            setEngineTimeOfDay(0.2);
+            setEngineTimeOfDay(0.02);
             setEngineDayCount(dayCount + 1);
             setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
-            spawnAnimals(2, 0.30);
+            respawnDailyAnimals();
             updateSleepStatus();
             return;
         }
@@ -1127,15 +1333,42 @@ export function initJukeboxFileInput() {
         const activePlayers = Object.values(remotePlayers).filter(remotePlayer => remotePlayer && !remotePlayer.isDisconnected && (!remotePlayer.lastSeenLocalTime || Date.now() - remotePlayer.lastSeenLocalTime < 12000));
         const allSleeping = activePlayers.length > 0 ? activePlayers.every(remotePlayer => remotePlayer.sleeping) : isSleeping;
         if (allSleeping && isSleeping) {
-            setEngineTimeOfDay(0.2);
+            setEngineTimeOfDay(0.02);
             setEngineDayCount(dayCount + 1);
             setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
-            spawnAnimals(2, 0.30);
+            respawnDailyAnimals();
             updateSleepStatus();
         }
     }
 
+
+    export function handleEntityInteraction() {
+        if (isInventoryOpen || STATE !== 'PLAYING') return false;
+        const curEntities = (typeof window !== 'undefined' && Array.isArray(window.entities)) ? window.entities : entities;
+        if (!curEntities || !curEntities.length) return false;
+
+        const mx = mouse.worldX;
+        const my = mouse.worldY;
+        const pCX = player.x + player.width / 2;
+        const pCY = player.y + player.height / 2;
+
+        for (let ent of curEntities) {
+            if (!ent || ent.isDead || ent.health <= 0) continue;
+            if (mx >= ent.x - 8 && mx <= ent.x + ent.width + 8 &&
+                my >= ent.y - 8 && my <= ent.y + ent.height + 8) {
+                
+                const entCX = ent.x + ent.width / 2;
+                const entCY = ent.y + ent.height / 2;
+                if (Math.hypot(pCX - entCX, pCY - entCY) / TILE_SIZE > REACH) return false;
+
+                if (ent instanceof Parrot) {
+                    return ent.interact(player, inventory, selectedHotbarIndex);
+                }
+            }
+        }
+        return false;
+    }
 
     export function handleBlockInteraction() {
         let gx = Math.floor(mouse.worldX / TILE_SIZE); let gy = Math.floor(mouse.worldY / TILE_SIZE);
@@ -1145,8 +1378,24 @@ export function initJukeboxFileInput() {
         let bCX = gx * TILE_SIZE + TILE_SIZE / 2; let bCY = gy * TILE_SIZE + TILE_SIZE / 2;
         if (Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE > REACH) return false;
 
+        if (world[gx][gy] === IDS.ASTRAL_INFUSER) {
+            if (typeof UI !== 'undefined' && typeof UI.openAstralInfuser === 'function') {
+                UI.openAstralInfuser(gx, gy);
+            }
+            return true;
+        }
+
+        if (world[gx][gy] === IDS.SIGN) {
+            if (typeof UI !== 'undefined' && typeof UI.openSignEditor === 'function') {
+                UI.openSignEditor(gx, gy);
+            } else if (typeof window !== 'undefined' && typeof window.openSignEditor === 'function') {
+                window.openSignEditor(gx, gy);
+            }
+            return true;
+        }
+
         if (world[gx][gy] === IDS.BED) {
-            if (timeOfDay <= 0.5 || timeOfDay > 0.9) {
+            if (timeOfDay <= 0.62 || timeOfDay > 0.95) {
                 showToast('You can only sleep at night.');
                 return true;
             }
@@ -1169,21 +1418,27 @@ export function initJukeboxFileInput() {
         if (isDoorBlock(world[gx][gy])) {
             const doorBaseY = getDoorBaseY(gy, world[gx][gy]);
             const doorIsOpen = isOpenDoorBlock(world[gx][gy]);
+            const isJungle = isJungleDoorBlock(world[gx][gy]);
             if (doorIsOpen) {
                 if (intersectsEntity(gx, doorBaseY) || intersectsEntity(gx, doorBaseY - 1)) {
                     showToast('The doorway is occupied.');
                     return true;
                 }
-                world[gx][doorBaseY] = IDS.DOOR;
-                world[gx][doorBaseY - 1] = IDS.DOOR_TOP;
-                syncBlock(gx, doorBaseY, IDS.DOOR);
-                syncBlock(gx, doorBaseY - 1, IDS.DOOR_TOP);
+                const bottomId = isJungle ? IDS.JUNGLE_DOOR : IDS.DOOR;
+                const topId = isJungle ? IDS.JUNGLE_DOOR_TOP : IDS.DOOR_TOP;
+                world[gx][doorBaseY] = bottomId;
+                world[gx][doorBaseY - 1] = topId;
+                syncBlock(gx, doorBaseY, bottomId);
+                syncBlock(gx, doorBaseY - 1, topId);
             } else {
-                world[gx][doorBaseY] = IDS.DOOR_OPEN;
-                world[gx][doorBaseY - 1] = IDS.DOOR_OPEN_TOP;
-                syncBlock(gx, doorBaseY, IDS.DOOR_OPEN);
-                syncBlock(gx, doorBaseY - 1, IDS.DOOR_OPEN_TOP);
+                const openBottomId = isJungle ? IDS.JUNGLE_DOOR_OPEN : IDS.DOOR_OPEN;
+                const openTopId = isJungle ? IDS.JUNGLE_DOOR_OPEN_TOP : IDS.DOOR_OPEN_TOP;
+                world[gx][doorBaseY] = openBottomId;
+                world[gx][doorBaseY - 1] = openTopId;
+                syncBlock(gx, doorBaseY, openBottomId);
+                syncBlock(gx, doorBaseY - 1, openTopId);
             }
+            playSound('door');
             return true;
         }
         if (world[gx][gy] === IDS.FURNACE) {
@@ -1266,6 +1521,7 @@ export function initJukeboxFileInput() {
                     if (record && record.blob) {
                         await jukebox.play(record.blob, { name: trackName, trackId }, { x: gx, y: gy }, jb.record);
                         showToast('Now Playing: ' + trackName);
+                        unlockAchievement('sound_of_music');
                     } else {
                         showToast('Could not load song for this disc.');
                     }
@@ -1308,11 +1564,23 @@ export function initJukeboxFileInput() {
             
             if (Math.hypot(pCX - zCX, pCY - zCY) < REACH * TILE_SIZE) {
                 if (mouse.worldX >= z.x && mouse.worldX <= z.x + z.width && mouse.worldY >= z.y && mouse.worldY <= z.y + z.height) {
+                    if (z instanceof Engine.AtlasExplorer || (z.constructor && z.constructor.name === 'AtlasExplorer')) {
+                        return true; // Friendly NPC, cannot be harmed
+                    }
                     z.takeDamage(wDmg, pCX < zCX ? 1 : -1);
                     damageSelectedTool(1);
                     if (z instanceof Sheep && z.health > 0 && !z.isSheared) {
                         z.isSheared = true;
-                        giveItem(IDS.WOOL, 1);
+                        const heldTool = inventory[selectedHotbarIndex];
+                        const isKineticShears = heldTool && heldTool.id === IDS.KINETIC_SHEARS;
+                        const woolAmount = isKineticShears ? 3 : 1;
+                        giveItem(IDS.WOOL, woolAmount);
+                        if (isKineticShears) {
+                            unlockAchievement('kinetic_shearing');
+                        }
+                        if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                            UI.trackDailyQuestProgress('shear_sheep', { count: woolAmount });
+                        }
                     }
                     if (z.health <= 0) {
                         if (z instanceof Sheep) {
@@ -1328,9 +1596,16 @@ export function initJukeboxFileInput() {
                             let leatherCount = Math.floor(Math.random() * 3);
                             if (leatherCount > 0) giveItem(IDS.LEATHER, leatherCount);
                         }
+                        else if (z instanceof Pigeon) {
+                            // Innocent sweet bird drops nothing!
+                            unlockAchievement('why_would_you_do_that');
+                        }
                         else if (z instanceof Zombie) {
                             if(Math.random() < 0.5) giveItem(IDS.RAW_PORKCHOP, 1);
                             monstersKilledCount = (monstersKilledCount || 0) + 1;
+                            if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                                UI.trackDailyQuestProgress('slay_monster', { mobType: 'Zombie' });
+                            }
                             unlockAchievement('monster_hunter');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
                             if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
@@ -1338,6 +1613,9 @@ export function initJukeboxFileInput() {
                         else if (z instanceof Creeper) {
                             giveItem(IDS.COAL, Math.floor(Math.random() * 2) + 1);
                             monstersKilledCount = (monstersKilledCount || 0) + 1;
+                            if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                                UI.trackDailyQuestProgress('slay_monster', { mobType: 'Creeper' });
+                            }
                             unlockAchievement('monster_hunter');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
                             if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
@@ -1345,6 +1623,9 @@ export function initJukeboxFileInput() {
                         else if (z instanceof Scorpion) {
                             if (Math.random() < 0.6) giveItem(IDS.BONE, 1);
                             monstersKilledCount = (monstersKilledCount || 0) + 1;
+                            if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                                UI.trackDailyQuestProgress('slay_monster', { mobType: 'Scorpion' });
+                            }
                             unlockAchievement('monster_hunter');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
                             if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
@@ -1463,9 +1744,15 @@ export function initJukeboxFileInput() {
         }
 
         let reqHardness = HARDNESS[blockId] || 100;
+        if (heldTool && heldTool.id === IDS.KINETIC_SHEARS && [IDS.LEAVES, IDS.JUNGLE_LEAVES, IDS.VINES, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FERN].includes(blockId)) {
+            miningTarget.progress = reqHardness;
+        }
         
         if (miningTarget.progress >= reqHardness) {
             playSound('break');
+            if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                UI.trackDailyQuestProgress('mine_block', { blockId });
+            }
             if (typeof Gamepad !== 'undefined' && typeof Gamepad.triggerGamepadVibration === 'function') {
                 Gamepad.triggerGamepadVibration(90, 0.4, 0.6);
             }
@@ -1544,6 +1831,10 @@ export function initJukeboxFileInput() {
                     brokenCells.push([bedPairStart + 1, gridY]);
                 }
             }
+            let detachedSignCells = [];
+            if (gridY > 0 && world[gridX]?.[gridY - 1] === IDS.SIGN) {
+                detachedSignCells.push([gridX, gridY - 1]);
+            }
             brokenCells.push(...detachedTorchCells);
             brokenCells.forEach(([brokenX, brokenY]) => {
                 removeFluid(brokenX, brokenY);
@@ -1556,20 +1847,65 @@ export function initJukeboxFileInput() {
                     }
                 }
                 wakeFluidsAround(brokenX, brokenY);
+                const queuedLeaf = leafDecayQueue.get(`${brokenX}_${brokenY}`);
+                if (queuedLeaf && typeof queuedLeaf === 'object' && queuedLeaf.clusterId) {
+                    const c = (typeof treeDecayClusters !== 'undefined' ? treeDecayClusters : window.treeDecayClusters)?.get(queuedLeaf.clusterId);
+                    if (c) {
+                        c.leavesRemaining = Math.max(0, c.leavesRemaining - 1);
+                        if (c.leavesRemaining <= 0) {
+                            (typeof treeDecayClusters !== 'undefined' ? treeDecayClusters : window.treeDecayClusters)?.delete(queuedLeaf.clusterId);
+                        }
+                    }
+                }
                 leafDecayQueue.delete(`${brokenX}_${brokenY}`);
                 saplingGrowthQueue.delete(`${brokenX}_${brokenY}`);
                 cropGrowthQueue.delete(`${brokenX}_${brokenY}`);
                 saplingBlockedWarnings.delete(`${brokenX}_${brokenY}`);
                 dirtToGrassQueue.delete(`${brokenX}_${brokenY}`);
+                const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+                if (liveSigns && liveSigns.has(`${brokenX}_${brokenY}`)) {
+                    liveSigns.delete(`${brokenX}_${brokenY}`);
+                    if (typeof Network !== 'undefined' && typeof Network.syncSignDelete === 'function') {
+                        Network.syncSignDelete(brokenX, brokenY);
+                    } else if (typeof window !== 'undefined' && typeof window.syncSignDelete === 'function') {
+                        window.syncSignDelete(brokenX, brokenY);
+                    }
+                }
                 syncBlock(brokenX, brokenY, IDS.AIR);
                 checkSandFallAbove(brokenX, brokenY);
                 if (world[brokenX]?.[brokenY + 1] === IDS.DIRT) scheduleDirtToGrass(brokenX, brokenY + 1);
             });
+            detachedSignCells.forEach(([sx, sy]) => {
+                removeFluid(sx, sy);
+                world[sx][sy] = IDS.AIR;
+                syncBlock(sx, sy, IDS.AIR);
+                const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+                if (liveSigns && liveSigns.has(`${sx}_${sy}`)) {
+                    liveSigns.delete(`${sx}_${sy}`);
+                    if (typeof Network !== 'undefined' && typeof Network.syncSignDelete === 'function') {
+                        Network.syncSignDelete(sx, sy);
+                    } else if (typeof window !== 'undefined' && typeof window.syncSignDelete === 'function') {
+                        window.syncSignDelete(sx, sy);
+                    }
+                }
+                dropItemForWorld(IDS.SIGN, sx * TILE_SIZE + TILE_SIZE / 2, sy * TILE_SIZE + TILE_SIZE / 2, 1);
+            });
             if (blockId === IDS.SNOW) scheduleSnowRegrowth(gridX, gridY);
             notifyBlockedSaplings();
             miningTarget.progress = 0;
-            if (wasTreeTrunk && (!isMultiplayer || isMultiplayerAuthority()) && ![...nonCollidableTreeWood].some(cell => cell.startsWith(`${gridX}_`))) {
-                scheduleTreeLeafDecay(gridX);
+            const isWoodBreak = (wasTreeTrunk || blockId === IDS.WOOD || blockId === IDS.JUNGLE_WOOD);
+            if (isWoodBreak && (!isMultiplayer || isMultiplayerAuthority())) {
+                let hasTrunkRemaining = false;
+                for (let ty = Math.max(0, gridY - 10); ty <= Math.min(WORLD_HEIGHT - 1, gridY + 10); ty++) {
+                    if (world[gridX]?.[ty] === IDS.WOOD || world[gridX]?.[ty] === IDS.JUNGLE_WOOD) {
+                        hasTrunkRemaining = true;
+                        break;
+                    }
+                }
+                const hasSetTrunk = [...nonCollidableTreeWood].some(cell => cell.startsWith(`${gridX}_`));
+                if (!hasTrunkRemaining && !hasSetTrunk) {
+                    scheduleTreeLeafDecay(gridX, gridY);
+                }
             }
             player.exhaustion += 0.05 * getDayHungerDrainMultiplier();
             let surfY = getWorldSurfaceY(gridX);
@@ -1589,7 +1925,9 @@ export function initJukeboxFileInput() {
                 giveItem(IDS.SEEDS, 2);
                 unlockAchievement('bumper_crop');
             }
-            if (isDoorBlock(blockId)) dropId = IDS.DOOR;
+            if (isDoorBlock(blockId)) {
+                dropId = isJungleDoorBlock(blockId) ? IDS.JUNGLE_DOOR : IDS.DOOR;
+            }
             if (blockId === IDS.STONE) dropId = IDS.COBBLESTONE;
             if (blockId === IDS.SNOW) {
                 const heldItem = inventory[selectedHotbarIndex];
@@ -1601,6 +1939,19 @@ export function initJukeboxFileInput() {
             if (blockId === IDS.IRON_ORE) dropId = IDS.IRON_ORE;
             if (blockId === IDS.DIAMOND_ORE) dropId = IDS.DIAMOND;
             if (blockId === IDS.LADDER) dropId = IDS.LADDER;
+            if (blockId === IDS.VINES) dropId = IDS.VINES;
+            if (blockId === IDS.BAMBOO) dropId = IDS.BAMBOO;
+            if (blockId === IDS.FERN) {
+                dropId = Math.random() < 0.20 ? IDS.SEEDS : null;
+            }
+            if (blockId === IDS.MELON_STEM) dropId = IDS.MELON_SEEDS;
+            if (blockId === IDS.MELON) {
+                dropId = null;
+                const slices = Math.floor(Math.random() * 5) + 3; // 3 to 7 slices
+                giveItem(IDS.MELON_SLICE, slices);
+            }
+            if (blockId === IDS.JUNGLE_WOOD) dropId = IDS.JUNGLE_WOOD;
+            if (blockId === IDS.JUNGLE_PLANKS) dropId = IDS.JUNGLE_PLANKS;
             if (blockId === IDS.WOODEN_STAIRS || blockId === IDS.WOODEN_STAIRS_LEFT || blockId === IDS.WOODEN_STAIRS_RIGHT) dropId = IDS.WOODEN_STAIRS;
             if (blockId === IDS.COBBLESTONE_STAIRS || blockId === IDS.COBBLESTONE_STAIRS_LEFT || blockId === IDS.COBBLESTONE_STAIRS_RIGHT) dropId = IDS.COBBLESTONE_STAIRS;
             if (blockId === IDS.SHORT_GRASS || blockId === IDS.TALL_GRASS) {
@@ -1611,10 +1962,61 @@ export function initJukeboxFileInput() {
             if (blockId === IDS.FLOWER_YELLOW) dropId = IDS.FLOWER_YELLOW;
             if (blockId === IDS.LEAVES) {
                 const leafDropRoll = Math.random();
-                if (leafDropRoll < 0.02) dropId = IDS.SAPLING;
-                else if (leafDropRoll < 0.07) dropId = IDS.APPLE;
-                else if (leafDropRoll < 0.15) dropId = IDS.STICK;
+                if (leafDropRoll < 0.08) dropId = IDS.APPLE;
+                else if (leafDropRoll < 0.25) dropId = IDS.STICK;
                 else dropId = null;
+            }
+            if (blockId === IDS.JUNGLE_LEAVES) {
+                const leafDropRoll = Math.random();
+                if (leafDropRoll < 0.15) dropId = IDS.MELON_SEEDS;
+                else if (leafDropRoll < 0.35) dropId = IDS.STICK;
+                else dropId = null;
+            }
+            if (blockId === IDS.JUNGLE_SAPLING) dropId = IDS.JUNGLE_SAPLING;
+            if (blockId === IDS.EMERALD_ORE) {
+                if (!canHarvestBlock(blockId) && getRequiredMiningTier(blockId) > 0) {
+                    dropId = null;
+                } else {
+                    const profile = (typeof UI !== 'undefined' && UI.currentUserProfile) || (typeof window !== 'undefined' && window.currentUserProfile);
+                    const isGuest = !profile || profile.isGuest;
+                    if (isGuest) {
+                        dropId = IDS.EMERALD_ORE;
+                        showToast('Login to earn Emerald currency from mining!');
+                    } else {
+                        const minedToday = (typeof UI !== 'undefined' && typeof UI.getDailyMinedEmeralds === 'function') ? UI.getDailyMinedEmeralds() : 0;
+                        if (minedToday < 100) {
+                            if (typeof UI !== 'undefined') {
+                                if (typeof UI.recordDailyMinedEmerald === 'function') UI.recordDailyMinedEmerald();
+                                if (typeof UI.addPlayerEmeralds === 'function') UI.addPlayerEmeralds(1);
+                                if (typeof UI.unlockAchievement === 'function') UI.unlockAchievement('gem_prospector');
+                            }
+                            dropId = null;
+                            showToast('+1 Emerald! (' + (minedToday + 1) + '/100 today)');
+                        } else {
+                            dropId = IDS.EMERALD_ORE;
+                            showToast('Daily mining limit reached (100/100). Dropping block instead.');
+                        }
+                    }
+                }
+            }
+            if (blockId === IDS.VOID_BERRY_BUSH) {
+                dropId = null;
+                const berries = Math.floor(Math.random() * 2) + 2; // 2 to 3
+                giveItem(IDS.VOID_BERRY, berries);
+            }
+            if (blockId === IDS.SUNBURST_MELON) {
+                dropId = null;
+                const slices = Math.floor(Math.random() * 5) + 3; // 3 to 7
+                giveItem(IDS.SUNBURST_MELON_SLICE, slices);
+            }
+            if (blockId === IDS.ASTRAL_INFUSER) dropId = IDS.ASTRAL_INFUSER;
+            if (blockId === IDS.PRISM_GLASS) dropId = IDS.PRISM_GLASS;
+            if (blockId === IDS.VOID_STONE_BRICK) dropId = IDS.VOID_STONE_BRICK;
+            const heldItemForDrop = inventory[selectedHotbarIndex];
+            if (heldItemForDrop && (heldItemForDrop.id === IDS.SHEARS || heldItemForDrop.id === IDS.KINETIC_SHEARS)) {
+                if ([IDS.LEAVES, IDS.JUNGLE_LEAVES, IDS.VINES, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FERN].includes(blockId)) {
+                    dropId = blockId;
+                }
             }
             // Strict tool tier harvest enforcement: If the block requires a tool tier and the player lacks it, DROP NOTHING!
             if (!canHarvestBlock(blockId) && getRequiredMiningTier(blockId) > 0) {
@@ -1623,15 +2025,23 @@ export function initJukeboxFileInput() {
             if (dropId) giveItem(dropId, 1);
             detachedTorchCells.forEach(() => giveItem(IDS.TORCH, 1));
             // Check if flower/grass/sapling/crop above was detached
-            const isDetachablePlant = id => [IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.SAPLING, IDS.WHEAT_STAGE_1, IDS.WHEAT_STAGE_2, IDS.WHEAT_STAGE_3, IDS.WHEAT_STAGE_4].includes(id);
+            const isDetachablePlant = id => [
+                IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW,
+                IDS.SAPLING, IDS.JUNGLE_SAPLING, IDS.FERN, IDS.MELON_STEM,
+                IDS.WHEAT_STAGE_1, IDS.WHEAT_STAGE_2, IDS.WHEAT_STAGE_3, IDS.WHEAT_STAGE_4
+            ].includes(id);
             if (gridY > 0 && isDetachablePlant(world[gridX]?.[gridY - 1])) {
                 let aboveId = world[gridX][gridY - 1];
                 world[gridX][gridY - 1] = IDS.AIR;
                 syncBlock(gridX, gridY - 1, IDS.AIR);
                 if (aboveId === IDS.SHORT_GRASS || aboveId === IDS.TALL_GRASS) {
                     if (Math.random() < 0.20) giveItem(IDS.SEEDS, 1);
-                } else if (aboveId === IDS.FLOWER_RED || aboveId === IDS.FLOWER_YELLOW || aboveId === IDS.SAPLING) {
+                } else if (aboveId === IDS.FLOWER_RED || aboveId === IDS.FLOWER_YELLOW || aboveId === IDS.SAPLING || aboveId === IDS.JUNGLE_SAPLING) {
                     giveItem(aboveId, 1);
+                } else if (aboveId === IDS.FERN) {
+                    if (Math.random() < 0.20) giveItem(IDS.SEEDS, 1);
+                } else if (aboveId === IDS.MELON_STEM) {
+                    giveItem(IDS.MELON_SEEDS, 1);
                 } else if (aboveId === IDS.WHEAT_STAGE_1 || aboveId === IDS.WHEAT_STAGE_2) {
                     giveItem(IDS.SEEDS, 1);
                 } else if (aboveId === IDS.WHEAT_STAGE_3) {
@@ -1640,11 +2050,11 @@ export function initJukeboxFileInput() {
                     giveItem(IDS.WHEAT, 1);
                     giveItem(IDS.SEEDS, 2);
                 }
-                if (aboveId === IDS.SAPLING) {
+                if (aboveId === IDS.SAPLING || aboveId === IDS.JUNGLE_SAPLING) {
                     saplingGrowthQueue.delete(`${gridX}_${gridY - 1}`);
                     saplingBlockedWarnings.delete(`${gridX}_${gridY - 1}`);
                 }
-                if (aboveId === IDS.WHEAT_STAGE_1 || aboveId === IDS.WHEAT_STAGE_2 || aboveId === IDS.WHEAT_STAGE_3 || aboveId === IDS.WHEAT_STAGE_4) {
+                if (aboveId === IDS.WHEAT_STAGE_1 || aboveId === IDS.WHEAT_STAGE_2 || aboveId === IDS.WHEAT_STAGE_3 || aboveId === IDS.WHEAT_STAGE_4 || aboveId === IDS.MELON_STEM) {
                     cropGrowthQueue.delete(`${gridX}_${gridY - 1}`);
                 }
                 checkSandFallAbove(gridX, gridY - 1);
@@ -1690,7 +2100,7 @@ export function initJukeboxFileInput() {
         let gy = Math.floor(mouse.worldY / TILE_SIZE);
 
         if ((gx !== lastPlacedCell.x || gy !== lastPlacedCell.y) && continuousPlaceCooldown === 0) {
-            if (!handleBlockInteraction()) {
+            if (!handleEntityInteraction() && !handleBlockInteraction()) {
                 const placed = handleRightClickPlace();
                 if (placed) {
                     playSound('place');
@@ -1888,14 +2298,17 @@ export function initJukeboxFileInput() {
 
         if (targetFluid && !HARDNESS[sel.id]) return false;
 
-        if (sel.id === IDS.DOOR) {
+        if (sel.id === IDS.DOOR || sel.id === IDS.JUNGLE_DOOR) {
             if (gy < 1 || gy >= WORLD_HEIGHT - 1 || !isSolidWorldBlock(gx, gy + 1, world[gx][gy + 1]) || world[gx][gy] !== IDS.AIR || world[gx][gy - 1] !== IDS.AIR || intersectsEntity(gx, gy) || intersectsEntity(gx, gy - 1)) return false;
-            world[gx][gy] = IDS.DOOR;
-            world[gx][gy - 1] = IDS.DOOR_TOP;
-            syncBlock(gx, gy, IDS.DOOR);
-            syncBlock(gx, gy - 1, IDS.DOOR_TOP);
+            const bottomId = (sel.id === IDS.JUNGLE_DOOR) ? IDS.JUNGLE_DOOR : IDS.DOOR;
+            const topId = (sel.id === IDS.JUNGLE_DOOR) ? IDS.JUNGLE_DOOR_TOP : IDS.DOOR_TOP;
+            world[gx][gy] = bottomId;
+            world[gx][gy - 1] = topId;
+            syncBlock(gx, gy, bottomId);
+            syncBlock(gx, gy - 1, topId);
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
+            playSound('door');
             updateUI();
             return true;
         }
@@ -1912,13 +2325,40 @@ export function initJukeboxFileInput() {
             return true;
         }
 
-        if (sel.id === IDS.SAPLING) {
-            if (gy >= WORLD_HEIGHT - 1 || world[gx][gy] !== IDS.AIR || ![IDS.DIRT, IDS.GRASS].includes(world[gx][gy + 1]) || intersectsEntity(gx, gy)) return false;
+        if (sel.id === IDS.SIGN) {
+            if (gy >= WORLD_HEIGHT - 1 || !isSolidWorldBlock(gx, gy + 1, world[gx]?.[gy + 1]) || (world[gx][gy] !== IDS.AIR && world[gx][gy] !== IDS.SHORT_GRASS && world[gx][gy] !== IDS.TALL_GRASS)) return false;
+            if (world[gx][gy] === IDS.SHORT_GRASS || world[gx][gy] === IDS.TALL_GRASS) {
+                if (Math.random() < 0.20) dropItemForWorld(IDS.SEEDS, gx * TILE_SIZE + TILE_SIZE / 2, gy * TILE_SIZE + TILE_SIZE / 2, 1);
+            }
+            removeFluid(gx, gy);
+            world[gx][gy] = IDS.SIGN;
+            wakeFluidsAround(gx, gy);
+            syncBlock(gx, gy, IDS.SIGN);
+            const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : null;
+            if (liveSigns) {
+                liveSigns.set(`${gx}_${gy}`, { text: '', lines: ['', '', '', ''] });
+            }
+            sel.count--;
+            if (sel.count <= 0) inventory[selectedIndex] = null;
+            playSound('step', { material: 'wood' });
+            updateUI();
+            if (typeof UI !== 'undefined' && typeof UI.openSignEditor === 'function') {
+                UI.openSignEditor(gx, gy, true);
+            } else if (typeof window !== 'undefined' && typeof window.openSignEditor === 'function') {
+                window.openSignEditor(gx, gy, true);
+            }
+            if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
+            return true;
+        }
+
+        if (sel.id === IDS.SAPLING || sel.id === IDS.JUNGLE_SAPLING) {
+            if (gy >= WORLD_HEIGHT - 1 || world[gx][gy] !== IDS.AIR || ![IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[gx][gy + 1]) || intersectsEntity(gx, gy)) return false;
             const growthAt = dayCount + timeOfDay + SAPLING_GROWTH_DAYS;
-            world[gx][gy] = IDS.SAPLING;
+            world[gx][gy] = sel.id;
             const hasClearGrowthSpace = canSaplingGrowAt(gx, gy);
             saplingGrowthQueue.set(`${gx}_${gy}`, growthAt);
-            syncBlock(gx, gy, IDS.SAPLING, { growthAt });
+            if (typeof window !== 'undefined') window.saplingGrowthQueue = saplingGrowthQueue;
+            syncBlock(gx, gy, sel.id, { growthAt });
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
             if (hasClearGrowthSpace) showToast('Sapling planted. It will grow in 2 days.');
@@ -1930,7 +2370,7 @@ export function initJukeboxFileInput() {
             return true;
         }
 
-        if (sel.id === IDS.FLOWER_RED || sel.id === IDS.FLOWER_YELLOW || sel.id === IDS.SHORT_GRASS || sel.id === IDS.TALL_GRASS) {
+        if (sel.id === IDS.FLOWER_RED || sel.id === IDS.FLOWER_YELLOW || sel.id === IDS.SHORT_GRASS || sel.id === IDS.TALL_GRASS || sel.id === IDS.FERN) {
             if (gy >= WORLD_HEIGHT - 1 || world[gx][gy] !== IDS.AIR || ![IDS.DIRT, IDS.GRASS].includes(world[gx][gy + 1]) || intersectsEntity(gx, gy)) return false;
             world[gx][gy] = sel.id;
             syncBlock(gx, gy, sel.id);
@@ -1940,7 +2380,7 @@ export function initJukeboxFileInput() {
             return true;
         }
 
-        if (sel.id === IDS.SEEDS) {
+        if (sel.id === IDS.SEEDS || sel.id === IDS.MELON_SEEDS) {
             const liveWorld = (typeof window !== 'undefined' && window.world) ? window.world : world;
             let plantX = gx;
             let plantY = gy;
@@ -1962,7 +2402,7 @@ export function initJukeboxFileInput() {
             if (liveWorld[plantX]?.[plantY + 1] !== IDS.PLOWED_DIRT) return false;
 
             const targetSpace = liveWorld[plantX]?.[plantY];
-            if (targetSpace !== IDS.AIR && targetSpace !== IDS.SHORT_GRASS && targetSpace !== IDS.TALL_GRASS && targetSpace !== IDS.FLOWER_RED && targetSpace !== IDS.FLOWER_YELLOW) {
+            if (targetSpace !== IDS.AIR && targetSpace !== IDS.SHORT_GRASS && targetSpace !== IDS.TALL_GRASS && targetSpace !== IDS.FLOWER_RED && targetSpace !== IDS.FLOWER_YELLOW && targetSpace !== IDS.FERN) {
                 return false;
             }
 
@@ -1971,8 +2411,9 @@ export function initJukeboxFileInput() {
                 syncBlock(plantX, plantY, IDS.AIR);
             }
 
-            liveWorld[plantX][plantY] = IDS.WHEAT_STAGE_1;
-            syncBlock(plantX, plantY, IDS.WHEAT_STAGE_1);
+            const plantedCropId = (sel.id === IDS.MELON_SEEDS) ? IDS.MELON_STEM : IDS.WHEAT_STAGE_1;
+            liveWorld[plantX][plantY] = plantedCropId;
+            syncBlock(plantX, plantY, plantedCropId);
             const hasWater = registerPlantedCrop(plantX, plantY);
             if (hasWater) {
                 showToast("Crops will grow faster near water! (3 days instead of 4)");
@@ -2000,6 +2441,24 @@ export function initJukeboxFileInput() {
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
             updateUI();
+            return true;
+        }
+
+        if (sel.id === IDS.VINES) {
+            if (world[gx][gy] !== IDS.AIR && world[gx][gy] !== IDS.SHORT_GRASS && world[gx][gy] !== IDS.TALL_GRASS) return false;
+            let hasSupport = (gx > 0 && isSolidWorldBlock(gx - 1, gy, world[gx - 1][gy])) ||
+                             (gx < WORLD_WIDTH - 1 && isSolidWorldBlock(gx + 1, gy, world[gx + 1][gy])) ||
+                             (gy > 0 && (isSolidWorldBlock(gx, gy - 1, world[gx][gy - 1]) || world[gx][gy - 1] === IDS.VINES || world[gx][gy - 1] === IDS.LEAVES || world[gx][gy - 1] === IDS.JUNGLE_LEAVES));
+            if (!hasSupport) return false;
+            removeFluid(gx, gy);
+            world[gx][gy] = IDS.VINES;
+            wakeFluidsAround(gx, gy);
+            syncBlock(gx, gy, IDS.VINES);
+            sel.count--;
+            if (sel.count <= 0) inventory[selectedIndex] = null;
+            playSound('step', { material: 'grass' });
+            updateUI();
+            if (!isMultiplayer) saveCurrentWorld();
             return true;
         }
 
@@ -2054,7 +2513,7 @@ export function initJukeboxFileInput() {
             if (world[gx + offset][gy] !== IDS.AIR || intersectsEntity(gx + offset, gy)) return false;
         }
 
-        const constructionBlocks = [IDS.DIRT, IDS.GRASS, IDS.STONE, IDS.COBBLESTONE, IDS.WOOD, IDS.LEAVES, IDS.PLANKS, IDS.SAND, IDS.SNOW];
+        const constructionBlocks = [IDS.DIRT, IDS.GRASS, IDS.STONE, IDS.COBBLESTONE, IDS.WOOD, IDS.LEAVES, IDS.PLANKS, IDS.SAND, IDS.SNOW, IDS.JUNGLE_WOOD, IDS.JUNGLE_PLANKS, IDS.JUNGLE_LEAVES, IDS.MELON, IDS.BAMBOO];
         const needsSupport = sel.id !== IDS.TORCH && !constructionBlocks.includes(sel.id);
         if (needsSupport) {
             if (gy >= WORLD_HEIGHT - 1) return false;
@@ -2086,6 +2545,9 @@ export function initJukeboxFileInput() {
                 const liveJbs = (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : jukeboxes;
                 liveJbs.push({ x: gx, y: gy, record: null, isPlaying: false });
             }
+            if (sel.id === IDS.ASTRAL_INFUSER) {
+                unlockAchievement('astral_infusion');
+            }
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
             if (isMultiplayer && isMultiplayerAuthority()) syncFluidState();
@@ -2097,8 +2559,28 @@ export function initJukeboxFileInput() {
     }
     
 
+    export function recoverUnqueuedSaplings() {
+        if (!world || !world.length) return;
+        const activeQueue = (typeof window !== 'undefined' && window.saplingGrowthQueue) ? window.saplingGrowthQueue : saplingGrowthQueue;
+        for (let x = 0; x < WORLD_WIDTH; x++) {
+            if (!world[x]) continue;
+            for (let y = 0; y < WORLD_HEIGHT; y++) {
+                if (world[x][y] === IDS.SAPLING || world[x][y] === IDS.JUNGLE_SAPLING) {
+                    const key = `${x}_${y}`;
+                    if (!activeQueue.has(key)) {
+                        const growthAt = dayCount + timeOfDay + SAPLING_GROWTH_DAYS;
+                        activeQueue.set(key, growthAt);
+                        saplingGrowthQueue.set(key, growthAt);
+                    }
+                }
+            }
+        }
+        if (typeof window !== 'undefined') window.saplingGrowthQueue = activeQueue;
+    }
+
     export function startGameplay() {
         ensureTreeWoodNonCollidable();
+        recoverUnqueuedSaplings();
         document.getElementById('main-menu').classList.add('hidden');
         document.getElementById('worlds-menu').classList.add('hidden'); 
         document.getElementById('shared-menu-bg').classList.add('hidden');
@@ -2140,6 +2622,8 @@ export function initJukeboxFileInput() {
     export function pauseGame() {
         setGameState('PAUSED');
         document.getElementById('pause-menu').classList.remove('hidden');
+        if (typeof UI.updateEmeraldsUI === 'function') UI.updateEmeraldsUI();
+        if (typeof UI.syncCurrencyTextureImages === 'function') UI.syncCurrencyTextureImages();
         const mpBtn = document.getElementById('btn-pause-multiplayer');
         if (mpBtn) {
             if (isMultiplayer) mpBtn.classList.add('hidden');
@@ -2218,7 +2702,7 @@ export function initJukeboxFileInput() {
         }
         if (dayCount !== previousDayCount && (!isMultiplayer || isMultiplayerAuthority())) {
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
-            spawnAnimals(2, 0.30);
+            respawnDailyAnimals();
         }
         if (!isMultiplayer || isMultiplayerAuthority()) {
             updateFluids();
@@ -2245,6 +2729,9 @@ export function initJukeboxFileInput() {
                     let resId = getSmeltResult(f.input.id);
                     f.input.count--; if (f.input.count <= 0) f.input = null;
                     if (f.output) f.output.count++; else f.output = { id: resId, count: 1 };
+                    if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                        UI.trackDailyQuestProgress('smelt_item', { itemId: resId, count: 1 });
+                    }
                     if (curOpenedFurnace === f && isInventoryOpen) updateUI();
                 }
             } else { f.progress = 0; }
@@ -2261,6 +2748,9 @@ export function initJukeboxFileInput() {
             curPlayer.update();
         }
         if (curPlayer && frameCount % 60 === 0) {
+            if (typeof window !== 'undefined' && window.RiftExplorerSpawner && typeof window.RiftExplorerSpawner.checkCycle === 'function') {
+                window.RiftExplorerSpawner.checkCycle(dayCount, timeOfDay, curPlayer);
+            }
             let px = Math.floor((curPlayer.x + (curPlayer.width || 24) / 2) / TILE_SIZE);
             let py = Math.floor((curPlayer.y + (curPlayer.height || 48)) / TILE_SIZE);
             if (px >= 0 && px < WORLD_WIDTH) {
@@ -2527,9 +3017,10 @@ export function initJukeboxFileInput() {
                 if (typeof resizeCanvases === 'function') resizeCanvases();
             }
 
-            if (fpsCap > 0) {
-                const minFrameDuration = 1000 / fpsCap;
-                if (lastRenderTime > 0 && now - lastRenderTime < minFrameDuration - 2.0) {
+            const curFpsCap = (typeof window !== 'undefined' && Number.isFinite(window.fpsCap)) ? window.fpsCap : fpsCap;
+            if (curFpsCap > 0) {
+                const minFrameDuration = 1000 / curFpsCap;
+                if (lastRenderTime > 0 && now - lastRenderTime < minFrameDuration - 1.0) {
                     return;
                 }
             }
@@ -2604,13 +3095,14 @@ export function initJukeboxFileInput() {
                 let chickens = entities.filter(e => e instanceof Chicken).length;
                 let sheep = entities.filter(e => e instanceof Sheep).length;
                 let cows = entities.filter(e => e instanceof Cow).length;
-                let hostiles = entities.length - pigs - chickens - sheep - cows;
+                let pigeons = entities.filter(e => e instanceof Pigeon).length;
+                let hostiles = entities.length - pigs - chickens - sheep - cows - pigeons;
                 
                 let debugGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(px)));
                 let surfaceY = typeof getWorldSurfaceY === 'function' ? getWorldSurfaceY(debugGridX) : 0;
                 let playerFeetGridY = (player.y + player.height) / TILE_SIZE;
                 let isSnowy = typeof getSnowBiomeRatio === 'function' ? getSnowBiomeRatio(debugGridX, 8) > 0.35 : false;
-                let biome = playerFeetGridY > surfaceY + CAVE_SKY_START_TILES ? 'Underground' : (isSnowy ? 'Snowy Biome' : 'Plains Surface');
+                let biome = (caveSkyOpacity > 0.4 && playerFeetGridY > surfaceY + CAVE_SKY_START_TILES) ? 'Underground' : (isSnowy ? 'Snowy Biome' : 'Plains Surface');
 
                 const dbgEl = document.getElementById('debug-info');
                 if (dbgEl) {
@@ -2618,7 +3110,7 @@ export function initJukeboxFileInput() {
                     dbgEl.innerText = 
                         `Webcraft2D (${GAME_VERSION})\n` +
                         `Graphics: ${curGraphicsMode === 'fabulous' ? 'Fabulous (Shaders & VFX)' : (curGraphicsMode === 'advanced' ? 'Advanced' : 'Base')}\n` +
-                        `FPS: ${currentFps} (${frameDeltaMs.toFixed(1)} ms) | Cap: ${fpsCap === 0 ? 'Unlimited' : fpsCap}\n` +
+                        `FPS: ${currentFps} (${frameDeltaMs.toFixed(1)} ms) | Cap: ${curFpsCap === 0 ? 'Unlimited' : `${curFpsCap} FPS`}\n` +
                         `TPS: ${PHYSICS_TICK_RATE} (Fixed 60Hz)\n` +
                         `XYZ: ${px.toFixed(2)} / ${py.toFixed(2)} / 0.00\n` +
                         `RAM: ${typeof getMemoryUsageText === 'function' ? getMemoryUsageText() : 'N/A'}\n` +
@@ -2627,7 +3119,7 @@ export function initJukeboxFileInput() {
                         `Biome: ${biome}\n` +
                         `Diff: ${currentDifficulty.toUpperCase()}\n` +
                         `Multiplayer: ${isMultiplayer ? currentMpRoom : 'Local'}\n` +
-                        `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Bad:${hostiles})\n` +
+                        `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Pigeons:${pigeons}, Bad:${hostiles})\n` +
                         `Target: ${targetBlockName}\n` +
                         `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%) | Day Scale: ${typeof getDayDifficultyMultiplier === 'function' ? getDayDifficultyMultiplier().toFixed(2) : 1}x (Hunger: ${typeof getDayHungerDrainMultiplier === 'function' ? getDayHungerDrainMultiplier().toFixed(2) : 1}x)`;
                 }
@@ -2806,12 +3298,37 @@ export async function checkClosedBetaAccess() {
         isUnlockedLocally = localStorage.getItem(Network.CLOSED_BETA_LOCALSTORAGE_KEY) === 'true';
     } catch (e) {}
 
+    const isLocalHost = typeof window !== 'undefined' && (
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.protocol === 'file:'
+    );
+
     // 2. Fetch remote lock configuration from Firebase Firestore
     let config = null;
     try {
         config = await Network.fetchClosedBetaConfig();
     } catch (err) {
         console.warn("[Closed Beta] Remote config fetch failed, using fallback:", err);
+    }
+
+    // If Firebase explicitly indicates locked === false, authorize and unlock immediately
+    if (config && config.locked === false) {
+        isClosedBetaAuthorized = true;
+        try { localStorage.setItem(Network.CLOSED_BETA_LOCALSTORAGE_KEY, 'true'); } catch (e) {}
+        return { allowed: true, locked: false };
+    }
+
+    // If remotely locked, but this user has already entered the passkey previously
+    if (isUnlockedLocally) {
+        isClosedBetaAuthorized = true;
+        return { allowed: true, locked: config ? config.locked !== false : true };
+    }
+
+    // If running on local server (127.0.0.1/localhost) and no remote lock was enforced
+    if (isLocalHost && (!config || config.locked === false)) {
+        isClosedBetaAuthorized = true;
+        return { allowed: true, locked: false };
     }
 
     const isLockedRemotely = config ? (config.locked !== false) : true;
@@ -2821,12 +3338,6 @@ export async function checkClosedBetaAccess() {
     if (!isLockedRemotely) {
         isClosedBetaAuthorized = true;
         return { allowed: true, locked: false };
-    }
-
-    // If remotely locked, but this user has already entered the passkey previously
-    if (isUnlockedLocally) {
-        isClosedBetaAuthorized = true;
-        return { allowed: true, locked: true };
     }
 
     // Otherwise access is locked and requires entering the passkey
@@ -2951,7 +3462,15 @@ export function lockClosedBeta() {
 }
 
 export function proceedWithBoot() {
-    if (typeof startIntro === 'function') startIntro();
+    if (typeof UI !== 'undefined' && typeof UI.startIntro === 'function') {
+        UI.startIntro();
+    } else if (typeof startIntro === 'function') {
+        startIntro();
+    } else if (typeof UI !== 'undefined' && typeof UI.showMainMenu === 'function') {
+        UI.showMainMenu();
+    } else if (typeof showMainMenu === 'function') {
+        showMainMenu();
+    }
     if (!isGameLoopRunning) {
         isGameLoopRunning = true;
         if (typeof requestAnimationFrame === 'function') {
@@ -2968,6 +3487,13 @@ export async function bootGame() {
         tooltipEl = document.getElementById('item-tooltip') || document.getElementById('tooltip');
         initCanvasMouseListeners();
         initJukeboxFileInput();
+        const quitBtn = document.getElementById('btn-quit-to-menu');
+        if (quitBtn) {
+            quitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                quitToMenu();
+            });
+        }
     }
     if (typeof initCanvases === 'function') initCanvases();
     if (typeof loadSavedSettings === 'function') loadSavedSettings();
@@ -3010,4 +3536,8 @@ try { if (typeof returnVinylToPlayer !== "undefined") window.returnVinylToPlayer
 try { if (typeof jukebox !== "undefined") window.jukebox = jukebox; } catch(e) {}
 try { if (typeof updateMusicPlayerHUD !== "undefined") window.updateMusicPlayerHUD = updateMusicPlayerHUD; } catch(e) {}
 try { if (typeof ejectActiveJukebox !== "undefined") window.ejectActiveJukebox = ejectActiveJukebox; } catch(e) {}
+try { if (typeof respawnDailyAnimals !== "undefined") window.respawnDailyAnimals = respawnDailyAnimals; } catch(e) {}
+try { if (typeof handleEntityInteraction !== "undefined") window.handleEntityInteraction = handleEntityInteraction; } catch(e) {}
+try { if (typeof updateSignHoverTooltip !== "undefined") window.updateSignHoverTooltip = updateSignHoverTooltip; } catch(e) {}
+try { if (typeof hideSignHoverTooltip !== "undefined") window.hideSignHoverTooltip = hideSignHoverTooltip; } catch(e) {}
 
