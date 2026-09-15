@@ -3012,22 +3012,29 @@ export function getMaxAnimals() {
                     if (x >= 5 && x <= 10 && y >= 2 && y <= 7) p(x, y, '#38b000');
                     if (x === 6 && y === 4) p(x, y, '#20c997');
                 }
-                else if (id === IDS.JUNGLE_DOOR_TOP || id === IDS.JUNGLE_DOOR) {
-                    let isEdge = (x === 0 || x === 15 || y === 0 || (id === IDS.JUNGLE_DOOR && y === 15));
-                    let c = isEdge ? '#633e1c' : ['#b8824f', '#bf8956'][x % 2];
-                    p(x, y, c);
-                    if (id === IDS.JUNGLE_DOOR_TOP) {
-                        let dx = x - 7.5, dy = y - 7.5;
-                        let dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < 3.2) p(x, y, dist > 2.2 ? '#452a12' : '#38bdf8');
-                    }
-                    if (id === IDS.JUNGLE_DOOR && y === 2 && (x === 12 || x === 13)) p(x, y, '#facc15');
-                }
-                else if (id === IDS.JUNGLE_DOOR_OPEN_TOP || id === IDS.JUNGLE_DOOR_OPEN) {
-                    if (x <= 3) {
-                        let c = (x === 0 || x === 3) ? '#633e1c' : '#b8824f';
+                else if ([IDS.JUNGLE_DOOR, IDS.JUNGLE_DOOR_TOP, IDS.JUNGLE_DOOR_OPEN, IDS.JUNGLE_DOOR_OPEN_TOP].includes(id)) {
+                    const isClosed = (id === IDS.JUNGLE_DOOR || id === IDS.JUNGLE_DOOR_TOP);
+                    const isTop = (id === IDS.JUNGLE_DOOR_TOP || id === IDS.JUNGLE_DOOR_OPEN_TOP);
+                    if (isClosed) {
+                        // Closed: Side profile (matching normal door style)
+                        if (x >= 1 && x <= 4) {
+                            let c = (x === 1 || x === 4) ? '#633e1c' : ((x + y) % 2 === 0 ? '#b8824f' : '#bf8956');
+                            p(x, y, c);
+                            if (y === 2 || y === 13) p(x, y, '#633e1c');
+                            if (isTop && y >= 6 && y <= 9 && (x === 2 || x === 3)) p(x, y, '#38bdf8'); // porthole slit
+                            if (!isTop && x === 3 && y === 7) p(x, y, '#facc15'); // gold handle
+                        }
+                    } else {
+                        // Open: Full front-facing texture with porthole window
+                        let isEdge = (x === 0 || x === 15 || y === 0 || (!isTop && y === 15));
+                        let c = isEdge ? '#633e1c' : ['#b8824f', '#bf8956'][x % 2];
                         p(x, y, c);
-                        if (id === IDS.JUNGLE_DOOR_OPEN_TOP && y >= 5 && y <= 10 && (x === 1 || x === 2)) p(x, y, '#38bdf8');
+                        if (isTop) {
+                            let dx = x - 7.5, dy = y - 7.5;
+                            let dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < 3.2) p(x, y, dist > 2.2 ? '#452a12' : '#38bdf8');
+                        }
+                        if (!isTop && y === 7 && (x === 12 || x === 13)) p(x, y, '#facc15');
                     }
                 }
                 else if (id === IDS.VINES) {
@@ -4691,7 +4698,7 @@ export const SKIN_H = 32;
                         let bMaxY = (y + 1) * TILE_SIZE;
 
                         // Closed door thin collision box (matches thin closed door texture: ~10px wide on left edge)
-                        if (block === IDS.DOOR || block === IDS.DOOR_TOP) {
+                        if (block === IDS.DOOR || block === IDS.DOOR_TOP || block === IDS.JUNGLE_DOOR || block === IDS.JUNGLE_DOOR_TOP) {
                             bMinX = x * TILE_SIZE + 2.5;
                             bMaxX = x * TILE_SIZE + 12.5;
                         }
@@ -5454,7 +5461,7 @@ export const SKIN_H = 32;
 
             // Head suffocation when inside solid blocks (e.g. sand lands on player's head)
             const headBlock = world[pGx]?.[pHeadGy];
-            if (isSolidWorldBlock(pGx, pHeadGy, headBlock) && headBlock !== IDS.DOOR && headBlock !== IDS.LADDER) {
+            if (isSolidWorldBlock(pGx, pHeadGy, headBlock) && !isDoorBlock(headBlock) && headBlock !== IDS.LADDER) {
                 if (frameCount % 30 === 0 && !this.isDead) {
                     this.takeDamage(1);
                     if (advancedGraphics && Math.random() < 0.5 && Array.isArray(particles)) {
@@ -12779,6 +12786,9 @@ export const SKIN_H = 32;
     export function drawWorld() {
         const camX = Math.round(camera.x);
         const camY = Math.round(camera.y);
+        if (typeof window !== 'undefined' && typeof window.updateSignInlinePosition === 'function') {
+            window.updateSignInlinePosition();
+        }
         updateBiomeAtmosphere();
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((player.x + player.width / 2) / TILE_SIZE)));
         const surfaceWorldY = getWorldSurfaceY(playerGridX) * TILE_SIZE;
@@ -13553,9 +13563,11 @@ export const SKIN_H = 32;
         }
 
         // Terraria-style subterranean depth shadow gradient
-        // Envelops subterranean blocks and caves in intense atmospheric darkness unless lit by light sources
+        // Starts around the 7th block below the surface so shallow excavation and finding coal remains visible,
+        // then smoothly fades into deep atmospheric darkness in true caves.
         const subDarkness = 0.988;
-        const depthSteps = [0.55, 0.90, 0.97];
+        const subDarkDepthOffset = 6; // Starts from 7th block down (surfY + 6)
+        const depthSteps = [0.35, 0.65, 0.88, 0.96];
 
         for (let x = startCol; x <= endCol; x++) {
             let drawX = x * TILE_SIZE - camX;
@@ -13568,9 +13580,9 @@ export const SKIN_H = 32;
                 surfY = Math.max(natSurfY, topSolidY);
             }
 
-            // Depth transition rows from surfY to surfY + 2
-            for (let d = 0; d < 3; d++) {
-                let gy = surfY + d;
+            // Depth transition rows starting at (surfY + subDarkDepthOffset)
+            for (let d = 0; d < depthSteps.length; d++) {
+                let gy = surfY + subDarkDepthOffset + d;
                 if (gy >= startRow && gy <= endRow) {
                     let dAlpha = surfaceDarkness + (subDarkness - surfaceDarkness) * depthSteps[d];
 
@@ -13591,8 +13603,8 @@ export const SKIN_H = 32;
                 }
             }
 
-            // Deep subterranean shadow rows (surfY + 3 downward to endRow)
-            let deepStartRow = Math.max(startRow, surfY + 3);
+            // Deep subterranean shadow rows downward from (surfY + subDarkDepthOffset + depthSteps.length) to endRow
+            let deepStartRow = Math.max(startRow, surfY + subDarkDepthOffset + depthSteps.length);
             if (deepStartRow <= endRow) {
                 let uniformStartRow = deepStartRow;
                 for (let gy = deepStartRow; gy <= Math.min(endRow, deepStartRow + 2); gy++) {

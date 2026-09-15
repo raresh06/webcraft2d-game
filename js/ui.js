@@ -2225,107 +2225,197 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         infuserSlottedShard = null;
     }
 
-    // --- Minecraft Sign Board System ---
+    // --- Minecraft In-World Real-Time Sign System ---
     let activeSignCoord = null;
     export let isSignEditorOpen = false;
+    let inlineSignText = '';
+    let signKeydownListener = null;
+    let signBlinkInterval = null;
+
+    export function getActiveSignCoord() {
+        return activeSignCoord;
+    }
+
+    export function updateSignInlinePosition() {
+        if (!isSignEditorOpen || !activeSignCoord) return;
+        const editorEl = document.getElementById('sign-inline-editor');
+        if (!editorEl) return;
+        const curCamera = (typeof camera !== 'undefined' && camera) ? camera : (typeof window !== 'undefined' ? window.camera : null);
+        const camX = curCamera ? curCamera.x : 0;
+        const camY = curCamera ? curCamera.y : 0;
+        const tileSize = (typeof TILE_SIZE !== 'undefined') ? TILE_SIZE : 32;
+        const sCX = activeSignCoord.x * tileSize + tileSize / 2 - camX;
+        const sCY = activeSignCoord.y * tileSize - camY;
+        editorEl.style.left = `${Math.round(sCX)}px`;
+        editorEl.style.top = `${Math.round(sCY - 8)}px`;
+    }
 
     export function focusSignLine(idx) {
-        const input = document.getElementById(`sign-line-${idx}`);
-        if (input) {
-            input.focus();
-            const len = input.value.length;
-            input.setSelectionRange(len, len);
-        }
+        // Compatibility stub
     }
 
     export function updateSignLineCounter(idx) {
-        const input = document.getElementById(`sign-line-${idx}`);
-        const countEl = document.getElementById(`sign-count-${idx}`);
-        if (input && countEl) {
-            countEl.textContent = `${input.value.length}/24`;
-        }
+        // Compatibility stub
     }
 
     export function openSignEditor(gx, gy, isNew = false) {
+        // If already editing a sign, save previous first
+        if (isSignEditorOpen && activeSignCoord) {
+            closeSignEditor(true);
+        }
+
         activeSignCoord = { x: gx, y: gy };
         isSignEditorOpen = true;
-        if (typeof window !== 'undefined') window.isSignEditorOpen = true;
-        keys = {};
-        if (typeof window !== 'undefined') window.keys = {};
+        if (typeof window !== 'undefined') {
+            window.isSignEditorOpen = true;
+            window.activeSignCoord = activeSignCoord;
+        }
 
-        const modal = document.getElementById('sign-edit-modal');
-        if (!modal) return;
+        // Halt any pending player key movements
+        if (typeof keys !== 'undefined') {
+            Object.keys(keys).forEach(k => delete keys[k]);
+        }
+        if (typeof window !== 'undefined' && window.keys) {
+            Object.keys(window.keys).forEach(k => delete window.keys[k]);
+        }
+
+        // Hide hover tooltip if visible
+        const hoverTip = document.getElementById('sign-hover-tooltip');
+        if (hoverTip) {
+            hoverTip.classList.add('hidden');
+            hoverTip.style.display = 'none';
+        }
 
         const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : (typeof signs !== 'undefined' ? signs : null);
         const signData = liveSigns ? liveSigns.get(`${gx}_${gy}`) : null;
-        const lines = signData?.lines || ['', '', '', ''];
+        inlineSignText = signData?.text || (Array.isArray(signData?.lines) ? signData.lines.filter(Boolean).join('\n') : '');
 
-        for (let i = 0; i < 4; i++) {
-            const input = document.getElementById(`sign-line-${i}`);
-            if (input) {
-                input.value = lines[i] || '';
-                updateSignLineCounter(i);
-                if (!input.dataset.listenerAttached) {
-                    input.dataset.listenerAttached = 'true';
-                    input.addEventListener('input', () => {
-                        updateSignLineCounter(i);
-                    });
-                    input.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (i < 3) {
-                                focusSignLine(i + 1);
-                            } else {
-                                closeSignEditor(true);
-                            }
-                        } else if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            if (i < 3) {
-                                focusSignLine(i + 1);
-                            }
-                        } else if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            if (i > 0) {
-                                focusSignLine(i - 1);
-                            }
-                        } else if (e.key === 'Escape') {
-                            e.preventDefault();
-                            closeSignEditor(true);
-                        }
-                    });
-                }
-            }
+        const editorEl = document.getElementById('sign-inline-editor');
+        const textEl = document.getElementById('sign-inline-text');
+        const cursorEl = document.getElementById('sign-inline-cursor');
+
+        if (editorEl && textEl && cursorEl) {
+            textEl.textContent = inlineSignText;
+            cursorEl.textContent = '|';
+            cursorEl.style.opacity = '1';
+            editorEl.classList.remove('hidden');
+            editorEl.style.display = 'block';
+            updateSignInlinePosition();
         }
 
-        modal.classList.remove('hidden');
-        modal.style.display = 'flex';
-        setTimeout(() => {
-            focusSignLine(0);
-            const first = document.getElementById('sign-line-0');
-            if (first && isNew) {
-                first.select();
+        // Start blinking cursor (| blinking every 450ms)
+        if (signBlinkInterval) clearInterval(signBlinkInterval);
+        let cursorVisible = true;
+        signBlinkInterval = setInterval(() => {
+            cursorVisible = !cursorVisible;
+            const c = document.getElementById('sign-inline-cursor');
+            if (c) c.style.opacity = cursorVisible ? '1' : '0';
+        }, 450);
+
+        // Attach keyboard listener for real-time typing
+        if (signKeydownListener) {
+            window.removeEventListener('keydown', signKeydownListener, true);
+        }
+
+        signKeydownListener = (e) => {
+            if (!isSignEditorOpen) return;
+
+            // Enter: finish and save
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.shiftKey) {
+                    // Shift+Enter: newline up to 4 lines
+                    const lines = inlineSignText.split('\n');
+                    if (lines.length < 4) {
+                        inlineSignText += '\n';
+                        const t = document.getElementById('sign-inline-text');
+                        if (t) t.textContent = inlineSignText;
+                        updateSignInlinePosition();
+                    }
+                } else {
+                    closeSignEditor(true);
+                }
+                return;
             }
-        }, 50);
+
+            // Escape: close and save
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                closeSignEditor(true);
+                return;
+            }
+
+            // Backspace: delete character
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (inlineSignText.length > 0) {
+                    inlineSignText = inlineSignText.slice(0, -1);
+                    const t = document.getElementById('sign-inline-text');
+                    if (t) t.textContent = inlineSignText;
+                    updateSignInlinePosition();
+                }
+                return;
+            }
+
+            // Printable single-character input
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                const lines = inlineSignText.split('\n');
+                const curLine = lines[lines.length - 1] || '';
+                if (curLine.length < 24 && inlineSignText.length < 96) {
+                    inlineSignText += e.key;
+                    const t = document.getElementById('sign-inline-text');
+                    if (t) t.textContent = inlineSignText;
+                    updateSignInlinePosition();
+                }
+                return;
+            }
+        };
+
+        window.addEventListener('keydown', signKeydownListener, true);
     }
 
     export function closeSignEditor(save = true) {
+        if (!isSignEditorOpen && !activeSignCoord) return;
+
         isSignEditorOpen = false;
-        if (typeof window !== 'undefined') window.isSignEditorOpen = false;
+        if (typeof window !== 'undefined') {
+            window.isSignEditorOpen = false;
+            window.activeSignCoord = null;
+        }
+
+        if (signBlinkInterval) {
+            clearInterval(signBlinkInterval);
+            signBlinkInterval = null;
+        }
+
+        if (signKeydownListener) {
+            window.removeEventListener('keydown', signKeydownListener, true);
+            signKeydownListener = null;
+        }
+
+        const editorEl = document.getElementById('sign-inline-editor');
+        if (editorEl) {
+            editorEl.classList.add('hidden');
+            editorEl.style.display = 'none';
+        }
 
         const modal = document.getElementById('sign-edit-modal');
-        if (!modal || modal.classList.contains('hidden')) return;
-
-        if (document.activeElement && (document.activeElement.classList.contains('sign-input-line') || (document.activeElement.id && document.activeElement.id.startsWith('sign-line-')))) {
-            document.activeElement.blur();
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
         }
 
         if (save && activeSignCoord) {
-            const lines = [];
-            for (let i = 0; i < 4; i++) {
-                const input = document.getElementById(`sign-line-${i}`);
-                lines.push(input ? input.value.slice(0, 24) : '');
-            }
-            const fullText = lines.join('\n').trimEnd();
+            const fullText = inlineSignText.trimEnd();
+            let lines = fullText.split('\n').map(l => l.slice(0, 24));
+            while (lines.length < 4) lines.push('');
+            lines = lines.slice(0, 4);
+
             const liveSigns = (typeof window !== 'undefined' && window.signs) ? window.signs : (typeof signs !== 'undefined' ? signs : null);
             if (liveSigns) {
                 liveSigns.set(`${activeSignCoord.x}_${activeSignCoord.y}`, {
@@ -2340,14 +2430,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 window.syncSign(activeSignCoord.x, activeSignCoord.y, fullText, lines);
             }
 
+            if (typeof playSound === 'function') {
+                playSound('step', { material: 'wood' });
+            }
+
             if (!isMultiplayer && typeof saveCurrentWorld === 'function') {
                 saveCurrentWorld();
             }
         }
 
         activeSignCoord = null;
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
+        inlineSignText = '';
     }
 
     export function renderInfuserUI() {
@@ -13759,6 +13852,8 @@ try { if (typeof getTier3AstralIllustration !== "undefined") window.getTier3Astr
 try { if (typeof openSignEditor !== "undefined") window.openSignEditor = openSignEditor; } catch(e) {}
 try { if (typeof closeSignEditor !== "undefined") window.closeSignEditor = closeSignEditor; } catch(e) {}
 try { if (typeof isSignEditorOpen !== "undefined") window.isSignEditorOpen = isSignEditorOpen; } catch(e) {}
+try { if (typeof updateSignInlinePosition !== "undefined") window.updateSignInlinePosition = updateSignInlinePosition; } catch(e) {}
+try { if (typeof getActiveSignCoord !== "undefined") window.getActiveSignCoord = getActiveSignCoord; } catch(e) {}
 try { if (typeof focusSignLine !== "undefined") window.focusSignLine = focusSignLine; } catch(e) {}
 try { if (typeof updateSignLineCounter !== "undefined") window.updateSignLineCounter = updateSignLineCounter; } catch(e) {}
 try { if (typeof setupDeathScreen !== "undefined") window.setupDeathScreen = setupDeathScreen; } catch(e) {}

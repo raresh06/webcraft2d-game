@@ -138,6 +138,19 @@
     <div id="item-tooltip" class="tooltip">Item Name</div>
     <div id="sign-hover-tooltip" class="tooltip hidden" style="pointer-events: none; z-index: 250; max-width: 260px; white-space: pre-wrap; text-align: center; font-family: 'VT323', monospace; font-size: 1.25rem; line-height: 1.2; background: rgba(30, 22, 16, 0.95); border: 2px solid #b38245; color: #fef08a; padding: 6px 10px; box-shadow: 2px 2px 0 #000;"></div>
     
+    <!-- Real-time In-world Sign Inline Editor -->
+    <div id="sign-inline-editor" class="hidden fixed z-[290] pointer-events-auto select-none" style="min-width: 140px; max-width: 280px; transform: translate(-50%, -100%);">
+        <div class="relative bg-[rgba(26,18,12,0.96)] border-2 border-[#b38245] shadow-[0_4px_16px_rgba(0,0,0,0.7),2px_2px_0_#000] p-2.5 text-center font-['VT323'] rounded-sm">
+            <div id="sign-inline-content" class="text-xl sm:text-2xl text-[#fef08a] leading-tight break-words whitespace-pre-wrap min-h-[1.5rem] tracking-wide">
+                <span id="sign-inline-text"></span><span id="sign-inline-cursor" class="text-yellow-300 font-bold inline-block ml-0.5 animate-pulse">|</span>
+            </div>
+            <div class="text-[0.75rem] sm:text-xs text-amber-300/60 mt-1 pt-1 border-t border-amber-800/40 tracking-wider">
+                Enter / Right-click to save
+            </div>
+        </div>
+        <div class="w-0 h-0 mx-auto border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-[#b38245]"></div>
+    </div>
+    
     <!-- Floating Dragged Item Container -->
     <div id="dragged-item-container">
         <img id="dragged-item-img" src="" class="w-full h-full object-contain pixelated">

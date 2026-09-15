@@ -1145,7 +1145,8 @@ export function initJukeboxFileInput() {
         if (!tip) return;
 
         const curInventoryOpen = isInventoryOpen || (typeof UI !== 'undefined' && UI.isInventoryOpen) || (typeof window !== 'undefined' && window.isInventoryOpen) || (document.getElementById('inventory-container') && !document.getElementById('inventory-container').classList.contains('hidden'));
-        if (STATE !== 'PLAYING' || curInventoryOpen) {
+        const curSignEditorOpen = (typeof UI !== 'undefined' && UI.isSignEditorOpen) || (typeof window !== 'undefined' && window.isSignEditorOpen);
+        if (STATE !== 'PLAYING' || curInventoryOpen || curSignEditorOpen) {
             hideSignHoverTooltip();
             return;
         }
@@ -1223,6 +1224,12 @@ export function initJukeboxFileInput() {
                 mouse.isDownLeft = true; attackAnimationTimer = 12; handleMeleeAttack();
             }
             if (e.button === 2) { 
+                if ((typeof UI !== 'undefined' && UI.isSignEditorOpen) || (typeof window !== 'undefined' && window.isSignEditorOpen)) {
+                    if (typeof UI !== 'undefined' && typeof UI.closeSignEditor === 'function') UI.closeSignEditor(true);
+                    else if (typeof window !== 'undefined' && typeof window.closeSignEditor === 'function') window.closeSignEditor(true);
+                    mouse.isDownRight = false;
+                    return;
+                }
                 mouse.isDownRight = true;
                 attackAnimationTimer = 12;
                 continuousPlaceCooldown = 0;
@@ -2793,6 +2800,22 @@ export function initJukeboxFileInput() {
         const curPlayer = player || (typeof window !== 'undefined' ? window.player : null);
         if (curPlayer && typeof curPlayer.update === 'function') {
             curPlayer.update();
+        }
+
+        // Auto-save and close inline sign editor if player moves afar from the sign
+        const isSignActive = (typeof UI !== 'undefined' && UI.isSignEditorOpen) || (typeof window !== 'undefined' && window.isSignEditorOpen);
+        if (isSignActive && curPlayer) {
+            const activeCoord = (typeof UI !== 'undefined' && typeof UI.getActiveSignCoord === 'function') ? UI.getActiveSignCoord() : (typeof window !== 'undefined' ? window.activeSignCoord : null);
+            if (activeCoord) {
+                const pCX = curPlayer.x + (curPlayer.width || 24) / 2;
+                const pCY = curPlayer.y + (curPlayer.height || 48) / 2;
+                const sCX = activeCoord.x * TILE_SIZE + TILE_SIZE / 2;
+                const sCY = activeCoord.y * TILE_SIZE + TILE_SIZE / 2;
+                if (Math.hypot(pCX - sCX, pCY - sCY) / TILE_SIZE > (typeof REACH !== 'undefined' ? REACH : 4.5) + 1.2) {
+                    if (typeof UI !== 'undefined' && typeof UI.closeSignEditor === 'function') UI.closeSignEditor(true);
+                    else if (typeof window !== 'undefined' && typeof window.closeSignEditor === 'function') window.closeSignEditor(true);
+                }
+            }
         }
 
         // Drain deferred animal spawn queue at 2 per frame (set at day rollover)
