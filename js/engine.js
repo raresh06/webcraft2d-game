@@ -2819,7 +2819,7 @@ export function getMaxAnimals() {
                     if (y === 7 && x > 1 && x < 14) p(x, y, '#8a6233');
                 }
                 else if (id === IDS.SAND) p(x, y, randColor(['#e6cc80', '#e0c266', '#d9b34d']));
-                else if (id === IDS.SNOW) p(x, y, randColor(['#ffffff', '#f2f2f2', '#e6e6e6']));
+                else if (id === IDS.SNOW) p(x, y, randColor(['#ffffff', '#f4f8ff', '#eef4ff']));
                 else if (id === IDS.SNOWBALL) {
                     // Draw a small rounded snowball icon centred in the 16x16 tile
                     const cx = 7, cy = 7, r = 5;
@@ -5383,16 +5383,17 @@ export const SKIN_H = 32;
                 this.walkAnimTime += (Math.abs(this.vx) / MOVE_SPEED) * 0.20;
                 this.walkBlend = Math.min(1.0, (this.walkBlend || 0) + 0.18);
             } else if (!this.isGrounded && this.airborneTicks > 4) {
-                this.walkAnimTime = Math.PI / 6;
-                this.walkBlend = Math.max(0.0, (this.walkBlend || 0) - 0.10);
+                // Keep current phase instead of hard-snapping to a fixed value
+                this.walkBlend = Math.max(0.0, (this.walkBlend || 0) - 0.08);
             } else {
-                this.walkAnimTime = 0;
-                this.walkBlend = Math.max(0.0, (this.walkBlend || 0) - 0.20);
-                if (this.walkBlend <= 0.02) {
+                // Fade out blend smoothly; let walkAnimTime keep advancing so
+                // limbs ease back naturally rather than snapping to zero.
+                this.walkBlend = Math.max(0.0, (this.walkBlend || 0) - 0.12);
+                if (this.walkBlend <= 0.01) {
                     this.walkBlend = 0;
                     this.walkAnimTime = 0;
                 } else {
-                    this.walkAnimTime += 0.08;
+                    this.walkAnimTime += 0.06;
                 }
             }
             if (advancedGraphics && Math.abs(this.vx) > 0.5 && this.isGrounded && frameCount % 7 === 0) {
@@ -5806,8 +5807,14 @@ export const SKIN_H = 32;
                 let inWater = (typeof isWater === 'function' && isWater(headGx, footGy));
                 if (!inWater && typeof hasDirectSkyAccess === 'function' && hasDirectSkyAccess(headGx, headGy, true)) {
                     this.onFire = true;
-                    if (frameCount % 4 === 0) {
-                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height * 0.8, Math.random() < 0.6 ? '#ff6600' : '#ffaa00'));
+                    if (frameCount % 3 === 0) {
+                        // Main fire particles — two per tick for thick fire look
+                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height * 0.85, Math.random() < 0.55 ? '#ff6600' : '#ffaa00'));
+                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height * 0.6, '#ff4400'));
+                    }
+                    if (frameCount % 6 === 0) {
+                        // White smoke puff above the zombie head
+                        particles.push(new Particle(this.x + this.width / 2 + (Math.random() - 0.5) * this.width, this.y - 4, '#cccccc'));
                     }
                     if (frameCount % 15 === 0) {
                         this.takeDamage(2, 0);
@@ -5829,6 +5836,32 @@ export const SKIN_H = 32;
                     this.checkObstacleJump();
                 } else { this.vx = 0; }
             } else { this.vx = 0; }
+
+            // Ladder / Vine Climbing — mirrors player climb logic
+            const zGx  = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const zFootGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
+            const zBodyGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+            const zHeadGy = Math.floor((this.y + 4) / TILE_SIZE);
+            const zOnClimbable = isClimbableBlock(world[zGx]?.[zFootGy]) ||
+                                  isClimbableBlock(world[zGx]?.[zBodyGy]) ||
+                                  isClimbableBlock(world[zGx]?.[zHeadGy]);
+            if (zOnClimbable) {
+                if (target) {
+                    const targetMidY = target.y + target.height / 2;
+                    const selfMidY   = this.y + this.height / 2;
+                    if (targetMidY < selfMidY - TILE_SIZE * 0.5) {
+                        // Target is above — climb up
+                        this.vy = -this.speed * 0.85;
+                    } else if (targetMidY > selfMidY + TILE_SIZE * 0.5) {
+                        // Target is below — descend
+                        this.vy = this.speed * 0.85;
+                    } else {
+                        this.vy = 0; // same level, hold
+                    }
+                } else {
+                    this.vy = Math.min(this.vy, 0); // no target — don't fall through
+                }
+            }
 
             const prevX = this.x;
             this.applyPhysics();
@@ -5868,8 +5901,14 @@ export const SKIN_H = 32;
             }
 
             if (this.damageCooldown > 0) {
+                // Red hit-flash (takes priority over fire tint)
                 ctx.filter = 'sepia(1) saturate(8) hue-rotate(315deg) brightness(0.95)';
                 if (Math.floor(frameCount / 4) % 2 === 0) ctx.globalAlpha = 0.75;
+            } else if (this.onFire) {
+                // Orange fire-burning tint — visually distinct from red hit flash
+                ctx.filter = 'sepia(1) saturate(14) hue-rotate(0deg) brightness(1.15)';
+                // Pulse the alpha slightly to simulate flickering flames
+                ctx.globalAlpha = 0.88 + Math.sin(frameCount * 0.4) * 0.12;
             }
 
             const sX = w / 16;
@@ -8308,6 +8347,26 @@ export const SKIN_H = 32;
                 this.vx = 0;
                 this.swell = Math.max(0, this.swell - 1);
             }
+
+            // Ladder / Vine Climbing
+            const cGx     = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const cFootGy  = Math.floor((this.y + this.height - 2) / TILE_SIZE);
+            const cBodyGy  = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+            const cHeadGy  = Math.floor((this.y + 4) / TILE_SIZE);
+            const cOnClimbable = isClimbableBlock(world[cGx]?.[cFootGy]) ||
+                                  isClimbableBlock(world[cGx]?.[cBodyGy]) ||
+                                  isClimbableBlock(world[cGx]?.[cHeadGy]);
+            if (cOnClimbable && target) {
+                const targetMidY = target.y + target.height / 2;
+                const selfMidY   = this.y + this.height / 2;
+                if (targetMidY < selfMidY - TILE_SIZE * 0.5) {
+                    this.vy = -this.speed * 0.85;
+                } else if (targetMidY > selfMidY + TILE_SIZE * 0.5) {
+                    this.vy = this.speed * 0.85;
+                } else {
+                    this.vy = 0;
+                }
+            }
             
             this.applyPhysics();
         }
@@ -8545,6 +8604,24 @@ export const SKIN_H = 32;
                 }
             } else {
                 this.vx = 0;
+            }
+
+            // Ladder / Vine Climbing (scorpions are short — check foot + body only)
+            const sGx     = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const sFootGy  = Math.floor((this.y + this.height - 1) / TILE_SIZE);
+            const sBodyGy  = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+            const sOnClimbable = isClimbableBlock(world[sGx]?.[sFootGy]) ||
+                                  isClimbableBlock(world[sGx]?.[sBodyGy]);
+            if (sOnClimbable && target) {
+                const targetMidY = target.y + target.height / 2;
+                const selfMidY   = this.y + this.height / 2;
+                if (targetMidY < selfMidY - TILE_SIZE * 0.5) {
+                    this.vy = -this.speed * 0.85;
+                } else if (targetMidY > selfMidY + TILE_SIZE * 0.5) {
+                    this.vy = this.speed * 0.85;
+                } else {
+                    this.vy = 0;
+                }
             }
 
             this.applyPhysics();
@@ -10075,7 +10152,7 @@ export const SKIN_H = 32;
         return true;
     }
 
-    export function isNearTorch(gx, gy, radius = 4) {
+    export function isNearTorch(gx, gy, radius = 5) {
         let minX = Math.max(0, gx - radius);
         let maxX = Math.min(WORLD_WIDTH - 1, gx + radius);
         let minY = Math.max(0, gy - radius);
@@ -10083,7 +10160,8 @@ export const SKIN_H = 32;
         for (let x = minX; x <= maxX; x++) {
             if (!world[x]) continue;
             for (let y = minY; y <= maxY; y++) {
-                if (world[x][y] === IDS.TORCH) return true;
+                // Torches and furnaces both emit enough light to prevent mob spawning
+                if (world[x][y] === IDS.TORCH || world[x][y] === IDS.FURNACE) return true;
             }
         }
         return false;
@@ -12236,7 +12314,7 @@ export const SKIN_H = 32;
         if (isUnderground) {
             targetR = 10; targetG = 8; targetB = 22; targetA = Math.min(0.35, caveSkyOpacity * 0.45);
         } else if (isSnowy) {
-            targetR = 195; targetG = 230; targetB = 255; targetA = 0.16;
+            targetR = 200; targetG = 235; targetB = 255; targetA = 0.08;
             targetFog = 0.55;
         } else if (activeBiome === 'desert') {
             if (timeOfDay >= 0.68 && timeOfDay < 0.90) {

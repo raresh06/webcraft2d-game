@@ -3851,20 +3851,23 @@
         <p id="death-subtitle">Game Over</p>
 
         <div class="death-actions-wrapper">
-            <!-- Astral Respawn Option (Keep Inventory for 1 Astral Emerald) -->
+            <button id="respawn-btn" class="mc-btn" onclick="respawn(false)">Respawn</button>
+
+            <!-- Astral Respawn Option (Keep Inventory for 1 Astral Emerald) — hidden when keepInventory is on or hardcore -->
             <div id="death-astral-container" class="w-full hidden">
-                <button id="respawn-keep-items-btn" type="button" class="mc-btn" onclick="respawnWithAstralProtection()">
-                    <span id="death-astral-gem-icon" class="inline-block w-6 h-6 flex-shrink-0"></span>
-                    <span>Respawn & Keep Items</span>
-                    <span class="death-emerald-cost-badge">1 ✦</span>
+                <button id="respawn-keep-items-btn" type="button"
+                    class="mc-btn !bg-[#333a41] !text-white hover:!bg-[#46515a] !border-t-[#69737b] !border-l-[#69737b] !border-r-[#080a0c] !border-b-[#080a0c] flex items-center justify-center gap-2"
+                    onclick="respawnWithAstralProtection()">
+                    <span id="death-astral-gem-icon" class="inline-block w-5 h-5 flex-shrink-0"></span>
+                    <span>Respawn with Items</span>
+                    <span class="ml-auto pl-3 text-[#c084fc] font-bold tracking-wide">1 ✦ Astral Emerald</span>
                 </button>
-                <div id="death-astral-balance-text" class="text-base font-['VT323'] text-[#d8b4fe] flex items-center justify-center gap-1 mt-1">
-                    <span>Available: <strong id="death-astral-balance-count" class="text-yellow-300 font-mono">0</strong> Astral Emeralds</span>
+                <div id="death-astral-balance-text" class="text-sm font-['VT323'] text-[#a78bfa] flex items-center justify-center gap-1 mt-1 opacity-80">
+                    <span>You have: <strong id="death-astral-balance-count" class="text-yellow-300 font-mono">0</strong> Astral Emerald(s)</span>
                 </div>
             </div>
 
-            <button id="respawn-btn" class="mc-btn" onclick="respawn(false)">Respawn</button>
-            <button class="mc-btn !bg-[#333a41] !text-gray-300 hover:!bg-[#46515a]" onclick="quitToMenu()">Disconnect / Quit</button>
+            <button class="mc-btn !bg-[#333a41] !text-white hover:!bg-[#46515a] !border-t-[#69737b] !border-l-[#69737b] !border-r-[#080a0c] !border-b-[#080a0c]" onclick="quitToMenu()">Quit to Title</button>
         </div>
     </div>
 

@@ -116,6 +116,13 @@ export let heldItemObj = null;
 export let heldItemIndex = -1;
 export let heldItemDraggedOutside = false;
 
+// Deferred animal spawn queue — drained at 2/frame to avoid spawning
+// all deficit animals in a single frame at the day/night rollover.
+let pendingAnimalSpawns = 0;
+// Set true for exactly one frame when the day count rolls over, so
+// spawnMobs() is skipped that frame (already expensive enough).
+let dayJustRolled = false;
+
 export function setSelectedHotbarIndex(idx) {
     selectedHotbarIndex = idx;
     if (typeof setEngineSelectedHotbarIndex === 'function') setEngineSelectedHotbarIndex(idx);
@@ -1339,7 +1346,12 @@ export function initJukeboxFileInput() {
             setEngineDayCount(dayCount + 1);
             setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
-            respawnDailyAnimals();
+            // Defer animal respawn to avoid spike — drained at 2/frame in game loop
+            const maxA = typeof getMaxAnimals === 'function' ? getMaxAnimals() : 20;
+            const curA = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon).length;
+            const def = Math.max(0, maxA - curA);
+            if (def > 0) pendingAnimalSpawns += def;
+            dayJustRolled = true;
             updateSleepStatus();
             return;
         }
@@ -1352,7 +1364,12 @@ export function initJukeboxFileInput() {
             setEngineDayCount(dayCount + 1);
             setEngineIsSleeping(false);
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
-            respawnDailyAnimals();
+            // Defer animal respawn to avoid spike — drained at 2/frame in game loop
+            const maxA = typeof getMaxAnimals === 'function' ? getMaxAnimals() : 20;
+            const curA = entities.filter(e => e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon).length;
+            const def = Math.max(0, maxA - curA);
+            if (def > 0) pendingAnimalSpawns += def;
+            dayJustRolled = true;
             updateSleepStatus();
         }
     }
@@ -2723,7 +2740,15 @@ export function initJukeboxFileInput() {
         }
         if (dayCount !== previousDayCount && (!isMultiplayer || isMultiplayerAuthority())) {
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
-            respawnDailyAnimals();
+            // Queue animal respawn deficit to be drained gradually (2/frame) rather than
+            // spawning all animals at once, which causes a visible frame spike.
+            const maxAnimals = typeof getMaxAnimals === 'function' ? getMaxAnimals() : 20;
+            const currentAnimals = entities.filter(e =>
+                e instanceof Pig || e instanceof Chicken || e instanceof Sheep || e instanceof Cow || e instanceof Pigeon
+            ).length;
+            const deficit = Math.max(0, maxAnimals - currentAnimals);
+            if (deficit > 0) pendingAnimalSpawns += deficit;
+            dayJustRolled = true;
         }
         if (!isMultiplayer || isMultiplayerAuthority()) {
             updateFluids();
@@ -2762,12 +2787,21 @@ export function initJukeboxFileInput() {
         });
         
         checkAutosave(Date.now());
-        if (frameCount % 10 === 0) drawMinimap();
+        // Skip minimap on the day-rollover frame to avoid coinciding with spawn queue init
+        if (frameCount % 10 === 0 && !dayJustRolled) drawMinimap();
 
         const curPlayer = player || (typeof window !== 'undefined' ? window.player : null);
         if (curPlayer && typeof curPlayer.update === 'function') {
             curPlayer.update();
         }
+
+        // Drain deferred animal spawn queue at 2 per frame (set at day rollover)
+        if (pendingAnimalSpawns > 0 && (!isMultiplayer || isMultiplayerAuthority())) {
+            const batchSize = Math.min(2, pendingAnimalSpawns);
+            spawnAnimals(batchSize, 0.40);
+            pendingAnimalSpawns -= batchSize;
+        }
+
         if (curPlayer && frameCount % 60 === 0) {
             if (typeof window !== 'undefined' && window.RiftExplorerSpawner && typeof window.RiftExplorerSpawner.checkCycle === 'function') {
                 window.RiftExplorerSpawner.checkCycle(dayCount, timeOfDay, curPlayer);
@@ -2864,7 +2898,9 @@ export function initJukeboxFileInput() {
                     e.update();
                 }
             });
-            spawnMobs();
+            // Skip mob spawning on the day-rollover frame to avoid stacking with animal spawn queue init
+            if (!dayJustRolled) spawnMobs();
+            dayJustRolled = false; // consume the flag every frame regardless
             updateTreeLeafDecay();
             processRemotePickupRequests();
             processRemoteDropRequests();
