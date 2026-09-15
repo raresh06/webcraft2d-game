@@ -4167,6 +4167,15 @@ export const SKIN_H = 32;
         } else if (x < WORLD_WIDTH - 1 && world[x + 1]?.[y] === IDS.CHEST) {
             neighbors = [[x, y], [x + 1, y]];
         }
+        if (typeof window !== 'undefined' && window.chests && window.chests instanceof Map) {
+            if (chests.size === 0 && window.chests.size > 0) {
+                chests = window.chests;
+            } else if (window.chests !== chests) {
+                for (const [k, v] of window.chests.entries()) {
+                    if (!chests.has(k)) chests.set(k, v);
+                }
+            }
+        }
         const key = neighbors.map(([cx, cy]) => getChestKey(cx, cy)).sort()[0];
         const targetSize = neighbors.length > 1 ? 54 : 27;
         const existingGroups = neighbors.map(([cx, cy]) => chests.get(getChestKey(cx, cy))).filter(Boolean);
@@ -4178,6 +4187,7 @@ export const SKIN_H = 32;
             chests.set(key, { items: existingGroups[0].items ? [...existingGroups[0].items] : new Array(targetSize).fill(null) });
         }
         if (!chests.has(key)) chests.set(key, { items: new Array(targetSize).fill(null) });
+        if (typeof window !== 'undefined') window.chests = chests;
         const chest = chests.get(key);
         while (chest.items.length < targetSize) chest.items.push(null);
         if (chest.items.length > targetSize) chest.items.length = targetSize;
@@ -8382,10 +8392,21 @@ export const SKIN_H = 32;
             this.health = 0;
             let cx = Math.floor((this.x + this.width/2) / TILE_SIZE);
             let cy = Math.floor((this.y + this.height/2) / TILE_SIZE);
-            let radius = 4;
+            const isNearKael = (gx, gy) => {
+                const entList = (typeof entities !== 'undefined' && Array.isArray(entities)) ? entities : (typeof window !== 'undefined' && Array.isArray(window.entities) ? window.entities : []);
+                for (const e of entList) {
+                    if (e instanceof AtlasExplorer && !e.isDeparted) {
+                        const kGx = Math.floor((e.x + e.width / 2) / TILE_SIZE);
+                        const kGy = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+                        if (Math.hypot(gx - kGx, gy - kGy) <= 3.5) return true;
+                    }
+                }
+                return false;
+            };
 
             const clearExplosionCell = (gx, gy) => {
                 if (gx < 0 || gx >= WORLD_WIDTH || gy < 0 || gy >= WORLD_HEIGHT || world[gx][gy] === IDS.AIR) return;
+                if (isNearKael(gx, gy)) return;
                 const blockId = world[gx][gy];
                 for(let i=0; i<2; i++) particles.push(new Particle(gx*TILE_SIZE+TILE_SIZE/2, gy*TILE_SIZE+TILE_SIZE/2, getBlockColor(blockId)));
                 removeFluid(gx, gy);
@@ -8842,7 +8863,7 @@ export const SKIN_H = 32;
             this.warpInTotalFrames = 200; // ~3.3 seconds (extended cinematic arrival)
             this.warpOutTotalFrames = 150; // ~2.5 seconds (extended departure)
             this.stayTimer = 0;
-            this.maxStayDuration = 18000; // ~5 minutes of active stay in 20-min day cycle
+            this.maxStayDuration = 999999999; // Permanent stay once arrived
             this.isDeparted = false;
             this.facingRight = true;
             this.tetherX = x;
@@ -8854,7 +8875,8 @@ export const SKIN_H = 32;
         }
 
         takeDamage(amt, knockbackDir) {
-            // Invincible planar explorer: absorbs all physical attacks with cosmic ripple
+            // Invincible planar explorer: absorbs all physical attacks with cosmic ripple, zero knockback
+            this.vx = 0;
             this.spawnPlanarRipple();
             return false;
         }
@@ -8923,18 +8945,38 @@ export const SKIN_H = 32;
                 return;
             }
 
-            // Active state
-            this.stayTimer++;
-            if (this.stayTimer >= this.maxStayDuration) {
-                this.warpState = 'warping_out';
-                if (typeof playSound === 'function') playSound('portal_warp');
-                if (typeof window !== 'undefined' && typeof window.showKaelDepartureBanner === 'function') {
-                    window.showKaelDepartureBanner();
+            // Active state: Kael is a permanent visitor in the world
+            this.stayTimer = 0;
+            this.warpState = 'active';
+            this.isDeparted = false;
+
+            // Planar Sanctuary Ward: Hostile mobs are repelled and cannot attack Kael
+            const entList = (typeof entities !== 'undefined' && Array.isArray(entities)) ? entities : (typeof window !== 'undefined' && Array.isArray(window.entities) ? window.entities : []);
+            const wardRadius = TILE_SIZE * 4.5;
+            const myCenterX = this.x + this.width / 2;
+            const myCenterY = this.y + this.height / 2;
+            for (const ent of entList) {
+                if (ent && ent !== this && (ent instanceof Zombie || ent instanceof Creeper || ent instanceof Scorpion)) {
+                    const entCenterX = ent.x + ent.width / 2;
+                    const entCenterY = ent.y + ent.height / 2;
+                    const dx = entCenterX - myCenterX;
+                    const dy = entCenterY - myCenterY;
+                    const d = Math.hypot(dx, dy);
+                    if (d < wardRadius && d > 0.01) {
+                        const pushForce = Math.min(2.5, (wardRadius - d) / 20 + 0.8);
+                        const pushDir = dx >= 0 ? 1 : -1;
+                        ent.vx = pushDir * pushForce;
+                        if (ent instanceof Creeper) {
+                            ent.swell = 0;
+                        }
+                        if (frameCount % 6 === 0) {
+                            const wp = new Particle(entCenterX, entCenterY, (frameCount % 12 === 0) ? '#c084fc' : '#38bdf8');
+                            wp.vx = pushDir * 1.5;
+                            wp.vy = -1;
+                            particles.push(wp);
+                        }
+                    }
                 }
-                if (isMultiplayer && isMultiplayerAuthority() && typeof broadcastDataPacket === 'function') {
-                    broadcastDataPacket({ type: 'ATLAS_EXPLORER_DEPARTED' });
-                }
-                return;
             }
 
             // Ambient planar stardust
@@ -9419,6 +9461,7 @@ export const SKIN_H = 32;
         fallingBlocks = [];
         activeProjectiles = [];
         chests = new Map();
+        if (typeof window !== 'undefined') window.chests = chests;
         openedChest = null;
         signs = new Map();
         if (typeof window !== 'undefined') window.signs = signs;
@@ -10293,6 +10336,17 @@ export const SKIN_H = 32;
         let spawnSide = Math.random() > 0.5 ? 1 : -1;
 
         const creeperChance = currentDifficulty === 'easy' ? 0.18 : 0.28;
+        const isNearKael = (gx, gy, distTiles = 14) => {
+            const entList = (typeof entities !== 'undefined' && Array.isArray(entities)) ? entities : (typeof window !== 'undefined' && Array.isArray(window.entities) ? window.entities : []);
+            for (const e of entList) {
+                if (e instanceof AtlasExplorer && !e.isDeparted) {
+                    const kGx = Math.floor((e.x + e.width / 2) / TILE_SIZE);
+                    const kGy = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+                    if (Math.hypot(gx - kGx, gy - kGy) < distTiles) return true;
+                }
+            }
+            return false;
+        };
 
         if (tryCave) {
             let foundX = -1;
@@ -10322,7 +10376,7 @@ export const SKIN_H = 32;
                     if (isDay && hasDirectSkyAccess(candX, candY, true)) {
                         continue;
                     }
-                    if (!isNearTorch(candX, candY, 4)) {
+                    if (!isNearTorch(candX, candY, 4) && !isNearKael(candX, candY, 14)) {
                         foundX = candX;
                         foundY = candY;
                         break;
@@ -10359,7 +10413,7 @@ export const SKIN_H = 32;
                     let feetBlock = world[candX]?.[surfY - 1];
                     let headBlock = world[candX]?.[surfY - 2];
                     if (feetBlock === IDS.AIR && headBlock === IDS.AIR && floorBlock !== IDS.AIR && floorBlock !== IDS.WATER && floorBlock !== IDS.LAVA) {
-                        if (!isNearTorch(candX, surfY - 1, 4)) {
+                        if (!isNearTorch(candX, surfY - 1, 4) && !isNearKael(candX, surfY - 1, 14)) {
                             const isDesert = (typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(candX) === 'desert');
                             for (let k = 0; k < packSize; k++) {
                                 if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion).length >= maxHostiles) break;
@@ -10386,10 +10440,20 @@ export const SKIN_H = 32;
         if (!isNight) return;
         const currentScorpions = entities.filter(e => e instanceof Scorpion).length;
         if (currentScorpions >= 3) return;
+        const isNearKael = (cgx, cgy) => {
+            for (const e of entities) {
+                if (e instanceof AtlasExplorer && !e.isDeparted) {
+                    const kGx = Math.floor((e.x + e.width / 2) / TILE_SIZE);
+                    const kGy = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+                    if (Math.hypot(cgx - kGx, cgy - kGy) < 14) return true;
+                }
+            }
+            return false;
+        };
         for (let gx = 10; gx < WORLD_WIDTH - 10; gx += 12) {
             if (getActiveBiomeAt(gx) === 'desert') {
                 let gy = 0; while (gy < WORLD_HEIGHT && world[gx]?.[gy] === IDS.AIR) gy++;
-                if (gy > 0 && gy < WORLD_HEIGHT && world[gx]?.[gy] === IDS.SAND) {
+                if (gy > 0 && gy < WORLD_HEIGHT && world[gx]?.[gy] === IDS.SAND && !isNearKael(gx, gy)) {
                     entities.push(new Scorpion(gx * TILE_SIZE, (gy - 1) * TILE_SIZE));
                     if (entities.filter(e => e instanceof Scorpion).length >= 4) break;
                 }
@@ -11973,9 +12037,30 @@ export const SKIN_H = 32;
             if (blockAtRecorded !== undefined && !isNonSurfaceBlock(blockAtRecorded)) {
                 return recordedY;
             }
+            // If the recorded block was mined/broken, search downward from recordedY for the new terrain floor
+            for (let y = recordedY + 1; y < WORLD_HEIGHT; y++) {
+                const block = curWorld[x]?.[y];
+                if (block !== undefined && !isNonSurfaceBlock(block)) {
+                    curHeights[x] = y; // self-heal cache in place with new ground floor
+                    return y;
+                }
+            }
+            // If blocks were placed directly on top of the terrain, check just above recordedY (up to 12 blocks)
+            for (let y = recordedY - 1; y >= Math.max(0, recordedY - 12); y--) {
+                const block = curWorld[x]?.[y];
+                if (block !== undefined && !isNonSurfaceBlock(block)) {
+                    const belowBlock = curWorld[x]?.[y + 1];
+                    if (belowBlock !== undefined && !isNonSurfaceBlock(belowBlock)) {
+                        curHeights[x] = y;
+                        return y;
+                    }
+                }
+            }
+            return recordedY;
         }
-        // Fallback and self-healing: scan downward for the first true solid terrain block
-        for (let y = 0; y < WORLD_HEIGHT; y++) {
+        // Fallback: scan downward for true solid terrain block starting from safe terrain range, never sky
+        const scanStartY = Math.max(15, Math.floor(WORLD_HEIGHT / 4));
+        for (let y = scanStartY; y < WORLD_HEIGHT; y++) {
             const block = curWorld[x]?.[y];
             if (block !== undefined && !isNonSurfaceBlock(block)) {
                 if (curHeights && curHeights.length === WORLD_WIDTH) {
@@ -13574,16 +13659,27 @@ export const SKIN_H = 32;
             let drawW = TILE_SIZE;
 
             let surfY = Math.floor(WORLD_HEIGHT / 2);
+            let skyCutoffY = 0;
             if (x >= 0 && x < WORLD_WIDTH) {
                 const natSurfY = (surfaceHeights && surfaceHeights[x] !== undefined) ? surfaceHeights[x] : getWorldSurfaceY(x);
                 const topSolidY = getWorldSurfaceY(x);
                 surfY = Math.max(natSurfY, topSolidY);
+
+                // Determine where exterior daylight stops penetrating from open sky
+                while (skyCutoffY < WORLD_HEIGHT && hasDirectSkyAccess(x, skyCutoffY, true)) {
+                    skyCutoffY++;
+                }
+            } else {
+                skyCutoffY = surfY;
             }
 
-            // Depth transition rows starting at (surfY + subDarkDepthOffset)
+            // Subterranean depth only begins under true solid ceiling and below the surface
+            let effectiveSurfY = Math.max(surfY, skyCutoffY);
+
+            // Depth transition rows starting at (effectiveSurfY + subDarkDepthOffset)
             for (let d = 0; d < depthSteps.length; d++) {
-                let gy = surfY + subDarkDepthOffset + d;
-                if (gy >= startRow && gy <= endRow) {
+                let gy = effectiveSurfY + subDarkDepthOffset + d;
+                if (gy >= startRow && gy <= endRow && (x < 0 || x >= WORLD_WIDTH || !hasDirectSkyAccess(x, gy, true))) {
                     let dAlpha = surfaceDarkness + (subDarkness - surfaceDarkness) * depthSteps[d];
 
                     // Soften darkness if this is an open cave mouth bordering exterior daylight horizontally
@@ -13603,8 +13699,12 @@ export const SKIN_H = 32;
                 }
             }
 
-            // Deep subterranean shadow rows downward from (surfY + subDarkDepthOffset + depthSteps.length) to endRow
-            let deepStartRow = Math.max(startRow, surfY + subDarkDepthOffset + depthSteps.length);
+            // Deep subterranean shadow rows downward from (effectiveSurfY + subDarkDepthOffset + depthSteps.length) to endRow
+            const deepThreshold = effectiveSurfY + subDarkDepthOffset + depthSteps.length;
+            let deepStartRow = Math.max(startRow, deepThreshold);
+            if (deepStartRow < skyCutoffY) {
+                deepStartRow = skyCutoffY;
+            }
             if (deepStartRow <= endRow) {
                 let uniformStartRow = deepStartRow;
                 for (let gy = deepStartRow; gy <= Math.min(endRow, deepStartRow + 2); gy++) {

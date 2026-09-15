@@ -1224,9 +1224,13 @@ export function initJukeboxFileInput() {
                 mouse.isDownLeft = true; attackAnimationTimer = 12; handleMeleeAttack();
             }
             if (e.button === 2) { 
-                if ((typeof UI !== 'undefined' && UI.isSignEditorOpen) || (typeof window !== 'undefined' && window.isSignEditorOpen)) {
-                    if (typeof UI !== 'undefined' && typeof UI.closeSignEditor === 'function') UI.closeSignEditor(true);
-                    else if (typeof window !== 'undefined' && typeof window.closeSignEditor === 'function') window.closeSignEditor(true);
+                const isSignOpen = (typeof UI !== 'undefined' && UI.isSignEditorOpen) || (typeof window !== 'undefined' && window.isSignEditorOpen);
+                const openedAt = (typeof UI !== 'undefined' && typeof UI.getSignOpenedAt === 'function') ? UI.getSignOpenedAt() : (typeof window !== 'undefined' ? window.signOpenedAt : 0);
+                if (isSignOpen) {
+                    if (Date.now() - (openedAt || 0) > 250) {
+                        if (typeof UI !== 'undefined' && typeof UI.closeSignEditor === 'function') UI.closeSignEditor(true);
+                        else if (typeof window !== 'undefined' && typeof window.closeSignEditor === 'function') window.closeSignEditor(true);
+                    }
                     mouse.isDownRight = false;
                     return;
                 }
@@ -1425,6 +1429,7 @@ export function initJukeboxFileInput() {
         }
 
         if (world[gx][gy] === IDS.SIGN) {
+            mouse.isDownRight = false;
             if (typeof UI !== 'undefined' && typeof UI.openSignEditor === 'function') {
                 UI.openSignEditor(gx, gy);
             } else if (typeof window !== 'undefined' && typeof window.openSignEditor === 'function') {
@@ -2117,7 +2122,8 @@ export function initJukeboxFileInput() {
     export let lastPlacedCell = { x: -1, y: -1 };
 
     export function handleContinuousPlacingLogic() {
-        if (!mouse.isDownRight || isInventoryOpen || STATE !== 'PLAYING') {
+        const isSignOpen = (typeof UI !== 'undefined' && UI.isSignEditorOpen) || (typeof window !== 'undefined' && window.isSignEditorOpen);
+        if (!mouse.isDownRight || isInventoryOpen || STATE !== 'PLAYING' || isSignOpen) {
             continuousPlaceCooldown = 0;
             lastPlacedCell.x = -1;
             lastPlacedCell.y = -1;
@@ -2814,6 +2820,9 @@ export function initJukeboxFileInput() {
                 if (Math.hypot(pCX - sCX, pCY - sCY) / TILE_SIZE > (typeof REACH !== 'undefined' ? REACH : 4.5) + 1.2) {
                     if (typeof UI !== 'undefined' && typeof UI.closeSignEditor === 'function') UI.closeSignEditor(true);
                     else if (typeof window !== 'undefined' && typeof window.closeSignEditor === 'function') window.closeSignEditor(true);
+                } else {
+                    if (typeof UI !== 'undefined' && typeof UI.updateSignInlinePosition === 'function') UI.updateSignInlinePosition();
+                    else if (typeof window !== 'undefined' && typeof window.updateSignInlinePosition === 'function') window.updateSignInlinePosition();
                 }
             }
         }

@@ -2232,6 +2232,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     let signKeydownListener = null;
     let signBlinkInterval = null;
 
+    let signOpenedAt = 0;
+    export function getSignOpenedAt() {
+        return signOpenedAt;
+    }
+
     export function getActiveSignCoord() {
         return activeSignCoord;
     }
@@ -2240,14 +2245,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (!isSignEditorOpen || !activeSignCoord) return;
         const editorEl = document.getElementById('sign-inline-editor');
         if (!editorEl) return;
-        const curCamera = (typeof camera !== 'undefined' && camera) ? camera : (typeof window !== 'undefined' ? window.camera : null);
-        const camX = curCamera ? curCamera.x : 0;
-        const camY = curCamera ? curCamera.y : 0;
+        const canvas = document.getElementById('gameCanvas');
+        const rect = canvas ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+        const engineCam = (typeof window !== 'undefined' && window.camera) ? window.camera : (typeof camera !== 'undefined' ? camera : null);
+        const camX = engineCam ? engineCam.x : 0;
+        const camY = engineCam ? engineCam.y : 0;
         const tileSize = (typeof TILE_SIZE !== 'undefined') ? TILE_SIZE : 32;
-        const sCX = activeSignCoord.x * tileSize + tileSize / 2 - camX;
-        const sCY = activeSignCoord.y * tileSize - camY;
-        editorEl.style.left = `${Math.round(sCX)}px`;
-        editorEl.style.top = `${Math.round(sCY - 8)}px`;
+        const sCX = rect.left + (activeSignCoord.x * tileSize + tileSize / 2 - camX);
+        const sCY = rect.top + (activeSignCoord.y * tileSize - camY);
+        // Clamp to stay on screen viewport
+        const clampedX = Math.max(140, Math.min(window.innerWidth - 140, sCX));
+        const clampedY = Math.max(50, Math.min(window.innerHeight - 40, sCY - 8));
+        editorEl.style.left = `${Math.round(clampedX)}px`;
+        editorEl.style.top = `${Math.round(clampedY)}px`;
     }
 
     export function focusSignLine(idx) {
@@ -2263,6 +2273,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (isSignEditorOpen && activeSignCoord) {
             closeSignEditor(true);
         }
+
+        signOpenedAt = Date.now();
+        if (typeof window !== 'undefined') window.signOpenedAt = signOpenedAt;
 
         activeSignCoord = { x: gx, y: gy };
         isSignEditorOpen = true;
@@ -8064,6 +8077,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         equippedArmor = [null, null, null, null];
         if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
         if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
+        chests = new Map();
+        if (typeof setEngineChests === 'function') setEngineChests(chests);
+        if (typeof window !== 'undefined') window.chests = chests;
         if (starterItems) {
             giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 32); giveItem(IDS.RAW_PORKCHOP, 5); giveItem(IDS.TORCH, 16); giveItem(IDS.SAPLING, 4);
         }
@@ -8128,8 +8144,36 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         const safeMapToEntries = (m) => {
             if (!m) return {};
-            if (m instanceof Map) return Object.fromEntries(m);
-            if (typeof m === 'object') return m;
+            if (m instanceof Map) {
+                const obj = {};
+                for (const [k, v] of m.entries()) {
+                    if (v && Array.isArray(v.items)) {
+                        obj[k] = { items: [...v.items] };
+                    } else if (Array.isArray(v)) {
+                        obj[k] = { items: [...v] };
+                    } else if (v && typeof v === 'object') {
+                        obj[k] = { ...v };
+                    } else {
+                        obj[k] = v;
+                    }
+                }
+                return obj;
+            }
+            if (typeof m === 'object') {
+                const obj = {};
+                for (const [k, v] of Object.entries(m)) {
+                    if (v && Array.isArray(v.items)) {
+                        obj[k] = { items: [...v.items] };
+                    } else if (Array.isArray(v)) {
+                        obj[k] = { items: [...v] };
+                    } else if (v && typeof v === 'object') {
+                        obj[k] = { ...v };
+                    } else {
+                        obj[k] = v;
+                    }
+                }
+                return obj;
+            }
             return {};
         };
         const safeSetToArray = (s) => {
@@ -8174,11 +8218,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 ...(e.isTamed !== undefined ? { isTamed: e.isTamed } : {}),
                 ...(e.isSitting !== undefined ? { isSitting: e.isSitting } : {}),
                 ...(e.constructor.name === 'AtlasExplorer' ? {
-                    warpState: (e.warpState === 'warping_out') ? 'warping_out' : 'active',
-                    warpProgress: (e.warpProgress !== undefined) ? e.warpProgress : 1.0,
-                    stayTimer: e.stayTimer || 0,
-                    maxStayDuration: e.maxStayDuration || 18000,
-                    isDeparted: !!e.isDeparted
+                    warpState: 'active',
+                    warpProgress: 1.0,
+                    stayTimer: 0,
+                    maxStayDuration: 999999999,
+                    isDeparted: false
                 } : {})
             }))
         };
@@ -8632,7 +8676,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (typeof setEngineJukeboxes === 'function') setEngineJukeboxes(jukeboxes);
             if (typeof window !== 'undefined') window.jukeboxes = jukeboxes;
             if (typeof jukebox !== 'undefined' && jukebox.stop) jukebox.stop();
-            chests = new Map(Object.entries(data.chests || {}).map(([key, value]) => [key, { items: Array.isArray(value.items) ? value.items : new Array(27).fill(null) }]));
+            chests = new Map(Object.entries(data.chests || {}).map(([key, value]) => {
+                const rawItems = (value && Array.isArray(value.items)) ? value.items : (Array.isArray(value) ? value : []);
+                const targetSize = rawItems.length > 27 ? 54 : 27;
+                const items = [...rawItems];
+                while (items.length < targetSize) items.push(null);
+                if (items.length > targetSize) items.length = targetSize;
+                return [key, { items }];
+            }));
+            if (typeof setEngineChests === 'function') setEngineChests(chests);
+            if (typeof window !== 'undefined') window.chests = chests;
             const restoredSigns = new Map(Object.entries(data.signs || {}));
             if (typeof setEngineSigns === 'function') setEngineSigns(restoredSigns);
             if (typeof window !== 'undefined') window.signs = restoredSigns;
@@ -8684,11 +8737,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 else if (e.type === 'Scorpion') inst = new Scorpion(e.x, e.y);
                 else if (e.type === 'AtlasExplorer') {
                     inst = new AtlasExplorer(e.x, e.y);
-                    inst.warpState = (e.warpState === 'warping_out') ? 'warping_out' : 'active';
-                    inst.warpProgress = (e.warpProgress !== undefined) ? e.warpProgress : 1.0;
-                    inst.stayTimer = (e.stayTimer !== undefined) ? e.stayTimer : 0;
-                    inst.maxStayDuration = (e.maxStayDuration !== undefined) ? e.maxStayDuration : 18000;
-                    inst.isDeparted = !!e.isDeparted;
+                    inst.warpState = 'active';
+                    inst.warpProgress = 1.0;
+                    inst.stayTimer = 0;
+                    inst.maxStayDuration = 999999999;
+                    inst.isDeparted = false;
                 }
                 else inst = new Zombie(e.x, e.y);
                 inst.health = e.health;
@@ -10119,6 +10172,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 setHeldItemObj(null); 
                 heldItemIndex = -1; 
             }
+            const wasChestOpen = !!(openedChest || (typeof window !== 'undefined' && window.openedChest));
             openedFurnace = null;
             openedChest = null;
             if (typeof window !== 'undefined') {
@@ -10126,6 +10180,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 window.openedChest = null;
                 if (typeof window.setMainOpenedFurnace === 'function') window.setMainOpenedFurnace(null);
                 if (typeof window.setMainOpenedChest === 'function') window.setMainOpenedChest(null);
+            }
+            if (wasChestOpen && !isMultiplayer) {
+                saveCurrentWorld();
             }
             const searchInput = document.getElementById('crafting-search');
             if (searchInput && document.activeElement === searchInput) {
@@ -13854,6 +13911,7 @@ try { if (typeof closeSignEditor !== "undefined") window.closeSignEditor = close
 try { if (typeof isSignEditorOpen !== "undefined") window.isSignEditorOpen = isSignEditorOpen; } catch(e) {}
 try { if (typeof updateSignInlinePosition !== "undefined") window.updateSignInlinePosition = updateSignInlinePosition; } catch(e) {}
 try { if (typeof getActiveSignCoord !== "undefined") window.getActiveSignCoord = getActiveSignCoord; } catch(e) {}
+try { if (typeof getSignOpenedAt !== "undefined") window.getSignOpenedAt = getSignOpenedAt; } catch(e) {}
 try { if (typeof focusSignLine !== "undefined") window.focusSignLine = focusSignLine; } catch(e) {}
 try { if (typeof updateSignLineCounter !== "undefined") window.updateSignLineCounter = updateSignLineCounter; } catch(e) {}
 try { if (typeof setupDeathScreen !== "undefined") window.setupDeathScreen = setupDeathScreen; } catch(e) {}
