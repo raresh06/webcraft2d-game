@@ -26,7 +26,7 @@ import {
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
-    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon, Parrot,
+    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, Gloomstalker, GloomTetherProjectile, FallingBlock, SnowballProjectile, Pigeon, Parrot,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable, sanitizeTreeWoodCollision, dismountAllShoulderParrots,
@@ -76,7 +76,7 @@ export {
     playerName, sleepWakeVersion, mpPeerIds, lastWorldSyncTime, lastWorldStateTimestamp, lastDamageEventId,
     mpPlayerSyncPending, mpPlayerSyncQueued, mpPlayerSyncPendingStartTime, mpWorldSyncPending,
     lastSyncTime, lastSentSkinData, lastFluidStateTimestamp, menuBgCanvas, menuCtx, hotbarSize,
-    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, FallingBlock, SnowballProjectile, Pigeon,
+    Player, Zombie, Pig, Chicken, Sheep, Cow, Creeper, Scorpion, Gloomstalker, GloomTetherProjectile, FallingBlock, SnowballProjectile, Pigeon,
     Particle, FloatingText, Cloud, ItemDrop,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable,
@@ -633,6 +633,26 @@ export function initJukeboxFileInput() {
                     const nBuf = getAudioNoiseBuffer(ctx);
                     playTone(ctx, 'sawtooth', 380, 120, 0.18 * effectiveVol, 0.08, null, now);
                     playNoise(ctx, nBuf, 'bandpass', 2200, 3.0, 0.20 * effectiveVol, 0.07, null, now);
+                    break;
+                }
+                case 'gloom_screech': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    const f = ctx.createBiquadFilter();
+                    f.type = 'bandpass'; f.frequency.setValueAtTime(1200, now); f.Q.setValueAtTime(4.0, now);
+                    playTone(ctx, 'sawtooth', 750, 220, 0.28 * effectiveVol, 0.35, null, now, true, f);
+                    playNoise(ctx, nBuf, 'bandpass', 1600, 2.5, 0.22 * effectiveVol, 0.25, null, now);
+                    break;
+                }
+                case 'shadow_blink': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playTone(ctx, 'sine', 120, 480, 0.26 * effectiveVol, 0.18, null, now);
+                    playNoise(ctx, nBuf, 'lowpass', 600, 1.5, 0.20 * effectiveVol, 0.12, null, now);
+                    break;
+                }
+                case 'tether_shoot': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playTone(ctx, 'triangle', 420, 180, 0.18 * effectiveVol, 0.12, null, now);
+                    playNoise(ctx, nBuf, 'highpass', 1800, 2.0, 0.15 * effectiveVol, 0.10, null, now);
                     break;
                 }
             }
@@ -1655,12 +1675,22 @@ export function initJukeboxFileInput() {
                         if (tid === IDS.WOOD_SWORD || tid === IDS.STONE_SWORD) knockbackForce = 3.6;
                         else if (tid === IDS.IRON_SWORD || tid === IDS.GOLD_SWORD) knockbackForce = 4.6;
                         else if (tid === IDS.DIAMOND_SWORD || tid === IDS.ASTRAL_SWORD) knockbackForce = 5.6;
+                        else if (tid === IDS.DIAMOND_SWORD || tid === IDS.ASTRAL_SWORD || tid === IDS.SHADOWFANG) knockbackForce = 5.2;
                         else if (tid === IDS.WOOD_AXE || tid === IDS.STONE_AXE || tid === IDS.IRON_AXE || tid === IDS.DIAMOND_AXE || tid === IDS.ASTRAL_AXE) knockbackForce = 3.8;
                         else if (tid === IDS.WOOD_PICKAXE || tid === IDS.STONE_PICKAXE || tid === IDS.IRON_PICKAXE || tid === IDS.DIAMOND_PICKAXE || tid === IDS.ASTRAL_PICKAXE) knockbackForce = 2.2;
                         else if (tid === IDS.WOOD_SHOVEL || tid === IDS.STONE_SHOVEL || tid === IDS.IRON_SHOVEL || tid === IDS.DIAMOND_SHOVEL || tid === IDS.ASTRAL_SHOVEL) knockbackForce = 2.0;
                     }
                     z.takeDamage(wDmg, pCX < zCX ? 1 : -1, knockbackForce);
                     damageSelectedTool(1);
+                    if (heldTool && heldTool.id === IDS.SHADOWFANG && player) {
+                        player.shadowSwiftTimer = 210;
+                        playSound('shadow_blink', { vol: 0.45 });
+                        if (Array.isArray(particles)) {
+                            for (let sp = 0; sp < 8; sp++) {
+                                particles.push(new Particle(z.x + z.width / 2, z.y + z.height / 2, '#a855f7'));
+                            }
+                        }
+                    }
                     if (z instanceof Sheep && z.health > 0 && !z.isSheared) {
                         z.isSheared = true;
                         const isKineticShears = heldTool && heldTool.id === IDS.KINETIC_SHEARS;
@@ -1716,6 +1746,17 @@ export function initJukeboxFileInput() {
                             monstersKilledCount = (monstersKilledCount || 0) + 1;
                             if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
                                 UI.trackDailyQuestProgress('slay_monster', { mobType: 'Scorpion' });
+                            }
+                            unlockAchievement('monster_hunter');
+                            if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
+                            if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
+                        }
+                        else if (z instanceof Gloomstalker) {
+                            giveItem(IDS.GLOOM_SILK, 1 + Math.floor(Math.random() * 2));
+                            if (Math.random() < 0.45) giveItem(IDS.SHADOW_CARAPACE, 1);
+                            monstersKilledCount = (monstersKilledCount || 0) + 1;
+                            if (typeof UI !== 'undefined' && typeof UI.trackDailyQuestProgress === 'function') {
+                                UI.trackDailyQuestProgress('slay_monster', { mobType: 'Gloomstalker' });
                             }
                             unlockAchievement('monster_hunter');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
@@ -2748,12 +2789,12 @@ export function initJukeboxFileInput() {
 
         // Despawn or decrease mobs accordingly
         if (newDiff === 'peaceful') {
-            setEngineEntities(entities.filter(e => !(e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion)));
+            setEngineEntities(entities.filter(e => !(e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker)));
         } else {
             let maxHostiles = (newDiff === 'easy') ? 8 : (newDiff === 'normal' ? 14 : 42);
             let hostileCount = 0;
             setEngineEntities(entities.filter(e => {
-                if (e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion) {
+                if (e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker) {
                     hostileCount++;
                     return hostileCount <= maxHostiles;
                 }

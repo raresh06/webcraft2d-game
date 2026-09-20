@@ -176,7 +176,7 @@ export function isTool(id) {
         IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE, IDS.ASTRAL_AXE,
         IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL, IDS.ASTRAL_SHOVEL,
         IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE,
-        IDS.KINETIC_SHEARS
+        IDS.KINETIC_SHEARS, IDS.SHADOWFANG
     ].includes(id);
 }
 export function updateArmorUI() { if (typeof window !== 'undefined' && typeof window.updateArmorUI === 'function' && window.updateArmorUI !== updateArmorUI) return window.updateArmorUI(); }
@@ -906,7 +906,11 @@ export function getMaxAnimals() {
         KINETIC_SHEARS: 173, STRIDER_BOOTS: 174,
         ASTRAL_SWORD: 175, ASTRAL_PICKAXE: 176, ASTRAL_AXE: 177, ASTRAL_SHOVEL: 178,
         ASTRAL_HELMET: 179, ASTRAL_CHESTPLATE: 180, ASTRAL_LEGGINGS: 181, ASTRAL_BOOTS: 182,
-        EMERALD: 183
+        EMERALD: 183,
+        GLOOM_SILK: 184,
+        SHADOW_CARAPACE: 185,
+        SHADOWFANG: 186,
+        GLOOM_LANTERN: 187
     };
 
 
@@ -1080,6 +1084,10 @@ export function getMaxAnimals() {
     ID_NAMES[IDS.ASTRAL_BOOTS] = 'Astral Boots';
     ID_NAMES[IDS.EMERALD] = 'Emerald';
     ID_NAMES[IDS.SIGN] = 'Sign';
+    ID_NAMES[IDS.GLOOM_SILK] = 'Gloom Silk';
+    ID_NAMES[IDS.SHADOW_CARAPACE] = 'Shadow Carapace';
+    ID_NAMES[IDS.SHADOWFANG] = 'Shadowfang Dagger';
+    ID_NAMES[IDS.GLOOM_LANTERN] = 'Gloom Lantern';
 
     export const TOOL_DURABILITY = {
         [IDS.WOOD_PICKAXE]: 60, [IDS.WOOD_AXE]: 60, [IDS.WOOD_SWORD]: 60,
@@ -1093,7 +1101,7 @@ export function getMaxAnimals() {
         [IDS.DIAMOND_PICKAXE]: 480, [IDS.DIAMOND_AXE]: 480, [IDS.DIAMOND_SWORD]: 480,
         [IDS.DIAMOND_SHOVEL]: 480, [IDS.DIAMOND_HOE]: 480,
         [IDS.ASTRAL_PICKAXE]: 750, [IDS.ASTRAL_AXE]: 750, [IDS.ASTRAL_SWORD]: 750,
-        [IDS.ASTRAL_SHOVEL]: 750, [IDS.KINETIC_SHEARS]: 500
+        [IDS.ASTRAL_SHOVEL]: 750, [IDS.KINETIC_SHEARS]: 500, [IDS.SHADOWFANG]: 450
     };
 
     export const ARMOR_DURABILITY = {
@@ -3433,6 +3441,69 @@ export function getMaxAnimals() {
                     p(9, 7, '#7c3aed'); p(10, 6, '#9333ea'); p(10, 5, '#a855f7'); p(11, 4, '#c084fc'); p(11, 3, '#ffffff');
                     p(8, 6, '#581c87'); p(9, 5, '#7c3aed'); p(10, 4, '#9333ea');
                 }
+                else if (id === IDS.GLOOM_SILK) {
+                    const silkPixels = [
+                        [5, 4, '#38bdf8'], [6, 4, '#c084fc'], [7, 4, '#7c3aed'], [8, 4, '#581c87'],
+                        [4, 5, '#c084fc'], [5, 5, '#ffffff'], [6, 5, '#a855f7'], [7, 5, '#7c3aed'], [8, 5, '#3b0764'],
+                        [4, 6, '#7c3aed'], [5, 6, '#a855f7'], [6, 6, '#c084fc'], [7, 6, '#e9d5ff'], [8, 6, '#7c3aed'], [9, 6, '#38bdf8'],
+                        [5, 7, '#581c87'], [6, 7, '#7c3aed'], [7, 7, '#a855f7'], [8, 7, '#c084fc'], [9, 7, '#7c3aed'], [10, 7, '#3b0764'],
+                        [6, 8, '#3b0764'], [7, 8, '#581c87'], [8, 8, '#7c3aed'], [9, 8, '#a855f7'], [10, 8, '#c084fc'], [11, 8, '#38bdf8'],
+                        [7, 9, '#3b0764'], [8, 9, '#7c3aed'], [9, 9, '#c084fc'], [10, 9, '#e9d5ff'], [11, 9, '#7c3aed'],
+                        [8, 10, '#581c87'], [9, 10, '#a855f7'], [10, 10, '#7c3aed'], [11, 10, '#3b0764'],
+                        [9, 11, '#3b0764'], [10, 11, '#581c87'], [11, 11, '#38bdf8']
+                    ];
+                    silkPixels.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.SHADOW_CARAPACE) {
+                    const platePixels = [
+                        [7, 2, '#38bdf8'], [8, 2, '#38bdf8'],
+                        [6, 3, '#c084fc'], [7, 3, '#7c3aed'], [8, 3, '#581c87'], [9, 3, '#38bdf8'],
+                        [5, 4, '#a855f7'], [6, 4, '#6b21a8'], [7, 4, '#1e102d'], [8, 4, '#1e102d'], [9, 4, '#581c87'], [10, 4, '#a855f7'],
+                        [4, 5, '#7c3aed'], [5, 5, '#1e102d'], [6, 5, '#090514'], [7, 5, '#38bdf8'], [8, 5, '#090514'], [9, 5, '#1e102d'], [10, 5, '#581c87'], [11, 5, '#7c3aed'],
+                        [3, 6, '#581c87'], [4, 6, '#1e102d'], [5, 6, '#090514'], [6, 6, '#a855f7'], [7, 6, '#090514'], [8, 6, '#090514'], [9, 6, '#1e102d'], [10, 6, '#3b0764'],
+                        [4, 7, '#3b0764'], [5, 7, '#1e102d'], [6, 7, '#090514'], [7, 7, '#090514'], [8, 7, '#38bdf8'], [9, 7, '#1e102d'], [10, 7, '#3b0764'],
+                        [5, 8, '#3b0764'], [6, 8, '#1e102d'], [7, 8, '#a855f7'], [8, 8, '#090514'], [9, 8, '#1e102d'], [10, 8, '#3b0764'],
+                        [5, 9, '#581c87'], [6, 9, '#1e102d'], [7, 9, '#090514'], [8, 9, '#090514'], [9, 9, '#3b0764'],
+                        [6, 10, '#3b0764'], [7, 10, '#1e102d'], [8, 10, '#38bdf8'], [9, 10, '#3b0764'],
+                        [7, 11, '#581c87'], [8, 11, '#3b0764'],
+                        [7, 12, '#3b0764']
+                    ];
+                    platePixels.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.SHADOWFANG) {
+                    const fangPixels = [
+                        [2, 14, '#38bdf8'], [3, 14, '#c084fc'], [2, 13, '#c084fc'], [3, 13, '#581c87'],
+                        [3, 12, '#180e29'], [4, 12, '#581c87'], [4, 11, '#180e29'], [5, 11, '#7c3aed'],
+                        [3, 10, '#c084fc'], [4, 10, '#7c3aed'], [5, 10, '#3b0764'], [6, 10, '#7c3aed'], [7, 10, '#38bdf8'],
+                        [5, 9, '#581c87'], [6, 9, '#3b0764'],
+                        [5, 8, '#c084fc'], [6, 8, '#1e102d'], [7, 8, '#090514'], [8, 8, '#7c3aed'],
+                        [6, 7, '#38bdf8'], [7, 7, '#1e102d'], [8, 7, '#090514'], [9, 7, '#7c3aed'],
+                        [7, 6, '#ffffff'], [8, 6, '#38bdf8'], [9, 6, '#1e102d'], [10, 6, '#a855f7'],
+                        [8, 5, '#c084fc'], [9, 5, '#1e102d'], [10, 5, '#090514'], [11, 5, '#38bdf8'],
+                        [9, 4, '#38bdf8'], [10, 4, '#c084fc'], [11, 4, '#7c3aed'], [12, 4, '#ffffff'],
+                        [11, 3, '#c084fc'], [12, 3, '#38bdf8'], [13, 3, '#ffffff'],
+                        [12, 2, '#38bdf8'], [13, 2, '#ffffff']
+                    ];
+                    fangPixels.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
+                else if (id === IDS.GLOOM_LANTERN) {
+                    const lanternPixels = [
+                        [7, 1, '#71717a'], [8, 1, '#71717a'],
+                        [6, 2, '#3f3f46'], [9, 2, '#3f3f46'],
+                        [7, 3, '#27272a'], [8, 3, '#27272a'],
+                        [5, 4, '#18181b'], [6, 4, '#3f3f46'], [7, 4, '#52525b'], [8, 4, '#52525b'], [9, 4, '#3f3f46'], [10, 4, '#18181b'],
+                        [4, 5, '#18181b'], [5, 5, '#3f3f46'], [6, 5, '#27272a'], [7, 5, '#27272a'], [8, 5, '#27272a'], [9, 5, '#27272a'], [10, 5, '#3f3f46'], [11, 5, '#18181b'],
+                        [4, 6, '#27272a'], [5, 6, '#18181b'], [6, 6, '#3b0764'], [7, 6, '#c084fc'], [8, 6, '#c084fc'], [9, 6, '#3b0764'], [10, 6, '#18181b'], [11, 6, '#27272a'],
+                        [4, 7, '#3f3f46'], [5, 7, '#3b0764'], [6, 7, '#a855f7'], [7, 7, '#ffffff'], [8, 7, '#ffffff'], [9, 7, '#a855f7'], [10, 7, '#3b0764'], [11, 7, '#3f3f46'],
+                        [4, 8, '#3f3f46'], [5, 8, '#581c87'], [6, 8, '#c084fc'], [7, 8, '#ffffff'], [8, 8, '#38bdf8'], [9, 8, '#c084fc'], [10, 8, '#581c87'], [11, 8, '#3f3f46'],
+                        [4, 9, '#27272a'], [5, 9, '#3b0764'], [6, 9, '#7c3aed'], [7, 9, '#a855f7'], [8, 9, '#a855f7'], [9, 9, '#7c3aed'], [10, 9, '#3b0764'], [11, 9, '#27272a'],
+                        [4, 10, '#18181b'], [5, 10, '#18181b'], [6, 10, '#3b0764'], [7, 10, '#581c87'], [8, 10, '#581c87'], [9, 10, '#3b0764'], [10, 10, '#18181b'], [11, 10, '#18181b'],
+                        [4, 11, '#27272a'], [5, 11, '#3f3f46'], [6, 11, '#27272a'], [7, 11, '#27272a'], [8, 11, '#27272a'], [9, 11, '#27272a'], [10, 11, '#3f3f46'], [11, 11, '#27272a'],
+                        [3, 12, '#18181b'], [4, 12, '#3f3f46'], [5, 12, '#52525b'], [6, 12, '#3f3f46'], [7, 12, '#3f3f46'], [8, 12, '#3f3f46'], [9, 12, '#3f3f46'], [10, 12, '#52525b'], [11, 12, '#3f3f46'], [12, 12, '#18181b'],
+                        [4, 13, '#18181b'], [5, 13, '#27272a'], [6, 13, '#27272a'], [7, 13, '#27272a'], [8, 13, '#27272a'], [9, 13, '#27272a'], [10, 13, '#27272a'], [11, 13, '#18181b']
+                    ];
+                    lanternPixels.forEach(([sx, sy, scol]) => p(sx, sy, scol));
+                }
             }
         }
         if (ORE_PALETTES[id]) {
@@ -3612,7 +3683,8 @@ export const SKIN_H = 32;
             ctx.translate(-pivotX + (4 * sX) / 2, -pivotY + (12 * sY)); 
             const isHandheld = (typeof isTool === 'function' && isTool(heldItemId)) || [
                 IDS.STICK, IDS.TORCH, IDS.BOW, IDS.BONE, IDS.FEATHER,
-                IDS.ASTRAL_SHARD, IDS.CHRONO_ANCHOR, IDS.CELESTIAL_COMPASS, IDS.VOID_BEACON
+                IDS.ASTRAL_SHARD, IDS.CHRONO_ANCHOR, IDS.CELESTIAL_COMPASS, IDS.VOID_BEACON,
+                IDS.GLOOM_LANTERN
             ].includes(heldItemId);
 
             if (isHandheld) {
@@ -3937,6 +4009,7 @@ export const SKIN_H = 32;
         let startTime = performance.now();
         let duration = 1600; // ms
 
+        isPreviewWalking = false;
         if (previewWalkAnimId) {
             cancelAnimationFrame(previewWalkAnimId);
             previewWalkAnimId = null;
@@ -3966,6 +4039,9 @@ export const SKIN_H = 32;
         }
 
         previewWalkAnimId = requestAnimationFrame(animLoop);
+        staticPreviewDrawn = false;
+        if (typeof window !== 'undefined') window.staticPreviewDrawn = false;
+        renderStaticPlayerPreview();
     }
 
 
@@ -5341,6 +5417,9 @@ export const SKIN_H = 32;
             this.walkBlend = 0;
             this.fallStartY = y;
             this.poisonTimer = 0;
+            this.gloomTetherTimer = 0;
+            this.gloomBlindTimer = 0;
+            this.shadowSwiftTimer = 0;
             this.airborneTicks = 0;
             this.leftShoulderParrot = null;
             this.rightShoulderParrot = null;
@@ -5350,6 +5429,31 @@ export const SKIN_H = 32;
             if (this.isDead) return;
             if (isSleeping) return;
             if (this.damageCooldown > 0) this.damageCooldown--;
+
+            // Handle Gloom and Shadow status effects
+            const hasGloomLantern = (inventory[selectedHotbarIndex]?.id === IDS.GLOOM_LANTERN || inventory[27]?.id === IDS.GLOOM_LANTERN);
+            if (hasGloomLantern) {
+                this.gloomBlindTimer = 0;
+                if (this.gloomTetherTimer > 0) this.gloomTetherTimer = Math.max(0, this.gloomTetherTimer - 3);
+            }
+
+            if (this.gloomTetherTimer > 0) {
+                this.gloomTetherTimer--;
+                if (frameCount % 10 === 0 && Array.isArray(particles)) {
+                    particles.push(new Particle(this.x + Math.random() * this.width, this.y + this.height - 4, '#7c3aed'));
+                }
+            }
+
+            if (this.gloomBlindTimer > 0) {
+                this.gloomBlindTimer--;
+            }
+
+            if (this.shadowSwiftTimer > 0) {
+                this.shadowSwiftTimer--;
+                if (frameCount % 5 === 0 && Array.isArray(particles)) {
+                    particles.push(new Particle(this.x + Math.random() * this.width, this.y + this.height - 2, '#c084fc'));
+                }
+            }
 
             // Handle Poison status effect
             if (this.poisonTimer > 0) {
@@ -5395,6 +5499,12 @@ export const SKIN_H = 32;
                 const boots = (typeof equippedArmor !== 'undefined' && Array.isArray(equippedArmor)) ? equippedArmor[3] : (this.equippedArmor ? this.equippedArmor[3] : null);
                 if (boots && (boots.id === IDS.STRIDER_BOOTS || boots.id === IDS.ASTRAL_BOOTS)) {
                     speedMult = 1.25;
+                }
+                if (this.shadowSwiftTimer > 0) {
+                    speedMult *= 1.35;
+                }
+                if (this.gloomTetherTimer > 0) {
+                    speedMult *= 0.55;
                 }
                 let targetVx = moveDir * MOVE_SPEED * speedMult;
                 if (this.isGrounded) {
@@ -5813,6 +5923,7 @@ export const SKIN_H = 32;
         getWeaponDamage() {
             let item = inventory[selectedHotbarIndex]; if (!item) return 1;
             const dmgMap = {
+                [IDS.SHADOWFANG]: 8, [IDS.ASTRAL_SWORD]: 12,
                 [IDS.DIAMOND_SWORD]: 10, [IDS.IRON_SWORD]: 8, [IDS.GOLD_SWORD]: 8, [IDS.STONE_SWORD]: 6, [IDS.WOOD_SWORD]: 4,
                 [IDS.DIAMOND_AXE]: 8, [IDS.IRON_AXE]: 7, [IDS.GOLD_AXE]: 6, [IDS.STONE_AXE]: 5, [IDS.WOOD_AXE]: 3,
                 [IDS.DIAMOND_PICKAXE]: 4, [IDS.IRON_PICKAXE]: 3.5, [IDS.GOLD_PICKAXE]: 3, [IDS.STONE_PICKAXE]: 2.5, [IDS.WOOD_PICKAXE]: 2,
@@ -9171,6 +9282,439 @@ export const SKIN_H = 32;
         }
     }
 
+    export class GloomTetherProjectile {
+        constructor(x, y, vx, vy, sourceEntity = null) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.width = 8;
+            this.height = 8;
+            this.alive = true;
+            this.age = 0;
+            this.maxAge = 120;
+            this.source = sourceEntity;
+        }
+
+        update() {
+            if (!this.alive) return;
+            this.age++;
+            if (this.age > this.maxAge) {
+                this.alive = false;
+                return;
+            }
+
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vy += 0.08;
+
+            if (frameCount % 2 === 0 && Array.isArray(particles)) {
+                particles.push(new Particle(this.x, this.y, Math.random() < 0.5 ? '#a855f7' : '#38bdf8'));
+            }
+
+            if (this.x < 0 || this.x > WORLD_WIDTH * TILE_SIZE || this.y < 0 || this.y > WORLD_HEIGHT * TILE_SIZE) {
+                this.alive = false;
+                return;
+            }
+
+            const gx = Math.floor(this.x / TILE_SIZE);
+            const gy = Math.floor(this.y / TILE_SIZE);
+            if (gx >= 0 && gx < WORLD_WIDTH && gy >= 0 && gy < WORLD_HEIGHT && world[gx]?.[gy] !== undefined && isSolidWorldBlock(gx, gy, world[gx][gy])) {
+                this.burst();
+                return;
+            }
+
+            const curPlayer = (typeof player !== 'undefined') ? player : null;
+            if (curPlayer && !curPlayer.isDead) {
+                if (this.x >= curPlayer.x && this.x <= curPlayer.x + curPlayer.width &&
+                    this.y >= curPlayer.y && this.y <= curPlayer.y + curPlayer.height) {
+                    curPlayer.takeDamage(1);
+                    curPlayer.gloomTetherTimer = 240;
+                    playSound('hurt');
+                    this.burst();
+                    return;
+                }
+            }
+
+            if (isMultiplayer && typeof remotePlayers !== 'undefined') {
+                for (let rId in remotePlayers) {
+                    const rp = remotePlayers[rId];
+                    if (!rp || rp.isDead) continue;
+                    if (this.x >= rp.x && this.x <= rp.x + 24 && this.y >= rp.y && this.y <= rp.y + 48) {
+                        damageRemotePlayer(rId, 1, true);
+                        this.burst();
+                        return;
+                    }
+                }
+            }
+        }
+
+        burst() {
+            this.alive = false;
+            if (Array.isArray(particles)) {
+                for (let i = 0; i < 8; i++) {
+                    particles.push(new Particle(this.x + (Math.random() - 0.5) * 6, this.y + (Math.random() - 0.5) * 6, '#c084fc'));
+                }
+            }
+        }
+
+        draw(ctx, camX, camY) {
+            if (!this.alive) return;
+            const drawX = Math.round(this.x - camX);
+            const drawY = Math.round(this.y - camY);
+            ctx.save();
+            ctx.fillStyle = '#a855f7';
+            ctx.fillRect(drawX - 3, drawY - 3, 6, 6);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(drawX - 1, drawY - 1, 2, 2);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(drawX, drawY, 2, 2);
+            ctx.restore();
+        }
+    }
+
+    export class Gloomstalker extends PhysicsEntity {
+        constructor(x, y) {
+            super(x, y, TILE_SIZE * 1.05, TILE_SIZE * 0.7);
+            this.health = 16;
+            this.maxHealth = 16;
+            this.damageCooldown = 0;
+            this.speed = MOVE_SPEED * 0.70;
+            this.damage = 3;
+            this.facingRight = true;
+            this.attackCooldown = 0;
+            this.tetherCooldown = 60;
+            this.blinkCooldown = 0;
+            this.consecutiveHits = 0;
+            this.hitResetTimer = 0;
+            this.stunTimer = 0;
+            this.walkAnimTime = 0;
+            this.isCeilingClinging = false;
+            this.isStealthed = false;
+            this.ambushPounceTime = 0;
+        }
+
+        update() {
+            if (this.damageCooldown > 0) this.damageCooldown--;
+            if (this.attackCooldown > 0) this.attackCooldown--;
+            if (this.tetherCooldown > 0) this.tetherCooldown--;
+            if (this.blinkCooldown > 0) this.blinkCooldown--;
+            if (this.ambushPounceTime > 0) this.ambushPounceTime--;
+            if (this.hitResetTimer > 0) {
+                this.hitResetTimer--;
+                if (this.hitResetTimer <= 0) this.consecutiveHits = 0;
+            }
+
+            if (this.stunTimer > 0) {
+                this.stunTimer--;
+                this.vx = 0;
+                if (frameCount % 6 === 0 && Array.isArray(particles)) {
+                    particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height, '#fef08a'));
+                }
+                this.applyPhysics();
+                return;
+            }
+
+            const target = getMobTarget(this);
+            const activeWorld = this.getActiveWorld();
+            const gx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const gy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+
+            // Light Detection & Stealth Management
+            const nearTorch = isNearTorch(gx, gy, 5);
+            const p = (typeof player !== 'undefined') ? player : null;
+            const pDist = p ? Math.hypot(p.x - this.x, p.y - this.y) : 9999;
+            const pItem = (inventory && inventory[selectedHotbarIndex]) ? inventory[selectedHotbarIndex].id : null;
+            const pOff = (inventory && inventory[27]) ? inventory[27].id : null;
+            const playerHoldsLight = (pItem === IDS.TORCH || pItem === IDS.GLOOM_LANTERN || pOff === IDS.TORCH || pOff === IDS.GLOOM_LANTERN);
+            const exposedToLight = nearTorch || (playerHoldsLight && pDist < TILE_SIZE * 6);
+
+            if (exposedToLight) {
+                if (this.isStealthed && pDist < TILE_SIZE * 5) {
+                    this.stunTimer = 65; // Light stun shock
+                    playSound('gloom_screech', { vol: 0.45 });
+                    if (Array.isArray(particles)) {
+                        for (let s = 0; s < 8; s++) {
+                            particles.push(new Particle(this.x + Math.random() * this.width, this.y, '#fef08a'));
+                        }
+                    }
+                }
+                this.isStealthed = false;
+            } else {
+                const isNight = timeOfDay >= 0.58 && timeOfDay <= 0.90;
+                const inCave = gy > (typeof getWorldSurfaceY === 'function' ? getWorldSurfaceY(gx) + 4 : 40);
+                if (isNight || inCave) {
+                    this.isStealthed = true;
+                } else {
+                    this.isStealthed = false;
+                }
+            }
+
+            // Ceiling Clinging AI: Check for solid ceiling overhead
+            if (activeWorld) {
+                const ceilGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+                const ceilGy = Math.floor((this.y - 3) / TILE_SIZE);
+                const hasCeil = isSolidWorldBlock(ceilGx, ceilGy, activeWorld[ceilGx]?.[ceilGy]);
+
+                if (hasCeil && target && (target.y > this.y + TILE_SIZE * 1.5) && this.ambushPounceTime <= 0) {
+                    this.isCeilingClinging = true;
+                } else if (!hasCeil) {
+                    this.isCeilingClinging = false;
+                }
+            }
+
+            if (this.isCeilingClinging && activeWorld) {
+                const ceilGy = Math.floor((this.y - 3) / TILE_SIZE);
+                this.y = (ceilGy + 1) * TILE_SIZE;
+                this.vy = 0;
+                this.isGrounded = false;
+
+                if (target) {
+                    const distX = (target.x + target.width / 2) - (this.x + this.width / 2);
+                    const distY = (target.y + target.height / 2) - (this.y + this.height / 2);
+                    this.facingRight = distX > 0;
+
+                    // Ambush Dive Drop when player passes beneath
+                    if (Math.abs(distX) < TILE_SIZE * 2.2 && distY > 0 && distY < TILE_SIZE * 9) {
+                        this.isCeilingClinging = false;
+                        this.vy = 8.8; // High speed dive!
+                        this.ambushPounceTime = 40;
+                        playSound('gloom_screech', { vol: 0.75 });
+                        if (Array.isArray(particles)) {
+                            for (let i = 0; i < 6; i++) {
+                                particles.push(new Particle(this.x + Math.random() * this.width, this.y, '#a855f7'));
+                            }
+                        }
+                    } else {
+                        // Crawl along ceiling toward target
+                        this.vx = (distX > 0 ? 1 : -1) * (this.speed * 0.65);
+                        this.walkAnimTime += 0.22;
+                    }
+                } else {
+                    this.vx = 0;
+                }
+                this.applyPhysics();
+                return;
+            }
+
+            // Impact Shockwave on landing from ceiling dive
+            if (this.ambushPounceTime > 0 && this.isGrounded) {
+                this.ambushPounceTime = 0;
+                playSound('hit', { vol: 0.8 });
+                if (Array.isArray(particles)) {
+                    for (let i = 0; i < 16; i++) {
+                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + this.height, '#7c3aed'));
+                    }
+                }
+                // Ground slam damage if landing right onto player
+                if (target) {
+                    const slamDist = Math.hypot((target.x + target.width / 2) - (this.x + this.width / 2), (target.y + target.height / 2) - (this.y + this.height / 2));
+                    if (slamDist < TILE_SIZE * 1.8) {
+                        if (target.isRemote) damageRemotePlayer(target.id, this.damage + 1, true);
+                        else {
+                            player.takeDamage(this.damage + 1);
+                            player.gloomBlindTimer = 180;
+                            updateHealthUI();
+                        }
+                    }
+                }
+            }
+
+            // Ground Combat Behavior
+            if (target) {
+                const distX = (target.x + target.width / 2) - (this.x + this.width / 2);
+                const distY = (target.y + target.height / 2) - (this.y + this.height / 2);
+                const absDist = Math.abs(distX);
+
+                if (absDist < TILE_SIZE * 16) {
+                    this.facingRight = distX > 0;
+                    this.vx = (distX > 0 ? 1 : -1) * this.speed;
+                    this.walkAnimTime += 0.28;
+                    this.checkObstacleJump();
+
+                    // Ranged Umbral Silk Web
+                    if (absDist > TILE_SIZE * 3.2 && absDist < TILE_SIZE * 8.5 && Math.abs(distY) < TILE_SIZE * 3.5 && this.tetherCooldown <= 0) {
+                        this.tetherCooldown = 140;
+                        const angle = Math.atan2(distY, distX);
+                        const pSpeed = 6.8;
+                        if (Array.isArray(activeProjectiles)) {
+                            activeProjectiles.push(new GloomTetherProjectile(this.x + this.width / 2, this.y + this.height / 2, Math.cos(angle) * pSpeed, Math.sin(angle) * pSpeed - 1.0, this));
+                        }
+                        playSound('tether_shoot', { vol: 0.65 });
+                    }
+
+                    // Melee Claws Strike & Gloom Blindness
+                    if (absDist < TILE_SIZE * 1.45 && Math.abs(distY) < TILE_SIZE * 1.3) {
+                        if (this.attackCooldown <= 0) {
+                            this.attackCooldown = 50;
+                            const diff = currentDifficulty || 'normal';
+                            const strikeDmg = diff === 'hard' || diff === 'hardcore' ? 4.5 : (diff === 'easy' ? 2 : 3);
+
+                            if (target.isRemote) {
+                                damageRemotePlayer(target.id, strikeDmg, true);
+                            } else {
+                                player.takeDamage(strikeDmg);
+                                const hasGloomLantern = (inventory[selectedHotbarIndex]?.id === IDS.GLOOM_LANTERN || inventory[27]?.id === IDS.GLOOM_LANTERN);
+                                if (!hasGloomLantern) {
+                                    player.gloomBlindTimer = 180;
+                                }
+                                updateHealthUI();
+                            }
+                            playSound('hurt');
+                            playSound('gloom_screech', { vol: 0.5 });
+                            if (Array.isArray(particles)) {
+                                for (let i = 0; i < 8; i++) {
+                                    particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#a855f7'));
+                                }
+                            }
+                            // Evasive hop back
+                            this.vx = -(distX > 0 ? 1 : -1) * 3.4;
+                            this.vy = -2.2;
+                            this.isGrounded = false;
+                        }
+                    }
+                } else {
+                    this.vx = 0;
+                }
+            } else {
+                this.vx = 0;
+            }
+
+            // Dripping shadow embers
+            if (frameCount % 8 === 0 && Array.isArray(particles)) {
+                particles.push(new Particle(this.x + Math.random() * this.width, this.y + this.height - 2, '#3b0764'));
+            }
+
+            this.applyPhysics();
+        }
+
+        takeDamage(amt, knockbackDir, knockbackForce = 4.0) {
+            this.consecutiveHits++;
+            this.hitResetTimer = 90;
+            this.isCeilingClinging = false;
+
+            // Shadow Blink counter-escape when hit 2+ times in short succession
+            if (this.consecutiveHits >= 2 && this.blinkCooldown <= 0 && this.health > 0) {
+                this.consecutiveHits = 0;
+                this.blinkCooldown = 120;
+                if (Array.isArray(particles)) {
+                    for (let i = 0; i < 14; i++) {
+                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height, '#a855f7'));
+                    }
+                }
+                playSound('shadow_blink', { vol: 0.75 });
+                const blinkDir = (knockbackDir ? -knockbackDir : (this.facingRight ? -1 : 1));
+                const newX = Math.max(TILE_SIZE * 2, Math.min((WORLD_WIDTH - 3) * TILE_SIZE, this.x + blinkDir * (TILE_SIZE * 5.5)));
+                this.x = newX;
+                this.vy = -3.2;
+                this.isGrounded = false;
+                if (Array.isArray(particles)) {
+                    for (let i = 0; i < 14; i++) {
+                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height, '#38bdf8'));
+                    }
+                }
+            }
+
+            if (this.applyMobDamage(amt, knockbackDir || (this.facingRight ? -1 : 1), '#7c3aed', knockbackForce)) {
+                if (this.health <= 0) {
+                    const silkCount = Math.floor(Math.random() * 3) + 1;
+                    dropItemForWorld(IDS.GLOOM_SILK, this.x + this.width / 2, this.y + this.height / 2, silkCount);
+                    const diff = currentDifficulty || 'normal';
+                    const carapaceChance = (diff === 'hard' || diff === 'hardcore') ? 1.0 : 0.50;
+                    if (Math.random() < carapaceChance) {
+                        dropItemForWorld(IDS.SHADOW_CARAPACE, this.x + this.width / 2, this.y + this.height / 2, 1);
+                    }
+                }
+            }
+        }
+
+        draw(ctx, camX, camY) {
+            if (this.health <= 0) return;
+            const drawX = Math.round(this.x - camX);
+            const drawY = Math.round(this.y - camY);
+            const w = this.width;
+            const h = this.height;
+
+            if (advancedGraphics && !this.isCeilingClinging) {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 4, w * (2 / 2.2), 6);
+            }
+
+            ctx.save();
+            if (this.damageCooldown > 0) ctx.globalAlpha = 0.6;
+            else if (this.isStealthed) ctx.globalAlpha = 0.28;
+
+            if (this.isCeilingClinging) {
+                ctx.translate(drawX + w / 2, drawY + h / 2);
+                ctx.scale(1, -1);
+                ctx.translate(-(drawX + w / 2), -(drawY + h / 2));
+            }
+
+            const isRight = this.facingRight;
+            const legWiggle = Math.sin(this.walkAnimTime) * 3.0;
+
+            // 1. Spindly Scythe Legs (6 legs with articulated joints)
+            ctx.fillStyle = '#2e1065';
+            for (let i = 0; i < 3; i++) {
+                const lx = drawX + (isRight ? 6 + i * 8 : w - 8 - i * 8);
+                const offset = (i % 2 === 0 ? legWiggle : -legWiggle);
+                ctx.fillRect(lx, drawY + h - 5 + offset, 2.5, 6 - offset);
+                // Sharp claw tips
+                ctx.fillStyle = '#7c3aed';
+                ctx.fillRect(lx + (isRight ? 1 : -1), drawY + h + 1 + offset, 2, 2);
+                ctx.fillStyle = '#2e1065';
+            }
+
+            // 2. Main Obsidian Chitin Carapace
+            ctx.fillStyle = '#180e29';
+            ctx.fillRect(drawX + 4, drawY + 3, w - 8, h - 5);
+
+            // Chitin ridge segment plates
+            ctx.fillStyle = '#3b0764';
+            ctx.fillRect(drawX + 8, drawY + 4, 3, h - 7);
+            ctx.fillRect(drawX + 16, drawY + 4, 3, h - 7);
+            ctx.fillRect(drawX + 24, drawY + 4, 3, h - 7);
+
+            // Bioluminescent pulsing void veins
+            const pulse = (Math.sin(frameCount * 0.12) + 1) * 0.5;
+            ctx.fillStyle = pulse > 0.5 ? '#a855f7' : '#7c3aed';
+            ctx.fillRect(drawX + 10, drawY + 6, 2, 2);
+            ctx.fillRect(drawX + 18, drawY + 6, 2, 2);
+            ctx.fillRect(drawX + 26, drawY + 6, 2, 2);
+
+            // 3. Head & Predatory Glowing Eyes
+            const headX = isRight ? drawX + w - 8 : drawX + 2;
+            ctx.fillStyle = '#090514';
+            ctx.fillRect(headX, drawY + 3, 7, 7);
+
+            // Glowing faceted eyes (drawn bright even in stealth!)
+            const eyeColor = this.attackCooldown > 0 ? '#ef4444' : '#38bdf8';
+            ctx.fillStyle = eyeColor;
+            // Primary pair
+            ctx.fillRect(isRight ? headX + 4 : headX + 1, drawY + 4, 2, 2);
+            // Secondary upper pair
+            ctx.fillStyle = '#c084fc';
+            ctx.fillRect(isRight ? headX + 2 : headX + 3, drawY + 3, 1.5, 1.5);
+
+            // 4. Front Razor Mandibles
+            ctx.fillStyle = '#581c87';
+            if (isRight) {
+                ctx.fillRect(drawX + w - 2, drawY + 6, 4, 2);
+                ctx.fillRect(drawX + w + 1, drawY + 7, 2, 2);
+            } else {
+                ctx.fillRect(drawX - 2, drawY + 6, 4, 2);
+                ctx.fillRect(drawX - 3, drawY + 7, 2, 2);
+            }
+
+            // Damage red flash overlay
+            if (this.damageCooldown > 0) {
+                ctx.fillStyle = 'rgba(255, 40, 40, 0.45)';
+                ctx.fillRect(drawX - 2, drawY - 2, w + 4, h + 4);
+            }
+
+            ctx.restore();
+        }
+    }
+
     export let kaelSkinCanvas = null;
     export function getKaelSkinCanvas() {
         if (kaelSkinCanvas) return kaelSkinCanvas;
@@ -9375,7 +9919,7 @@ export const SKIN_H = 32;
             const myCenterX = this.x + this.width / 2;
             const myCenterY = this.y + this.height / 2;
             for (const ent of entList) {
-                if (ent && ent !== this && (ent instanceof Zombie || ent instanceof Creeper || ent instanceof Scorpion)) {
+                if (ent && ent !== this && (ent instanceof Zombie || ent instanceof Creeper || ent instanceof Scorpion || ent instanceof Gloomstalker)) {
                     const entCenterX = ent.x + ent.width / 2;
                     const entCenterY = ent.y + ent.height / 2;
                     const dx = entCenterX - myCenterX;
@@ -10678,8 +11222,8 @@ export const SKIN_H = 32;
         // 1. Despawn burning mobs in daytime and distant hostile mobs so the mob cap dynamically refreshes around active players
         entities = entities.filter(e => {
             if (e instanceof AtlasExplorer) return !e.isDeparted;
-            if (e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion) {
-                if (isDay && e instanceof Zombie) {
+            if (e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker) {
+                if (isDay && (e instanceof Zombie || e instanceof Gloomstalker)) {
                     let headGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((e.x + e.width / 2) / TILE_SIZE)));
                     let headGy = Math.max(0, Math.floor((e.y + 4) / TILE_SIZE));
                     let footGy = Math.max(0, Math.floor((e.y + e.height - 2) / TILE_SIZE));
@@ -10687,7 +11231,7 @@ export const SKIN_H = 32;
                     if (!inWater && hasDirectSkyAccess(headGx, headGy, true)) {
                         if (frameCount % 15 === 0) {
                             e.takeDamage(3, 0);
-                            for (let p = 0; p < 2; p++) particles.push(new Particle(e.x + Math.random() * e.width, e.y + Math.random() * e.height * 0.7, '#ffaa00'));
+                            for (let p = 0; p < 2; p++) particles.push(new Particle(e.x + Math.random() * e.width, e.y + Math.random() * e.height * 0.7, e instanceof Gloomstalker ? '#a855f7' : '#ffaa00'));
                         }
                         if (e.health <= 0) return false;
                     }
@@ -10706,40 +11250,72 @@ export const SKIN_H = 32;
         }
 
         // Passive animals follow the daily respawn cycle and do not trickle-spawn during daytime
-
-        // Hostile mobs (Zombies, Creepers, Scorpions) strictly do NOT spawn during daytime
-        if (!isNight) return;
         if (diff.mobSpawn <= 0) return;
 
-        // Controlled tick rate per difficulty: Easy checks every 60 frames (1s), Normal checks every 40 frames (~0.67s), Hard checks every 25 frames (~0.4s)
+        // Check if any active player is currently underground in a cave
+        let anyPlayerInCave = activePlayerPositions.some(p => {
+            let gx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((p.x + 12) / TILE_SIZE)));
+            let gy = Math.floor((p.y + 40) / TILE_SIZE);
+            let surfY = getWorldSurfaceY(gx);
+            return gy > surfY + CAVE_SKY_START_TILES && (typeof caveSkyOpacity === 'undefined' || caveSkyOpacity > 0.2);
+        });
+
+        // Controlled tick rate per difficulty: Significantly accelerated in caves!
         let spawnInterval = 40;
-        if (currentDifficulty === 'easy') spawnInterval = 60;
-        else if (currentDifficulty === 'normal') spawnInterval = 40;
-        else if (currentDifficulty === 'hard' || currentDifficulty === 'hardcore') spawnInterval = 25;
+        if (anyPlayerInCave) {
+            if (currentDifficulty === 'easy') spawnInterval = 28;
+            else if (currentDifficulty === 'normal') spawnInterval = 18;
+            else if (currentDifficulty === 'hard' || currentDifficulty === 'hardcore') spawnInterval = 12;
+        } else {
+            if (currentDifficulty === 'easy') spawnInterval = 55;
+            else if (currentDifficulty === 'normal') spawnInterval = 35;
+            else if (currentDifficulty === 'hard' || currentDifficulty === 'hardcore') spawnInterval = 22;
+        }
 
         if (frameCount % spawnInterval !== 0) return;
 
+        // Daytime surface players only occasionally check subterranean spawns beneath them
+        if (!isNight && !anyPlayerInCave && Math.random() < 0.65) {
+            return;
+        }
+
         const dayMultiplier = getDayDifficultyMultiplier();
-        const hostileEntities = entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion);
-        const isHardMode = currentDifficulty === 'hard' || currentDifficulty === 'hardcore';
+        const hostileEntities = entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker);
         
-        let maxHostiles = 14;
-        let spawnChance = 0.40;
+        let maxHostiles = 16;
+        let spawnChance = 0.45;
         let packSize = 1;
 
-        if (currentDifficulty === 'easy') {
-            maxHostiles = Math.min(8, Math.floor(4 + (dayMultiplier - 1) * 3));
-            spawnChance = 0.28;
-            packSize = 1;
-        } else if (currentDifficulty === 'normal') {
-            maxHostiles = Math.min(14, Math.floor(7 + (dayMultiplier - 1) * 5));
-            spawnChance = 0.42;
-            packSize = (isNight && Math.random() < 0.15) ? 2 : 1;
+        if (anyPlayerInCave) {
+            if (currentDifficulty === 'easy') {
+                maxHostiles = Math.min(12, Math.floor(6 + (dayMultiplier - 1) * 4));
+                spawnChance = 0.45;
+                packSize = 1;
+            } else if (currentDifficulty === 'normal') {
+                maxHostiles = Math.min(24, Math.floor(12 + (dayMultiplier - 1) * 8));
+                spawnChance = 0.65;
+                packSize = (Math.random() < 0.35) ? 2 : 1;
+            } else {
+                // Hard / Hardcore
+                maxHostiles = Math.min(48, Math.floor(22 + (dayMultiplier - 1) * 18));
+                spawnChance = 0.85;
+                packSize = (Math.random() < 0.55) ? (Math.floor(Math.random() * 2) + 2) : 1;
+            }
         } else {
-            // Hard / Hardcore
-            maxHostiles = Math.min(42, Math.floor(18 + (dayMultiplier - 1) * 16));
-            spawnChance = 0.65;
-            packSize = (Math.random() < 0.40) ? (Math.floor(Math.random() * 2) + 2) : 1;
+            if (currentDifficulty === 'easy') {
+                maxHostiles = Math.min(8, Math.floor(4 + (dayMultiplier - 1) * 3));
+                spawnChance = 0.28;
+                packSize = 1;
+            } else if (currentDifficulty === 'normal') {
+                maxHostiles = Math.min(16, Math.floor(8 + (dayMultiplier - 1) * 5));
+                spawnChance = 0.42;
+                packSize = (isNight && Math.random() < 0.15) ? 2 : 1;
+            } else {
+                // Hard / Hardcore
+                maxHostiles = Math.min(42, Math.floor(18 + (dayMultiplier - 1) * 16));
+                spawnChance = 0.65;
+                packSize = (Math.random() < 0.40) ? (Math.floor(Math.random() * 2) + 2) : 1;
+            }
         }
 
         if (hostileEntities.length >= maxHostiles || Math.random() >= spawnChance) {
@@ -10749,9 +11325,10 @@ export const SKIN_H = 32;
         let chosenPlayer = activePlayerPositions[Math.floor(Math.random() * activePlayerPositions.length)];
         let pGx = Math.floor((chosenPlayer.x + (chosenPlayer.width || 24) / 2) / TILE_SIZE);
         let pGy = Math.floor((chosenPlayer.y + (chosenPlayer.height || 48)) / TILE_SIZE);
-        let isPlayerInCave = pGy > getWorldSurfaceY(pGx) + CAVE_SKY_START_TILES && (typeof caveSkyOpacity === 'undefined' || caveSkyOpacity > 0.2);
+        let pSurfY = getWorldSurfaceY(pGx);
+        let isPlayerInCave = pGy > pSurfY + CAVE_SKY_START_TILES && (typeof caveSkyOpacity === 'undefined' || caveSkyOpacity > 0.2);
 
-        let tryCave = isPlayerInCave || isDay || Math.random() < 0.40;
+        let tryCave = isPlayerInCave || isDay || Math.random() < 0.50;
         let spawnSide = Math.random() > 0.5 ? 1 : -1;
 
         const creeperChance = currentDifficulty === 'easy' ? 0.18 : 0.28;
@@ -10770,34 +11347,42 @@ export const SKIN_H = 32;
         if (tryCave) {
             let foundX = -1;
             let foundY = -1;
-            for (let attempt = 0; attempt < 28; attempt++) {
-                let dist = 8 + Math.floor(Math.random() * 20);
+            let spawnClinging = false;
+            let maxAttempts = isPlayerInCave ? 65 : 35;
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                let dist = (isPlayerInCave ? 6 : 8) + Math.floor(Math.random() * (isPlayerInCave ? 18 : 22));
                 let candX = pGx + spawnSide * dist;
                 if (candX < 2 || candX >= WORLD_WIDTH - 2) {
                     spawnSide = -spawnSide;
                     continue;
                 }
                 let surfY = getWorldSurfaceY(candX);
-                // During daytime, hostiles MUST ONLY spawn deep subterranean (at least 8 blocks below surface)
-                let minY = isDay ? (surfY + 8) : (isPlayerInCave ? Math.max(surfY + 2, pGy - 10) : surfY + 3);
+                // During daytime, hostiles MUST ONLY spawn deep subterranean (at least 6 blocks below surface)
+                let minY = isDay ? (surfY + 6) : (isPlayerInCave ? Math.max(surfY + 2, pGy - 10) : surfY + 3);
                 let maxY = isPlayerInCave ? Math.min(WORLD_HEIGHT - 3, pGy + 12) : WORLD_HEIGHT - 4;
                 if (minY >= maxY) continue;
 
                 let candY = minY + Math.floor(Math.random() * (maxY - minY));
-                if (isDay && candY < surfY + 8) continue;
+                if (isDay && candY < surfY + 6) continue;
 
                 let floorBlock = world[candX]?.[candY + 1];
                 let feetBlock = world[candX]?.[candY];
                 let headBlock = world[candX]?.[candY - 1];
 
                 if (feetBlock === IDS.AIR && headBlock === IDS.AIR && floorBlock !== undefined && floorBlock !== IDS.AIR && floorBlock !== IDS.WATER && floorBlock !== IDS.LAVA) {
-                    // MUST be sheltered deep underground with a solid roof overhead during the daytime
+                    // MUST be sheltered deep underground with a solid roof overhead during daytime or in caves
                     if (isDay && hasDirectSkyAccess(candX, candY, true)) {
                         continue;
                     }
                     if (!isNearTorch(candX, candY, 4) && !isNearKael(candX, candY, 14)) {
                         foundX = candX;
                         foundY = candY;
+                        let ceilBlock = world[candX]?.[candY - 2];
+                        if (ceilBlock !== undefined && ceilBlock !== IDS.AIR && ceilBlock !== IDS.WATER && ceilBlock !== IDS.LAVA) {
+                            if (Math.random() < 0.35) {
+                                spawnClinging = true;
+                            }
+                        }
                         break;
                     }
                 }
@@ -10806,15 +11391,33 @@ export const SKIN_H = 32;
             if (foundX > 0 && foundY > 0) {
                 const isDesert = (typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(foundX) === 'desert');
                 for (let k = 0; k < packSize; k++) {
-                    if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion).length >= maxHostiles) break;
+                    if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker).length >= maxHostiles) break;
                     let mobX = foundX * TILE_SIZE + (k * 16 * (Math.random() > 0.5 ? 1 : -1));
                     let mobY = (foundY - 1) * TILE_SIZE;
-                    if (isDesert && Math.random() < 0.55) {
-                        entities.push(new Scorpion(mobX, mobY));
-                    } else if (Math.random() < creeperChance) {
-                        entities.push(new Creeper(mobX, mobY));
+                    let roll = Math.random();
+                    if (isDesert) {
+                        if (roll < 0.35) {
+                            entities.push(new Scorpion(mobX, mobY));
+                        } else if (roll < 0.65) {
+                            let gs = new Gloomstalker(mobX, spawnClinging ? (foundY - 2) * TILE_SIZE : mobY);
+                            if (spawnClinging) gs.isCeilingClinging = true;
+                            entities.push(gs);
+                        } else if (roll < 0.82) {
+                            entities.push(new Creeper(mobX, mobY));
+                        } else {
+                            entities.push(new Zombie(mobX, mobY));
+                        }
                     } else {
-                        entities.push(new Zombie(mobX, mobY));
+                        // Standard cave: 30% Gloomstalker, 25% Creeper, 45% Zombie
+                        if (roll < 0.30) {
+                            let gs = new Gloomstalker(mobX, spawnClinging ? (foundY - 2) * TILE_SIZE : mobY);
+                            if (spawnClinging) gs.isCeilingClinging = true;
+                            entities.push(gs);
+                        } else if (roll < 0.55) {
+                            entities.push(new Creeper(mobX, mobY));
+                        } else {
+                            entities.push(new Zombie(mobX, mobY));
+                        }
                     }
                 }
                 return;
@@ -10835,15 +11438,28 @@ export const SKIN_H = 32;
                         if (!isNearTorch(candX, surfY - 1, 4) && !isNearKael(candX, surfY - 1, 14)) {
                             const isDesert = (typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(candX) === 'desert');
                             for (let k = 0; k < packSize; k++) {
-                                if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion).length >= maxHostiles) break;
+                                if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker).length >= maxHostiles) break;
                                 let mobX = candX * TILE_SIZE + (k * 16 * (Math.random() > 0.5 ? 1 : -1));
                                 let mobY = (surfY - 2) * TILE_SIZE;
-                                if (isDesert && Math.random() < 0.55) {
-                                    entities.push(new Scorpion(mobX, mobY));
-                                } else if (Math.random() < creeperChance) {
-                                    entities.push(new Creeper(mobX, mobY));
+                                let roll = Math.random();
+                                if (isDesert) {
+                                    if (roll < 0.45) {
+                                        entities.push(new Scorpion(mobX, mobY));
+                                    } else if (roll < 0.60) {
+                                        entities.push(new Gloomstalker(mobX, mobY));
+                                    } else if (roll < 0.78) {
+                                        entities.push(new Creeper(mobX, mobY));
+                                    } else {
+                                        entities.push(new Zombie(mobX, mobY));
+                                    }
                                 } else {
-                                    entities.push(new Zombie(mobX, mobY));
+                                    if (roll < 0.14) {
+                                        entities.push(new Gloomstalker(mobX, mobY));
+                                    } else if (roll < 0.40) {
+                                        entities.push(new Creeper(mobX, mobY));
+                                    } else {
+                                        entities.push(new Zombie(mobX, mobY));
+                                    }
                                 }
                             }
                         }
@@ -14177,13 +14793,20 @@ export const SKIN_H = 32;
         if ((heldItem && heldItem.id === IDS.TORCH) || (offhandItem && offhandItem.id === IDS.TORCH)) {
             visibleLightSources.push({ x: player.x + player.width/2, y: player.y + player.height/2, type: 'player_torch' });
         }
+        if ((heldItem && heldItem.id === IDS.GLOOM_LANTERN) || (offhandItem && offhandItem.id === IDS.GLOOM_LANTERN)) {
+            visibleLightSources.push({ x: player.x + player.width/2, y: player.y + player.height/2, type: 'gloom_lantern' });
+        }
         
         for(let rpId in remotePlayers) {
             let rp = remotePlayers[rpId];
-            if (rp && !rp.isDead && !rp.isDisconnected && (!rp.lastSeenLocalTime || Date.now() - rp.lastSeenLocalTime < 12000) && rp.heldItem === IDS.TORCH) {
+            if (rp && !rp.isDead && !rp.isDisconnected && (!rp.lastSeenLocalTime || Date.now() - rp.lastSeenLocalTime < 12000)) {
                 let rx = rp.renderX !== undefined ? rp.renderX : (rp.x || 0);
                 let ry = rp.renderY !== undefined ? rp.renderY : (rp.y || 0);
-                visibleLightSources.push({ x: rx + TILE_SIZE/2, y: ry + TILE_SIZE/2, type: 'remote_torch' });
+                if (rp.heldItem === IDS.TORCH) {
+                    visibleLightSources.push({ x: rx + TILE_SIZE/2, y: ry + TILE_SIZE/2, type: 'remote_torch' });
+                } else if (rp.heldItem === IDS.GLOOM_LANTERN) {
+                    visibleLightSources.push({ x: rx + TILE_SIZE/2, y: ry + TILE_SIZE/2, type: 'remote_lantern' });
+                }
             }
         }
 
@@ -14206,6 +14829,9 @@ export const SKIN_H = 32;
                 drawLight(ls.x, ls.y, TILE_SIZE * 4.5, furnaceFlicker);
             } else if (ls.type === 'lava') {
                 drawLight(ls.x, ls.y, TILE_SIZE * 4.2, 0.75);
+            } else if (ls.type === 'gloom_lantern' || ls.type === 'remote_lantern') {
+                let lanternFlicker = 0.96 + Math.sin(frameCount * 0.15) * 0.04;
+                drawLight(ls.x, ls.y, TILE_SIZE * 7, lanternFlicker);
             } else {
                 drawLight(ls.x, ls.y, TILE_SIZE * 5, 0.9);
             }
@@ -14214,6 +14840,9 @@ export const SKIN_H = 32;
         lightCtx.globalCompositeOperation = 'source-over';
         if (cachedLightVignette) {
             let vignetteStrength = 0.12 + caveSkyOpacity * 0.38;
+            if (player && player.gloomBlindTimer > 0) {
+                vignetteStrength = Math.min(0.92, vignetteStrength + 0.45);
+            }
             lightCtx.globalAlpha = vignetteStrength;
             lightCtx.fillStyle = cachedLightVignette;
             lightCtx.fillRect(0, 0, lightCanvas.width, lightCanvas.height);
@@ -14255,6 +14884,14 @@ export const SKIN_H = 32;
                     }
                     if (fabulousGraphics && fabulousConfig.bloomAura && cachedBloomAuraCanvas) {
                         const bR = Math.round(glowR * 1.25);
+                        ctx.drawImage(cachedBloomAuraCanvas, gx - bR, gy - bR, bR * 2, bR * 2);
+                    }
+                } else if (ls.type === 'gloom_lantern' || ls.type === 'remote_lantern') {
+                    if (cachedTorchGlowCanvas) ctx.drawImage(cachedTorchGlowCanvas, gx - glowR * 1.3, gy - glowR * 1.3, glowD * 1.3, glowD * 1.3);
+                    ctx.fillStyle = 'rgba(192, 132, 252, 0.45)';
+                    ctx.fillRect(Math.floor(gx - 4), Math.floor(gy - 4), 8, 8);
+                    if (fabulousGraphics && fabulousConfig.bloomAura && cachedBloomAuraCanvas) {
+                        const bR = Math.round(glowR * 1.6);
                         ctx.drawImage(cachedBloomAuraCanvas, gx - bR, gy - bR, bR * 2, bR * 2);
                     }
                 }
@@ -14924,6 +15561,8 @@ try { if (typeof SKY_STARS !== "undefined") window.SKY_STARS = SKY_STARS; } catc
 try { if (typeof SKY_STARS_BUCKETS !== "undefined") window.SKY_STARS_BUCKETS = SKY_STARS_BUCKETS; } catch(e) {}
 try { if (typeof SKY_STAR_BRIGHTNESSES !== "undefined") window.SKY_STAR_BRIGHTNESSES = SKY_STAR_BRIGHTNESSES; } catch(e) {}
 try { if (typeof Scorpion !== "undefined") window.Scorpion = Scorpion; } catch(e) {}
+try { if (typeof Gloomstalker !== "undefined") window.Gloomstalker = Gloomstalker; } catch(e) {}
+try { if (typeof GloomTetherProjectile !== "undefined") window.GloomTetherProjectile = GloomTetherProjectile; } catch(e) {}
 try { if (typeof Sheep !== "undefined") window.Sheep = Sheep; } catch(e) {}
 try { if (typeof SnowballProjectile !== "undefined") window.SnowballProjectile = SnowballProjectile; } catch(e) {}
 try { if (typeof TOOL_DURABILITY !== "undefined") window.TOOL_DURABILITY = TOOL_DURABILITY; } catch(e) {}

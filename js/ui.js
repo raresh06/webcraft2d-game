@@ -3897,7 +3897,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export const previewCanvasEl = document.getElementById('player-preview-canvas');
     if (previewCanvasEl) {
         previewCanvasEl.addEventListener('click', () => {
-            startPlayerPreviewWalk();
+            if (typeof renderStaticPlayerPreview === 'function') {
+                renderStaticPlayerPreview();
+            }
         });
     }
 
@@ -3967,7 +3969,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         { output: { id: IDS.LEGGINGS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 7 }], reqTable: true, category: 'armor' },
         { output: { id: IDS.BOOTS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 4 }], reqTable: true, category: 'armor' },
         { output: { id: IDS.SUNBURST_MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
-        { output: { id: IDS.SUNBURST_MELON, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' }
+        { output: { id: IDS.SUNBURST_MELON, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' },
+        { output: { id: IDS.SHADOWFANG, count: 1 }, inputs: [{ id: IDS.SHADOW_CARAPACE, count: 2 }, { id: IDS.GLOOM_SILK, count: 2 }, { id: IDS.IRON_INGOT, count: 1 }], reqTable: true, category: 'tools' },
+        { output: { id: IDS.GLOOM_LANTERN, count: 1 }, inputs: [{ id: IDS.GLOOM_SILK, count: 4 }, { id: IDS.TORCH, count: 1 }, { id: IDS.IRON_INGOT, count: 2 }], reqTable: true, category: 'utility' }
     ];
 
     export const ACHIEVEMENTS = [
