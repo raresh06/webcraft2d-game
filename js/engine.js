@@ -693,16 +693,43 @@ export function getMaxAnimals() {
     export let sleepStartTime = 0;
     export let sleepTransitionMs = 3000;
     export const PATCH_NOTES_0_1_5 = {
-        title: 'Beta 0.1.5 (Pigeon Wildlife, Flight Physics & Tree Perching)',
+        title: 'Beta 0.1.5 (Jungle Biome, Avian Wildlife, Atlas Explorer, Terraria Caverns & Cosmetics Overhaul)',
         items: [
-            'Sweet Avian Wildlife (Pigeons): Populated biomes with sweet, innocent Pigeons featuring charming pixel art, shimmering emerald-violet neck collars, and expressive animations.',
-            'Aerodynamic Flight Physics: Pigeons possess genuine flight dynamics, flapping wings to soar effortlessly above tree canopies, smoothly banking into turns, and gliding gracefully.',
-            'Tree Foliage & Leaf Perching AI: Pigeons seek out tree canopies, landing softly on leaves to perch, look around with curious head tilts, and rest before taking flight again.',
-            'Ground Foraging & Pecking: Pigeons land on open fields to hunt for seeds, walking with realistic head bobs and rhythmically pecking the earth.',
-            'Skittish Startle Reflexes: Quick to startle—running close without seeds causes wild pigeons to scatter with fluttering wings and swiftly launch into the sky.',
-            'Seed Temptation & Flocking Calls: Holding seeds in your hand pacifies pigeons and tempts them to approach. An attracted pigeon signals companions within range, gathering a friendly flock.',
-            'Social Pairing: Pigeons often roam and fly in synchronized pairs, sticking close together across trees and meadows.',
-            'Bittersweet Master Achievement: Defeating an innocent pigeon unlocks the bittersweet Master achievement "Why Would You Do That?"... they drop no loot, and the world feels a little quieter.'
+            'Jungle Biome & Canopy Ecosystem: Dynamic procedural generation of vibrant tropical Jungle biomes featuring towering Jungle Trees with winding climbable vines, lush canopy umbrellas, hanging understory vegetation, and dense shrubbery.',
+            'Jungle Wood & Timber Progression: Harvest Jungle Logs to craft rich auburn Jungle Wood Planks, sticks, and cultivate saplings to grow towering rainforest canopies anywhere.',
+            'Authentic Jungle Doors: Craftable Jungle Doors featuring authentic dual-state pixel textures—an open front-facing porthole window with polished wood trim and a thin closed side profile slit—paired with custom wooden door sound effects and precise collision bounds.',
+            'Wild Melons & Tropical Agriculture: Discover wild melon blocks scattered across jungle clearings. Break them to collect fresh Melon Slices for instant hunger restoration, or combine with gold nuggets to craft Glistering Melons.',
+            'Exotic Avian Wildlife (Parrots): Lush jungles are now alive with wild Parrots inhabiting treetops in 5 authentic, vibrant color morphs (Red Scarlet Macaw, Blue Macaw, Vibrant Green, Cyan, and Gray).',
+            'Parrot Taming & Shoulder Companions: Feed wild parrots seeds to tame them, celebrated with charming floating heart particles. Tamed parrots follow you across biomes, perch comfortably on your shoulder, and whistle tropical melodies.',
+            'Sweet Avian Wildlife (Pigeons): Populated plains and forest biomes with sweet, innocent Pigeons featuring charming pixel art, shimmering emerald-violet neck plumage, and rhythmic head bobs.',
+            'Aerodynamic Flight Physics & Leaf Perching: Both Pigeons and Parrots possess genuine flight dynamics, flapping wings to soar effortlessly above tree canopies, smoothly banking into turns, gliding gracefully, and landing softly on leaves to perch and rest.',
+            'Ground Foraging, Startle Reflexes & Flocking: Birds land on open fields to hunt for seeds, walking with realistic head bobs. Approaching without seeds causes wild birds to startle and scatter, while holding seeds pacifies them and triggers flocking calls that summon nearby companions.',
+            'Social Pairing & Bittersweet Achievements: Pigeons often roam and fly in synchronized pairs. Defeating an innocent pigeon unlocks the bittersweet Master achievement "Why Would You Do That?"... they drop no loot, and the world feels a little quieter.',
+            'Kael, The Atlas Explorer (Planar NPC): Experience the cinematic arrival of dimensional cartographer Kael, entering your world through a swirling, animated pixel rift portal complete with cosmic stardust ripples, deep dimensional audio, and floating announcement banners.',
+            'Permanent World Settlement: Once summoned, Kael settles permanently into your world as an immortal dimensional cartographer and trader, never despawning across day/night cycles, world exits, or restarts.',
+            'Planar Sanctuary Aura: Kael projects an active 4.5-block dimensional ward that repels hostile mobs (Zombies, Creepers, Scorpions) with cosmic lilac ripples, instantly defuses Creeper explosion fuses to zero, shields surrounding terrain blocks from blast damage, and suppresses hostile spawns within 14 blocks.',
+            'The Atlas Market (Planar Outpost): Interact with Kael using "E" to explore rich planar lore and access the Atlas Market, organized into a clean 5-column categorized interface offering rare dimensional curios, planar tools, and otherworldly commodities.',
+            'Astral Infuser Workstation: Channel Astral Emeralds and Planar Gems through the newly introduced Astral Infuser workstation to forge legendary Astral armor sets and empowered utilities.',
+            'Astral Armor & Cosmic Protection: Craft the full Astral Armor set (Astral Helmet, Chestplate, Leggings, and Boots) radiating ethereal amethyst particles, granting enhanced defense ratings and mystical protection upon respawn.',
+            'Kinetic Shears & Planar Relics: Unlock high-efficiency Kinetic Shears for instant leaf and vine harvesting, alongside specialized relics that expand late-game survival capabilities.',
+            'Terraria-Style Subterranean Cavern Shadows: Underground exploration now features deep cavern wall backdrop textures (stone, dirt, sand) that conceal the exterior sky, seamlessly transitioning into 98.8% deep inky blackness (#000006) for authentic subterranean mystery.',
+            'Subterranean Depth Offset: Surface daylight now penetrates 6 blocks into the ground, ensuring shallow coal seams, iron deposits, and cave mouths remain clearly visible during daylight before fading smoothly into subterranean blackness.',
+            'Direct Sky Access Daylight Raycasting: Replaced naive surface height calculations with dynamic direct-sky access checks, eliminating vertical black shadow glitches and ensuring daylight floods open ravines and cliffside openings naturally.',
+            'Diverse & Interconnected Caverns: Overhauled subterranean cave generation with vastly expanded cavern systems, winding subterranean tunnels, soaring underground chambers, vertical shafts, and subterranean water and lava reservoirs.',
+            'Real-time In-World Signboards: Craft wooden signs and place them anywhere. Right-clicking opens an in-world floating speech bubble anchored directly above the signpost with smooth camera tracking, displaying your text in real time.',
+            'Interactive Sign Editor & Auto-Save: Features a live blinking cursor ("|"), multi-line text input (up to 4 lines with Shift+Enter), and effortless multi-trigger auto-saving (pressing Enter, right-clicking outside, or simply walking away).',
+            'Sign Tooltips & Multiplayer Sync: Aiming at signs from a distance displays a clear hover tooltip with the sign\'s contents. Sign placement, edits, and deletions are fully synchronized in real-time across peer-to-peer multiplayer.',
+            'Discord-Style Profile Customization: Redesigned the Player Profile screen with full visual customization, showcasing avatar banners, frame wrappers, custom crafter titles, Planar Tier badges, Astral Gem counters, and custom pixel-art scrollbars.',
+            'Cosmetics Catalog System: Introduced a modular cosmetics catalog system featuring collectible avatar frames, profile banners, crafter titles, and UI color themes that persist across sessions.',
+            'Chest Storage Integrity & Double Chest Architecture: Re-engineered container serialization for both Small (27-slot) and Large Double (54-slot) chests with deep item cloning, eliminating item loss across world quits, page reloads, and browser restarts.',
+            'Fabulous Shaders & Settings Menu: Dedicated "Fabulous Settings" panel with granular toggle switches for Volumetric God Rays, Wind Breeze Foliage Animations, Desert Heat Shimmer, Ambient Firefly Swarms, Vignette, and Ambient Occlusion.',
+            'Dynamic FPS Cap Selector: Configurable frame rate limiter (30 FPS, 60 FPS, 120 FPS, 144 FPS, and Unlimited) with persistent local storage to match your monitor\'s refresh rate and conserve laptop battery.',
+            'Smooth Day Transition Respawning: Animal respawn queues are now deferred and distributed smoothly across morning frames, completely eliminating hitching and frame drops when waking up or transitioning from night to day.',
+            'Tree Canopy Navigation & Foliage Pass: Sanitized tree wood and leaf collision handling to ensure smooth vertical climbing and exploration through dense forests and jungle canopies without snagging.',
+            'Culinary Texture Revamp: Re-illustrated mouth-watering 16x16 pixel-art food textures for Cooked Porkchops, Bread, Raw and Cooked Beef, Golden Apples, and Melons.',
+            'Difficulty & Hunger Rebalancing: Rebalanced hunger saturation, sprint exhaustion rates, health regeneration curves, and mob damage multipliers across Peaceful, Easy, Normal, Hard, and Hardcore modes.',
+            'Universal Timber Recipes: All crafting recipes accepting wooden planks now flexibly accept any wood type (Oak, Jungle, and future timber variants) seamlessly.',
+            'New Achievements & Emerald Rewards: Unlock brand-new achievements including "Polly Want a Cracker?" (Tame a wild parrot), "Why Would You Do That?" (Bittersweet pigeon achievement), "Planar Commerce" (Trade with Kael), and "Astral Engineering" (Craft the Astral Infuser).'
         ]
     };
 
