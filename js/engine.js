@@ -23,6 +23,8 @@ export let currentWorldId = null;
 export let selectedDiffChoice = 'normal';
 export let currentDifficulty = 'normal';
 export let settingsPreviousState = 'MENU';
+export let gloomDreadTimer = 0;
+export function setEngineGloomDreadTimer(val) { gloomDreadTimer = val; if (typeof window !== 'undefined') window.gloomDreadTimer = val; }
 
 export function setEngineGraphicsMode(mode) {
     graphicsMode = mode;
@@ -9443,34 +9445,139 @@ export const SKIN_H = 32;
 
     export class Gloomstalker extends PhysicsEntity {
         constructor(x, y) {
-            super(x, y, TILE_SIZE * 1.05, TILE_SIZE * 0.7);
-            this.health = 16;
-            this.maxHealth = 16;
+            super(x, y, TILE_SIZE * 0.85, TILE_SIZE * 1.90);
+            // Nerfed & balanced stats for exciting, fair survival combat
+            this.health = 14;
+            this.maxHealth = 14;
             this.damageCooldown = 0;
-            this.speed = MOVE_SPEED * 0.70;
-            this.damage = 3;
+            this.speed = MOVE_SPEED * 0.58; // Slower than player so player can outrun/kite
+            this.damage = 2.2;
             this.facingRight = true;
             this.attackCooldown = 0;
-            this.tetherCooldown = 60;
+            this.tetherCooldown = 80;
             this.blinkCooldown = 0;
             this.consecutiveHits = 0;
             this.hitResetTimer = 0;
             this.stunTimer = 0;
             this.walkAnimTime = 0;
+            this.stalkTime = Math.random() * 100;
             this.isCeilingClinging = false;
             this.isStealthed = false;
             this.ambushPounceTime = 0;
+            this.turnCooldown = 0;
+            this.evasionTimer = 0;
+            this.teleportEmergeTimer = 0;
+            this.glitchOffset = 0;
+        }
+
+        teleportToSafeLocation(preferredDir, target) {
+            const activeWorld = this.getActiveWorld();
+            if (!activeWorld) return false;
+            const curWorldW = activeWorld.length;
+
+            const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const curGy = Math.floor((this.y + this.height - 4) / TILE_SIZE);
+
+            // Candidate positions: behind target, or directional evasive hops
+            const candidates = [];
+            if (target) {
+                const tGx = Math.floor((target.x + target.width / 2) / TILE_SIZE);
+                const tFacing = target.facingRight ? 1 : -1;
+                candidates.push(tGx - tFacing * 3);
+                candidates.push(tGx - tFacing * 4);
+                candidates.push(tGx + tFacing * 4);
+            }
+            candidates.push(curGx + preferredDir * 5);
+            candidates.push(curGx + preferredDir * 4);
+            candidates.push(curGx + preferredDir * 6);
+            candidates.push(curGx - preferredDir * 4);
+            candidates.push(curGx - preferredDir * 5);
+            candidates.push(curGx + preferredDir * 3);
+            candidates.push(curGx - preferredDir * 3);
+
+            let bestX = -1;
+            let bestY = -1;
+
+            for (const candGx of candidates) {
+                if (candGx < 2 || candGx >= curWorldW - 2) continue;
+                if (Math.abs(candGx - curGx) < 2) continue;
+
+                for (let dy = -3; dy <= 4; dy++) {
+                    const testGy = curGy + dy;
+                    if (testGy < 4 || testGy >= WORLD_HEIGHT - 3) continue;
+
+                    const floorB = activeWorld[candGx]?.[testGy + 1];
+                    const footB = activeWorld[candGx]?.[testGy];
+                    const torsoB = activeWorld[candGx]?.[testGy - 1];
+                    const headB = activeWorld[candGx]?.[testGy - 2];
+
+                    const isFloorSolid = floorB !== undefined && isSolidWorldBlock(candGx, testGy + 1, floorB) && floorB !== IDS.LAVA && floorB !== IDS.WATER;
+                    const isFootClear = footB === IDS.AIR || (footB !== undefined && !isSolidWorldBlock(candGx, testGy, footB) && footB !== IDS.LAVA);
+                    const isTorsoClear = torsoB === IDS.AIR || (torsoB !== undefined && !isSolidWorldBlock(candGx, testGy - 1, torsoB) && torsoB !== IDS.LAVA);
+                    const isHeadClear = headB === IDS.AIR || (headB !== undefined && !isSolidWorldBlock(candGx, testGy - 2, headB) && headB !== IDS.LAVA);
+
+                    if (isFloorSolid && isFootClear && isTorsoClear && isHeadClear) {
+                        bestX = candGx * TILE_SIZE + (TILE_SIZE - this.width) / 2;
+                        bestY = (testGy + 1) * TILE_SIZE - this.height;
+                        break;
+                    }
+                }
+                if (bestX > 0) break;
+            }
+
+            if (bestX > 0 && bestY > 0) {
+                if (Array.isArray(particles)) {
+                    for (let i = 0; i < 12; i++) {
+                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height, '#7c3aed'));
+                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height, '#090514'));
+                    }
+                }
+                playSound('shadow_blink', { vol: 0.75 });
+
+                this.x = bestX;
+                this.y = bestY;
+                this.vx = 0;
+                this.vy = -0.5;
+                this.isGrounded = true;
+                this.teleportEmergeTimer = 18;
+
+                if (Array.isArray(particles)) {
+                    for (let i = 0; i < 14; i++) {
+                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height, '#38bdf8'));
+                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height, '#c084fc'));
+                    }
+                }
+                return true;
+            }
+
+            // Safe fallback without penetrating walls
+            this.teleportEmergeTimer = 18;
+            playSound('shadow_blink', { vol: 0.5 });
+            this.vy = -2.5;
+            this.isGrounded = false;
+            return false;
         }
 
         update() {
+            this.stalkTime += 0.05;
             if (this.damageCooldown > 0) this.damageCooldown--;
             if (this.attackCooldown > 0) this.attackCooldown--;
             if (this.tetherCooldown > 0) this.tetherCooldown--;
             if (this.blinkCooldown > 0) this.blinkCooldown--;
             if (this.ambushPounceTime > 0) this.ambushPounceTime--;
+            if (this.turnCooldown > 0) this.turnCooldown--;
+            if (this.evasionTimer > 0) this.evasionTimer--;
+            if (this.teleportEmergeTimer > 0) this.teleportEmergeTimer--;
             if (this.hitResetTimer > 0) {
                 this.hitResetTimer--;
                 if (this.hitResetTimer <= 0) this.consecutiveHits = 0;
+            }
+
+            // Occasional ESP psychic twitch / glitch artifact
+            if (Math.random() < 0.08) {
+                this.glitchOffset = (Math.random() - 0.5) * 3.5;
+            } else {
+                this.glitchOffset = 0;
             }
 
             if (this.stunTimer > 0) {
@@ -9499,7 +9606,7 @@ export const SKIN_H = 32;
 
             if (exposedToLight) {
                 if (this.isStealthed && pDist < TILE_SIZE * 5) {
-                    this.stunTimer = 65; // Light stun shock
+                    this.stunTimer = 55; // Light stun shock
                     playSound('gloom_screech', { vol: 0.45 });
                     if (Array.isArray(particles)) {
                         for (let s = 0; s < 8; s++) {
@@ -9541,21 +9648,31 @@ export const SKIN_H = 32;
                     const distX = (target.x + target.width / 2) - (this.x + this.width / 2);
                     const distY = (target.y + target.height / 2) - (this.y + this.height / 2);
                     this.facingRight = distX > 0;
+                    const absDist = Math.abs(distX);
 
-                    // Ambush Dive Drop when player passes beneath
-                    if (Math.abs(distX) < TILE_SIZE * 2.2 && distY > 0 && distY < TILE_SIZE * 9) {
+                    // Deadzone & hysteresis for ceiling facing direction
+                    if (absDist > 12 && this.turnCooldown <= 0) {
+                        const shouldFaceRight = distX > 0;
+                        if (this.facingRight !== shouldFaceRight) {
+                            this.facingRight = shouldFaceRight;
+                            this.turnCooldown = 16;
+                        }
+                    }
+
+                    // Ambush Dive Drop
+                    if (absDist < TILE_SIZE * 2.2 && distY > 0 && distY < TILE_SIZE * 10) {
                         this.isCeilingClinging = false;
-                        this.vy = 8.8; // High speed dive!
+                        this.vy = 8.5;
                         this.ambushPounceTime = 40;
-                        playSound('gloom_screech', { vol: 0.75 });
+                        playSound('gloom_screech', { vol: 0.70 });
                         if (Array.isArray(particles)) {
-                            for (let i = 0; i < 6; i++) {
+                            for (let i = 0; i < 8; i++) {
                                 particles.push(new Particle(this.x + Math.random() * this.width, this.y, '#a855f7'));
                             }
                         }
                     } else {
                         // Crawl along ceiling toward target
-                        this.vx = (distX > 0 ? 1 : -1) * (this.speed * 0.65);
+                        this.vx = (this.facingRight ? 1 : -1) * (this.speed * 0.65);
                         this.walkAnimTime += 0.22;
                     }
                 } else {
@@ -9565,7 +9682,7 @@ export const SKIN_H = 32;
                 return;
             }
 
-            // Impact Shockwave on landing from ceiling dive
+            // Impact Shockwave on landing from ceiling dive (nerfed slam damage)
             if (this.ambushPounceTime > 0 && this.isGrounded) {
                 this.ambushPounceTime = 0;
                 playSound('hit', { vol: 0.8 });
@@ -9578,10 +9695,10 @@ export const SKIN_H = 32;
                 if (target) {
                     const slamDist = Math.hypot((target.x + target.width / 2) - (this.x + this.width / 2), (target.y + target.height / 2) - (this.y + this.height / 2));
                     if (slamDist < TILE_SIZE * 1.8) {
-                        if (target.isRemote) damageRemotePlayer(target.id, this.damage + 1, true);
+                        if (target.isRemote) damageRemotePlayer(target.id, 2.5, true);
                         else {
-                            player.takeDamage(this.damage + 1);
-                            player.gloomBlindTimer = 180;
+                            player.takeDamage(2.5);
+                            player.gloomBlindTimer = 80;
                             updateHealthUI();
                         }
                     }
@@ -9594,29 +9711,44 @@ export const SKIN_H = 32;
                 const distY = (target.y + target.height / 2) - (this.y + this.height / 2);
                 const absDist = Math.abs(distX);
 
+                // Fix spinning left/right glitch: Deadzone threshold & turn cooldown hysteresis
+                if (absDist > 14 && this.turnCooldown <= 0) {
+                    const shouldFaceRight = distX > 0;
+                    if (this.facingRight !== shouldFaceRight) {
+                        this.facingRight = shouldFaceRight;
+                        this.turnCooldown = 16;
+                    }
+                }
+
                 if (absDist < TILE_SIZE * 16) {
-                    this.facingRight = distX > 0;
-                    this.vx = (distX > 0 ? 1 : -1) * this.speed;
-                    this.walkAnimTime += 0.28;
+                    if (this.evasionTimer <= 0) {
+                        if (absDist > TILE_SIZE * 0.85) {
+                            this.vx = (this.facingRight ? 1 : -1) * this.speed;
+                        } else {
+                            // Proximity deceleration prevents box clipping jitter
+                            this.vx *= 0.6;
+                        }
+                    }
+                    this.walkAnimTime += 0.20;
                     this.checkObstacleJump();
 
-                    // Ranged Umbral Silk Web
-                    if (absDist > TILE_SIZE * 3.2 && absDist < TILE_SIZE * 8.5 && Math.abs(distY) < TILE_SIZE * 3.5 && this.tetherCooldown <= 0) {
-                        this.tetherCooldown = 140;
+                    // Ranged Umbral Silk Web (nerfed cooldown: 200 frames)
+                    if (absDist > TILE_SIZE * 3.5 && absDist < TILE_SIZE * 8.5 && Math.abs(distY) < TILE_SIZE * 3.5 && this.tetherCooldown <= 0) {
+                        this.tetherCooldown = 200;
                         const angle = Math.atan2(distY, distX);
-                        const pSpeed = 6.8;
+                        const pSpeed = 6.2;
                         if (Array.isArray(activeProjectiles)) {
-                            activeProjectiles.push(new GloomTetherProjectile(this.x + this.width / 2, this.y + this.height / 2, Math.cos(angle) * pSpeed, Math.sin(angle) * pSpeed - 1.0, this));
+                            activeProjectiles.push(new GloomTetherProjectile(this.x + this.width / 2, this.y + this.height * 0.35, Math.cos(angle) * pSpeed, Math.sin(angle) * pSpeed - 1.0, this));
                         }
                         playSound('tether_shoot', { vol: 0.65 });
                     }
 
-                    // Melee Claws Strike & Gloom Blindness
-                    if (absDist < TILE_SIZE * 1.45 && Math.abs(distY) < TILE_SIZE * 1.3) {
+                    // Melee Claws Strike & Gloom Blindness (nerfed: 2.2 normal damage, 80 frame blindness, 70 cooldown)
+                    if (absDist < TILE_SIZE * 1.4 && Math.abs(distY) < TILE_SIZE * 1.4) {
                         if (this.attackCooldown <= 0) {
-                            this.attackCooldown = 50;
+                            this.attackCooldown = 70;
                             const diff = currentDifficulty || 'normal';
-                            const strikeDmg = diff === 'hard' || diff === 'hardcore' ? 4.5 : (diff === 'easy' ? 2 : 3);
+                            const strikeDmg = diff === 'hard' || diff === 'hardcore' ? 3.2 : (diff === 'easy' ? 1.5 : 2.2);
 
                             if (target.isRemote) {
                                 damageRemotePlayer(target.id, strikeDmg, true);
@@ -9624,21 +9756,23 @@ export const SKIN_H = 32;
                                 player.takeDamage(strikeDmg);
                                 const hasGloomLantern = (inventory[selectedHotbarIndex]?.id === IDS.GLOOM_LANTERN || inventory[27]?.id === IDS.GLOOM_LANTERN);
                                 if (!hasGloomLantern) {
-                                    player.gloomBlindTimer = 180;
+                                    player.gloomBlindTimer = 80;
                                 }
                                 updateHealthUI();
                             }
                             playSound('hurt');
-                            playSound('gloom_screech', { vol: 0.5 });
+                            playSound('gloom_screech', { vol: 0.50 });
                             if (Array.isArray(particles)) {
                                 for (let i = 0; i < 8; i++) {
-                                    particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#a855f7'));
+                                    particles.push(new Particle(this.x + this.width / 2, this.y + this.height * 0.35, '#a855f7'));
                                 }
                             }
-                            // Evasive hop back
-                            this.vx = -(distX > 0 ? 1 : -1) * 3.4;
+                            // Smooth evasive hop back with evasion lock
+                            const retreatDir = this.facingRight ? -1 : 1;
+                            this.vx = retreatDir * 3.0;
                             this.vy = -2.2;
                             this.isGrounded = false;
+                            this.evasionTimer = 16;
                         }
                     }
                 } else {
@@ -9650,7 +9784,7 @@ export const SKIN_H = 32;
 
             // Dripping shadow embers
             if (frameCount % 8 === 0 && Array.isArray(particles)) {
-                particles.push(new Particle(this.x + Math.random() * this.width, this.y + this.height - 2, '#3b0764'));
+                particles.push(new Particle(this.x + Math.random() * this.width, this.y + this.height - 4, '#1e1035'));
             }
 
             this.applyPhysics();
@@ -9661,26 +9795,13 @@ export const SKIN_H = 32;
             this.hitResetTimer = 90;
             this.isCeilingClinging = false;
 
-            // Shadow Blink counter-escape when hit 2+ times in short succession
+            // Safe Shadow Blink counter-escape when hit 2+ times in short succession (nerfed cooldown: 150 frames)
             if (this.consecutiveHits >= 2 && this.blinkCooldown <= 0 && this.health > 0) {
                 this.consecutiveHits = 0;
-                this.blinkCooldown = 120;
-                if (Array.isArray(particles)) {
-                    for (let i = 0; i < 14; i++) {
-                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height, '#a855f7'));
-                    }
-                }
-                playSound('shadow_blink', { vol: 0.75 });
+                this.blinkCooldown = 150;
+                const target = getMobTarget(this);
                 const blinkDir = (knockbackDir ? -knockbackDir : (this.facingRight ? -1 : 1));
-                const newX = Math.max(TILE_SIZE * 2, Math.min((WORLD_WIDTH - 3) * TILE_SIZE, this.x + blinkDir * (TILE_SIZE * 5.5)));
-                this.x = newX;
-                this.vy = -3.2;
-                this.isGrounded = false;
-                if (Array.isArray(particles)) {
-                    for (let i = 0; i < 14; i++) {
-                        particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height, '#38bdf8'));
-                    }
-                }
+                this.teleportToSafeLocation(blinkDir, target);
             }
 
             if (this.applyMobDamage(amt, knockbackDir || (this.facingRight ? -1 : 1), '#7c3aed', knockbackForce)) {
@@ -9688,7 +9809,7 @@ export const SKIN_H = 32;
                     const silkCount = Math.floor(Math.random() * 3) + 1;
                     dropItemForWorld(IDS.GLOOM_SILK, this.x + this.width / 2, this.y + this.height / 2, silkCount);
                     const diff = currentDifficulty || 'normal';
-                    const carapaceChance = (diff === 'hard' || diff === 'hardcore') ? 1.0 : 0.50;
+                    const carapaceChance = (diff === 'hard' || diff === 'hardcore') ? 0.75 : 0.40;
                     if (Math.random() < carapaceChance) {
                         dropItemForWorld(IDS.SHADOW_CARAPACE, this.x + this.width / 2, this.y + this.height / 2, 1);
                     }
@@ -9698,18 +9819,25 @@ export const SKIN_H = 32;
 
         draw(ctx, camX, camY) {
             if (this.health <= 0) return;
-            const drawX = Math.round(this.x - camX);
+            const glitch = this.glitchOffset || ((Math.random() < 0.08) ? (Math.random() - 0.5) * 3 : 0);
+            const drawX = Math.round(this.x - camX) + glitch;
             const drawY = Math.round(this.y - camY);
             const w = this.width;
             const h = this.height;
 
+            // 0. Entity Ground Contact Shadow
             if (advancedGraphics && !this.isCeilingClinging) {
-                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 4, w * (2 / 2.2), 6);
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - 17, drawY + h - 4, 34, 6);
             }
 
             ctx.save();
-            if (this.damageCooldown > 0) ctx.globalAlpha = 0.6;
-            else if (this.isStealthed) ctx.globalAlpha = 0.28;
+            const isDamaged = this.damageCooldown > 0;
+            if (isDamaged) ctx.globalAlpha = 0.70;
+            else if (this.isStealthed) ctx.globalAlpha = 0.20;
+
+            if (this.teleportEmergeTimer > 0) {
+                ctx.globalAlpha *= (1.0 - (this.teleportEmergeTimer / 20) * 0.45);
+            }
 
             if (this.isCeilingClinging) {
                 ctx.translate(drawX + w / 2, drawY + h / 2);
@@ -9718,64 +9846,303 @@ export const SKIN_H = 32;
             }
 
             const isRight = this.facingRight;
-            const legWiggle = Math.sin(this.walkAnimTime) * 3.0;
+            const dir = isRight ? 1 : -1;
+            const walk = this.walkAnimTime;
+            const stalk = this.stalkTime;
+            const attacking = this.attackCooldown > 45;
 
-            // 1. Spindly Scythe Legs (6 legs with articulated joints)
-            ctx.fillStyle = '#2e1065';
-            for (let i = 0; i < 3; i++) {
-                const lx = drawX + (isRight ? 6 + i * 8 : w - 8 - i * 8);
-                const offset = (i % 2 === 0 ? legWiggle : -legWiggle);
-                ctx.fillRect(lx, drawY + h - 5 + offset, 2.5, 6 - offset);
-                // Sharp claw tips
-                ctx.fillStyle = '#7c3aed';
-                ctx.fillRect(lx + (isRight ? 1 : -1), drawY + h + 1 + offset, 2, 2);
-                ctx.fillStyle = '#2e1065';
+            // --- HIGH QUALITY PIXEL-ART HORROR MONSTER ---
+            // Palette definitions for authentic handcrafted depth:
+            const cVoidDark   = '#030107'; // Pure darkest shadow & outline
+            const cFleshDeep  = '#0b0416'; // Deep obsidian-void muscle & bone core
+            const cChitinMid  = '#180b2d'; // Shadow chitin armor plate
+            const cChitinRim  = '#2d144e'; // Specular carapace rim highlight
+            const cBoneDeep   = '#4c1d95'; // Dark shadow bone
+            const cBonePlate  = '#c4b5fd'; // Weathered bone mask
+            const cBoneWhite  = '#f5f3ff'; // Stark ivory fangs, claws & spine tips
+            const cVoidHeart  = '#38bdf8'; // Glowing celestial cyan void core
+            const cSporeBulb  = '#a855f7'; // Bioluminescent purple spore bulb
+            const cEyeGlow    = attacking ? '#f43f5e' : '#38bdf8'; // Eyes ignite crimson during attack
+
+            // --- 1. BACK WRITHING SHADOW APPENDAGES (4 Segmented Tentacles) ---
+            const tendrilWave1 = Math.sin(stalk * 2.4) * 6;
+            const tendrilWave2 = Math.cos(stalk * 2.1) * 7;
+            const tDir = dir;
+
+            // Tentacle 1: Upper High Tentacle (arching above shoulders)
+            const t1RootX = drawX + w / 2 - tDir * 4;
+            const t1RootY = drawY + 16;
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(t1RootX - tDir * 2, t1RootY - 4, 3, 4);
+            ctx.fillStyle = cChitinMid;
+            ctx.fillRect(t1RootX - tDir * 6 + tendrilWave1 * 0.4, t1RootY - 10, 3, 6);
+            ctx.fillStyle = cBoneDeep;
+            ctx.fillRect(t1RootX - tDir * 11 + tendrilWave1 * 0.8, t1RootY - 17, 2.5, 7);
+            // Bioluminescent Apex Spore
+            ctx.fillStyle = cSporeBulb;
+            ctx.fillRect(t1RootX - tDir * 15 + tendrilWave1 * 1.2, t1RootY - 21, 3, 3);
+            ctx.fillStyle = cBoneWhite;
+            ctx.fillRect(t1RootX - tDir * 14 + tendrilWave1 * 1.2, t1RootY - 20, 1.5, 1.5);
+
+            // Tentacle 2: Mid Flank Tentacle (whipping backward)
+            const t2RootY = drawY + 26;
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(t1RootX - tDir * 2, t2RootY - 2, 3, 3);
+            ctx.fillStyle = cChitinMid;
+            ctx.fillRect(t1RootX - tDir * 8 + tendrilWave2 * 0.5, t2RootY - 4, 3, 4);
+            ctx.fillStyle = cBoneDeep;
+            ctx.fillRect(t1RootX - tDir * 14 + tendrilWave2 * 0.9, t2RootY - 8, 2.5, 5);
+            // Tip Bulb
+            ctx.fillStyle = cSporeBulb;
+            ctx.fillRect(t1RootX - tDir * 18 + tendrilWave2 * 1.2, t2RootY - 10, 3, 3);
+
+            // Tentacle 3 & 4: Opposing Side Secondary Tentacles
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(t1RootX + tDir * 1, t1RootY - 2, 2.5, 3);
+            ctx.fillStyle = cChitinMid;
+            ctx.fillRect(t1RootX + tDir * 4 - tendrilWave2 * 0.3, t1RootY - 8, 2.5, 5);
+            ctx.fillStyle = cSporeBulb;
+            ctx.fillRect(t1RootX + tDir * 7 - tendrilWave2 * 0.6, t1RootY - 13, 2, 2);
+
+            // --- 2. DIGITIGRADE RAPTOR LEGS (Articulated Double-Jointed Anatomy) ---
+            const legSwing = Math.sin(walk) * 5;
+            const legLift  = Math.max(0, -Math.cos(walk)) * 4;
+
+            // BACK LEG (in shadow):
+            const bLegX = drawX + w / 2 - tDir * 3 - (isRight ? legSwing : -legSwing);
+            // Thigh
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(bLegX - 2, drawY + 40, 5, 14);
+            ctx.fillStyle = cFleshDeep;
+            ctx.fillRect(bLegX - 1, drawY + 41, 3, 12);
+            // Knee / Hock joint & spur
+            ctx.fillStyle = cChitinMid;
+            ctx.fillRect(bLegX - tDir * 2, drawY + 52, 3, 4);
+            // Lower Shin strut
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(bLegX + tDir * 1, drawY + 55, 3, 14);
+            ctx.fillStyle = cFleshDeep;
+            ctx.fillRect(bLegX + tDir * 1.5, drawY + 56, 1.5, 12);
+            // Raptor Claws
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(bLegX + tDir * 2, drawY + h - 4, 6, 3);
+            ctx.fillStyle = cBoneWhite;
+            ctx.fillRect(bLegX + tDir * (isRight ? 6 : -1), drawY + h - 3, 2, 2);
+
+            // FRONT LEG (illuminated near side):
+            const fLegX = drawX + w / 2 + tDir * 4 + (isRight ? legSwing : -legSwing);
+            const fLiftY = drawY - legLift;
+            // Thigh
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(fLegX - 2, fLiftY + 39, 6, 15);
+            ctx.fillStyle = cChitinMid;
+            ctx.fillRect(fLegX - 1, fLiftY + 40, 4, 13);
+            ctx.fillStyle = cChitinRim;
+            ctx.fillRect(fLegX + tDir * 1, fLiftY + 41, 1.5, 11);
+            // Knee joint spur
+            ctx.fillStyle = cBoneDeep;
+            ctx.fillRect(fLegX - tDir * 2, fLiftY + 52, 3, 4);
+            // Lower Shin
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(fLegX + tDir * 1, fLiftY + 55, 3.5, 15);
+            ctx.fillStyle = cChitinMid;
+            ctx.fillRect(fLegX + tDir * 1.5, fLiftY + 56, 2, 13);
+            // Ankle & Raptor Talons
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(fLegX + tDir * 1, fLiftY + h - 5, 8, 4);
+            ctx.fillStyle = cChitinRim;
+            ctx.fillRect(fLegX + tDir * 2, fLiftY + h - 4, 5, 2);
+            // Ivory Talon Tips
+            ctx.fillStyle = cBoneWhite;
+            ctx.fillRect(fLegX + tDir * (isRight ? 7 : -2), fLiftY + h - 3, 2, 2);
+            ctx.fillRect(fLegX + tDir * (isRight ? 5 : 0), fLiftY + h - 2, 2, 1.5);
+            ctx.fillRect(fLegX - tDir * (isRight ? 1 : -4), fLiftY + h - 3, 2, 2);
+
+            // --- 3. MONSTER TORSO & SPECTRAL RIBCAGE ---
+            const torsoX = drawX + w / 2 - 7;
+            const torsoY = drawY + 14;
+
+            // Dorsal Spinal Vertebrae Spikes
+            ctx.fillStyle = cBoneDeep;
+            ctx.fillRect(torsoX - tDir * 3, torsoY + 2, 3, 3);
+            ctx.fillRect(torsoX - tDir * 4, torsoY + 8, 3.5, 3);
+            ctx.fillRect(torsoX - tDir * 4, torsoY + 14, 3.5, 3);
+            ctx.fillRect(torsoX - tDir * 3, torsoY + 20, 3, 3);
+            ctx.fillStyle = cBoneWhite;
+            ctx.fillRect(torsoX - tDir * 5, torsoY + 9, 1.5, 1.5);
+
+            // Main Obsidian Torso Silhouette
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(torsoX - 1, torsoY, 16, 27);
+            ctx.fillStyle = cFleshDeep;
+            ctx.fillRect(torsoX, torsoY + 1, 14, 25);
+            ctx.fillStyle = cChitinMid;
+            ctx.fillRect(torsoX + (isRight ? 1 : 3), torsoY + 2, 10, 23);
+
+            // Hunched Carapace Pauldron
+            ctx.fillStyle = cChitinRim;
+            ctx.fillRect(torsoX - tDir * 1, torsoY + 1, 6, 4);
+
+            // PULSING ABYSSAL VOID CORE (The Monster's Heart)
+            const corePulse = (Math.sin(stalk * 3.8) + 1) * 0.5;
+            const coreRadX = torsoX + 6 + tDir * 1;
+            const coreRadY = torsoY + 11;
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.40)';
+            ctx.fillRect(coreRadX - 3, coreRadY - 3, 7, 7);
+            ctx.fillStyle = corePulse > 0.4 ? cVoidHeart : '#0284c7';
+            ctx.fillRect(coreRadX - 1.5, coreRadY - 1.5, 4, 4);
+            ctx.fillStyle = cBoneWhite;
+            ctx.fillRect(coreRadX - 0.5, coreRadY - 0.5, 2, 2);
+
+            // SPECTRAL RIBCAGE (4 Individual Curved Rib Pairs)
+            for (let r = 0; r < 4; r++) {
+                const ribY = torsoY + 6 + r * 5;
+                const ribW = 12 - r * 1.5;
+                const ribX = torsoX + (isRight ? 1 : 14 - ribW);
+                ctx.fillStyle = cVoidDark;
+                ctx.fillRect(ribX, ribY + 1, ribW, 2);
+                ctx.fillStyle = (r === 1 && corePulse > 0.5) ? '#c084fc' : '#7c3aed';
+                ctx.fillRect(ribX + 1, ribY, ribW - 1, 1.5);
+                ctx.fillStyle = cBoneWhite;
+                ctx.fillRect(ribX + (isRight ? ribW - 2 : 1), ribY, 1.5, 1.5);
             }
 
-            // 2. Main Obsidian Chitin Carapace
-            ctx.fillStyle = '#180e29';
-            ctx.fillRect(drawX + 4, drawY + 3, w - 8, h - 5);
+            // Lower Abdominal Chitin Plating
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(torsoX + 2, torsoY + 24, 10, 3);
+            ctx.fillStyle = cChitinRim;
+            ctx.fillRect(torsoX + 3, torsoY + 24, 8, 1.5);
 
-            // Chitin ridge segment plates
-            ctx.fillStyle = '#3b0764';
-            ctx.fillRect(drawX + 8, drawY + 4, 3, h - 7);
-            ctx.fillRect(drawX + 16, drawY + 4, 3, h - 7);
-            ctx.fillRect(drawX + 24, drawY + 4, 3, h - 7);
+            // --- 4. ELONGATED SCYTHE ARMS & SICKLE CLAWS ---
+            const armRootX = torsoX + (isRight ? 10 : 0);
+            const armRootY = torsoY + 4;
+            const armReach = attacking ? tDir * 12 : (this.tetherCooldown > 160 ? tDir * 8 : 0);
+            const armLift  = attacking ? -4 : 0;
 
-            // Bioluminescent pulsing void veins
-            const pulse = (Math.sin(frameCount * 0.12) + 1) * 0.5;
-            ctx.fillStyle = pulse > 0.5 ? '#a855f7' : '#7c3aed';
-            ctx.fillRect(drawX + 10, drawY + 6, 2, 2);
-            ctx.fillRect(drawX + 18, drawY + 6, 2, 2);
-            ctx.fillRect(drawX + 26, drawY + 6, 2, 2);
+            // Shoulder Joint & Armor Plating
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(armRootX - 2, armRootY - 2, 6, 6);
+            ctx.fillStyle = cChitinRim;
+            ctx.fillRect(armRootX - 1, armRootY - 1, 4, 4);
 
-            // 3. Head & Predatory Glowing Eyes
-            const headX = isRight ? drawX + w - 8 : drawX + 2;
-            ctx.fillStyle = '#090514';
-            ctx.fillRect(headX, drawY + 3, 7, 7);
+            // Upper Bicep
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(armRootX + armReach * 0.3 - 1, armRootY + 4 + armLift * 0.4, 4, 13);
+            ctx.fillStyle = cFleshDeep;
+            ctx.fillRect(armRootX + armReach * 0.3, armRootY + 5 + armLift * 0.4, 2.5, 11);
 
-            // Glowing faceted eyes (drawn bright even in stealth!)
-            const eyeColor = this.attackCooldown > 0 ? '#ef4444' : '#38bdf8';
-            ctx.fillStyle = eyeColor;
-            // Primary pair
-            ctx.fillRect(isRight ? headX + 4 : headX + 1, drawY + 4, 2, 2);
-            // Secondary upper pair
-            ctx.fillStyle = '#c084fc';
-            ctx.fillRect(isRight ? headX + 2 : headX + 3, drawY + 3, 1.5, 1.5);
+            // Elbow Joint & Blade Spur
+            const elbowX = armRootX + armReach * 0.5;
+            const elbowY = armRootY + 16 + armLift * 0.7;
+            ctx.fillStyle = cBoneDeep;
+            ctx.fillRect(elbowX - tDir * 2, elbowY, 3, 3);
 
-            // 4. Front Razor Mandibles
-            ctx.fillStyle = '#581c87';
-            if (isRight) {
-                ctx.fillRect(drawX + w - 2, drawY + 6, 4, 2);
-                ctx.fillRect(drawX + w + 1, drawY + 7, 2, 2);
-            } else {
-                ctx.fillRect(drawX - 2, drawY + 6, 4, 2);
-                ctx.fillRect(drawX - 3, drawY + 7, 2, 2);
+            // Elongated Forearm
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(elbowX + armReach * 0.4 - 1, elbowY + 3 + armLift * 0.3, 3.5, 15);
+            ctx.fillStyle = cChitinMid;
+            ctx.fillRect(elbowX + armReach * 0.4, elbowY + 4 + armLift * 0.3, 2, 13);
+            ctx.fillStyle = cChitinRim;
+            ctx.fillRect(elbowX + armReach * 0.4 + (isRight ? 1 : 0), elbowY + 4 + armLift * 0.3, 1, 13);
+
+            // Hand & 3 Articulated Razor Sickle Claws
+            const handX = elbowX + armReach * 0.8;
+            const handY = elbowY + 17 + armLift;
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(handX - 1, handY, 4, 4);
+
+            const clawSpread = [ -3, 0, 3 ];
+            for (let c = 0; c < 3; c++) {
+                const cx = handX + tDir * (4 + c * 2) + clawSpread[c] * 0.3;
+                const cy = handY + 3 + Math.abs(clawSpread[c]) * 1.5;
+                ctx.fillStyle = cBoneDeep;
+                ctx.fillRect(handX + tDir * (1 + c), handY + 2 + c, 2, 3);
+                ctx.fillStyle = cBonePlate;
+                ctx.fillRect(cx - tDir * 1, cy, 2, 3.5);
+                ctx.fillStyle = cBoneWhite;
+                ctx.fillRect(cx, cy + 2.5, 1.5, 2.5);
             }
 
-            // Damage red flash overlay
-            if (this.damageCooldown > 0) {
-                ctx.fillStyle = 'rgba(255, 40, 40, 0.45)';
+            // --- 5. MONSTROUS SKULL, BONE MASK & UNHINGED NEEDLE JAW ---
+            const headTiltY = Math.sin(stalk * 1.8) * 1.2;
+            const headX = drawX + w / 2 - 7 + tDir * 3;
+            const headY = drawY + 2 + headTiltY;
+
+            // Jagged Cranial Horns (swept-back demonic crest)
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(headX - tDir * 3, headY - 2, 4, 5);
+            ctx.fillRect(headX - tDir * 6, headY - 4, 4, 4);
+            ctx.fillStyle = cChitinRim;
+            ctx.fillRect(headX - tDir * 5, headY - 3, 2, 2);
+            ctx.fillStyle = cBoneWhite;
+            ctx.fillRect(headX - tDir * 7, headY - 5, 2, 2);
+
+            // Main Cranium
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(headX - 1, headY, 14, 15);
+            ctx.fillStyle = cFleshDeep;
+            ctx.fillRect(headX, headY + 1, 12, 13);
+
+            // WEATHERED PALE BONE MASK (Stark creepypasta faceplate)
+            ctx.save();
+            if (this.isStealthed) {
+                ctx.globalAlpha = 0.95; // Mask and eyes pierce vividly through darkness!
+            }
+
+            ctx.fillStyle = cBonePlate;
+            ctx.fillRect(headX + (isRight ? 3 : 1), headY + 2, 8, 8);
+            ctx.fillStyle = cBoneWhite;
+            ctx.fillRect(headX + (isRight ? 5 : 2), headY + 3, 5, 6);
+            // Skull cracks / fissure weathering
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(headX + (isRight ? 6 : 4), headY + 4, 1.5, 3);
+            ctx.fillRect(headX + (isRight ? 5 : 5), headY + 7, 2, 1);
+
+            // PREDATORY GLOWING EYE CAVITIES
+            ctx.fillStyle = cVoidDark;
+            const eyeBaseX = headX + (isRight ? 5 : 2);
+            ctx.fillRect(eyeBaseX, headY + 4, 6, 3);
+
+            // Piercing Glowing Eye Slits & Glint
+            ctx.fillStyle = cEyeGlow;
+            ctx.fillRect(eyeBaseX + (isRight ? 3 : 1), headY + 4.5, 2.5, 2);
+            ctx.fillRect(eyeBaseX + (isRight ? 0 : 3), headY + 4.5, 2, 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(eyeBaseX + (isRight ? 4 : 2), headY + 5, 1.5, 1);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.65)';
+            ctx.fillRect(eyeBaseX + (isRight ? 5.5 : -1), headY + 5, 3, 1);
+
+            // GAPING UNHINGED NEEDLE-TOOTH VOID JAW
+            const jawDrop = attacking ? 3.5 : 0;
+            const mouthY = headY + 9;
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(headX + 1, mouthY, 11, 5 + jawDrop);
+            ctx.fillStyle = 'rgba(124, 58, 237, 0.70)';
+            ctx.fillRect(headX + 3, mouthY + 1, 6, 2 + jawDrop * 0.6);
+
+            // Upper Needle Fangs (5 sharp interlocking teeth)
+            ctx.fillStyle = cBoneWhite;
+            for (let t = 0; t < 5; t++) {
+                ctx.fillRect(headX + 2 + t * 2, mouthY, 1.2, 2.5);
+            }
+            // Lower Needle Fangs (4 sharp upward teeth)
+            const lowJawY = mouthY + 4 + jawDrop;
+            ctx.fillStyle = cVoidDark;
+            ctx.fillRect(headX + 1, lowJawY, 11, 3);
+            ctx.fillStyle = cBoneWhite;
+            for (let t = 0; t < 4; t++) {
+                ctx.fillRect(headX + 3 + t * 2, lowJawY - 1.5, 1.2, 2.5);
+            }
+            if (attacking) {
+                ctx.fillStyle = '#a855f7';
+                ctx.fillRect(headX + 5, lowJawY + 2, 1.5, 3);
+            }
+
+            ctx.restore(); // Restore stealth alpha
+
+            // 6. Damage Red Flash
+            if (isDamaged) {
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.45)';
                 ctx.fillRect(drawX - 2, drawY - 2, w + 4, h + 4);
             }
 
@@ -11495,42 +11862,48 @@ export const SKIN_H = 32;
 
             if (foundX > 0 && foundY > 0) {
                 const isDesert = (typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(foundX) === 'desert');
+                const candSurfY = getWorldSurfaceY(foundX);
+                const isDeepCavern = foundY >= (candSurfY + 16) && foundY >= 48;
+                const maxGloomstalkers = (currentDifficulty === 'hard' || currentDifficulty === 'hardcore') ? 2 : 1;
+                const activeGloomstalkers = entities.filter(e => e instanceof Gloomstalker).length;
+
                 for (let k = 0; k < packSize; k++) {
                     if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker).length >= maxHostiles) break;
                     let mobX = foundX * TILE_SIZE + (k * 16 * (Math.random() > 0.5 ? 1 : -1));
                     let mobGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(mobX / TILE_SIZE)));
                     let mobY = (foundY - 1) * TILE_SIZE;
 
-                    // If near a normal torch, standard mobs cannot spawn, but Gloomstalker STILL SPAWNS!
+                    // Normal torches block standard hostiles, but Gloomstalker can still spawn deep underground
                     const mobNearTorch = isNearTorch(mobGx, foundY, 7);
                     if (mobNearTorch) {
-                        // Normal torches do not ward the Gloomstalker!
-                        let gs = new Gloomstalker(mobX, spawnClinging ? (foundY - 2) * TILE_SIZE : mobY);
-                        if (spawnClinging) gs.isCeilingClinging = true;
-                        entities.push(gs);
+                        if (isDeepCavern && activeGloomstalkers < maxGloomstalkers && Math.random() < 0.06) {
+                            let gs = new Gloomstalker(mobX, spawnClinging ? (foundY - 2) * TILE_SIZE : mobY);
+                            if (spawnClinging) gs.isCeilingClinging = true;
+                            entities.push(gs);
+                        }
                         continue;
                     }
 
                     let roll = Math.random();
                     if (isDesert) {
-                        if (roll < 0.35) {
+                        if (roll < 0.38) {
                             entities.push(new Scorpion(mobX, mobY));
-                        } else if (roll < 0.65) {
+                        } else if (roll < 0.45 && isDeepCavern && activeGloomstalkers < maxGloomstalkers) {
                             let gs = new Gloomstalker(mobX, spawnClinging ? (foundY - 2) * TILE_SIZE : mobY);
                             if (spawnClinging) gs.isCeilingClinging = true;
                             entities.push(gs);
-                        } else if (roll < 0.82) {
+                        } else if (roll < 0.72) {
                             entities.push(new Creeper(mobX, mobY));
                         } else {
                             entities.push(new Zombie(mobX, mobY));
                         }
                     } else {
-                        // Standard cave: 30% Gloomstalker, 25% Creeper, 45% Zombie
-                        if (roll < 0.30) {
+                        // Standard cave: Gloomstalker only spawns deep subterranean (7% chance), 33% Creeper, 60% Zombie
+                        if (roll < 0.07 && isDeepCavern && activeGloomstalkers < maxGloomstalkers) {
                             let gs = new Gloomstalker(mobX, spawnClinging ? (foundY - 2) * TILE_SIZE : mobY);
                             if (spawnClinging) gs.isCeilingClinging = true;
                             entities.push(gs);
-                        } else if (roll < 0.55) {
+                        } else if (roll < 0.40) {
                             entities.push(new Creeper(mobX, mobY));
                         } else {
                             entities.push(new Zombie(mobX, mobY));
@@ -11554,6 +11927,9 @@ export const SKIN_H = 32;
                     if (feetBlock === IDS.AIR && headBlock === IDS.AIR && floorBlock !== IDS.AIR && floorBlock !== IDS.WATER && floorBlock !== IDS.LAVA) {
                         if (!isNearGloomLantern(candX, surfY - 1, 7) && !isNearKael(candX, surfY - 1, 14)) {
                             const isDesert = (typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(candX) === 'desert');
+                            const maxGloomstalkers = (currentDifficulty === 'hard' || currentDifficulty === 'hardcore') ? 2 : 1;
+                            const activeGloomstalkers = entities.filter(e => e instanceof Gloomstalker).length;
+
                             for (let k = 0; k < packSize; k++) {
                                 if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker).length >= maxHostiles) break;
                                 let mobX = candX * TILE_SIZE + (k * 16 * (Math.random() > 0.5 ? 1 : -1));
@@ -11562,8 +11938,7 @@ export const SKIN_H = 32;
 
                                 const mobNearTorch = isNearTorch(mobGx, surfY - 1, 7);
                                 if (mobNearTorch) {
-                                    // Gloomstalker ignores normal torches, but standard hostiles are blocked
-                                    if (Math.random() < 0.25) {
+                                    if (activeGloomstalkers < maxGloomstalkers && Math.random() < 0.015) {
                                         entities.push(new Gloomstalker(mobX, mobY));
                                     }
                                     continue;
@@ -11573,17 +11948,18 @@ export const SKIN_H = 32;
                                 if (isDesert) {
                                     if (roll < 0.45) {
                                         entities.push(new Scorpion(mobX, mobY));
-                                    } else if (roll < 0.60) {
+                                    } else if (roll < 0.47 && activeGloomstalkers < maxGloomstalkers) {
                                         entities.push(new Gloomstalker(mobX, mobY));
-                                    } else if (roll < 0.78) {
+                                    } else if (roll < 0.72) {
                                         entities.push(new Creeper(mobX, mobY));
                                     } else {
                                         entities.push(new Zombie(mobX, mobY));
                                     }
                                 } else {
-                                    if (roll < 0.14) {
+                                    // Surface Gloomstalker is exceptionally rare (~1.5% chance)
+                                    if (roll < 0.015 && activeGloomstalkers < maxGloomstalkers) {
                                         entities.push(new Gloomstalker(mobX, mobY));
-                                    } else if (roll < 0.40) {
+                                    } else if (roll < 0.36) {
                                         entities.push(new Creeper(mobX, mobY));
                                     } else {
                                         entities.push(new Zombie(mobX, mobY));
@@ -11593,6 +11969,58 @@ export const SKIN_H = 32;
                         }
                     }
                 }
+            }
+        }
+
+        // Dread Stalker Presence: The Gloomstalker always appears if the player lingers in deep darkness
+        if (player && player.health > 0) {
+            const maxGloomstalkers = (currentDifficulty === 'hard' || currentDifficulty === 'hardcore') ? 2 : 1;
+            const curGloomstalkers = entities.filter(e => e instanceof Gloomstalker).length;
+            if (curGloomstalkers < maxGloomstalkers) {
+                const plGx = Math.floor((player.x + player.width / 2) / TILE_SIZE);
+                const plGy = Math.floor((player.y + player.height / 2) / TILE_SIZE);
+                const plSurfY = getWorldSurfaceY(plGx);
+                const isDeepCave = plGy >= (plSurfY + 14) && plGy >= 44;
+                const isPitchBlackSurface = isNight && !isNearTorch(plGx, plGy, 8);
+
+                if (isDeepCave || isPitchBlackSurface) {
+                    gloomDreadTimer += (isDeepCave ? 1.4 : 1.0);
+
+                    const DREAD_THRESHOLD = 3200; // Guaranteed manifestation after prolonged darkness
+                    if (gloomDreadTimer >= DREAD_THRESHOLD) {
+                        const spawnDir = player.vx > 0.5 ? -1 : (player.vx < -0.5 ? 1 : (Math.random() > 0.5 ? 1 : -1));
+                        const distTiles = 15 + Math.floor(Math.random() * 4);
+                        const spawnGx = Math.max(3, Math.min(WORLD_WIDTH - 4, plGx + spawnDir * distTiles));
+
+                        for (let testGy = Math.max(4, plGy - 4); testGy <= Math.min(WORLD_HEIGHT - 4, plGy + 4); testGy++) {
+                            const floorB = world[spawnGx]?.[testGy + 1];
+                            const footB = world[spawnGx]?.[testGy];
+                            const headB = world[spawnGx]?.[testGy - 1];
+
+                            if (floorB !== undefined && isSolidWorldBlock(spawnGx, testGy + 1, floorB) && floorB !== IDS.LAVA && floorB !== IDS.WATER) {
+                                if (footB === IDS.AIR && headB === IDS.AIR) {
+                                    const gs = new Gloomstalker(spawnGx * TILE_SIZE, (testGy - 1) * TILE_SIZE);
+                                    entities.push(gs);
+                                    playSound('gloom_screech', { vol: 0.35 });
+                                    if (Array.isArray(particles)) {
+                                        for (let p = 0; p < 16; p++) {
+                                            particles.push(new Particle(gs.x + Math.random() * gs.width, gs.y + Math.random() * gs.height, '#38006b'));
+                                        }
+                                    }
+                                    if (Array.isArray(floatingTexts)) {
+                                        floatingTexts.push(new FloatingText(player.x + player.width / 2, player.y - 20, "Something watches from the dark...", "#c084fc"));
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        gloomDreadTimer = -2400; // Peace grace period
+                    }
+                } else {
+                    if (gloomDreadTimer > 0) gloomDreadTimer = Math.max(0, gloomDreadTimer - 1.5);
+                }
+            } else {
+                gloomDreadTimer = -1800;
             }
         }
     }
@@ -13002,7 +13430,7 @@ export const SKIN_H = 32;
         caveMobs.push({ type: 'gloomstalker_ceiling', entity: gsCeiling });
 
         // Gloomstalker #2: Altar Prowler stalking on the Void Stone Altar dais
-        const gsAltar = new Gloomstalker(24 * TILE_SIZE, 46 * TILE_SIZE);
+        const gsAltar = new Gloomstalker(24 * TILE_SIZE, 47 * TILE_SIZE);
         gsAltar.isGrounded = true;
         gsAltar.facingRight = false;
         gsAltar.isMenuEntity = true;
@@ -15919,6 +16347,8 @@ try { if (typeof SKY_STAR_BRIGHTNESSES !== "undefined") window.SKY_STAR_BRIGHTNE
 try { if (typeof Scorpion !== "undefined") window.Scorpion = Scorpion; } catch(e) {}
 try { if (typeof Gloomstalker !== "undefined") window.Gloomstalker = Gloomstalker; } catch(e) {}
 try { if (typeof GloomTetherProjectile !== "undefined") window.GloomTetherProjectile = GloomTetherProjectile; } catch(e) {}
+try { if (typeof gloomDreadTimer !== "undefined") window.gloomDreadTimer = gloomDreadTimer; } catch(e) {}
+try { if (typeof setEngineGloomDreadTimer !== "undefined") window.setEngineGloomDreadTimer = setEngineGloomDreadTimer; } catch(e) {}
 try { if (typeof Sheep !== "undefined") window.Sheep = Sheep; } catch(e) {}
 try { if (typeof SnowballProjectile !== "undefined") window.SnowballProjectile = SnowballProjectile; } catch(e) {}
 try { if (typeof TOOL_DURABILITY !== "undefined") window.TOOL_DURABILITY = TOOL_DURABILITY; } catch(e) {}
