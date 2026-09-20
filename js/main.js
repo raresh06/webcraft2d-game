@@ -37,7 +37,7 @@ import {
     setEngineFurnaces, setEngineJukeboxes, setEngineChests, setEngineDroppedItems, setEngineSaplingGrowthQueue, setEngineState, setGameState as setEngineGameState,
     setEngineTimeOfDay, setEngineDayCount, setEngineFrameCount, setEngineCurrentWorldId,
     setEngineCurrentDifficulty, setEngineIsMultiplayer, setEngineCurrentMpRoom,
-    setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping,
+    setEngineCurrentMpWorldName, setEngineRemotePlayers, setEngineIsSleeping, setEngineSleepStartTime,
     setEngineIsBackgroundBuildMode, setEngineIsInventoryOpen, setSelectedHotbarIndex as setEngineSelectedHotbarIndex, setAttackAnimationTimer,
     drawMenuBackground, drawWorld, updateCamera,
     getSnowBiomeRatio, initCanvases, resizeCanvases, canvas, ctx,
@@ -1413,6 +1413,13 @@ export function initJukeboxFileInput() {
             setEngineTimeOfDay(0.02);
             setEngineDayCount(dayCount + 1);
             setEngineIsSleeping(false);
+            setEngineSleepStartTime(0);
+            if (player) {
+                player.health = player.maxHealth || 20;
+                player.hunger = 20;
+                player.gloomBlindTimer = 0;
+                player.gloomTetherTimer = 0;
+            }
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
             // Defer animal respawn to avoid spike — drained at 2/frame in game loop
             const maxA = typeof getMaxAnimals === 'function' ? getMaxAnimals() : 20;
@@ -1421,6 +1428,9 @@ export function initJukeboxFileInput() {
             if (def > 0) pendingAnimalSpawns += def;
             dayJustRolled = true;
             updateSleepStatus();
+            if (typeof updateHUD === 'function') updateHUD();
+            if (typeof saveCurrentWorld === 'function') saveCurrentWorld();
+            showToast('Good morning! Restored full health.');
             return;
         }
 
@@ -1431,6 +1441,13 @@ export function initJukeboxFileInput() {
             setEngineTimeOfDay(0.02);
             setEngineDayCount(dayCount + 1);
             setEngineIsSleeping(false);
+            setEngineSleepStartTime(0);
+            if (player) {
+                player.health = player.maxHealth || 20;
+                player.hunger = 20;
+                player.gloomBlindTimer = 0;
+                player.gloomTetherTimer = 0;
+            }
             entities.forEach(e => { if (e instanceof Sheep) e.isSheared = false; });
             // Defer animal respawn to avoid spike — drained at 2/frame in game loop
             const maxA = typeof getMaxAnimals === 'function' ? getMaxAnimals() : 20;
@@ -1439,6 +1456,8 @@ export function initJukeboxFileInput() {
             if (def > 0) pendingAnimalSpawns += def;
             dayJustRolled = true;
             updateSleepStatus();
+            if (typeof updateHUD === 'function') updateHUD();
+            showToast('Good morning! Restored full health.');
         }
     }
 
@@ -1502,12 +1521,14 @@ export function initJukeboxFileInput() {
             }
             if (isSleeping) {
                 setEngineIsSleeping(false);
+                setEngineSleepStartTime(0);
                 Object.keys(keys).forEach(k => delete keys[k]);
                 updateSleepStatus();
                 showToast('Sleep cancelled.');
                 return true;
             }
             setEngineIsSleeping(true);
+            setEngineSleepStartTime(performance.now());
             Object.keys(keys).forEach(k => delete keys[k]);
             updateSleepStatus();
             showToast('Sleeping...');
@@ -2891,6 +2912,18 @@ export function initJukeboxFileInput() {
         // Skip minimap on the day-rollover frame to avoid coinciding with spawn queue init
         if (frameCount % 10 === 0 && !dayJustRolled) drawMinimap();
 
+        if (isSleeping) {
+            // Cancel sleep if player attempts to move
+            const moved = keys['KeyA'] || keys['KeyD'] || keys['KeyW'] || keys['KeyS'] || keys['Space'] ||
+                          keys['ArrowLeft'] || keys['ArrowRight'] || keys['ArrowUp'] || keys['ArrowDown'];
+            if (moved) {
+                setEngineIsSleeping(false);
+                setEngineSleepStartTime(0);
+                updateSleepStatus();
+                showToast('Sleep cancelled.');
+            }
+        }
+
         const curPlayer = player || (typeof window !== 'undefined' ? window.player : null);
         if (curPlayer && typeof curPlayer.update === 'function') {
             curPlayer.update();
@@ -3071,6 +3104,11 @@ export function initJukeboxFileInput() {
             if (!activeProjectiles[i].alive) activeProjectiles.splice(i, 1);
         }
         tryCompleteMultiplayerSleep();
+        if (isSleeping && sleepStartTime && performance.now() - sleepStartTime >= (sleepTransitionMs || 2200)) {
+            completeSleepTransition();
+        } else {
+            tryCompleteMultiplayerSleep();
+        }
         if (frameCount % 10 === 0) updateSleepStatus();
         checkAfkKick();
         syncMultiplayerWorldState();

@@ -1334,8 +1334,8 @@ if (typeof window !== 'undefined') {
 
 
     export function tryCompleteMultiplayerSleep() {
-        if (!isSleeping || timeOfDay <= 0.62 || timeOfDay > 0.95) return;
-        if (sleepStartTime && performance.now() - sleepStartTime >= sleepTransitionMs) {
+        if (!isSleeping) return;
+        if (sleepStartTime && performance.now() - sleepStartTime >= (sleepTransitionMs || 2200)) {
             completeSleepTransition();
         }
     }
@@ -1451,12 +1451,13 @@ if (typeof window !== 'undefined') {
         } else if (newId === IDS.SNOW) {
             snowRegrowthQueue.delete(`${x}_${y}`);
         }
-        if (newId === IDS.SAPLING && Number.isFinite(growthAt)) saplingGrowthQueue.set(`${x}_${y}`, growthAt);
-        else {
+        if ((newId === IDS.SAPLING || newId === IDS.JUNGLE_SAPLING) && Number.isFinite(growthAt)) {
+            saplingGrowthQueue.set(`${x}_${y}`, growthAt);
+        } else {
             saplingGrowthQueue.delete(`${x}_${y}`);
             saplingBlockedWarnings.delete(`${x}_${y}`);
         }
-        if (newId !== IDS.WHEAT_STAGE_1 && newId !== IDS.WHEAT_STAGE_2 && newId !== IDS.WHEAT_STAGE_3 && newId !== IDS.WHEAT_STAGE_4) {
+        if (newId !== IDS.WHEAT_STAGE_1 && newId !== IDS.WHEAT_STAGE_2 && newId !== IDS.WHEAT_STAGE_3 && newId !== IDS.WHEAT_STAGE_4 && newId !== IDS.MELON_STEM) {
             cropGrowthQueue.delete(`${x}_${y}`);
         }
         const isWoodSync = (wasTreeTrunk || prevBlockId === IDS.WOOD || prevBlockId === IDS.JUNGLE_WOOD);

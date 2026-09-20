@@ -1443,6 +1443,15 @@ export function getMaxAnimals() {
     }
     try { if (typeof window !== 'undefined') window.setEngineNonCollidableTreeWood = setEngineNonCollidableTreeWood; } catch(e) {}
 
+    export function isLeafBlock(id) {
+        return id === IDS.LEAVES || id === IDS.PINE_LEAVES || id === IDS.JUNGLE_LEAVES;
+    }
+    export function isFoliageOrAir(id) {
+        return id === IDS.AIR || id === IDS.SHORT_GRASS || id === IDS.TALL_GRASS ||
+               id === IDS.FLOWER_RED || id === IDS.FLOWER_YELLOW || id === IDS.FERN ||
+               id === IDS.VINES || id === IDS.SNOW || isLeafBlock(id);
+    }
+
     export function isWoodPartOfTree(wx, wy) {
         if (!world || !world[wx]) return false;
         const b = world[wx][wy];
@@ -1490,49 +1499,46 @@ export function getMaxAnimals() {
         }
 
         // Ground connectivity check:
-        // Natural ground types: DIRT, GRASS, STONE, SAND, PODZOL, SNOW.
         const isNaturalGround = (blk) => (
             blk === IDS.DIRT || blk === IDS.GRASS || blk === IDS.STONE ||
             blk === IDS.SAND || blk === IDS.PODZOL || blk === IDS.SNOW
         );
 
-        let reachesGround = false;
-        const colsToCheck = [wx];
-        if (world[wx - 1]?.[wy] === IDS.WOOD || world[wx - 1]?.[wy] === IDS.JUNGLE_WOOD) colsToCheck.push(wx - 1);
-        if (world[wx + 1]?.[wy] === IDS.WOOD || world[wx + 1]?.[wy] === IDS.JUNGLE_WOOD) colsToCheck.push(wx + 1);
+        // Check if there are canopy leaves in the neighborhood (within 5 blocks horizontally, 18 vertically)
+        let hasCanopyLeaves = false;
+        for (let dx = -5; dx <= 5; dx++) {
+            for (let dy = -18; dy <= 4; dy++) {
+                const nx = wx + dx;
+                const ny = wy + dy;
+                if (nx >= 0 && nx < WORLD_WIDTH && ny >= 0 && ny < WORLD_HEIGHT) {
+                    const leaf = world[nx]?.[ny];
+                    if (leaf === IDS.LEAVES || leaf === IDS.JUNGLE_LEAVES) {
+                        hasCanopyLeaves = true;
+                        break;
+                    }
+                }
+            }
+            if (hasCanopyLeaves) break;
+        }
+        if (!hasCanopyLeaves) return false;
 
-        for (let c = 0; c < colsToCheck.length; c++) {
-            const cx = colsToCheck[c];
-            const startY = (cx === wx) ? wy + 1 : wy;
-            let colOk = true;
+        // Verify connection to a tree trunk column reaching natural ground within a 2-block radius
+        for (let cx = Math.max(0, wx - 2); cx <= Math.min(WORLD_WIDTH - 1, wx + 2); cx++) {
             let foundGround = false;
-            for (let cy = startY; cy < Math.min(WORLD_HEIGHT, wy + 26); cy++) {
+            let colContinuous = true;
+            for (let cy = Math.max(0, wy - 2); cy < Math.min(WORLD_HEIGHT, wy + 32); cy++) {
                 const cb = world[cx]?.[cy];
                 if (isNaturalGround(cb)) {
                     foundGround = true;
                     break;
                 }
-                if (cb !== IDS.WOOD && cb !== IDS.JUNGLE_WOOD) {
-                    colOk = false;
+                if (cb !== IDS.WOOD && cb !== IDS.JUNGLE_WOOD && cb !== IDS.VINES && cb !== IDS.AIR && cb !== IDS.LEAVES && cb !== IDS.JUNGLE_LEAVES) {
+                    colContinuous = false;
                     break;
                 }
             }
-            if (foundGround && colOk) {
-                reachesGround = true;
-                break;
-            }
-        }
-        if (!reachesGround) return false;
-
-        // Leaf canopy proximity check (leaves within 4 horizontal, 16 vertical blocks)
-        for (let dx = -4; dx <= 4; dx++) {
-            for (let dy = -16; dy <= 4; dy++) {
-                const nx = wx + dx;
-                const ny = wy + dy;
-                if (nx >= 0 && nx < WORLD_WIDTH && ny >= 0 && ny < WORLD_HEIGHT) {
-                    const leaf = world[nx]?.[ny];
-                    if (leaf === IDS.LEAVES || leaf === IDS.JUNGLE_LEAVES) return true;
-                }
+            if (foundGround && colContinuous) {
+                return true;
             }
         }
         return false;
@@ -4768,6 +4774,28 @@ export const SKIN_H = 32;
             this.isGrounded = false;
             this.handleCollisions(false);
 
+            // Downward slope assist for grounded walking on stairs
+            const activeWorldPhys = this.getActiveWorld();
+            if (this.isGrounded && Math.abs(this.vx) > 0.1 && this.vy === 0 && activeWorldPhys) {
+                const footGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+                const footGy = Math.floor((this.y + this.height + 4) / TILE_SIZE);
+                const bUnder = activeWorldPhys[footGx]?.[footGy];
+                const isUnderStairs = (bUnder === IDS.WOODEN_STAIRS || bUnder === IDS.WOODEN_STAIRS_LEFT || bUnder === IDS.WOODEN_STAIRS_RIGHT ||
+                                       bUnder === IDS.COBBLESTONE_STAIRS || bUnder === IDS.COBBLESTONE_STAIRS_LEFT || bUnder === IDS.COBBLESTONE_STAIRS_RIGHT);
+                if (isUnderStairs) {
+                    const isRight = (bUnder === IDS.WOODEN_STAIRS_RIGHT || bUnder === IDS.COBBLESTONE_STAIRS_RIGHT);
+                    const midX = this.x + this.width / 2;
+                    const bUnderMinX = footGx * TILE_SIZE;
+                    const bUnderMinY = footGy * TILE_SIZE;
+                    const onHigh = isRight ? (midX >= bUnderMinX + TILE_SIZE / 2) : (midX <= bUnderMinX + TILE_SIZE / 2);
+                    const targetFloor = onHigh ? bUnderMinY : (bUnderMinY + TILE_SIZE / 2);
+                    const dropDist = targetFloor - (this.y + this.height);
+                    if (dropDist > 0 && dropDist <= TILE_SIZE / 2 + 4) {
+                        this.y = targetFloor - this.height - 0.05;
+                    }
+                }
+            }
+
             if (!wasGrounded && this.isGrounded && prevVy > 0 && !(this instanceof Player) && !(this instanceof Chicken) && this.health !== undefined) {
                 const curGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
                 const curGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
@@ -4890,15 +4918,55 @@ export const SKIN_H = 32;
                                     if (this.vx > 0) this.x = (hitStep ? stepMinX : bMinX) - this.width - 0.1;
                                     else if (this.vx < 0) this.x = (hitStep ? stepMaxX : bMaxX) + 0.1;
                                     this.vx = 0;
+                                    // Smooth step-up assist when walking onto stairs
+                                    let targetSurface = null;
+                                    if (this.vx > 0) {
+                                        if (isStairRight) {
+                                            targetSurface = (curRight <= stepMinX + 4) ? slabMinY : bMinY;
+                                        } else {
+                                            if (curBottom <= bMinY + 4) targetSurface = bMinY;
+                                        }
+                                    } else if (this.vx < 0) {
+                                        if (isStairLeft) {
+                                            targetSurface = (curLeft >= stepMaxX - 4) ? slabMinY : bMinY;
+                                        } else {
+                                            if (curBottom <= bMinY + 4) targetSurface = bMinY;
+                                        }
+                                    }
+
+                                    let stepHeight = targetSurface !== null ? (curBottom - targetSurface) : 999;
+                                    let canStepUp = false;
+                                    if (stepHeight > 0 && stepHeight <= TILE_SIZE / 2 + 3) {
+                                        let testTop = targetSurface - this.height;
+                                        let hTileX = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+                                        let hTileY = Math.floor((testTop + 2) / TILE_SIZE);
+                                        if (!isSolidWorldBlock(hTileX, hTileY, activeWorld[hTileX]?.[hTileY])) {
+                                            canStepUp = true;
+                                        }
+                                    }
+
+                                    if (canStepUp) {
+                                        this.y = targetSurface - this.height - 0.05;
+                                        this.isGrounded = true;
+                                        this.vy = 0;
+                                    } else {
+                                        if (this.vx > 0) this.x = (hitStep ? stepMinX : bMinX) - this.width - 0.1;
+                                        else if (this.vx < 0) this.x = (hitStep ? stepMaxX : bMaxX) + 0.1;
+                                        this.vx = 0;
+                                    }
                                 } else {
-                                    if (this.vy > 0 || this.vy === 0) {
-                                        let floorY = (hitStep ? bMinY : slabMinY);
+                                    let entityMidX = this.x + this.width / 2;
+                                    let onHigh = isStairRight ? (entityMidX >= stepMinX) : (entityMidX <= stepMaxX);
+                                    let floorY = onHigh ? bMinY : slabMinY;
+
+                                    if (this.vy >= 0) {
                                         this.y = floorY - this.height - 0.05;
                                         this.isGrounded = true;
+                                        this.vy = 0;
                                     } else if (this.vy < 0) {
                                         this.y = bMaxY + 0.05;
+                                        this.vy = 0;
                                     }
-                                    this.vy = 0;
                                 }
                             }
                             continue;
@@ -10715,98 +10783,6 @@ export const SKIN_H = 32;
             }
         }
 
-        function buildJungleTree(tx, sy, treeType = 'giant') {
-            const setTrunk = (bx, by) => {
-                if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
-                if (isWater(bx, by) || getFluid(bx, by)) return;
-                world[bx][by] = IDS.JUNGLE_WOOD;
-                nonCollidableTreeWood.add(`${bx}_${by}`);
-            };
-            const setLeaf = (bx, by) => {
-                if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
-                if (isWater(bx, by) || getFluid(bx, by)) return;
-                if (world[bx][by] === IDS.AIR) world[bx][by] = IDS.JUNGLE_LEAVES;
-            };
-            const setVine = (bx, by) => {
-                if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
-                if (isWater(bx, by) || getFluid(bx, by)) return;
-                if (world[bx][by] === IDS.AIR) world[bx][by] = IDS.VINES;
-            };
-
-            if (treeType === 'jungle_bush') {
-                setTrunk(tx, sy - 1);
-                for (let lx = -1; lx <= 1; lx++) {
-                    for (let ly = -2; ly <= -1; ly++) {
-                        setLeaf(tx + lx, sy + ly);
-                    }
-                }
-                setLeaf(tx, sy - 3);
-                return;
-            }
-
-            // Giant Jungle Tree: 12 to 20 blocks high
-            const th = Math.floor(seededRandom() * 9) + 12;
-            const is2x2 = seededRandom() < 0.65;
-            const trunkWidth = is2x2 ? 2 : 1;
-
-            // Grow main trunk
-            for (let i = 1; i <= th; i++) {
-                for (let tw = 0; tw < trunkWidth; tw++) {
-                    setTrunk(tx + tw, sy - i);
-                }
-            }
-
-            // Spreading branch arms midway up
-            const branchY1 = sy - Math.floor(th * 0.55);
-            setTrunk(tx - 1, branchY1);
-            setLeaf(tx - 2, branchY1);
-            setLeaf(tx - 2, branchY1 - 1);
-            setLeaf(tx - 1, branchY1 - 1);
-
-            const branchY2 = sy - Math.floor(th * 0.75);
-            setTrunk(tx + trunkWidth, branchY2);
-            setLeaf(tx + trunkWidth + 1, branchY2);
-            setLeaf(tx + trunkWidth + 1, branchY2 - 1);
-            setLeaf(tx + trunkWidth, branchY2 - 1);
-
-            // Broad canopy at top (radius 4 to 6)
-            const top = sy - th;
-            const canopyRadius = is2x2 ? 5 : 4;
-            for (let ly = -4; ly <= 2; ly++) {
-                const layerY = top + ly;
-                const r = canopyRadius - Math.abs(ly + 1);
-                for (let lx = -r; lx <= r + (is2x2 ? 1 : 0); lx++) {
-                    if (Math.abs(lx) === r && Math.abs(ly + 1) >= 2 && seededRandom() < 0.4) continue;
-                    setLeaf(tx + lx, layerY);
-                }
-            }
-
-            // Hanging Vines on trunk sides and under canopy
-            for (let side of [-1, trunkWidth]) {
-                const vineX = tx + side;
-                const startVineY = top + 2;
-                const vineLen = Math.floor(seededRandom() * 6) + 3;
-                for (let v = 0; v < vineLen; v++) {
-                    const vy = startVineY + v;
-                    if (vy < sy - 1) {
-                        setVine(vineX, vy);
-                    }
-                }
-            }
-            // Hanging vines under outer canopy edges
-            for (let offset of [-canopyRadius + 1, canopyRadius + (is2x2 ? 0 : -1)]) {
-                const vineX = tx + offset;
-                const startVineY = top + 3;
-                const vineLen = Math.floor(seededRandom() * 5) + 2;
-                for (let v = 0; v < vineLen; v++) {
-                    const vy = startVineY + v;
-                    if (vy < sy - 1) {
-                        setVine(vineX, vy);
-                    }
-                }
-            }
-        }
-
         // 1. Surface Lakes in Plains & Valleys (Natural sealed concave basins with level waterlines)
         const fillPool = (centerX, width, depth) => {
             const halfW = Math.floor(width / 2);
@@ -11054,6 +11030,113 @@ export const SKIN_H = 32;
         if (fluidWakeQueue) fluidWakeQueue.clear();
     }
 
+    export function buildJungleTree(tx, sy, treeType = 'giant') {
+        const doSync = (typeof syncBlock === 'function') ? syncBlock : (typeof window !== 'undefined' && typeof window.syncBlock === 'function' ? window.syncBlock : null);
+        const setTrunk = (bx, by) => {
+            if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
+            if (typeof isWater === 'function' && isWater(bx, by)) return;
+            if (typeof getFluid === 'function' && getFluid(bx, by)) return;
+            world[bx][by] = IDS.JUNGLE_WOOD;
+            nonCollidableTreeWood.add(`${bx}_${by}`);
+            if (doSync) doSync(bx, by, IDS.JUNGLE_WOOD, { treeTrunk: true });
+        };
+        const setLeaf = (bx, by) => {
+            if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
+            if (typeof isWater === 'function' && isWater(bx, by)) return;
+            if (typeof getFluid === 'function' && getFluid(bx, by)) return;
+            const cur = world[bx][by];
+            if (cur === IDS.AIR || isFoliageOrAir(cur)) {
+                world[bx][by] = IDS.JUNGLE_LEAVES;
+                if (doSync) doSync(bx, by, IDS.JUNGLE_LEAVES);
+            }
+        };
+        const setVine = (bx, by) => {
+            if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return;
+            if (typeof isWater === 'function' && isWater(bx, by)) return;
+            if (typeof getFluid === 'function' && getFluid(bx, by)) return;
+            if (world[bx][by] === IDS.AIR) {
+                world[bx][by] = IDS.VINES;
+                if (doSync) doSync(bx, by, IDS.VINES);
+            }
+        };
+
+        const rnd = () => (typeof seededRandom === 'function' ? seededRandom() : Math.random());
+
+        if (treeType === 'jungle_bush') {
+            setTrunk(tx, sy - 1);
+            for (let lx = -1; lx <= 1; lx++) {
+                for (let ly = -2; ly <= -1; ly++) {
+                    setLeaf(tx + lx, sy + ly);
+                }
+            }
+            setLeaf(tx, sy - 3);
+            return;
+        }
+
+        // Giant Jungle Tree: 12 to 20 blocks high
+        const th = Math.floor(rnd() * 9) + 12;
+        const is2x2 = rnd() < 0.65;
+        const trunkWidth = is2x2 ? 2 : 1;
+
+        // Grow main trunk
+        for (let i = 1; i <= th; i++) {
+            for (let tw = 0; tw < trunkWidth; tw++) {
+                setTrunk(tx + tw, sy - i);
+            }
+        }
+
+        // Spreading branch arms midway up
+        const branchY1 = sy - Math.floor(th * 0.55);
+        setTrunk(tx - 1, branchY1);
+        setLeaf(tx - 2, branchY1);
+        setLeaf(tx - 2, branchY1 - 1);
+        setLeaf(tx - 1, branchY1 - 1);
+
+        const branchY2 = sy - Math.floor(th * 0.75);
+        setTrunk(tx + trunkWidth, branchY2);
+        setLeaf(tx + trunkWidth + 1, branchY2);
+        setLeaf(tx + trunkWidth + 1, branchY2 - 1);
+        setLeaf(tx + trunkWidth, branchY2 - 1);
+
+        // Broad canopy at top (radius 4 to 6)
+        const top = sy - th;
+        const canopyRadius = is2x2 ? 5 : 4;
+        for (let ly = -4; ly <= 2; ly++) {
+            const layerY = top + ly;
+            const r = canopyRadius - Math.abs(ly + 1);
+            for (let lx = -r; lx <= r + (is2x2 ? 1 : 0); lx++) {
+                if (Math.abs(lx) === r && Math.abs(ly + 1) >= 2 && rnd() < 0.4) continue;
+                setLeaf(tx + lx, layerY);
+            }
+        }
+
+        // Hanging Vines on trunk sides and under canopy
+        for (let side of [-1, trunkWidth]) {
+            const vineX = tx + side;
+            const startVineY = top + 2;
+            const vineLen = Math.floor(rnd() * 6) + 3;
+            for (let v = 0; v < vineLen; v++) {
+                const vy = startVineY + v;
+                if (vy < sy - 1) {
+                    setVine(vineX, vy);
+                }
+            }
+        }
+        // Hanging vines under outer canopy edges
+        for (let offset of [-canopyRadius + 1, canopyRadius + (is2x2 ? 0 : -1)]) {
+            const vineX = tx + offset;
+            const startVineY = top + 3;
+            const vineLen = Math.floor(rnd() * 5) + 2;
+            for (let v = 0; v < vineLen; v++) {
+                const vy = startVineY + v;
+                if (vy < sy - 1) {
+                    setVine(vineX, vy);
+                }
+            }
+        }
+        ensureTreeWoodNonCollidable();
+    }
+
     export function spawnAnimals(count = 1, nearPlayerBias = 0.35) {
         let maxAnimals = getMaxAnimals();
         let currentAnimals = entities.filter(e => e instanceof Animal).length;
@@ -11165,16 +11248,35 @@ export const SKIN_H = 32;
         return true;
     }
 
-    export function isNearTorch(gx, gy, radius = 5) {
-        let minX = Math.max(0, gx - radius);
-        let maxX = Math.min(WORLD_WIDTH - 1, gx + radius);
-        let minY = Math.max(0, gy - radius);
-        let maxY = Math.min(WORLD_HEIGHT - 1, gy + radius);
+    export function isNearTorch(gx, gy, radius = 7) {
+        let minX = Math.max(0, gx - Math.ceil(radius));
+        let maxX = Math.min(WORLD_WIDTH - 1, gx + Math.ceil(radius));
+        let minY = Math.max(0, gy - Math.ceil(radius));
+        let maxY = Math.min(WORLD_HEIGHT - 1, gy + Math.ceil(radius));
         for (let x = minX; x <= maxX; x++) {
             if (!world[x]) continue;
             for (let y = minY; y <= maxY; y++) {
-                // Torches and furnaces both emit enough light to prevent mob spawning
-                if (world[x][y] === IDS.TORCH || world[x][y] === IDS.FURNACE) return true;
+                // Torches and furnaces both emit enough light to prevent standard mob spawning
+                const b = world[x][y];
+                if (b === IDS.TORCH || b === IDS.FURNACE || b === IDS.GLOOM_LANTERN) {
+                    if (Math.hypot(gx - x, gy - y) <= radius) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    export function isNearGloomLantern(gx, gy, radius = 7) {
+        let minX = Math.max(0, gx - Math.ceil(radius));
+        let maxX = Math.min(WORLD_WIDTH - 1, gx + Math.ceil(radius));
+        let minY = Math.max(0, gy - Math.ceil(radius));
+        let maxY = Math.min(WORLD_HEIGHT - 1, gy + Math.ceil(radius));
+        for (let x = minX; x <= maxX; x++) {
+            if (!world[x]) continue;
+            for (let y = minY; y <= maxY; y++) {
+                if (world[x][y] === IDS.GLOOM_LANTERN) {
+                    if (Math.hypot(gx - x, gy - y) <= radius) return true;
+                }
             }
         }
         return false;
@@ -11374,17 +11476,20 @@ export const SKIN_H = 32;
                     if (isDay && hasDirectSkyAccess(candX, candY, true)) {
                         continue;
                     }
-                    if (!isNearTorch(candX, candY, 4) && !isNearKael(candX, candY, 14)) {
-                        foundX = candX;
-                        foundY = candY;
-                        let ceilBlock = world[candX]?.[candY - 2];
-                        if (ceilBlock !== undefined && ceilBlock !== IDS.AIR && ceilBlock !== IDS.WATER && ceilBlock !== IDS.LAVA) {
-                            if (Math.random() < 0.35) {
-                                spawnClinging = true;
-                            }
-                        }
-                        break;
+                    // Gloom Lantern and Kael ward all hostiles:
+                    if (isNearGloomLantern(candX, candY, 7) || isNearKael(candX, candY, 14)) {
+                        continue;
                     }
+
+                    foundX = candX;
+                    foundY = candY;
+                    let ceilBlock = world[candX]?.[candY - 2];
+                    if (ceilBlock !== undefined && ceilBlock !== IDS.AIR && ceilBlock !== IDS.WATER && ceilBlock !== IDS.LAVA) {
+                        if (Math.random() < 0.35) {
+                            spawnClinging = true;
+                        }
+                    }
+                    break;
                 }
             }
 
@@ -11393,7 +11498,19 @@ export const SKIN_H = 32;
                 for (let k = 0; k < packSize; k++) {
                     if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker).length >= maxHostiles) break;
                     let mobX = foundX * TILE_SIZE + (k * 16 * (Math.random() > 0.5 ? 1 : -1));
+                    let mobGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(mobX / TILE_SIZE)));
                     let mobY = (foundY - 1) * TILE_SIZE;
+
+                    // If near a normal torch, standard mobs cannot spawn, but Gloomstalker STILL SPAWNS!
+                    const mobNearTorch = isNearTorch(mobGx, foundY, 7);
+                    if (mobNearTorch) {
+                        // Normal torches do not ward the Gloomstalker!
+                        let gs = new Gloomstalker(mobX, spawnClinging ? (foundY - 2) * TILE_SIZE : mobY);
+                        if (spawnClinging) gs.isCeilingClinging = true;
+                        entities.push(gs);
+                        continue;
+                    }
+
                     let roll = Math.random();
                     if (isDesert) {
                         if (roll < 0.35) {
@@ -11435,12 +11552,23 @@ export const SKIN_H = 32;
                     let feetBlock = world[candX]?.[surfY - 1];
                     let headBlock = world[candX]?.[surfY - 2];
                     if (feetBlock === IDS.AIR && headBlock === IDS.AIR && floorBlock !== IDS.AIR && floorBlock !== IDS.WATER && floorBlock !== IDS.LAVA) {
-                        if (!isNearTorch(candX, surfY - 1, 4) && !isNearKael(candX, surfY - 1, 14)) {
+                        if (!isNearGloomLantern(candX, surfY - 1, 7) && !isNearKael(candX, surfY - 1, 14)) {
                             const isDesert = (typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(candX) === 'desert');
                             for (let k = 0; k < packSize; k++) {
                                 if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker).length >= maxHostiles) break;
                                 let mobX = candX * TILE_SIZE + (k * 16 * (Math.random() > 0.5 ? 1 : -1));
+                                let mobGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(mobX / TILE_SIZE)));
                                 let mobY = (surfY - 2) * TILE_SIZE;
+
+                                const mobNearTorch = isNearTorch(mobGx, surfY - 1, 7);
+                                if (mobNearTorch) {
+                                    // Gloomstalker ignores normal torches, but standard hostiles are blocked
+                                    if (Math.random() < 0.25) {
+                                        entities.push(new Gloomstalker(mobX, mobY));
+                                    }
+                                    continue;
+                                }
+
                                 let roll = Math.random();
                                 if (isDesert) {
                                     if (roll < 0.45) {
@@ -11822,7 +11950,10 @@ export const SKIN_H = 32;
         }
         const setTreeBlock = (blockX, blockY, blockId) => {
             if (blockX < 0 || blockX >= WORLD_WIDTH || blockY < 0 || blockY >= WORLD_HEIGHT) return;
-            if (world[blockX][blockY] !== IDS.AIR && !(blockX === x && blockY === y)) return;
+            const cur = world[blockX][blockY];
+            // Allow trunk or leaves to replace air, foliage, or connect with existing leaves
+            const canOverwrite = (cur === IDS.AIR || isFoliageOrAir(cur) || (blockX === x && blockY === y));
+            if (!canOverwrite && blockId !== IDS.WOOD) return;
             world[blockX][blockY] = blockId;
             if (blockId === IDS.WOOD) nonCollidableTreeWood.add(`${blockX}_${blockY}`);
             syncBlock(blockX, blockY, blockId, blockId === IDS.WOOD ? { treeTrunk: true } : {});
@@ -11860,53 +11991,57 @@ export const SKIN_H = 32;
     export function canSaplingGrowAt(x, y) {
         const sBlock = world[x]?.[y];
         if ((sBlock !== IDS.SAPLING && sBlock !== IDS.JUNGLE_SAPLING) || ![IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[x]?.[y + 1])) return false;
+        
+        // Tree leaves and foliage do NOT count as foreign objects!
+        const isPermittedOverhead = (blockId) => {
+            return isFoliageOrAir(blockId) || blockId === IDS.SAPLING || blockId === IDS.JUNGLE_SAPLING;
+        };
+
         if (sBlock === IDS.JUNGLE_SAPLING) {
-            for (let dy = 1; dy <= 6; dy++) {
-                if (y - dy < 0 || world[x][y - dy] !== IDS.AIR) return false;
+            // Jungle tree trunk column overhead check (leaves / foliage are allowed, foreign solid blocks block)
+            for (let dy = 1; dy <= 10; dy++) {
+                if (y - dy < 0) return false;
+                const b = world[x]?.[y - dy];
+                if (!isPermittedOverhead(b)) return false;
             }
             return true;
         }
+
         const height = getSaplingGrowthHeight(x, y);
         const trunkCells = new Set();
         for (let trunkOffset = 0; trunkOffset <= height; trunkOffset++) trunkCells.add(`${x}_${y - trunkOffset}`);
         const topY = y - height;
-        if (height >= 6) {
-            for (let leafX = -3; leafX <= 3; leafX++) {
-                for (let leafY = -2; leafY <= 2; leafY++) {
-                    if (Math.abs(leafX) + Math.abs(leafY) <= 4) {
-                        const blockX = x + leafX;
-                        const blockY = topY + leafY;
-                        if (blockX < 0 || blockX >= WORLD_WIDTH || blockY < 0 || blockY >= WORLD_HEIGHT) return false;
-                        const cellKey = `${blockX}_${blockY}`;
-                        if (world[blockX][blockY] !== IDS.AIR && !trunkCells.has(cellKey)) return false;
-                    }
-                }
-            }
-            if (topY - 3 < 0 || (world[x]?.[topY - 3] !== IDS.AIR && !trunkCells.has(`${x}_${topY - 3}`))) return false;
-        } else {
-            for (let leafX = -2; leafX <= 2; leafX++) {
-                for (let leafY = -2; leafY <= 1; leafY++) {
-                    if (Math.abs(leafX) + Math.abs(leafY) <= 3 || (leafY === -2 && Math.abs(leafX) <= 1)) {
-                        const blockX = x + leafX;
-                        const blockY = topY + leafY;
-                        if (blockX < 0 || blockX >= WORLD_WIDTH || blockY < 0 || blockY >= WORLD_HEIGHT) return false;
-                        const cellKey = `${blockX}_${blockY}`;
-                        if (world[blockX][blockY] !== IDS.AIR && !trunkCells.has(cellKey)) return false;
-                    }
-                }
-            }
-            if (topY - 2 < 0 || (world[x]?.[topY - 2] !== IDS.AIR && !trunkCells.has(`${x}_${topY - 2}`))) return false;
+
+        // Trunk column check: must be air or leaves/foliage
+        for (let trunkOffset = 1; trunkOffset <= height; trunkOffset++) {
+            const ty = y - trunkOffset;
+            if (ty < 0) return false;
+            const tb = world[x]?.[ty];
+            if (!isPermittedOverhead(tb)) return false;
         }
-        return [...trunkCells].every(cellKey => {
-            const [blockX, blockY] = cellKey.split('_').map(Number);
-            return blockX >= 0 && blockX < WORLD_WIDTH && blockY >= 0 && blockY < WORLD_HEIGHT && (world[blockX][blockY] === IDS.AIR || (blockX === x && blockY === y));
-        });
+
+        // Canopy check: leaves do not count as foreign objects and can connect!
+        const leafRadius = (height >= 6) ? 3 : 2;
+        const leafMinY = (height >= 6) ? -2 : -2;
+        const leafMaxY = (height >= 6) ? 2 : 1;
+        for (let leafX = -leafRadius; leafX <= leafRadius; leafX++) {
+            for (let leafY = leafMinY; leafY <= leafMaxY; leafY++) {
+                const bx = x + leafX;
+                const by = topY + leafY;
+                if (bx < 0 || bx >= WORLD_WIDTH || by < 0 || by >= WORLD_HEIGHT) return false;
+                const cellKey = `${bx}_${by}`;
+                if (trunkCells.has(cellKey)) continue;
+                const b = world[bx]?.[by];
+                if (!isPermittedOverhead(b)) return false;
+            }
+        }
+        return true;
     }
 
     export function notifyBlockedSaplings() {
         for (const key of saplingBlockedWarnings) {
             const [x, y] = key.split('_').map(Number);
-            if (world[x]?.[y] !== IDS.SAPLING) {
+            if (world[x]?.[y] !== IDS.SAPLING && world[x]?.[y] !== IDS.JUNGLE_SAPLING) {
                 saplingBlockedWarnings.delete(key);
             } else if (canSaplingGrowAt(x, y)) {
                 saplingBlockedWarnings.delete(key);
@@ -11917,7 +12052,7 @@ export const SKIN_H = 32;
     export function updateSaplingGrowth() {
         for (let [key, growthAt] of saplingGrowthQueue) {
             let [x, y] = key.split('_').map(Number);
-            if (world[x]?.[y] !== IDS.SAPLING) { saplingGrowthQueue.delete(key); continue; }
+            if (world[x]?.[y] !== IDS.SAPLING && world[x]?.[y] !== IDS.JUNGLE_SAPLING) { saplingGrowthQueue.delete(key); continue; }
             if (dayCount + timeOfDay < growthAt) continue;
             if (!isMultiplayer || isMultiplayerAuthority()) growSaplingAt(x, y);
         }
@@ -11984,17 +12119,24 @@ export const SKIN_H = 32;
             }
 
             if (currentBlock === IDS.MELON_STEM) {
-                if (dayCount + timeOfDay >= info.nextStageAt) {
+                // Check if a melon is already attached to this stem
+                const hasMelonAttached = (world[x - 1]?.[y] === IDS.MELON || world[x + 1]?.[y] === IDS.MELON);
+                if (!hasMelonAttached && dayCount + timeOfDay >= info.nextStageAt) {
                     const melonDirections = [-1, 1].sort(() => Math.random() - 0.5);
                     for (let dx of melonDirections) {
                         const mx = x + dx;
-                        if (mx >= 0 && mx < WORLD_WIDTH && world[mx]?.[y] === IDS.AIR && [IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[mx]?.[y + 1])) {
-                            world[mx][y] = IDS.MELON;
-                            syncBlock(mx, y, IDS.MELON);
-                            for (let p = 0; p < 4; p++) {
-                                particles.push(new Particle(mx * TILE_SIZE + Math.random() * TILE_SIZE, y * TILE_SIZE + Math.random() * TILE_SIZE, '#22c55e'));
+                        if (mx >= 0 && mx < WORLD_WIDTH) {
+                            const targetBlock = world[mx]?.[y];
+                            const isGroundValid = [IDS.DIRT, IDS.GRASS, IDS.PLOWED_DIRT].includes(world[mx]?.[y + 1]);
+                            const canReplace = (targetBlock === IDS.AIR || targetBlock === IDS.SHORT_GRASS || targetBlock === IDS.TALL_GRASS || targetBlock === IDS.FERN || targetBlock === IDS.FLOWER_RED || targetBlock === IDS.FLOWER_YELLOW || targetBlock === IDS.SNOW);
+                            if (isGroundValid && canReplace) {
+                                world[mx][y] = IDS.MELON;
+                                syncBlock(mx, y, IDS.MELON);
+                                for (let p = 0; p < 4; p++) {
+                                    particles.push(new Particle(mx * TILE_SIZE + Math.random() * TILE_SIZE, y * TILE_SIZE + Math.random() * TILE_SIZE, '#22c55e'));
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
                     const stageDuration = info.hasWater ? 1.5 : 2.5;
@@ -12547,62 +12689,80 @@ export const SKIN_H = 32;
     export let menuTime = 0.20 + Math.random() * 0.15;
     export let menuLastFrame = performance.now();
 
-    export let menuFireflies = Array.from({ length: 48 }, (_, i) => ({
-        x: Math.random() * 2000,
-        y: Math.random() * 800,
-        type: i < 16 ? 'firefly' : (i < 34 ? 'spore' : 'leaf'),
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.25,
-        phase: Math.random() * Math.PI * 2,
-        size: 2 + Math.random() * 2,
-        color: ['#bbf7d0', '#86efac', '#fef08a', '#4ade80'][Math.floor(Math.random() * 4)],
-        leafColor: ['#15803d', '#22c55e', '#4ade80'][Math.floor(Math.random() * 3)]
-    }));
+    export let menuFireflies = Array.from({ length: 64 }, (_, i) => {
+        const typeRoll = i % 4;
+        const type = typeRoll === 0 ? 'water_drop' : (typeRoll === 1 ? 'magma_ember' : (typeRoll === 2 ? 'gloom_wisp' : 'cave_dust'));
+        return {
+            x: Math.random() * 3200,
+            y: Math.random() * 1400,
+            type,
+            vx: type === 'magma_ember' ? (Math.random() - 0.5) * 0.8 : (type === 'gloom_wisp' ? (Math.random() - 0.5) * 0.35 : (Math.random() - 0.5) * 0.2),
+            vy: type === 'water_drop' ? (2.2 + Math.random() * 2.4) : (type === 'magma_ember' ? (-0.7 - Math.random() * 0.9) : (type === 'gloom_wisp' ? (-0.2 - Math.random() * 0.35) : (Math.random() - 0.5) * 0.15)),
+            phase: Math.random() * Math.PI * 2,
+            size: type === 'magma_ember' ? (1.5 + Math.random() * 2) : (type === 'water_drop' ? (2 + Math.random() * 1.5) : (type === 'gloom_wisp' ? (2.5 + Math.random() * 2) : 1)),
+            color: type === 'water_drop' ? ['#38bdf8', '#67e8f9', '#7dd3fc', '#0284c7'][Math.floor(Math.random() * 4)]
+                 : type === 'magma_ember' ? ['#f97316', '#ef4444', '#fb923c', '#facc15'][Math.floor(Math.random() * 4)]
+                 : type === 'gloom_wisp' ? ['#c084fc', '#a855f7', '#7c3aed', '#e879f9'][Math.floor(Math.random() * 4)]
+                 : '#94a3b8'
+        };
+    });
 
     export function drawMenuFireflies(targetCtx, w, h, camX, camY) {
         targetCtx.save();
         for (let i = 0; i < menuFireflies.length; i++) {
             const f = menuFireflies[i];
-            f.phase += 0.035;
+            f.phase += 0.04;
 
-            if (f.type === 'leaf') {
-                f.x += 0.35 + Math.sin(f.phase) * 0.6;
-                f.y += 0.55;
-            } else if (f.type === 'spore') {
-                f.x += 0.2 + Math.sin(f.phase) * 0.3;
-                f.y -= 0.15 + Math.cos(f.phase * 0.8) * 0.2;
+            if (f.type === 'water_drop') {
+                f.y += f.vy;
+                f.vy = Math.min(6.5, f.vy + 0.05); // Gravity acceleration for droplets
+                f.x += Math.sin(f.phase) * 0.2;
+            } else if (f.type === 'magma_ember') {
+                f.y += f.vy;
+                f.x += f.vx + Math.sin(f.phase * 1.5) * 0.4;
+            } else if (f.type === 'gloom_wisp') {
+                f.y += f.vy + Math.sin(f.phase * 0.8) * 0.25;
+                f.x += f.vx + Math.cos(f.phase * 0.6) * 0.35;
             } else {
                 f.x += f.vx;
                 f.y += f.vy;
             }
 
-            if (f.x < camX - 100) f.x = camX + w + 50;
-            if (f.x > camX + w + 100) f.x = camX - 50;
-            if (f.y < camY - 50) f.y = camY + h;
-            if (f.y > camY + h + 50) f.y = camY;
+            if (f.x < camX - 100) f.x = camX + w + 80;
+            if (f.x > camX + w + 100) f.x = camX - 80;
+            if (f.y < camY - 80) {
+                f.y = camY + h + 40;
+                if (f.type === 'water_drop') f.vy = 2.2 + Math.random() * 1.5;
+            }
+            if (f.y > camY + h + 80) {
+                f.y = camY - 40;
+                if (f.type === 'water_drop') f.vy = 2.2 + Math.random() * 1.5;
+            }
 
             const screenX = f.x - camX;
             const screenY = f.y - camY;
             if (screenX >= -10 && screenX <= w + 10 && screenY >= -10 && screenY <= h + 10) {
-                if (f.type === 'leaf') {
-                    targetCtx.fillStyle = f.leafColor;
-                    targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), 3, 2);
-                    targetCtx.fillStyle = '#166534';
-                    targetCtx.fillRect(Math.floor(screenX + 1), Math.floor(screenY + 1), 2, 2);
-                } else if (f.type === 'spore') {
-                    const pulse = (Math.sin(f.phase) + 1) * 0.5;
-                    targetCtx.fillStyle = 'rgba(254, 240, 138, 0.35)';
-                    targetCtx.fillRect(Math.floor(screenX - 1), Math.floor(screenY - 1), f.size + 2, f.size + 2);
+                const pulse = (Math.sin(f.phase) + 1) * 0.5;
+                if (f.type === 'water_drop') {
+                    targetCtx.fillStyle = f.color;
+                    targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), 1.5, Math.min(5, f.vy * 1.1));
+                    targetCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                    targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), 1, 1);
+                } else if (f.type === 'magma_ember') {
+                    const glowAlpha = Math.max(0.15, pulse * 0.85);
+                    targetCtx.fillStyle = `rgba(249, 115, 22, ${glowAlpha * 0.35})`;
+                    targetCtx.fillRect(Math.floor(screenX - 2), Math.floor(screenY - 2), f.size + 4, f.size + 4);
+                    targetCtx.fillStyle = f.color;
+                    targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), f.size, f.size);
+                } else if (f.type === 'gloom_wisp') {
+                    const glowAlpha = Math.max(0.12, pulse * 0.75);
+                    targetCtx.fillStyle = `rgba(168, 85, 247, ${glowAlpha * 0.4})`;
+                    targetCtx.fillRect(Math.floor(screenX - 3), Math.floor(screenY - 3), f.size + 6, f.size + 6);
                     targetCtx.fillStyle = f.color;
                     targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), f.size, f.size);
                 } else {
-                    const pulse = (Math.sin(f.phase) + 1) * 0.5;
-                    if (pulse > 0.08) {
-                        targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.85})`;
-                        targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), f.size, f.size);
-                        targetCtx.fillStyle = `rgba(180, 255, 90, ${pulse * 0.25})`;
-                        targetCtx.fillRect(Math.floor(screenX - 2), Math.floor(screenY - 2), f.size + 4, f.size + 4);
-                    }
+                    targetCtx.fillStyle = 'rgba(203, 213, 225, 0.35)';
+                    targetCtx.fillRect(Math.floor(screenX), Math.floor(screenY), 1.5, 1.5);
                 }
             }
         }
@@ -12620,254 +12780,293 @@ export const SKIN_H = 32;
         }
 
         menuWorldSeed = (Math.random() * 0xffffffff) >>> 0;
-        menuTime = 0.22;
-        const baseH = MENU_SURFACE_Y;
+        menuTime = 0.85; // Deep subterranean cavern night ambiance
         const terrain = new Array(MENU_WORLD_WIDTH);
         const blocks = new Array(MENU_WORLD_WIDTH);
 
-        // 1. Generate full terrain column for all columns (Surface down to MENU_WORLD_HEIGHT)
+        // 1. Generate Cavern Ceiling, Void & Rocky Floor
         for (let x = 0; x < MENU_WORLD_WIDTH; x++) {
-            const h = baseH + Math.round(Math.sin(x * 0.04) * 4 + Math.cos(x * 0.08) * 2);
-            terrain[x] = h;
             const col = new Array(MENU_WORLD_HEIGHT).fill(IDS.AIR);
 
-            // Grass surface
-            col[h] = IDS.GRASS;
-
-            // Dirt (3-4 layers below grass)
-            for (let y = h + 1; y < Math.min(MENU_WORLD_HEIGHT, h + 4); y++) {
-                col[y] = IDS.DIRT;
+            // Ceiling Profile
+            const ceilY = Math.round(22 + Math.sin(x * 0.08) * 3 + Math.cos(x * 0.14) * 2);
+            for (let y = 0; y <= ceilY; y++) {
+                const r = menuRandom();
+                if (r < 0.06) col[y] = IDS.COAL_ORE;
+                else if (r < 0.10) col[y] = IDS.IRON_ORE;
+                else if (r < 0.22) col[y] = IDS.COBBLESTONE;
+                else col[y] = IDS.STONE;
             }
 
-            // Stone & Ores (filling all the way down through the bottom of the world)
-            for (let y = h + 4; y < MENU_WORLD_HEIGHT; y++) {
-                // Natural organic cave pockets
-                const caveNoise = Math.sin(x * 0.14 + y * 0.2) + Math.cos(x * 0.18 - y * 0.14);
-                if (y > h + 7 && caveNoise > 1.35) {
-                    col[y] = IDS.AIR;
-                    continue;
+            // Stalactites (Tapered spikes hanging down from ceiling)
+            if (x % 3 === 0 || x % 7 === 0 || x % 11 === 0) {
+                const stLen = Math.floor(menuRandom() * 5) + 2;
+                for (let s = 1; s <= stLen; s++) {
+                    const sy = ceilY + s;
+                    if (sy < 44) {
+                        col[sy] = (s === stLen && menuRandom() < 0.5) ? IDS.COBBLESTONE : IDS.STONE;
+                    }
                 }
+                // Hanging Roots / Moss Vines
+                if (menuRandom() < 0.6) {
+                    const vineLen = Math.floor(menuRandom() * 3) + 1;
+                    for (let v = 1; v <= vineLen; v++) {
+                        const vy = ceilY + stLen + v;
+                        if (vy < 46) col[vy] = IDS.VINES;
+                    }
+                }
+            }
 
+            // Floor Profile
+            let floorY = Math.round(53 + Math.sin(x * 0.07) * 2.2 + Math.cos(x * 0.13) * 1.5);
+
+            // Chasm Abyss under Trestle Bridge (x = 48 to 66)
+            const inChasm = (x >= 48 && x <= 66);
+            if (inChasm) {
+                floorY = 68 + Math.round(Math.sin((x - 48) * 0.2) * 3);
+            }
+
+            // Magma / Lava Basin (x = 76 to 90)
+            const inLavaBasin = (x >= 76 && x <= 90);
+            if (inLavaBasin) {
+                floorY = 56;
+            }
+
+            terrain[x] = inChasm ? 50 : floorY; // Surface anchor for entities
+
+            // Fill rocky floor down to world bottom
+            for (let y = floorY; y < MENU_WORLD_HEIGHT; y++) {
                 const r = menuRandom();
-                if (r < 0.055) col[y] = IDS.COAL_ORE;
-                else if (r < 0.09) col[y] = IDS.IRON_ORE;
-                else if (y > h + 10 && r < 0.115) col[y] = IDS.GOLD_ORE;
-                else if (y > h + 14 && r < 0.13) col[y] = IDS.DIAMOND_ORE;
-                else if (y > h + 12 && r < 0.14) col[y] = IDS.EMERALD_ORE;
-                else col[y] = IDS.STONE;
+                if (y === floorY && !inChasm && !inLavaBasin) {
+                    col[y] = (r < 0.45) ? IDS.COBBLESTONE : ((r < 0.7) ? IDS.STONE : IDS.DIRT);
+                } else {
+                    if (r < 0.05) col[y] = IDS.COAL_ORE;
+                    else if (r < 0.09) col[y] = IDS.IRON_ORE;
+                    else if (y > floorY + 4 && r < 0.12) col[y] = IDS.GOLD_ORE;
+                    else if (y > floorY + 8 && r < 0.14) col[y] = IDS.DIAMOND_ORE;
+                    else if (y > floorY + 6 && r < 0.155) col[y] = IDS.EMERALD_ORE;
+                    else if (r < 0.28) col[y] = IDS.COBBLESTONE;
+                    else col[y] = IDS.STONE;
+                }
+            }
+
+            // Molten Lava in Magma Basin
+            if (inLavaBasin) {
+                col[54] = IDS.LAVA;
+                col[55] = IDS.LAVA;
+                col[56] = IDS.COBBLESTONE;
+            }
+
+            // Stalagmites (Pointed spikes rising from floor)
+            if (!inChasm && !inLavaBasin && (x % 4 === 0 || x % 9 === 0)) {
+                const smLen = Math.floor(menuRandom() * 4) + 2;
+                for (let s = 1; s <= smLen; s++) {
+                    const smy = floorY - s;
+                    if (smy > ceilY + 4) {
+                        col[smy] = (s === smLen) ? IDS.COBBLESTONE : IDS.STONE;
+                    }
+                }
             }
 
             blocks[x] = col;
         }
 
-        // 2. Exact in-game Jungle Trees matching buildJungleTree
-        const setTrunk = (bx, by) => {
-            if (bx < 0 || bx >= MENU_WORLD_WIDTH || by < 0 || by >= MENU_WORLD_HEIGHT) return;
-            blocks[bx][by] = IDS.JUNGLE_WOOD;
-            nonCollidableTreeWood.add(`${bx}_${by}`);
-        };
-        const setLeaf = (bx, by) => {
-            if (bx < 0 || bx >= MENU_WORLD_WIDTH || by < 0 || by >= MENU_WORLD_HEIGHT) return;
-            if (blocks[bx][by] === IDS.AIR || blocks[bx][by] === undefined) blocks[bx][by] = IDS.JUNGLE_LEAVES;
-        };
-        const setVine = (bx, by) => {
-            if (bx < 0 || bx >= MENU_WORLD_WIDTH || by < 0 || by >= MENU_WORLD_HEIGHT) return;
-            if (blocks[bx][by] === IDS.AIR || blocks[bx][by] === undefined) blocks[bx][by] = IDS.VINES;
-        };
-
-        function buildMenuJungleTree(tx, sy, treeType = 'giant') {
-            if (treeType === 'jungle_bush') {
-                setTrunk(tx, sy - 1);
-                for (let lx = -1; lx <= 1; lx++) {
-                    for (let ly = -2; ly <= -1; ly++) {
-                        setLeaf(tx + lx, sy + ly);
-                    }
-                }
-                setLeaf(tx, sy - 3);
-                return;
-            }
-
-            // Giant Jungle Tree: 12 to 20 blocks high (exact match to buildJungleTree)
-            const th = Math.floor(menuRandom() * 9) + 12;
-            const is2x2 = menuRandom() < 0.65;
-            const trunkWidth = is2x2 ? 2 : 1;
-
-            // Grow main trunk
-            for (let i = 1; i <= th; i++) {
-                for (let tw = 0; tw < trunkWidth; tw++) {
-                    setTrunk(tx + tw, sy - i);
-                }
-            }
-
-            // Spreading branch arms midway up (exact match)
-            const branchY1 = sy - Math.floor(th * 0.55);
-            setTrunk(tx - 1, branchY1);
-            setLeaf(tx - 2, branchY1);
-            setLeaf(tx - 2, branchY1 - 1);
-            setLeaf(tx - 1, branchY1 - 1);
-
-            const branchY2 = sy - Math.floor(th * 0.75);
-            setTrunk(tx + trunkWidth, branchY2);
-            setLeaf(tx + trunkWidth + 1, branchY2);
-            setLeaf(tx + trunkWidth + 1, branchY2 - 1);
-            setLeaf(tx + trunkWidth, branchY2 - 1);
-
-            // Broad canopy at top (radius 4 to 6)
-            const top = sy - th;
-            const canopyRadius = is2x2 ? 5 : 4;
-            for (let ly = -4; ly <= 2; ly++) {
-                const layerY = top + ly;
-                const r = canopyRadius - Math.abs(ly + 1);
-                for (let lx = -r; lx <= r + (is2x2 ? 1 : 0); lx++) {
-                    if (Math.abs(lx) === r && Math.abs(ly + 1) >= 2 && menuRandom() < 0.4) continue;
-                    setLeaf(tx + lx, layerY);
-                }
-            }
-
-            // Hanging Vines on trunk sides and under canopy
-            for (let side of [-1, trunkWidth]) {
-                const vineX = tx + side;
-                const startVineY = top + 2;
-                const vineLen = Math.floor(menuRandom() * 6) + 3;
-                for (let v = 0; v < vineLen; v++) {
-                    const vy = startVineY + v;
-                    if (vy < sy - 1) {
-                        setVine(vineX, vy);
-                    }
-                }
-            }
-            // Hanging vines under outer canopy edges
-            for (let offset of [-canopyRadius + 1, canopyRadius + (is2x2 ? 0 : -1)]) {
-                const vineX = tx + offset;
-                const startVineY = top + 3;
-                const vineLen = Math.floor(menuRandom() * 5) + 2;
-                for (let v = 0; v < vineLen; v++) {
-                    const vy = startVineY + v;
-                    if (vy < sy - 1) {
-                        setVine(vineX, vy);
-                    }
-                }
+        // 2. Custom Cave Build #1: Ancient Gloom Crypt / Ritual Altar (x = 16 to 34)
+        for (let x = 16; x <= 34; x++) {
+            for (let y = 53; y < MENU_WORLD_HEIGHT; y++) {
+                blocks[x][y] = IDS.COBBLESTONE;
             }
         }
-
-        let lastTreeX = -999;
-        for (let x = 3; x < MENU_WORLD_WIDTH - 4; x++) {
-            const surfaceY = terrain[x];
-            if (x - lastTreeX >= 3 && menuRandom() < 0.65) {
-                const roll = menuRandom();
-                const treeType = roll < 0.80 ? 'giant' : 'jungle_bush';
-                buildMenuJungleTree(x, surfaceY, treeType);
-                lastTreeX = x + (treeType === 'giant' ? 3 : 1);
-            }
+        // Cobblestone Access Steps
+        blocks[17][53] = IDS.COBBLESTONE_STAIRS_RIGHT;
+        blocks[18][52] = IDS.COBBLESTONE_STAIRS_RIGHT;
+        blocks[19][51] = IDS.COBBLESTONE_STAIRS_RIGHT;
+        // Void Stone Brick Altar Dais (Tier 1)
+        for (let x = 20; x <= 30; x++) {
+            blocks[x][51] = IDS.VOID_STONE_BRICK;
+            blocks[x][52] = IDS.VOID_STONE_BRICK;
         }
-
-        // 3. Ground Cover & Understory: Bamboo clumps (2-5 blocks tall), Ferns, Tall & Short Grass
-        for (let x = 0; x < MENU_WORLD_WIDTH; x++) {
-            const h = terrain[x];
-            if (blocks[x][h] === IDS.GRASS && blocks[x][h - 1] === IDS.AIR) {
-                const vegRoll = menuRandom();
-                if (vegRoll < 0.25) {
-                    blocks[x][h - 1] = IDS.FERN;
-                } else if (vegRoll < 0.45) {
-                    blocks[x][h - 1] = IDS.TALL_GRASS;
-                } else if (vegRoll < 0.60) {
-                    blocks[x][h - 1] = IDS.SHORT_GRASS;
-                } else if (vegRoll < 0.75) {
-                    // Bamboo shoot/stalk (2-5 blocks tall)
-                    const bambooHeight = Math.floor(menuRandom() * 4) + 2;
-                    for (let b = 1; b <= bambooHeight; b++) {
-                        if (h - b >= 0 && blocks[x][h - b] === IDS.AIR) {
-                            blocks[x][h - b] = IDS.BAMBOO;
-                        }
-                    }
-                }
-            }
+        // Void Stone Brick Altar Dais (Tier 2)
+        for (let x = 22; x <= 28; x++) {
+            blocks[x][49] = IDS.VOID_STONE_BRICK;
+            blocks[x][50] = IDS.VOID_STONE_BRICK;
         }
+        // Right Access Steps
+        blocks[31][51] = IDS.COBBLESTONE_STAIRS;
+        blocks[32][52] = IDS.COBBLESTONE_STAIRS;
+        blocks[33][53] = IDS.COBBLESTONE_STAIRS;
 
-        // 4. Wild Melon Patches (exact match to generateWorld)
-        for (let x = 5; x < MENU_WORLD_WIDTH - 5; x++) {
-            if (menuRandom() < 0.48) {
-                const sy = terrain[x];
-                if (sy && blocks[x][sy] === IDS.GRASS && blocks[x][sy - 1] === IDS.AIR) {
-                    const patchSize = Math.floor(menuRandom() * 4) + 2;
-                    for (let p = 0; p < patchSize; p++) {
-                        const mx = x + (p % 3) - 1;
-                        if (mx >= 2 && mx < MENU_WORLD_WIDTH - 2) {
-                            const my = terrain[mx];
-                            if (my && blocks[mx][my] === IDS.GRASS && blocks[mx][my - 1] === IDS.AIR) {
-                                blocks[mx][my - 1] = IDS.MELON;
-                            }
-                        }
-                    }
-                }
-            }
+        // Central Altar: Astral Infuser, Void Berries, Ancient Crypt Chest
+        blocks[25][48] = IDS.ASTRAL_INFUSER;
+        blocks[23][48] = IDS.VOID_BERRY_BUSH;
+        blocks[27][48] = IDS.CHEST;
+
+        // Gloom Lantern Pedestals
+        blocks[21][50] = IDS.VOID_STONE_BRICK;
+        blocks[21][49] = IDS.GLOOM_LANTERN;
+        blocks[29][50] = IDS.VOID_STONE_BRICK;
+        blocks[29][49] = IDS.GLOOM_LANTERN;
+
+        // Hanging Gloom Lantern from Stalactite above Altar
+        for (let y = 24; y <= 35; y++) {
+            blocks[25][y] = (y <= 33) ? IDS.STONE : IDS.VINES;
         }
+        blocks[25][36] = IDS.GLOOM_LANTERN;
 
-        // 5. Animals & Birds: Colorful Parrots, Pigeons, Sheep, Pigs, Cows, Chickens
-        const animals = [];
-        const animalRoster = [
-            { type: 'parrot', variant: 0 },
-            { type: 'parrot', variant: 1 },
-            { type: 'pigeon', variant: null },
-            { type: 'parrot', variant: 2 },
-            { type: 'parrot', variant: 3 },
-            { type: 'pigeon', variant: null },
-            { type: 'sheep', variant: null },
-            { type: 'pig', variant: null },
-            { type: 'cow', variant: null },
-            { type: 'chicken', variant: null },
-            { type: 'parrot', variant: 0 },
-            { type: 'parrot', variant: 2 },
-            { type: 'pigeon', variant: null },
-            { type: 'sheep', variant: null },
-            { type: 'pig', variant: null },
-            { type: 'chicken', variant: null },
-            { type: 'cow', variant: null },
-            { type: 'pigeon', variant: null }
-        ];
+        // 3. Custom Cave Build #2: Abandoned Mine Trestle Bridge & Scaffolding (x = 42 to 72)
+        // Horizontal Bridge Walkway Deck
+        for (let x = 42; x <= 72; x++) {
+            blocks[x][50] = IDS.PLANKS;
+        }
+        blocks[42][49] = IDS.WOODEN_STAIRS_RIGHT;
+        blocks[72][49] = IDS.WOODEN_STAIRS;
 
-        animalRoster.forEach((spec, index) => {
-            let x;
-            if (index < 6) {
-                x = 10 + (index * 4) + menuRandom() * 3;
-            } else {
-                x = 8 + menuRandom() * (MENU_WORLD_WIDTH - 16);
+        // Heavy Timber Structural Support Pillars down into the abyss
+        const timberPillars = [45, 52, 59, 66];
+        timberPillars.forEach(px => {
+            for (let y = 51; y <= 68; y++) {
+                blocks[px][y] = IDS.WOOD;
             }
-
-            let entity;
-            if (spec.type === 'parrot') {
-                entity = new Parrot(x * TILE_SIZE, 0, spec.variant);
-            } else if (spec.type === 'pigeon') {
-                entity = new Pigeon(x * TILE_SIZE, 0);
-            } else if (spec.type === 'sheep') {
-                entity = new Sheep(x * TILE_SIZE, 0);
-            } else if (spec.type === 'pig') {
-                entity = new Pig(x * TILE_SIZE, 0);
-            } else if (spec.type === 'cow') {
-                entity = new Cow(x * TILE_SIZE, 0);
-            } else {
-                entity = new Chicken(x * TILE_SIZE, 0);
+            // Horizontal cross bracing
+            for (let bx = px - 2; bx <= px + 2; bx++) {
+                if (bx >= 44 && bx <= 67 && blocks[bx][56] === IDS.AIR) blocks[bx][56] = IDS.PLANKS;
+                if (bx >= 44 && bx <= 67 && blocks[bx][62] === IDS.AIR) blocks[bx][62] = IDS.PLANKS;
             }
-
-            entity.dir = menuRandom() > 0.5 ? 1 : -1;
-            entity.y = (terrain[Math.floor(x)] || baseH) * TILE_SIZE - entity.height;
-            entity.isGrounded = true;
-            entity.isMenuEntity = true;
-            animals.push({ type: spec.type, entity });
         });
-        menuEntities = animals;
+
+        // Lower Catwalk & Maintenance Access Ladders
+        for (let x = 52; x <= 59; x++) {
+            blocks[x][57] = IDS.PLANKS;
+        }
+        for (let y = 51; y <= 56; y++) {
+            blocks[53][y] = IDS.LADDER;
+        }
+
+        // Bridge Lanterns, Torches & Supply Chests
+        blocks[46][49] = IDS.WOOD;
+        blocks[46][48] = IDS.TORCH;
+        blocks[55][49] = IDS.CHEST;
+        blocks[60][49] = IDS.WOOD;
+        blocks[60][48] = IDS.GLOOM_LANTERN;
+        blocks[68][49] = IDS.WOOD;
+        blocks[68][48] = IDS.TORCH;
+
+        // Suspended Gloom Lantern hanging from upper bridge crossbeam
+        blocks[56][58] = IDS.GLOOM_LANTERN;
+
+        // 4. Custom Cave Build #3: Magma Basin Stepping Stones & Torch Outpost (x = 76 to 90)
+        blocks[78][53] = IDS.COBBLESTONE;
+        blocks[78][52] = IDS.TORCH;
+        blocks[82][53] = IDS.COBBLESTONE;
+        blocks[85][53] = IDS.COBBLESTONE;
+        blocks[89][53] = IDS.COBBLESTONE;
+        blocks[89][52] = IDS.GLOOM_LANTERN;
+
+        // 5. Custom Cave Build #4: Deep Spider Crevice & Cobweb Hollow (x = 96 to 118)
+        // Jagged overhead arch
+        for (let x = 98; x <= 114; x++) {
+            const archY = Math.round(34 + Math.sin((x - 98) * 0.2) * 4);
+            blocks[x][archY] = IDS.STONE;
+            blocks[x][archY + 1] = IDS.COBBLESTONE;
+            // Hanging web/vines
+            if (menuRandom() < 0.7) {
+                const webLen = Math.floor(menuRandom() * 4) + 2;
+                for (let w = 1; w <= webLen; w++) {
+                    if (archY + 1 + w < 48) blocks[x][archY + 1 + w] = IDS.VINES;
+                }
+            }
+        }
+        // Terrace platform & hidden chest
+        for (let x = 104; x <= 112; x++) {
+            blocks[x][49] = IDS.VOID_STONE_BRICK;
+        }
+        blocks[108][48] = IDS.CHEST;
+        blocks[105][48] = IDS.GLOOM_LANTERN;
+        blocks[111][48] = IDS.TORCH;
+
+        // Additional Hanging Lanterns throughout Cavern
+        blocks[10][32] = IDS.TORCH;
+        blocks[38][36] = IDS.GLOOM_LANTERN;
+        blocks[75][34] = IDS.GLOOM_LANTERN;
+        blocks[93][35] = IDS.TORCH;
+        blocks[122][35] = IDS.GLOOM_LANTERN;
+
+        // 6. Living Animated Cave Monsters (Authentic Webcraft Creatures)
+        const caveMobs = [];
+
+        // Gloomstalker #1: Upside-down Ceiling Clinger stalking on cavern roof stalactites
+        const gsCeiling = new Gloomstalker(58 * TILE_SIZE, 26 * TILE_SIZE);
+        gsCeiling.isCeilingClinging = true;
+        gsCeiling.facingRight = true;
+        gsCeiling.isMenuEntity = true;
+        caveMobs.push({ type: 'gloomstalker_ceiling', entity: gsCeiling });
+
+        // Gloomstalker #2: Altar Prowler stalking on the Void Stone Altar dais
+        const gsAltar = new Gloomstalker(24 * TILE_SIZE, 46 * TILE_SIZE);
+        gsAltar.isGrounded = true;
+        gsAltar.facingRight = false;
+        gsAltar.isMenuEntity = true;
+        caveMobs.push({ type: 'gloomstalker', entity: gsAltar });
+
+        // Zombie #1: Stone Floor Roamer near Altar
+        const z1 = new Zombie(35 * TILE_SIZE, 50 * TILE_SIZE);
+        z1.isGrounded = true;
+        z1.isMenuEntity = true;
+        caveMobs.push({ type: 'zombie', entity: z1 });
+
+        // Zombie #2: Mine Trestle Bridge Patroller
+        const z2 = new Zombie(51 * TILE_SIZE, 48 * TILE_SIZE);
+        z2.isGrounded = true;
+        z2.isMenuEntity = true;
+        caveMobs.push({ type: 'zombie', entity: z2 });
+
+        // Zombie #3: Distant Shadow Crevice Walker
+        const z3 = new Zombie(112 * TILE_SIZE, 51 * TILE_SIZE);
+        z3.isGrounded = true;
+        z3.isMenuEntity = true;
+        caveMobs.push({ type: 'zombie', entity: z3 });
+
+        // Creeper #1: Chasm Abutment Watcher overlooking lava pool
+        const c1 = new Creeper(73 * TILE_SIZE, 48 * TILE_SIZE);
+        c1.isGrounded = true;
+        c1.facingRight = true;
+        c1.isMenuEntity = true;
+        caveMobs.push({ type: 'creeper', entity: c1 });
+
+        // Creeper #2: Spider Hollow Alcove Lurker
+        const c2 = new Creeper(103 * TILE_SIZE, 47 * TILE_SIZE);
+        c2.isGrounded = true;
+        c2.facingRight = false;
+        c2.isMenuEntity = true;
+        caveMobs.push({ type: 'creeper', entity: c2 });
+
+        // Scorpion #1: Altar Steps Guardian
+        const s1 = new Scorpion(19 * TILE_SIZE, 50 * TILE_SIZE);
+        s1.isGrounded = true;
+        s1.facingRight = true;
+        s1.isMenuEntity = true;
+        caveMobs.push({ type: 'scorpion', entity: s1 });
+
+        // Scorpion #2: Magma Basin Shore Stalker
+        const s2 = new Scorpion(88 * TILE_SIZE, 52 * TILE_SIZE);
+        s2.isGrounded = true;
+        s2.facingRight = false;
+        s2.isMenuEntity = true;
+        caveMobs.push({ type: 'scorpion', entity: s2 });
+
+        menuEntities = caveMobs;
 
         menuWorld = {
             terrain,
             surfaceHeights: terrain,
             blocks,
-            animals,
+            animals: caveMobs,
             width: MENU_WORLD_WIDTH
         };
         menuWorldInitialized = true;
         if (typeof window !== 'undefined') {
             window.menuWorld = menuWorld;
-            window.menuEntities = animals;
+            window.menuEntities = caveMobs;
             window.menuWorldInitialized = true;
         }
     }
@@ -12895,59 +13094,119 @@ export const SKIN_H = 32;
         }
         const width = menuBgCanvas.width, height = menuBgCanvas.height;
 
-        // 1. Dynamic Celestial Sky
-        drawDynamicSky(menuCtx, width, height, menuTime);
-
-        // 2. Parallax Mountain Ridges (Ultra-fast vector path filling)
-        drawMountains(menuCtx, menuCamX, height, menuTime, width, menuParallaxX, menuParallaxY);
-
-        // 3. Tropical Jungle Humidity Mist (Unconditional Fabulous Shader Layer)
-        menuCtx.save();
-        const mistLayers = [
-            { speed: 0.05, alpha: 0.22, yOffset: 0.18, hRatio: 0.65 },
-            { speed: 0.10, alpha: 0.18, yOffset: 0.35, hRatio: 0.60 },
-            { speed: 0.03, alpha: 0.15, yOffset: 0.05, hRatio: 0.90 }
-        ];
-        for (let l = 0; l < mistLayers.length; l++) {
-            const layer = mistLayers[l];
-            const a = layer.alpha;
-            const fogGrad = menuCtx.createLinearGradient(0, height * layer.yOffset, 0, height * (layer.yOffset + layer.hRatio));
-            fogGrad.addColorStop(0, 'rgba(180, 245, 205, 0)');
-            fogGrad.addColorStop(0.3, `rgba(160, 240, 195, ${a.toFixed(3)})`);
-            fogGrad.addColorStop(0.7, `rgba(140, 235, 180, ${(a * 1.15).toFixed(3)})`);
-            fogGrad.addColorStop(1, 'rgba(180, 245, 205, 0)');
-            menuCtx.fillStyle = fogGrad;
-            menuCtx.fillRect(0, height * layer.yOffset, width, height * layer.hRatio);
-        }
-        menuCtx.restore();
-
-        // 4. Drifting Clouds
-        clouds.forEach(c => c.draw(menuCtx, menuCamX * 0.6));
-
-        // 5. Atmospheric Sun Glow
-        const lightStrength = menuTime > 0.08 && menuTime < 0.42 ? 0.22 : (menuTime > 0.84 || menuTime < 0.08 ? 0.12 : 0.03);
-        const sunX = width * 0.72 + menuParallaxX * 0.3;
-        const sunY = height * 0.20 + menuParallaxY * 0.3;
-        const worldLight = menuCtx.createRadialGradient(sunX, sunY, 10, sunX, sunY, height * 0.85);
-        worldLight.addColorStop(0, `rgba(255, 225, 140, ${lightStrength})`);
-        worldLight.addColorStop(0.35, `rgba(255, 170, 90, ${lightStrength * 0.4})`);
-        worldLight.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        menuCtx.save();
-        menuCtx.globalCompositeOperation = 'screen';
-        menuCtx.fillStyle = worldLight;
+        // 1. Deep Subterranean Pitch-Black Abyss Canvas
+        menuCtx.fillStyle = '#04050a';
         menuCtx.fillRect(0, 0, width, height);
+
+        const caveGrad = menuCtx.createLinearGradient(0, 0, 0, height);
+        caveGrad.addColorStop(0, '#030206');
+        caveGrad.addColorStop(0.35, '#070512');
+        caveGrad.addColorStop(0.70, '#0b081a');
+        caveGrad.addColorStop(1, '#05030c');
+        menuCtx.fillStyle = caveGrad;
+        menuCtx.fillRect(0, 0, width, height);
+
+        // 2. Parallax Distant Cavern Wall Silhouettes (Layer 1: Far, Layer 2: Mid)
+        menuCtx.save();
+        // Far Cave Walls (Parallax 0.12)
+        const farOffset = (menuCamX * 0.12 + menuParallaxX * 0.3) % width;
+        menuCtx.fillStyle = '#0a0816';
+        menuCtx.beginPath();
+        menuCtx.moveTo(0, height * 0.28);
+        for (let px = 0; px <= width + 64; px += 48) {
+            const worldFarX = (px + farOffset);
+            const jaggedCeil = height * 0.25 + Math.sin(worldFarX * 0.008) * 40 + Math.cos(worldFarX * 0.02) * 20;
+            menuCtx.lineTo(px, jaggedCeil);
+        }
+        menuCtx.lineTo(width, 0);
+        menuCtx.lineTo(0, 0);
+        menuCtx.closePath();
+        menuCtx.fill();
+
+        menuCtx.beginPath();
+        menuCtx.moveTo(0, height);
+        for (let px = 0; px <= width + 64; px += 48) {
+            const worldFarX = (px + farOffset);
+            const jaggedFloor = height * 0.72 - Math.sin(worldFarX * 0.009) * 35 - Math.cos(worldFarX * 0.018) * 18;
+            menuCtx.lineTo(px, jaggedFloor);
+        }
+        menuCtx.lineTo(width, height);
+        menuCtx.lineTo(0, height);
+        menuCtx.closePath();
+        menuCtx.fill();
+
+        // Mid Cave Wall Buttresses & Pillars (Parallax 0.26)
+        const midOffset = (menuCamX * 0.26 + menuParallaxX * 0.5) % width;
+        menuCtx.fillStyle = '#110d22';
+        menuCtx.beginPath();
+        menuCtx.moveTo(0, height * 0.22);
+        for (let px = 0; px <= width + 64; px += 64) {
+            const worldMidX = (px + midOffset);
+            const jaggedCeil = height * 0.22 + Math.sin(worldMidX * 0.012) * 50 + Math.sin(worldMidX * 0.035) * 25;
+            menuCtx.lineTo(px, jaggedCeil);
+        }
+        menuCtx.lineTo(width, 0);
+        menuCtx.lineTo(0, 0);
+        menuCtx.closePath();
+        menuCtx.fill();
+
+        menuCtx.beginPath();
+        menuCtx.moveTo(0, height);
+        for (let px = 0; px <= width + 64; px += 64) {
+            const worldMidX = (px + midOffset);
+            const jaggedFloor = height * 0.76 - Math.sin(worldMidX * 0.014) * 45 - Math.cos(worldMidX * 0.028) * 20;
+            menuCtx.lineTo(px, jaggedFloor);
+        }
+        menuCtx.lineTo(width, height);
+        menuCtx.lineTo(0, height);
+        menuCtx.closePath();
+        menuCtx.fill();
+
+        // Magma Underglow in the distance
+        const lavaScreenX = (83 * TILE_SIZE - menuCamX * 0.6 + width) % width;
+        const lavaGlow = menuCtx.createRadialGradient(lavaScreenX, height * 0.85, 20, lavaScreenX, height * 0.85, height * 0.6);
+        lavaGlow.addColorStop(0, 'rgba(239, 68, 68, 0.28)');
+        lavaGlow.addColorStop(0.35, 'rgba(249, 115, 22, 0.16)');
+        lavaGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        menuCtx.fillStyle = lavaGlow;
+        menuCtx.fillRect(0, 0, width, height);
+
+        // 3. Creepy Blinking Glowing Eyes in Distant Shadow Niches
+        const shadowEyes = [
+            { gx: 12, gy: 35, color: '#ef4444', blinkPeriod: 4200, offset: 0 },
+            { gx: 38, gy: 32, color: '#f59e0b', blinkPeriod: 3600, offset: 1200 },
+            { gx: 71, gy: 36, color: '#22c55e', blinkPeriod: 4800, offset: 2400 },
+            { gx: 93, gy: 33, color: '#a855f7', blinkPeriod: 5100, offset: 800 },
+            { gx: 120, gy: 38, color: '#ef4444', blinkPeriod: 3900, offset: 3100 }
+        ];
+        shadowEyes.forEach(eye => {
+            const eyeWorldX = eye.gx * TILE_SIZE;
+            const eyeScreenX = ((eyeWorldX - menuCamX * 0.5) % (MENU_WORLD_WIDTH * TILE_SIZE * 0.5) + (MENU_WORLD_WIDTH * TILE_SIZE * 0.5)) % (MENU_WORLD_WIDTH * TILE_SIZE * 0.5) - 100;
+            const eyeScreenY = eye.gy * (height / 80) + menuParallaxY * 0.4;
+            const isBlinking = ((now + eye.offset) % eye.blinkPeriod) < 160;
+            if (!isBlinking && eyeScreenX >= -20 && eyeScreenX <= width + 20) {
+                menuCtx.fillStyle = eye.color;
+                menuCtx.fillRect(Math.floor(eyeScreenX), Math.floor(eyeScreenY), 2.5, 2);
+                menuCtx.fillRect(Math.floor(eyeScreenX + 5), Math.floor(eyeScreenY), 2.5, 2);
+                menuCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                menuCtx.fillRect(Math.floor(eyeScreenX + 1), Math.floor(eyeScreenY), 1, 1);
+                menuCtx.fillRect(Math.floor(eyeScreenX + 6), Math.floor(eyeScreenY), 1, 1);
+            }
+        });
         menuCtx.restore();
 
-        // 6. Foreground Living World (Trees, Foliage, Grass, Dirt, Stone & Ore Strata)
-        // Camera is permanently anchored to the tropical jungle surface layer at MENU_SURFACE_Y
+        // 4. Foreground Cavern Blocks (Centered on Cavern Hall)
         const cameraX = menuCamX;
-        const cameraY = (MENU_SURFACE_Y * TILE_SIZE) - height * 0.52 + menuParallaxY * 0.8;
+        const cameraY = (47 * TILE_SIZE) - height * 0.50 + menuParallaxY * 0.8;
         const startCol = Math.floor(cameraX / TILE_SIZE) - 1;
         const endCol = startCol + Math.ceil(width / TILE_SIZE) + 2;
         const startRow = Math.max(0, Math.floor(cameraY / TILE_SIZE) - 2);
         const endRow = Math.min(MENU_WORLD_HEIGHT - 1, Math.ceil((cameraY + height) / TILE_SIZE) + 1);
 
         menuCtx.imageSmoothingEnabled = false;
+
+        // Dynamic Light Bloom Sources Collection
+        const lightBlooms = [];
 
         for (let x = startCol; x <= endCol; x++) {
             const wrappedX = ((x % MENU_WORLD_WIDTH) + MENU_WORLD_WIDTH) % MENU_WORLD_WIDTH;
@@ -12959,97 +13218,171 @@ export const SKIN_H = 32;
                 const block = col[y];
                 if (block === undefined || block === IDS.AIR) continue;
                 const drawY = Math.round(y * TILE_SIZE - cameraY);
-                if (drawY + TILE_SIZE < 0 || drawY > height) continue;
+                if (drawY + TILE_SIZE < -20 || drawY > height + 20) continue;
+
+                // Hanging Chain links above suspended lanterns/torches
+                if ((block === IDS.GLOOM_LANTERN || block === IDS.TORCH) && y > 0 && col[y - 1] === IDS.AIR) {
+                    menuCtx.fillStyle = '#475569';
+                    menuCtx.fillRect(drawX + 7, drawY - 8, 2, 8);
+                    menuCtx.fillStyle = '#1e293b';
+                    menuCtx.fillRect(drawX + 8, drawY - 8, 1, 8);
+                }
 
                 if (textures[block]) {
                     menuCtx.drawImage(textures[block], drawX, drawY, TILE_SIZE, TILE_SIZE);
                 }
+
+                // Register Light Bloom Emitters
+                if (block === IDS.GLOOM_LANTERN) {
+                    lightBlooms.push({ x: drawX + TILE_SIZE / 2, y: drawY + TILE_SIZE / 2, type: 'gloom' });
+                } else if (block === IDS.TORCH) {
+                    lightBlooms.push({ x: drawX + TILE_SIZE / 2, y: drawY + TILE_SIZE / 2, type: 'torch' });
+                } else if (block === IDS.ASTRAL_INFUSER) {
+                    lightBlooms.push({ x: drawX + TILE_SIZE / 2, y: drawY + TILE_SIZE / 2, type: 'astral' });
+                } else if (block === IDS.LAVA && y === 54 && x % 2 === 0) {
+                    lightBlooms.push({ x: drawX + TILE_SIZE / 2, y: drawY + TILE_SIZE / 2, type: 'lava' });
+                }
             }
         }
 
-        // 7. Living Animated Animals (Authentic in-game physics, AI, jumping, walking leg swings & bird flight)
+        // 5. Living Animated Cave Monsters
         if (menuEntities && menuEntities.length) {
             menuEntities.forEach(entry => {
                 const entity = entry.entity;
                 entity.isMenuEntity = true;
-                
-                // Turn around smoothly before hitting world boundaries
-                if (entity.x < 3 * TILE_SIZE) {
-                    entity.dir = 1;
-                    entity.vx = Math.abs(entity.speed || entity.baseSpeed || 1);
-                    entity.x = 3 * TILE_SIZE;
-                } else if (entity.x > (MENU_WORLD_WIDTH - 4) * TILE_SIZE) {
-                    entity.dir = -1;
-                    entity.vx = -Math.abs(entity.speed || entity.baseSpeed || 1);
-                    entity.x = (MENU_WORLD_WIDTH - 4) * TILE_SIZE;
-                }
 
-                // Full in-game AI, physics, gravity, obstacle jumps & flight
-                entity.update();
-
-                // Safety fallback if entity goes below terrain
-                const curGx = Math.max(0, Math.min(MENU_WORLD_WIDTH - 1, Math.floor((entity.x + entity.width / 2) / TILE_SIZE)));
-                const groundY = (menuWorld.terrain && menuWorld.terrain[curGx] !== undefined) ? menuWorld.terrain[curGx] : MENU_SURFACE_Y;
-                if (entity.y > (groundY + 2) * TILE_SIZE) {
-                    entity.y = groundY * TILE_SIZE - entity.height;
+                if (entry.type === 'gloomstalker_ceiling') {
+                    // Upside-down Ceiling Clinger AI
+                    entity.isCeilingClinging = true;
                     entity.vy = 0;
-                    entity.isGrounded = true;
+                    entity.walkAnimTime += 0.05;
+                    const spd = 0.55;
+                    entity.x += (entity.facingRight ? 1 : -1) * spd;
+                    if (entity.x < 51 * TILE_SIZE) entity.facingRight = true;
+                    else if (entity.x > 67 * TILE_SIZE) entity.facingRight = false;
+                } else {
+                    // Prowling Hostile Cave AI for Main Menu
+                    entity.onFire = false; // Suppress daytime sunlight combustion
+                    if (entity instanceof Creeper) entity.swell = 0; // Prevent fuse countdown
+                    
+                    if (!entity.menuPatrolDir) entity.menuPatrolDir = (Math.random() > 0.5 ? 1 : -1);
+                    if (!entity.menuPatrolTimer) entity.menuPatrolTimer = 120 + Math.floor(Math.random() * 180);
+                    entity.menuPatrolTimer--;
+                    if (entity.menuPatrolTimer <= 0) {
+                        entity.menuPatrolDir *= -1;
+                        entity.menuPatrolTimer = 180 + Math.floor(Math.random() * 240);
+                    }
+
+                    const curSpeed = (entity.speed || entity.baseSpeed || 1.2) * 0.55;
+                    entity.vx = entity.menuPatrolDir * curSpeed;
+                    entity.facingRight = entity.menuPatrolDir > 0;
+                    entity.walkAnimTime += 0.08;
+
+                    // Edge & Wall Awareness (smooth turn-around before falling or hitting solid wall)
+                    const nextGx = Math.floor((entity.x + entity.width / 2 + entity.menuPatrolDir * (entity.width / 2 + 8)) / TILE_SIZE);
+                    const footGy = Math.floor((entity.y + entity.height + 2) / TILE_SIZE);
+                    const waistGy = Math.floor((entity.y + entity.height * 0.5) / TILE_SIZE);
+                    const isWallAhead = isSolidWorldBlock(nextGx, waistGy, menuWorld.blocks?.[nextGx]?.[waistGy]);
+                    const isGroundAhead = isSolidWorldBlock(nextGx, footGy, menuWorld.blocks?.[nextGx]?.[footGy]);
+
+                    if (isWallAhead || !isGroundAhead || entity.x < 6 * TILE_SIZE || entity.x > (MENU_WORLD_WIDTH - 6) * TILE_SIZE) {
+                        entity.menuPatrolDir *= -1;
+                        entity.vx = entity.menuPatrolDir * curSpeed;
+                        entity.facingRight = entity.menuPatrolDir > 0;
+                    }
+
+                    entity.applyPhysics();
                 }
 
                 entity.draw(menuCtx, cameraX, cameraY);
             });
         }
 
-        // 8. Tropical Canopy Sunbeams / Godrays (Unconditional Fabulous Shader)
+        // 6. Radiant Lighting Blooms (Lighter Composite Operation)
         menuCtx.save();
         menuCtx.globalCompositeOperation = 'lighter';
-        const numMenuRays = 6;
-        const baseRaySpacing = width / (numMenuRays - 1);
-        const rayParallaxOffset = (cameraX * 0.12) % baseRaySpacing;
-        const rayPixelStep = 8;
-        const raySliceHeight = 16;
-        const rayTilt = 0.18;
-        const rayTime = now * 0.001;
+        for (let i = 0; i < lightBlooms.length; i++) {
+            const b = lightBlooms[i];
+            if (b.x < -100 || b.x > width + 100 || b.y < -100 || b.y > height + 100) continue;
 
-        for (let i = 0; i < numMenuRays; i++) {
-            const rayPulse = Math.sin(rayTime * 1.2 + i * 1.5) * 0.5 + 0.5;
-            const driftX = Math.floor(Math.sin(rayTime * 0.6 + i * 0.8) * 24 / rayPixelStep) * rayPixelStep;
-            const topCenterX = Math.floor((i * baseRaySpacing - rayParallaxOffset + driftX) / rayPixelStep) * rayPixelStep;
-            const topHalfWidth = 26 + Math.floor(Math.sin(i * 1.8) * 8 / rayPixelStep) * rayPixelStep;
-            const bottomHalfWidth = topHalfWidth * 1.6;
-
-            const baseAlpha = 0.024 + rayPulse * 0.014;
-            const r = 230, g = 255, b = 145; // Tropical canopy sunbeams
-
-            for (let y = 0; y < height; y += raySliceHeight) {
-                const yRatio = y / height;
-                const fade = Math.max(0, 1.0 - yRatio * 0.85);
-                const sliceAlpha = baseAlpha * fade;
-                if (sliceAlpha <= 0.002) continue;
-
-                const sliceCenterX = Math.floor((topCenterX + rayTilt * y) / rayPixelStep) * rayPixelStep;
-                const sliceHalfWidth = Math.floor((topHalfWidth + yRatio * (bottomHalfWidth - topHalfWidth)) / rayPixelStep) * rayPixelStep;
-
-                menuCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${sliceAlpha.toFixed(4)})`;
-                menuCtx.fillRect(sliceCenterX - sliceHalfWidth, y, sliceHalfWidth * 2, raySliceHeight);
+            if (b.type === 'gloom') {
+                // Eerie Violet Gloom Bloom
+                const gloomPulse = Math.sin(now * 0.003 + b.x) * 0.06;
+                const rad = 85 + gloomPulse * 15;
+                const gGrad = menuCtx.createRadialGradient(b.x, b.y, 4, b.x, b.y, rad);
+                gGrad.addColorStop(0, 'rgba(238, 210, 255, 0.65)');
+                gGrad.addColorStop(0.25, 'rgba(168, 85, 247, 0.42)');
+                gGrad.addColorStop(0.65, 'rgba(124, 58, 237, 0.18)');
+                gGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                menuCtx.fillStyle = gGrad;
+                menuCtx.fillRect(b.x - rad, b.y - rad, rad * 2, rad * 2);
+            } else if (b.type === 'torch') {
+                // Warm Amber Torch Bloom
+                const flicker = Math.sin(now * 0.012 + b.x * 0.5) * 4;
+                const rad = 72 + flicker;
+                const tGrad = menuCtx.createRadialGradient(b.x, b.y, 3, b.x, b.y, rad);
+                tGrad.addColorStop(0, 'rgba(255, 237, 160, 0.65)');
+                tGrad.addColorStop(0.30, 'rgba(249, 115, 22, 0.38)');
+                tGrad.addColorStop(0.70, 'rgba(217, 119, 6, 0.12)');
+                tGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                menuCtx.fillStyle = tGrad;
+                menuCtx.fillRect(b.x - rad, b.y - rad, rad * 2, rad * 2);
+            } else if (b.type === 'astral') {
+                // Astral Void Rift Bloom
+                const rad = 95 + Math.sin(now * 0.005) * 10;
+                const aGrad = menuCtx.createRadialGradient(b.x, b.y, 5, b.x, b.y, rad);
+                aGrad.addColorStop(0, 'rgba(224, 231, 255, 0.70)');
+                aGrad.addColorStop(0.35, 'rgba(192, 132, 252, 0.45)');
+                aGrad.addColorStop(0.75, 'rgba(91, 33, 182, 0.18)');
+                aGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                menuCtx.fillStyle = aGrad;
+                menuCtx.fillRect(b.x - rad, b.y - rad, rad * 2, rad * 2);
+            } else if (b.type === 'lava') {
+                // Molten Lava Glow
+                const rad = 65;
+                const lGrad = menuCtx.createRadialGradient(b.x, b.y, 4, b.x, b.y, rad);
+                lGrad.addColorStop(0, 'rgba(251, 146, 60, 0.40)');
+                lGrad.addColorStop(0.5, 'rgba(239, 68, 68, 0.20)');
+                lGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                menuCtx.fillStyle = lGrad;
+                menuCtx.fillRect(b.x - rad, b.y - rad, rad * 2, rad * 2);
             }
         }
         menuCtx.restore();
 
-        // 9. Floating Bioluminescent Spores, Jungle Leaves & Fireflies (Fabulous Atmosphere)
+        // 7. Subterranean Volumetric Mist / Low Cavern Fog
+        menuCtx.save();
+        const fogLayers = [
+            { speed: 0.04, alpha: 0.16, yOffset: 0.48, hRatio: 0.45 },
+            { speed: 0.08, alpha: 0.12, yOffset: 0.62, hRatio: 0.38 }
+        ];
+        for (let l = 0; l < fogLayers.length; l++) {
+            const layer = fogLayers[l];
+            const a = layer.alpha;
+            const fogGrad = menuCtx.createLinearGradient(0, height * layer.yOffset, 0, height * (layer.yOffset + layer.hRatio));
+            fogGrad.addColorStop(0, 'rgba(59, 7, 100, 0)');
+            fogGrad.addColorStop(0.35, `rgba(46, 16, 101, ${a.toFixed(3)})`);
+            fogGrad.addColorStop(0.70, `rgba(17, 24, 39, ${(a * 1.2).toFixed(3)})`);
+            fogGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+            menuCtx.fillStyle = fogGrad;
+            menuCtx.fillRect(0, height * layer.yOffset, width, height * layer.hRatio);
+        }
+        menuCtx.restore();
+
+        // 8. Atmospheric Cavern Particles (Dripping water drops, magma sparks, gloom wisps)
         drawMenuFireflies(menuCtx, width, height, cameraX, cameraY);
 
-        // 10. Tropical Jungle Biome Color Grading (Unconditional Fabulous Shader)
+        // 9. Horror Cave Biome Color Grading
         menuCtx.save();
-        menuCtx.fillStyle = 'rgba(34, 197, 94, 0.15)'; // Vibrant tropical emerald-jade canopy grade
+        menuCtx.fillStyle = 'rgba(12, 6, 24, 0.28)'; // Deep obsidian-void subterranean grade
         menuCtx.fillRect(0, 0, width, height);
         menuCtx.restore();
 
-        // 11. Cinematic Dark Edge Vignette
-        const vignette = menuCtx.createRadialGradient(width / 2, height * 0.46, height * 0.28, width / 2, height * 0.46, height * 0.85);
-        vignette.addColorStop(0, 'rgba(0,0,0,0)');
-        vignette.addColorStop(0.7, 'rgba(4,8,14,0.30)');
-        vignette.addColorStop(1, 'rgba(2,5,10,0.65)');
+        // 10. Heavy Cinematic Vignette
+        const vignette = menuCtx.createRadialGradient(width / 2, height * 0.48, height * 0.25, width / 2, height * 0.48, height * 0.88);
+        vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        vignette.addColorStop(0.65, 'rgba(3, 2, 8, 0.42)');
+        vignette.addColorStop(1, 'rgba(1, 1, 4, 0.88)');
         menuCtx.fillStyle = vignette;
         menuCtx.fillRect(0, 0, width, height);
         menuLastFrame = now;
@@ -14952,6 +15285,29 @@ export const SKIN_H = 32;
             ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
             ctx.restore();
         }
+
+        if (isSleeping) {
+            const elapsed = sleepStartTime ? (performance.now() - sleepStartTime) : 500;
+            const progress = Math.min(1, elapsed / (sleepTransitionMs || 2200));
+            ctx.save();
+            const darkAlpha = Math.min(0.92, 0.35 + progress * 0.57);
+            ctx.fillStyle = `rgba(5, 5, 12, ${darkAlpha.toFixed(2)})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Centered sleep text with pulsating Zzz
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px Minecraft, sans-serif';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = 8;
+            const zDots = '.'.repeat(1 + (Math.floor(elapsed / 400) % 3));
+            ctx.fillText(`Sleeping${zDots} [Zzz]`, canvas.width / 2, canvas.height / 2 - 10);
+            ctx.font = '14px Minecraft, sans-serif';
+            ctx.fillStyle = '#aaaaaa';
+            ctx.fillText('Press any movement key to wake up', canvas.width / 2, canvas.height / 2 + 25);
+            ctx.restore();
+        }
     }
 
     export function updateTimeUI() {
@@ -15812,6 +16168,7 @@ try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay
     export function setEngineCurrentMpWorldName(newName) { currentMpWorldName = newName; if (typeof window !== 'undefined') window.currentMpWorldName = newName; }
     export function setEngineRemotePlayers(newPlayers) { remotePlayers = newPlayers; if (typeof window !== 'undefined') window.remotePlayers = newPlayers; }
     export function setEngineIsSleeping(newSleeping) { isSleeping = newSleeping; if (typeof window !== 'undefined') window.isSleeping = newSleeping; }
+    export function setEngineSleepStartTime(newTime) { sleepStartTime = newTime; if (typeof window !== 'undefined') window.sleepStartTime = newTime; }
     export function setEngineIsBackgroundBuildMode(newMode) { isBackgroundBuildMode = newMode; if (typeof window !== 'undefined') window.isBackgroundBuildMode = newMode; }
     export function setEngineIsInventoryOpen(newOpen) { isInventoryOpen = newOpen; if (typeof window !== 'undefined') window.isInventoryOpen = newOpen; }
     export function setEngineCropGrowthQueue(newQueue) { cropGrowthQueue = newQueue; if (typeof window !== 'undefined') window.cropGrowthQueue = newQueue; }
@@ -15822,6 +16179,7 @@ try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay
     export function setAttackAnimationTimer(t) { attackAnimationTimer = t; if (typeof window !== 'undefined') window.attackAnimationTimer = t; }
     export function setEngineWorldBiomes(newBiomes) { worldBiomes = newBiomes; if (typeof window !== 'undefined') window.worldBiomes = newBiomes; }
 
+try { if (typeof setEngineSleepStartTime !== "undefined") window.setEngineSleepStartTime = setEngineSleepStartTime; } catch(e) {}
 try { if (typeof setEngineWorldBiomes !== "undefined") window.setEngineWorldBiomes = setEngineWorldBiomes; } catch(e) {}
 try { if (typeof setEngineCropGrowthQueue !== "undefined") window.setEngineCropGrowthQueue = setEngineCropGrowthQueue; } catch(e) {}
 try { if (typeof setEngineSaplingGrowthQueue !== "undefined") window.setEngineSaplingGrowthQueue = setEngineSaplingGrowthQueue; } catch(e) {}
