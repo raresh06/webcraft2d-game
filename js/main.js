@@ -599,6 +599,42 @@ export function initJukeboxFileInput() {
                 case 'quest_complete':
                     playTone(ctx, 'sine', 523.25, 1046.5, 0.22 * effectiveVol, 0.25, null, now, false);
                     break;
+                case 'zombie_groan': {
+                    const groanFreq = 75 + Math.random() * 25;
+                    const f = ctx.createBiquadFilter();
+                    f.type = 'lowpass'; f.frequency.setValueAtTime(320, now);
+                    playTone(ctx, 'sawtooth', groanFreq, groanFreq * 0.72, 0.26 * effectiveVol, 0.45, null, now, true, f);
+                    break;
+                }
+                case 'zombie_roar': {
+                    const f = ctx.createBiquadFilter();
+                    f.type = 'bandpass'; f.frequency.setValueAtTime(450, now); f.Q.setValueAtTime(2.2, now);
+                    playTone(ctx, 'sawtooth', 110, 185, 0.32 * effectiveVol, 0.32, null, now, false, f);
+                    break;
+                }
+                case 'door_bang': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playTone(ctx, 'triangle', 140, 45, 0.35 * effectiveVol, 0.10, null, now);
+                    playNoise(ctx, nBuf, 'bandpass', 550, 2.5, 0.25 * effectiveVol, 0.08, null, now);
+                    break;
+                }
+                case 'door_break': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playTone(ctx, 'square', 160, 40, 0.40 * effectiveVol, 0.25, null, now);
+                    playNoise(ctx, nBuf, 'bandpass', 750, 1.2, 0.45 * effectiveVol, 0.28, null, now);
+                    break;
+                }
+                case 'creeper_hiss_stalk': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playNoise(ctx, nBuf, 'highpass', 2800, 1.5, 0.15 * effectiveVol, 0.12, null, now);
+                    break;
+                }
+                case 'scorpion_hiss': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playTone(ctx, 'sawtooth', 380, 120, 0.18 * effectiveVol, 0.08, null, now);
+                    playNoise(ctx, nBuf, 'bandpass', 2200, 3.0, 0.20 * effectiveVol, 0.07, null, now);
+                    break;
+                }
             }
         } catch(e) {}
     }
@@ -739,6 +775,7 @@ export function initJukeboxFileInput() {
                 if (overlayId === 'skin-owned-modal') { callClose('closeSkinOwnedModal'); return true; }
                 if (overlayId === 'publish-multiplayer-modal') { callClose('closePublishMultiplayerModal'); return true; }
                 if (overlayId === 'new-world-modal') { callClose('closeNewWorldModal'); return true; }
+                if (overlayId === 'convert-world-modal') { callClose('closeConvertWorldModal'); return true; }
                 if (overlayId === 'create-room-modal' || overlayId === 'join-room-modal') { callClose('closeRoomDialogs'); return true; }
                 if (overlayId === 'world-map-modal' || isWorldMapOpen) { if (!callClose('toggleWorldMap', false)) topOverlay.classList.add('hidden'); return true; }
                 if (overlayId === 'fabulous-settings-modal') { callClose('closeFabulousSettingsModal'); return true; }
@@ -1611,11 +1648,21 @@ export function initJukeboxFileInput() {
                     if (z instanceof Engine.AtlasExplorer || (z.constructor && z.constructor.name === 'AtlasExplorer')) {
                         return true; // Friendly NPC, cannot be harmed
                     }
-                    z.takeDamage(wDmg, pCX < zCX ? 1 : -1);
+                    const heldTool = inventory[selectedHotbarIndex];
+                    let knockbackForce = 1.4; // Default bare hands: minimal knockback (cannot stunlock!)
+                    if (heldTool && heldTool.id) {
+                        const tid = heldTool.id;
+                        if (tid === IDS.WOOD_SWORD || tid === IDS.STONE_SWORD) knockbackForce = 3.6;
+                        else if (tid === IDS.IRON_SWORD || tid === IDS.GOLD_SWORD) knockbackForce = 4.6;
+                        else if (tid === IDS.DIAMOND_SWORD || tid === IDS.ASTRAL_SWORD) knockbackForce = 5.6;
+                        else if (tid === IDS.WOOD_AXE || tid === IDS.STONE_AXE || tid === IDS.IRON_AXE || tid === IDS.DIAMOND_AXE || tid === IDS.ASTRAL_AXE) knockbackForce = 3.8;
+                        else if (tid === IDS.WOOD_PICKAXE || tid === IDS.STONE_PICKAXE || tid === IDS.IRON_PICKAXE || tid === IDS.DIAMOND_PICKAXE || tid === IDS.ASTRAL_PICKAXE) knockbackForce = 2.2;
+                        else if (tid === IDS.WOOD_SHOVEL || tid === IDS.STONE_SHOVEL || tid === IDS.IRON_SHOVEL || tid === IDS.DIAMOND_SHOVEL || tid === IDS.ASTRAL_SHOVEL) knockbackForce = 2.0;
+                    }
+                    z.takeDamage(wDmg, pCX < zCX ? 1 : -1, knockbackForce);
                     damageSelectedTool(1);
                     if (z instanceof Sheep && z.health > 0 && !z.isSheared) {
                         z.isSheared = true;
-                        const heldTool = inventory[selectedHotbarIndex];
                         const isKineticShears = heldTool && heldTool.id === IDS.KINETIC_SHEARS;
                         const woolAmount = isKineticShears ? 3 : 1;
                         giveItem(IDS.WOOL, woolAmount);

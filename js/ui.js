@@ -265,9 +265,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 }
 
-    export const GAME_VERSION = '0.1.5';
-    export const DISPLAY_VERSION = '0.1.5';
-    export const GAME_BUILD = 'webcraft2d-beta-0.1.5';
+    export const GAME_VERSION = '0.1.6';
+    export const DISPLAY_VERSION = '0.1.6';
+    export const GAME_BUILD = 'webcraft2d-beta-0.1.6';
 
     export function updateVersionLabels() {
         const versionLabel = document.getElementById('game-version-label');
@@ -5385,23 +5385,40 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             return;
         }
 
-        // 1. Beta 0.1.5 (Latest Release)
-        const v015 = UPDATE_HISTORY_LOGS[0];
+        // 1. Beta 0.1.6 (Latest Release)
+        const v016 = UPDATE_HISTORY_LOGS[0];
+        if (v016) {
+            const art016 = document.createElement('article');
+            art016.className = 'news-entry is-newest';
+            art016.innerHTML = `
+                <div class="news-entry-header">
+                    <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${v016.title}</h3>
+                    <span class="news-badge" style="background: #16a34a; color: #fff;">0.1.6</span>
+                </div>
+                ${renderPatchNoteList(v016.items)}
+            `;
+            entriesRoot.appendChild(art016);
+        }
+
+        // 2. Beta 0.1.5
+        const v015 = UPDATE_HISTORY_LOGS[1];
         if (v015) {
             const art015 = document.createElement('article');
-            art015.className = 'news-entry is-newest';
+            art015.className = 'news-entry';
+            art015.style.borderColor = '#9333ea';
+            art015.style.boxShadow = 'inset 0 0 0 1px #080a0c, 0 0 0 1px rgba(147, 51, 234, 0.45)';
             art015.innerHTML = `
                 <div class="news-entry-header">
-                    <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${v015.title}</h3>
-                    <span class="news-badge" style="background: #16a34a; color: #fff;">0.1.5</span>
+                    <h3 class="text-purple-300 font-bold text-2xl font-['VT323']">${v015.title}</h3>
+                    <span class="news-badge" style="background: #9333ea; color: #fff;">0.1.5</span>
                 </div>
                 ${renderPatchNoteList(v015.items)}
             `;
             entriesRoot.appendChild(art015);
         }
 
-        // 2. Beta 0.1.4 Patch 1
-        const vPatch1 = UPDATE_HISTORY_LOGS[1];
+        // 3. Beta 0.1.4 Patch 1
+        const vPatch1 = UPDATE_HISTORY_LOGS[2];
         if (vPatch1) {
             const artPatch1 = document.createElement('article');
             artPatch1.className = 'news-entry';
@@ -5417,8 +5434,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             entriesRoot.appendChild(artPatch1);
         }
 
-        // 3. Older Versions (Beta 0.1.4, Beta 0.1.3) inside clean collapsible summaries
-        for (let i = 2; i < UPDATE_HISTORY_LOGS.length; i++) {
+        // 4. Older Versions (Beta 0.1.4, Beta 0.1.3) inside clean collapsible summaries
+        for (let i = 3; i < UPDATE_HISTORY_LOGS.length; i++) {
             const entry = UPDATE_HISTORY_LOGS[i];
             if (!entry) continue;
             const details = document.createElement('details');
@@ -7877,6 +7894,96 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
     }
 
+    export function isWorldVersion015(gameVersion, gameBuild) {
+        if (!gameVersion && !gameBuild) return false;
+        return gameVersion === '0.1.5' || gameBuild === 'webcraft2d-beta-0.1.5';
+    }
+
+    export function isWorldVersionCompatible(gameVersion, gameBuild) {
+        if (gameVersion === GAME_VERSION && gameBuild === GAME_BUILD) return true;
+        if (isWorldVersion015(gameVersion, gameBuild)) return true;
+        return false;
+    }
+
+    export let pendingConvertWorldId = null;
+
+    export function promptConvertWorld015(id) {
+        const worlds = getSavedWorlds();
+        const w = worlds.find(item => item.id === id);
+        if (!w) {
+            showToast('World not found.');
+            return;
+        }
+        pendingConvertWorldId = id;
+        const modal = typeof document !== 'undefined' ? document.getElementById('convert-world-modal') : null;
+        if (!modal) {
+            const proceed = confirm(`Convert World to Beta 0.1.6?\n\nWorld: "${w.name}"\n\nThis world was created in Beta 0.1.5. Converting will safely upgrade it to Beta 0.1.6 with smarter mob AI, door breaching, and combat mechanics while preserving all your structures and items.\n\nClick OK to Convert & Play, or Cancel to abort.`);
+            if (proceed) {
+                confirmConvertWorld015();
+            }
+            return;
+        }
+        const nameEl = document.getElementById('convert-world-name');
+        const metaEl = document.getElementById('convert-world-meta');
+        if (nameEl) nameEl.textContent = w.name;
+        if (metaEl) {
+            const sizeText = (w.worldSize || (w.worldWidth > 700 ? 'big' : 'small')).toUpperCase();
+            const diffText = (w.difficulty || 'normal').toUpperCase();
+            metaEl.textContent = `Day ${w.dayCount || 1} • ${sizeText} World • ${diffText} Difficulty`;
+        }
+        const backupBtn = document.getElementById('btn-convert-world-backup');
+        if (backupBtn) {
+            backupBtn.textContent = 'Download Backup';
+            backupBtn.classList.remove('!text-emerald-400', '!border-emerald-500');
+            backupBtn.classList.add('!text-white');
+        }
+        modal.classList.remove('hidden');
+    }
+
+    export function closeConvertWorldModal() {
+        const modal = typeof document !== 'undefined' ? document.getElementById('convert-world-modal') : null;
+        if (modal) modal.classList.add('hidden');
+        pendingConvertWorldId = null;
+    }
+
+    export function confirmConvertWorld015() {
+        if (!pendingConvertWorldId) return;
+        const idToLoad = pendingConvertWorldId;
+        closeConvertWorldModal();
+        loadWorld(idToLoad, true);
+    }
+
+    export function exportBackup015Only() {
+        if (!pendingConvertWorldId) return;
+        const worlds = getSavedWorlds();
+        const w = worlds.find(item => item.id === pendingConvertWorldId);
+        if (w) {
+            exportWorld(w.id, (w.name || 'world') + '_v0.1.5_backup');
+            if (typeof showToast === 'function') {
+                showToast('0.1.5 World backup exported!');
+            }
+            const backupBtn = document.getElementById('btn-convert-world-backup');
+            if (backupBtn) {
+                backupBtn.textContent = 'Backup Saved ✓';
+                backupBtn.classList.remove('!text-white');
+                backupBtn.classList.add('!text-emerald-400');
+            }
+        }
+    }
+
+    export function exportBackupAndConvert015() {
+        if (!pendingConvertWorldId) return;
+        const worlds = getSavedWorlds();
+        const w = worlds.find(item => item.id === pendingConvertWorldId);
+        if (w) {
+            exportWorld(w.id, (w.name || 'world') + '_v0.1.5_backup');
+            if (typeof showToast === 'function') {
+                showToast('0.1.5 World backup exported!');
+            }
+        }
+        confirmConvertWorld015();
+    }
+
     export function renderWorldsList() {
         const listEl = document.getElementById('worlds-list');
         listEl.innerHTML = '';
@@ -7895,8 +8002,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             let difficulty = (w.difficulty || 'normal').toLowerCase();
             let diffName = difficulty.toUpperCase();
             let sizeName = (w.worldSize || (w.worldWidth > 700 ? 'big' : 'small')).toUpperCase();
-            let isCompatible = (w.gameVersion === GAME_VERSION && w.gameBuild === GAME_BUILD);
-            let versionClass = isCompatible ? 'world-badge-version' : 'world-badge-version-invalid';
+            let isCurrentVersion = (w.gameVersion === GAME_VERSION && w.gameBuild === GAME_BUILD);
+            let is015 = isWorldVersion015(w.gameVersion, w.gameBuild);
+            let isCompatible = isCurrentVersion || is015;
+            let versionClass = isCurrentVersion
+                ? 'world-badge-version'
+                : (is015 ? 'world-badge-version !bg-emerald-900 !text-emerald-100 border border-emerald-500/50' : 'world-badge-version-invalid');
 
             let info = document.createElement('div'); info.className = 'world-info flex-1';
             info.tabIndex = 0;
@@ -7907,14 +8018,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     <span class="world-badge world-badge-mode font-['VT323']">SURVIVAL</span>
                     <span class="world-badge font-['VT323'] bg-slate-700 text-slate-200">${sizeName}</span>
                     <span class="world-badge world-badge-difficulty-${difficulty} font-['VT323']">${diffName}</span>
-                    <span class="world-badge ${versionClass} font-['VT323']">v${w.gameVersion || 'older'}</span>
+                    <span class="world-badge ${versionClass} font-['VT323']">v${w.gameVersion || (is015 ? '0.1.5' : 'older')}</span>
+                    ${is015 ? '<span class="world-badge font-[\'VT323\'] bg-amber-700/85 text-amber-100 border border-amber-500/50" title="Click to convert and play in Beta 0.1.6">CONVERTIBLE</span>' : ''}
                     ${!isCompatible ? '<span class="world-badge world-badge-version-invalid font-[\'VT323\']">INCOMPATIBLE</span>' : ''}
                     ${!hasSaveData ? '<span class="world-badge font-[\'VT323\'] bg-amber-700 text-amber-100" title="Save data missing">NO SAVE DATA</span>' : ''}
                 </div>
                 <p class="world-meta text-lg font-['VT323'] font-bold mt-0.5">${hasSaveData ? `Day ${w.dayCount || 1} • ` : '<span class="inline-flex items-center text-amber-400 align-middle mr-1"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><polygon points="7,1 13,12 1,12" fill="#f59e0b"/><rect x="6" y="4" width="2" height="4" fill="#080a0c"/><rect x="6" y="9" width="2" height="2" fill="#080a0c"/></svg></span>Missing save data (click to repair or delete) • '}${new Date(w.lastPlayed).toLocaleString()}</p>
             `;
             if (isCompatible) {
-                info.onclick = () => loadWorld(w.id);
+                if (is015) {
+                    info.onclick = () => promptConvertWorld015(w.id);
+                } else {
+                    info.onclick = () => loadWorld(w.id);
+                }
             } else {
                 info.onclick = () => {
                     showToast(`Cannot play world '${w.name}': Incompatible version (Created in v${w.gameVersion || 'older'}, Client is v${GAME_VERSION}).`);
@@ -8356,7 +8472,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 if (!data.metadata || !data.gameData) throw new Error("Invalid world format");
                 let impVersion = data.metadata.gameVersion || data.gameData.gameVersion;
                 let impBuild = data.metadata.gameBuild || data.gameData.gameBuild;
-                if (impVersion !== GAME_VERSION || impBuild !== GAME_BUILD) {
+                if (!isWorldVersionCompatible(impVersion, impBuild)) {
                     showToast(`Cannot import world: Incompatible version (File is v${impVersion || 'older'}, Client is v${GAME_VERSION}).`);
                     event.target.value = '';
                     return;
@@ -8442,11 +8558,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }, 120);
     }
 
-    export function loadWorld(id) {
+    export function loadWorld(id, bypass015Prompt = false) {
         const worldInfo = getSavedWorlds().find(world => world.id === id);
-        if (worldInfo && (worldInfo.gameVersion !== GAME_VERSION || worldInfo.gameBuild !== GAME_BUILD)) {
-            showToast(`Cannot open world '${worldInfo.name}': Incompatible version (World is v${worldInfo.gameVersion || 'older'}, Client is v${GAME_VERSION}).`);
-            return;
+        if (worldInfo) {
+            if (!bypass015Prompt && isWorldVersion015(worldInfo.gameVersion, worldInfo.gameBuild)) {
+                promptConvertWorld015(id);
+                return;
+            }
+            if (!isWorldVersionCompatible(worldInfo.gameVersion, worldInfo.gameBuild)) {
+                showToast(`Cannot open world '${worldInfo.name}': Incompatible version (World is v${worldInfo.gameVersion || 'older'}, Client is v${GAME_VERSION}).`);
+                return;
+            }
         }
 
         const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('swc_data_' + id) : null;
@@ -8465,10 +8587,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             return;
         }
 
-        showSingleplayerLoading(worldInfo?.name);
-        setMultiplayerLoadingStatus('Reading save data', 34);
+        const isConverting = worldInfo && isWorldVersion015(worldInfo.gameVersion, worldInfo.gameBuild);
+        showSingleplayerLoading(isConverting ? `Converting ${worldInfo?.name || 'World'} to Beta 0.1.6...` : (worldInfo?.name || 'Loading world...'));
+        setMultiplayerLoadingStatus(isConverting ? 'Upgrading save data to v0.1.6' : 'Reading save data', 34);
         setTimeout(() => {
-            setMultiplayerLoadingStatus('Generating terrain', 58);
+            setMultiplayerLoadingStatus(isConverting ? 'Migrating terrain & structures' : 'Generating terrain', 58);
             setTimeout(() => loadWorldData(id), 260);
         }, 120);
     }
@@ -8509,13 +8632,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
         try {
             let data = JSON.parse(raw);
-            if (data.gameVersion !== GAME_VERSION || data.gameBuild !== GAME_BUILD) {
+            if (!isWorldVersionCompatible(data.gameVersion, data.gameBuild)) {
                 currentWorldId = null;
                 if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(null);
                 hideSingleplayerLoading();
                 showToast(`Cannot open world: Incompatible version (World is v${data.gameVersion || 'older'}, Client is v${GAME_VERSION}).`);
                 return;
             }
+            let worlds = getSavedWorlds();
+            let wInfo = worlds.find(w => w.id === currentWorldId);
+            const was015 = isWorldVersion015(data.gameVersion, data.gameBuild) || (wInfo && isWorldVersion015(wInfo.gameVersion, wInfo.gameBuild));
             
             // 1. Determine world dimensions first before decompression
             let targetSize = data.worldSize;
@@ -8770,8 +8896,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
             
             // 5. Update world metadata and upgrade version safely
-            let worlds = getSavedWorlds();
-            let wInfo = worlds.find(w => w.id === currentWorldId);
+            worlds = getSavedWorlds();
+            wInfo = worlds.find(w => w.id === currentWorldId);
             if(wInfo) {
                 wInfo.lastPlayed = Date.now();
                 wInfo.dayCount = dayCount;
@@ -8790,6 +8916,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             setMultiplayerLoadingStatus('Ready', 100);
             startGameplay();
             hideSingleplayerLoading();
+            if (was015) {
+                showToast(`World '${wInfo?.name || 'World'}' successfully converted to Beta 0.1.6!`);
+            }
         } catch(e) {
             console.error('Failed to load world', e);
             hideSingleplayerLoading();
@@ -11952,8 +12081,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
         },
         {
-            title: "Wildlife & Night Survival",
-            badge: "Survival & Combat",
+            title: "Hostile Mobs & Combat Survival",
+            badge: "Smarter AI & Defense",
             render(container) {
                 container.innerHTML = `
                     <div class="w-full flex flex-col items-center">
@@ -11963,42 +12092,42 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                         <div class="tutorial-grid-2">
                             <div class="tutorial-card">
                                 <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.RAW_PORKCHOP, "Porkchop")}
-                                    ${renderItemFrameHtml(IDS.WOOL, "Wool")}
+                                    ${renderItemFrameHtml(IDS.IRON_SWORD, "Sword")}
+                                    ${renderItemFrameHtml(IDS.BONE, "Bone")}
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title green">1. Peaceful Wildlife & Hunting</span>
-                                    <p class="tutorial-card-desc">Hunt Pigs for Porkchops to replenish hunger and regenerate health. Shear Sheep for cozy Wool.</p>
+                                    <span class="tutorial-card-title orange">1. Undead Bloodlust & Airborne Lunges</span>
+                                    <p class="tutorial-card-desc">Zombies sprint in frenzied bloodlust when near or wounded, vaulting 2-block walls and leaping through the air with knockback strikes. Damaging one alerts nearby packs!</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
                                 <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.SEEDS, "Seeds")}
-                                    ${renderItemFrameHtml(IDS.KINETIC_SHEARS, "Kinetic Shears")}
+                                    ${renderItemFrameHtml(IDS.DOOR, "Door")}
+                                    ${renderItemFrameHtml(IDS.TORCH, "Torch")}
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">2. Parrots & Kinetic Shears</span>
-                                    <p class="tutorial-card-desc">Tame Jungle Parrots with seeds to perch on your shoulders! Kinetic Shears harvest 3x wool and leaves instantly.</p>
+                                    <span class="tutorial-card-title purple">2. Shelter Defense & Door Splintering</span>
+                                    <p class="tutorial-card-desc">Wooden doors won't keep you safe forever on Normal and Hard! Relentless zombies bang on doors, fracturing and shattering them to reach you. Fortify your base!</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
                                 <div class="flex gap-1">
                                     ${renderItemFrameHtml(IDS.IRON_SWORD, "Sword")}
-                                    ${renderItemFrameHtml(IDS.BONE, "Bone")}
+                                    ${renderItemFrameHtml(IDS.IRON_AXE, "Axe")}
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">3. Monsters in the Dark</span>
-                                    <p class="tutorial-card-desc">Zombies, Skeletons, and Creepers spawn when night falls. Forge sharp Swords and armor to defend yourself!</p>
+                                    <span class="tutorial-card-title cyan">3. Weapon Knockback & Mob Poise</span>
+                                    <p class="tutorial-card-desc">Bare hands and tools deal minimal knockback and cannot halt charging mobs. Forge Swords and heavy Axes to break mob poise and push attackers away.</p>
                                 </div>
                             </div>
                             <div class="tutorial-card">
                                 <div class="flex gap-1">
                                     ${renderItemFrameHtml(IDS.BED, "Bed")}
-                                    ${renderItemFrameHtml(IDS.TORCH, "Torch")}
+                                    ${renderItemFrameHtml(IDS.SAND, "Sand")}
                                 </div>
                                 <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">4. Beds & Safe Haven</span>
-                                    <p class="tutorial-card-desc">Combine 3 Planks + 3 Wool. Right-Click a Bed at dusk to fast-forward safely to morning and set your spawn.</p>
+                                    <span class="tutorial-card-title gold">4. Ambush Stalkers & Desert Predators</span>
+                                    <p class="tutorial-card-desc">Creepers creep silently when you look away and drop-fuse from caverns above. Desert Scorpions burrow under sand to pounce and poison. Sleep at dusk to skip the night!</p>
                                 </div>
                             </div>
                         </div>
@@ -12297,7 +12426,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             [IDS.DIAMOND]: '#00e5ff',
             [IDS.RAW_PORKCHOP]: '#f472b6',
             [IDS.WOOL]: '#f8fafc',
-            [IDS.BONE]: '#f1f5f9'
+            [IDS.BONE]: '#f1f5f9',
+            [IDS.DOOR]: '#8d5d36',
+            [IDS.DOOR_TOP]: '#8d5d36',
+            [IDS.IRON_AXE]: '#cfd8dc'
         };
         ctx.fillStyle = fallbackColors[id] || '#5c4033';
         ctx.fillRect(ix, iy, size, size);
@@ -12757,10 +12889,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         // Unified Day / Night Split Backdrop
         drawTutorialBackdrop(ctx, w, h, groundY, 'day_night_split');
 
-        // Ground Terrain: 2 complete rows across entire canvas
+        // Ground Terrain: Day side grass/dirt, Night side with sand patch & shelter
         for (let x = 0; x < w; x += bSize) {
-            drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
-            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
+            const isSandPatch = (x >= halfW + 65 && x < halfW + 155);
+            const topBlock = isSandPatch ? IDS.SAND : IDS.GRASS;
+            const subBlock = isSandPatch ? IDS.SAND : IDS.DIRT;
+            drawTutorialBlock(ctx, topBlock, x, groundY, bSize);
+            drawTutorialBlock(ctx, subBlock, x, groundY + bSize, bSize);
         }
 
         // Night Darkness overlay on ground terrain for right half
@@ -12773,8 +12908,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         ctx.textAlign = 'center';
         ctx.fillText('DAY: PEACEFUL FAUNA', halfW / 2, 22);
 
-        ctx.fillStyle = '#f87171';
-        ctx.fillText('NIGHT: DANGEROUS MONSTERS', halfW + halfW / 2, 22);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('NIGHT: SMARTER, DEADLIER MONSTERS', halfW + halfW / 2, 22);
 
         // Day Animals (grounded properly with feet on groundY)
         try {
@@ -12794,34 +12929,63 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         drawTutorialBlock(ctx, IDS.FLOWER_RED, 145, groundY - 18, 20);
         drawTutorialBlock(ctx, IDS.FLOWER_YELLOW, 290, groundY - 18, 20);
 
-        // Night Hostile Mobs (grounded properly with feet on groundY)
+        // Night Hostile Mobs with Smarter AI visuals
         try {
-            if (typeof Zombie === 'function') {
-                const z = new Zombie(halfW + 60, groundY - 58);
-                z.facingRight = false;
-                z.draw(ctx, 0, 0);
-            }
+            // Creeper stalking quietly
             if (typeof Creeper === 'function') {
-                const cr = new Creeper(halfW + 155, groundY - 58);
-                cr.facingRight = false;
+                const cr = new Creeper(halfW + 20, groundY - 58);
+                cr.facingRight = true;
                 cr.draw(ctx, 0, 0);
+            }
+            // Desert Scorpion poised on sand with raised stinger
+            if (typeof Scorpion === 'function') {
+                const sc = new Scorpion(halfW + 95, groundY - 16);
+                sc.facingRight = true;
+                sc.tailStrikeTime = 12;
+                sc.draw(ctx, 0, 0);
+            }
+            // Frenzied Zombie lunging with glowing red eyes and snarling jaw towards shelter door
+            if (typeof Zombie === 'function') {
+                const z = new Zombie(halfW + 168, groundY - 58);
+                z.facingRight = true;
+                z.isFrenzied = true;
+                z.isLunging = true;
+                z.draw(ctx, 0, 0);
             }
         } catch(e) {}
 
-        // Shelter on right with Bed & Torch
-        drawTutorialBlock(ctx, IDS.PLANKS, w - 110, groundY - bSize, bSize);
-        drawTutorialBlock(ctx, IDS.PLANKS, w - 110, groundY - bSize * 2, bSize);
-        drawTutorialBlock(ctx, IDS.PLANKS, w - 86, groundY - bSize * 2, bSize);
-        drawTutorialBlock(ctx, IDS.PLANKS, w - 62, groundY - bSize * 2, bSize);
+        // Shelter on right with Bed, Torch, Planks & Door
+        const shelterDoorX = halfW + 242;
+        // Wooden Door being breached
+        drawTutorialBlock(ctx, IDS.DOOR_TOP, shelterDoorX, groundY - 48, 24);
+        drawTutorialBlock(ctx, IDS.DOOR, shelterDoorX, groundY - 24, 24);
 
-        drawTutorialBlock(ctx, IDS.BED, w - 85, groundY - 18, 36);
-        drawTutorialBlock(ctx, IDS.TORCH, w - 108, groundY - bSize * 1.5, 20);
+        // Door stress/banging wood crack particles
+        ctx.fillStyle = '#ffedd5';
+        ctx.fillRect(shelterDoorX + 3, groundY - 34, 3, 3);
+        ctx.fillRect(shelterDoorX + 12, groundY - 22, 2, 2);
+        ctx.fillRect(shelterDoorX + 7, groundY - 14, 3, 2);
+        ctx.fillStyle = '#b45309';
+        ctx.fillRect(shelterDoorX + 9, groundY - 30, 1, 6);
+        ctx.fillRect(shelterDoorX + 5, groundY - 18, 1, 5);
 
-        const tGlow = ctx.createRadialGradient(w - 98, groundY - 24, 2, w - 98, groundY - 24, 38);
-        tGlow.addColorStop(0, 'rgba(255, 180, 50, 0.35)');
+        // Planks frame & roof
+        drawTutorialBlock(ctx, IDS.PLANKS, shelterDoorX + 24, groundY - bSize * 2, bSize);
+        drawTutorialBlock(ctx, IDS.PLANKS, shelterDoorX + 48, groundY - bSize * 2, bSize);
+        drawTutorialBlock(ctx, IDS.PLANKS, shelterDoorX + 72, groundY - bSize * 2, bSize);
+        drawTutorialBlock(ctx, IDS.PLANKS, shelterDoorX + 96, groundY - bSize * 2, bSize);
+        drawTutorialBlock(ctx, IDS.PLANKS, shelterDoorX + 96, groundY - bSize, bSize);
+
+        // Bed & Torch inside shelter
+        drawTutorialBlock(ctx, IDS.BED, shelterDoorX + 36, groundY - 18, 36);
+        drawTutorialBlock(ctx, IDS.TORCH, shelterDoorX + 88, groundY - bSize * 1.5, 20);
+
+        // Warm torch glow
+        const tGlow = ctx.createRadialGradient(shelterDoorX + 96, groundY - 26, 2, shelterDoorX + 96, groundY - 26, 42);
+        tGlow.addColorStop(0, 'rgba(255, 180, 50, 0.4)');
         tGlow.addColorStop(1, 'rgba(255, 180, 50, 0)');
         ctx.fillStyle = tGlow;
-        ctx.fillRect(w - 138, groundY - 60, 80, 75);
+        ctx.fillRect(shelterDoorX + 50, groundY - 62, 90, 78);
     }
 
     export function drawTutorialArmorScene() {
@@ -13605,6 +13769,13 @@ try { if (typeof renderPatchNoteList !== "undefined") window.renderPatchNoteList
 try { if (typeof renderRecentSkinColors !== "undefined") window.renderRecentSkinColors = renderRecentSkinColors; } catch(e) {}
 try { if (typeof renderSkinLibrary !== "undefined") window.renderSkinLibrary = renderSkinLibrary; } catch(e) {}
 try { if (typeof renderWhatsNewHistory !== "undefined") window.renderWhatsNewHistory = renderWhatsNewHistory; } catch(e) {}
+try { if (typeof isWorldVersion015 !== "undefined") window.isWorldVersion015 = isWorldVersion015; } catch(e) {}
+try { if (typeof isWorldVersionCompatible !== "undefined") window.isWorldVersionCompatible = isWorldVersionCompatible; } catch(e) {}
+try { if (typeof promptConvertWorld015 !== "undefined") window.promptConvertWorld015 = promptConvertWorld015; } catch(e) {}
+try { if (typeof closeConvertWorldModal !== "undefined") window.closeConvertWorldModal = closeConvertWorldModal; } catch(e) {}
+try { if (typeof confirmConvertWorld015 !== "undefined") window.confirmConvertWorld015 = confirmConvertWorld015; } catch(e) {}
+try { if (typeof exportBackup015Only !== "undefined") window.exportBackup015Only = exportBackup015Only; } catch(e) {}
+try { if (typeof exportBackupAndConvert015 !== "undefined") window.exportBackupAndConvert015 = exportBackupAndConvert015; } catch(e) {}
 try { if (typeof renderWorldsList !== "undefined") window.renderWorldsList = renderWorldsList; } catch(e) {}
 try { if (typeof resetAccentColor !== "undefined") window.resetAccentColor = resetAccentColor; } catch(e) {}
 try { if (typeof resetAchievements !== "undefined") window.resetAchievements = resetAchievements; } catch(e) {}
