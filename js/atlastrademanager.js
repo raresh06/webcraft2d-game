@@ -1,5 +1,5 @@
 // =============================================================================
-// WEBCRAFT 2D - ATLAS TRADE MANAGER (AtlasTradeManager.js)
+// WEBCRAFT 2D - ATLAS TRADE MANAGER (atlastrademanager.js)
 // Catalog, stock rolling, validation, and execution for Kael's Astral Market
 // =============================================================================
 

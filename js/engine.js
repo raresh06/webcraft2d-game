@@ -13394,13 +13394,24 @@ export const SKIN_H = 32;
         if (typeof document === 'undefined') return;
         const loader = document.getElementById('boot-loading-screen');
         if (!loader || loader.classList.contains('dismissed')) return;
-        loader.classList.add('dismissed');
-        loader.style.opacity = '0';
-        loader.style.pointerEvents = 'none';
+
+        // Smoothly complete progress bar and status text before fading
+        const bar = document.getElementById('boot-loading-bar-fill');
+        const percent = document.getElementById('boot-loading-percent');
+        const status = document.getElementById('boot-loading-status-text');
+        if (bar) bar.style.width = '100%';
+        if (percent) percent.innerText = '100%';
+        if (status) status.innerText = 'Ready to explore!';
+
         setTimeout(() => {
-            loader.style.display = 'none';
-            loader.classList.add('hidden');
-        }, 450);
+            loader.classList.add('dismissed');
+            loader.style.opacity = '0';
+            loader.style.pointerEvents = 'none';
+            setTimeout(() => {
+                loader.style.display = 'none';
+                loader.classList.add('hidden');
+            }, 450);
+        }, 160);
     }
     export let menuEntities = [];
     export let menuTime = 0.20 + Math.random() * 0.15;

@@ -1,5 +1,5 @@
 // =============================================================================
-// WEBCRAFT 2D - DEVELOPER DEBUG CONSOLE (devConsole.js)
+// WEBCRAFT 2D - DEVELOPER DEBUG CONSOLE (devconsole.js)
 // Comprehensive In-Game Debug & Cheats Suite
 // Undisruptive Corner-Docked Live Debug Panel
 // =============================================================================
@@ -11,7 +11,7 @@ import {
     TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, Particle, particles,
     Zombie, Creeper, Scorpion, Gloomstalker, Pig, Chicken, Sheep, Cow, Pigeon, Parrot, AtlasExplorer
 } from './engine.js';
-import { getPixelIconSvg } from './icons/pixelIcons.js';
+import { getPixelIconSvg } from './icons/pixelicons.js';
 
 // UI & Audio helper bridges (resolved dynamically via window to avoid circular or CDN dependencies)
 const giveItem = (id, count) => {

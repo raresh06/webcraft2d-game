@@ -180,17 +180,54 @@
             transition: color 0.15s ease, filter 0.15s ease, transform 0.15s ease;
         }
         @media (max-width: 480px) { .mc-title { font-size: 88px; } }
-        #main-menu .menu-brand { position: relative; top: -80px; left: 0; }
-        #main-menu .menu-brand .game-github-link {
-            display: inline-block;
-            text-decoration: none;
-            cursor: pointer;
+        .mc-logo-img {
+            width: min(960px, 92vw);
+            max-width: 960px;
+            height: auto;
+            aspect-ratio: 1024 / 256;
+            display: block;
+            margin: 0 auto;
+            user-select: none;
+            -webkit-user-drag: none;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+            filter: 
+                drop-shadow(6px 6px 0px rgba(0, 0, 0, 0.95))
+                drop-shadow(10px 10px 4px rgba(0, 0, 0, 0.70))
+                drop-shadow(0 16px 32px rgba(0, 0, 0, 0.85));
+            pointer-events: none;
+            cursor: default;
+            transition: none;
         }
-        #main-menu .menu-brand .game-github-link:hover .mc-title,
-        #main-menu .menu-brand .mc-title:hover {
-            color: #ffffff;
-            filter: drop-shadow(0 0 18px var(--mc-accent-glow)) drop-shadow(0 0 30px var(--mc-accent-glow));
-            transform: scale(1.02);
+        @media (max-width: 768px) {
+            .mc-logo-img {
+                width: min(680px, 92vw);
+                filter: 
+                    drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.95))
+                    drop-shadow(8px 8px 3px rgba(0, 0, 0, 0.70))
+                    drop-shadow(0 12px 24px rgba(0, 0, 0, 0.85));
+            }
+        }
+        @media (max-width: 480px) {
+            .mc-logo-img {
+                width: min(420px, 94vw);
+                filter: 
+                    drop-shadow(3px 3px 0px rgba(0, 0, 0, 0.95))
+                    drop-shadow(5px 5px 2px rgba(0, 0, 0, 0.70));
+            }
+        }
+        #main-menu .menu-brand {
+            position: relative;
+            top: -16px;
+            left: 0;
+            cursor: default;
+            user-select: none;
+        }
+        #main-menu .menu-brand:hover,
+        #main-menu .menu-brand .mc-logo-img:hover {
+            transform: none !important;
+            cursor: default !important;
         }
         .author-github-link, .game-github-link {
             cursor: pointer;
@@ -3025,14 +3062,45 @@
         }
         
         .mc-splash {
-            color: #FFFF00; font-size: 32px; transform: rotate(-15deg);
-            position: absolute; right: -60px; bottom: -5px;
-            text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000; 
-            animation: pulse 1s alternate infinite;
-            font-family: 'VT323', monospace; font-weight: bold; white-space: nowrap;
+            color: #FFFF00;
+            font-size: 26px;
+            transform: translate(-50%, -50%) rotate(-18deg);
+            transform-origin: center center;
+            position: absolute;
+            left: 86%;
+            top: 74%;
+            text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+            animation: mc-splash-grow 1.8s ease-in-out infinite;
+            font-family: 'VT323', monospace;
+            font-weight: bold;
+            white-space: nowrap;
             image-rendering: pixelated;
+            pointer-events: none;
+            user-select: none;
+            z-index: 20;
         }
-        @keyframes pulse { from { transform: rotate(-15deg) scale(1); } to { transform: rotate(-15deg) scale(1.12); } }
+        @media (max-width: 768px) {
+            .mc-splash {
+                font-size: 18px !important;
+                left: 86%;
+                top: 74%;
+            }
+        }
+        @media (max-width: 480px) {
+            .mc-splash {
+                font-size: 14px !important;
+                left: 86%;
+                top: 74%;
+            }
+        }
+        @keyframes mc-splash-grow {
+            0%, 100% {
+                transform: translate(-50%, -50%) rotate(-18deg) scale(0.92);
+            }
+            50% {
+                transform: translate(-50%, -50%) rotate(-18deg) scale(1.06);
+            }
+        }
         
         #inventory-menu {
             background: rgba(35, 35, 35, 0.95); border: 4px solid #111;
@@ -4443,41 +4511,152 @@ html.closed-beta-pending #boot-loading-screen {
     display: none !important;
 }
 
-#boot-loading-screen {
+.boot-loading-container {
     position: fixed;
     inset: 0;
     z-index: 90000 !important;
-    background: #0a0b0e;
+    background: #000000 !important;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    user-select: none;
     transition: opacity 0.45s ease-out, visibility 0.45s ease-out;
 }
 
-#boot-loading-screen.dismissed {
+.boot-loading-container.dismissed {
     opacity: 0 !important;
     pointer-events: none !important;
     visibility: hidden !important;
 }
 
-@keyframes bootLoadingPulse {
-    0% {
-        width: 15%;
-        transform: translateX(0%);
-    }
-    50% {
-        width: 65%;
-        transform: translateX(30%);
-    }
-    100% {
-        width: 30%;
-        transform: translateX(200%);
-    }
+.boot-loading-card {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 92%;
+    max-width: 720px;
+    text-align: center;
 }
 
-.boot-loading-pulse-bar {
-    animation: bootLoadingPulse 1.6s ease-in-out infinite alternate;
+.boot-logo-wrapper {
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.boot-logo-img {
+    width: min(720px, 92vw);
+    max-width: 720px;
+    height: auto;
+    aspect-ratio: 1024 / 256;
+    display: block;
+    margin: 0 auto;
+    user-select: none;
+    -webkit-user-drag: none;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    filter: 
+        drop-shadow(6px 6px 0px rgba(0, 0, 0, 0.95))
+        drop-shadow(10px 10px 4px rgba(0, 0, 0, 0.70))
+        drop-shadow(0 16px 32px rgba(0, 0, 0, 0.85));
+    animation: bootLogoBreathe 3.5s ease-in-out infinite;
+}
+
+@keyframes bootLogoBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.boot-progress-box {
+    width: min(520px, 90vw);
+    max-width: 520px;
+    margin-bottom: 14px;
+}
+
+.boot-progress-track {
+    height: 22px;
+    padding: 3px;
+    background: #090c10;
+    border: 3px solid;
+    border-top-color: #1a222c;
+    border-left-color: #1a222c;
+    border-right-color: #4b5866;
+    border-bottom-color: #4b5866;
+    box-shadow: inset 2px 2px 0 #000, 3px 3px 0 rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.boot-progress-fill {
+    height: 100%;
+    background: linear-gradient(180deg, #ffe57f 0%, #ffd447 48%, #e6b800 52%, #b38600 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+    transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.boot-progress-shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+    animation: bootShimmer 2.2s infinite ease-in-out;
+}
+
+@keyframes bootShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.boot-progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    font-family: 'VT323', monospace;
+    font-size: 24px;
+    color: #e2e8f0;
+    text-shadow: 2px 2px 0 #000;
+    letter-spacing: 1px;
+}
+
+.boot-progress-percent {
+    color: #ffd447;
+    font-weight: bold;
+}
+
+.boot-tip-box {
+    margin-top: 14px;
+    max-width: 520px;
+    width: 100%;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    line-height: 1.25;
+    color: #cbd5e1;
+    text-shadow: 1px 1px 0 #000;
+    padding: 8px 14px;
+    background: rgba(14, 18, 25, 0.75);
+    border: 2px solid #2d3748;
+    border-top-color: #3b4759;
+    border-left-color: #3b4759;
+    border-right-color: #171d26;
+    border-bottom-color: #171d26;
+    box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.5), 2px 2px 0 rgba(0, 0, 0, 0.4);
+    letter-spacing: 0.5px;
+}
+
+.boot-tip-label {
+    color: #ffd700;
+    font-weight: bold;
+    margin-right: 6px;
+    text-shadow: 1px 1px 0 #000;
 }
 
 @keyframes bootDotsPulse {
@@ -4488,10 +4667,59 @@ html.closed-beta-pending #boot-loading-screen {
 }
 
 .boot-loading-dots {
+    color: #ffd447;
     display: inline-block;
-    min-width: 24px;
+    min-width: 20px;
     text-align: left;
     animation: bootDotsPulse 1.4s infinite steps(1);
+}
+
+@media (max-width: 768px) {
+    .boot-logo-img { width: min(540px, 92vw); }
+    .boot-progress-box { width: min(440px, 90vw); }
+}
+
+@media (max-width: 480px) {
+    .boot-logo-img { width: min(360px, 92vw); }
+    .boot-progress-info { font-size: 20px; }
+    .boot-tip-box { font-size: 17px; padding: 6px 10px; }
+}
+
+/* World Loading Overlay (Singleplayer & Multiplayer) */
+.world-loading-screen {
+    position: fixed !important;
+    inset: 0 !important;
+    background: #000000 !important;
+    z-index: 90000 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    user-select: none !important;
+}
+
+.world-loading-screen.hidden {
+    display: none !important;
+}
+
+.world-loading-title {
+    color: #ffd447;
+    font-family: 'VT323', monospace;
+    font-size: clamp(30px, 4.5vw, 40px);
+    line-height: 1;
+    margin: 0 0 6px;
+    text-shadow: 3px 3px 0 #000;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.world-loading-subtitle {
+    color: #94a3b8;
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    line-height: 1;
+    margin: 0 0 18px;
+    text-shadow: 2px 2px 0 #000;
 }
 
 @keyframes closedBetaShake {

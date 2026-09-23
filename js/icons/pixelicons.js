@@ -1,5 +1,5 @@
 // =============================================================================
-// WEBCRAFT 2D - PIXEL-ART ICONS & SPRITES REGISTRY (js/icons/pixelIcons.js)
+// WEBCRAFT 2D - PIXEL-ART ICONS & SPRITES REGISTRY (js/icons/pixelicons.js)
 // Centralized 16x16 Crisp Pixel-Art SVG Library
 // Eliminates raw Unicode emojis and hard-coded inline SVGs across the game.
 // =============================================================================

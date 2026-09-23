@@ -7,9 +7,9 @@ import * as Network from './network.js';
 import * as Engine from './engine.js';
 import * as UI from './ui.js';
 import * as Gamepad from './gamepad.js';
-import { RiftExplorerSpawner } from './RiftExplorerSpawner.js';
-import { AtlasTradeManager } from './AtlasTradeManager.js';
-import { DevConsole } from './devConsole.js';
+import { RiftExplorerSpawner } from './riftexplorerspawner.js';
+import { AtlasTradeManager } from './atlastrademanager.js';
+import { DevConsole } from './devconsole.js';
 
 // Expose exports to window for HTML inline event handlers (e.g. onclick)
 import {

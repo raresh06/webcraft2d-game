@@ -38,17 +38,17 @@ import {
 import {
     COSMETIC_CATEGORIES, COSMETICS_CATALOG, getCosmeticItem, getCosmeticsByCategory,
     getDefaultCustomization, isCosmeticUnlocked
-} from './cosmeticsCatalog.js';
+} from './cosmeticscatalog.js';
 import * as Gamepad from './gamepad.js';
 import { jukebox, getAudioTrack, saveAudioTrack, deleteAudioTrack } from './jukebox.js';
-import { RiftExplorerSpawner } from './RiftExplorerSpawner.js';
+import { RiftExplorerSpawner } from './riftexplorerspawner.js';
 import {
     getPixelIconSvg,
     getPixelEmeraldSvg as getPixelEmeraldSvgDef,
     getPixelAstralEmeraldSvg as getPixelAstralEmeraldSvgDef,
     getPixelPadlockSvg as getPixelPadlockSvgDef,
     getPixelWarningSvg as getPixelWarningSvgDef
-} from './icons/pixelIcons.js';
+} from './icons/pixelicons.js';
 import {
     updateToggleBtnState,
     updatePresetTabsState,
@@ -56,7 +56,7 @@ import {
     renderStandardToggleRow,
     renderStandardButton,
     renderStandardModal
-} from './ui/standardComponents.js';
+} from './ui/standardcomponents.js';
 
 export const INVENTORY_SIZE = 28;
 export const SKIN_W = 16;
@@ -293,51 +293,145 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     updateVersionLabels();
 
     export const SPLASH_TEXTS = [
+        // Classic & Smart Sandbox
         'Multiplayer!',
         'Now with extra pixels!',
         'Creepers hate this trick!',
         'Mine responsibly!',
         '100% blocky!',
-        'Probably not a bug!',
-        'Build something weird!',
-        'Diamonds await!',
-        'The night is watching!',
+        'Probably not a feature!',
+        'Build something legendary!',
+        'Diamonds await the bold!',
+        'The night is full of surprises!',
         'Craft. Explore. Survive.',
-        'No trees were harmed!',
-        'Powered by redstone-ish code!',
-        'Hey Adnana:))))))',
-        'Sigma Skibidi 67',
-        'Cum the cheama? Bors cu zeama',
-        'Shalom Shabbat',
-        'What the sigma?!',
-        'Bro is cooking in 2D',
-        'Rizzing up the villagers!',
-        'Fanum tax on your diamonds!',
-        'Real and true!',
-        'Mewing in the mines!',
-        'Only in Ohio!',
-        'Chat is this real?!',
-        'Go touch some grass blocks!',
-        'Creeper behind you? Cap.',
-        'Unemployed behavior fr fr',
-        '100% brainrot certified!',
-        'Main character energy!',
-        'Bro got that blocky rizz',
-        'Straight bussin, no cap!',
-        'POV: You fell 5 blocks',
-        'Living rent free in a dirt hut!',
-        'NPC behavior!',
-        'Valid and based!',
-        'Never dig straight down!',
-        'Stairs go brrrr!',
+        'No trees were harmed in the making!',
+        'Powered by vanilla canvas!',
+        'Never dig straight down... seriously!',
         'Climbing the ladder of success!',
         'A certified Webcraft classic!',
-        'Crafting table goes hard!',
-        'No wifi? Still grinding.',
-        'Mining at 3 AM!',
-        'Peak 2D gaming!',
-        'Built different!',
-        'Sheesh!'
+        'No wifi? Still crafting.',
+        'Mining at 3 AM hits different!',
+        'Peak 2D voxel sandbox!',
+        'Built with coffee and code!',
+        'Water buckets: the ultimate life insurance!',
+        'Punching trees builds true character!',
+        'Torches keep the nightmares away!',
+        'Always carry spare wooden pickaxes!',
+        'The cake restores six hunger points!',
+        'The floor is literally lava at layer 55!',
+        'Press F3 for existential coordinates!',
+        'Quantum tunneling through 1-block steps!',
+        'Gravity: optional for trees, mandatory for sand!',
+        'Stacking blocks since the dawn of the browser!',
+        'Cartography: turning darkness into knowledge!',
+        'An ocean of stars above, stone below!',
+        'Listen closely to the cavern ambiance...',
+        'Crafting your destiny, one pixel at a time!',
+        '2D world, infinite imagination!',
+        'Ancient secrets buried deep underground!',
+        'The stars align for the intrepid traveler!',
+        'A masterpiece of retro block charm!',
+        'Never leave home without a crafting table!',
+        'One small step for Steve, one giant leap for block-kind!',
+        'Legendary expeditions begin with a wooden sword!',
+        'Redstone logic is Turing complete!',
+        'Keep your swords sharp and your torches bright!',
+        'Beware of low-hanging cavern stalactites!',
+        'Look both ways before crossing a ravine!',
+        'Pigs fly only when launched by pistons!',
+        'Furnaces running at maximum thermal efficiency!',
+        'Sun rises in the east... check your compass!',
+        'Sleep tight, do not let the zombies bite!',
+        'Emeralds: the universal currency of the realm!',
+        '0% assembly, 100% pure canvas rendering!',
+        'Written entirely with semicolons!',
+        'Git commit -m "placed more torches"!',
+        'Stack overflow in the double chest!',
+        'Cache hit: found coal right near the surface!',
+        'Schrödinger\'s Creeper is both behind you and not!',
+        'Newton discovered gravity by dropping sand!',
+        'Do androids dream of electric creepers?',
+        'There is no spoon, only an iron shovel!',
+        'It\'s dangerous to go alone, take this pickaxe!',
+        'All your base are belong to us!',
+        'May the force of gravity be with you!',
+        'A wizard is never late, he respawns on time!',
+        'Fly, you fools... unless you have feather boots!',
+        'One does not simply walk into the Nether!',
+        'To infinity and bedrock!',
+        'Houston, we have placed a torch!',
+        'Winter is coming: craft some leather armor!',
+        'I see friendly sheep!',
+        'I am the one who knocks... on wooden doors!',
+        'Say my name: Planar Cartographer!',
+        'Elementary, my dear Explorer!',
+        'E = mc-squared: Energy equals Mining times Crafting!',
+        // Clever Rock, Alternative & Musical Culture Nods
+        'It starts with one block...',
+        'Crawling in the deep caverns!',
+        'In the end, every diamond matters!',
+        'One step closer to bedrock!',
+        'Waiting for the sunrise that never comes!',
+        'Breaking the habit of digging straight down!',
+        'Somewhere I belong... in a stone fortress!',
+        'What I\'ve done with cobblestone!',
+        'From the inside of the dungeon!',
+        'Faint footsteps in the dark...',
+        'Bleed it out on a desert cactus!',
+        'Never given up on finding diamonds!',
+        'Burn it down with flint and steel!',
+        'Heavy is the crown of golden helmets!',
+        'Papercut from an enchanted book!',
+        'Points of authority in the village!',
+        'Lost in the echo of the caves!',
+        'Numb to the creeper explosions!',
+        'A place for my head... on a red bed!',
+        'Castle of glass and obsidian!',
+        'Another one bites the dust block!',
+        'Under pressure at the world boundary!',
+        'Bohemian rhapsody in 2D!',
+        'Don\'t stop me now, I\'m mining!',
+        'Highway to the deepest cavern!',
+        'Back in black obsidian armor!',
+        'Thunderstruck by a mountain storm!',
+        'For those about to craft, we salute you!',
+        'Smells like teen spirit and gunpowder!',
+        'Come as you are, bring your pickaxe!',
+        'Master of puppets and skeleton archers!',
+        'Enter Sandman: sleep through the night!',
+        'Fade to black when daylight fades!',
+        'Nothing else matters except surviving!',
+        'Comfortably numb in a warm water spring!',
+        'Wish you were here exploring dungeons!',
+        'Another brick in the castle wall!',
+        'Time is ticking on the celestial clock!',
+        'Clint Eastwood with an infinity bow!',
+        'Feel Good Inc. in the canopy treehouse!',
+        'Harder, better, faster, stronger pickaxes!',
+        'Around the world in 256 chunks!',
+        'Seven nation army couldn\'t siege this fortress!',
+        'Sweet child o\' mine in a fortified bunker!',
+        'Welcome to the jungle biome!',
+        'Paint it black like raw coal ore!',
+        'Don\'t stop believin\' in cave diamonds!',
+        'Stairway to heaven built out of cobblestone!',
+        'Kashmir desert temple expeditions!',
+        'Whole lotta love for underground loot!',
+        'Knockin\' on heaven\'s oak door!',
+        'Iron Man armor fully forged!',
+        'Paranoid about cavern ambient noises!',
+        'War pigs grazing peacefully on the hill!',
+        'Dream on until the sun rises!',
+        'Livin\' on a prayer with half a heart!',
+        'You give love a bad name, Creeper!',
+        'Crazy train riding down the mineshaft track!',
+        'Bark at the full moon!',
+        'Symphony of destruction with ten TNT blocks!',
+        'Holy wars and the quest for emeralds!',
+        'Roxanne, don\'t put on the redstone light!',
+        'Every breath you take, the Gloomstalker watches!',
+        'Message in a glass bottle!',
+        'Fortunate son with a diamond shovel!'
     ];
     export let lastSplashText = '';
 
@@ -350,6 +444,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
         lastSplashText = nextSplash;
         splash.innerText = nextSplash;
+
+        // Dynamic font-size scaling: keep text bold, readable, and properly proportioned around the corner
+        if (nextSplash.length > 40) {
+            splash.style.fontSize = '23px';
+        } else if (nextSplash.length > 25) {
+            splash.style.fontSize = '26px';
+        } else {
+            splash.style.fontSize = '29px';
+        }
     }
 
     setRandomSplashText();
@@ -8643,18 +8746,65 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }, 120);
     }
 
+    export const MINECRAFT_LOADING_TIPS = [
+        "Never dig straight down into unexplored darkness!",
+        "Always carry spare torches when exploring cavern depths.",
+        "Water buckets can safely cushion long falls.",
+        "Keep your swords sharp and your torches bright.",
+        "Torches prevent monsters from spawning in dark caverns.",
+        "Sneak near cliffs to prevent falling over the edge.",
+        "Press E at any time to open your backpack and crafting grid.",
+        "Astral Shards can be infused to forge immortal gear.",
+        "Furnaces smelt ores faster when stocked with coal or charcoal.",
+        "Craft a bed to set your personal respawn point.",
+        "Wooden doors keep zombies from wandering into your shelter.",
+        "Lava pools wait at depth 55... tread carefully.",
+        "Listen closely for cavern ambiance and water echoes.",
+        "Plant saplings to renew your wood supply.",
+        "Food restores your hunger bar, allowing health regeneration.",
+        "Gold tools mine quickly, but break easily."
+    ];
+
+    export function getRandomLoadingTip() {
+        return MINECRAFT_LOADING_TIPS[Math.floor(Math.random() * MINECRAFT_LOADING_TIPS.length)];
+    }
+    try { window.getRandomLoadingTip = getRandomLoadingTip; } catch (e) {}
+
     export function showSingleplayerLoading(text = 'Loading world...') {
         const screen = document.getElementById('loading-screen');
         const status = document.getElementById('multiplayer-loading-status');
         const title = document.getElementById('multiplayer-loading-title');
+        const subtitle = document.getElementById('multiplayer-loading-room');
+        const tipEl = document.getElementById('world-loading-tip-text');
+        const fillEl = document.getElementById('multiplayer-loading-fill');
+        const percentEl = document.getElementById('multiplayer-loading-percent');
+        const errorEl = document.getElementById('multiplayer-loading-error');
+        const actionsEl = document.getElementById('multiplayer-loading-actions');
+
         if (title) title.innerText = 'Loading World';
-        if (status) status.innerText = text;
-        if (screen) screen.classList.remove('hidden');
+        if (subtitle) subtitle.innerText = text ? `${text}` : 'Preparing world';
+        if (status) status.innerText = 'Reading save data';
+        if (tipEl) tipEl.innerText = getRandomLoadingTip();
+        if (fillEl) fillEl.style.width = '12%';
+        if (percentEl) percentEl.innerText = '12%';
+        if (errorEl) { errorEl.innerText = ''; errorEl.classList.remove('visible'); }
+        if (actionsEl) actionsEl.classList.add('hidden');
+        if (screen) {
+            screen.classList.remove('hidden');
+            screen.style.setProperty('display', 'flex', 'important');
+            screen.style.setProperty('background', '#000000', 'important');
+            screen.style.setProperty('z-index', '90000', 'important');
+        }
     }
 
     export function hideSingleplayerLoading() {
         const screen = document.getElementById('loading-screen');
-        if (screen) screen.classList.add('hidden');
+        if (screen) {
+            screen.classList.add('hidden');
+            screen.style.removeProperty('display');
+            screen.style.removeProperty('z-index');
+            screen.style.removeProperty('background');
+        }
     }
 
     export function loadWorldData(id) {

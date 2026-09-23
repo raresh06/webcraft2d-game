@@ -1,5 +1,5 @@
 // =============================================================================
-// WEBCRAFT 2D - RIFT EXPLORER SPAWNER (RiftExplorerSpawner.js)
+// WEBCRAFT 2D - RIFT EXPLORER SPAWNER (riftexplorerspawner.js)
 // Controls Kael, The Atlas Explorer's planar rift arrivals, anchors, & departure cycles
 // =============================================================================
 

@@ -2331,8 +2331,11 @@ if (typeof window !== 'undefined') {
     export function setMultiplayerLoadingStatus(status, progress) {
         const statusEl = document.getElementById('multiplayer-loading-status');
         const fillEl = document.getElementById('multiplayer-loading-fill');
+        const percentEl = document.getElementById('multiplayer-loading-percent');
         if (statusEl) statusEl.innerText = status;
-        if (fillEl) fillEl.style.width = `${Math.max(8, Math.min(100, progress))}%`;
+        const clamped = Math.max(0, Math.min(100, Math.round(progress || 0)));
+        if (fillEl) fillEl.style.width = `${Math.max(8, clamped)}%`;
+        if (percentEl) percentEl.innerText = `${clamped}%`;
     }
 
     export function showMultiplayerLoadingError(message) {
@@ -2348,24 +2351,30 @@ if (typeof window !== 'undefined') {
         const roomEl = document.getElementById('multiplayer-loading-room');
         const errorEl = document.getElementById('multiplayer-loading-error');
         const actionsEl = document.getElementById('multiplayer-loading-actions');
+        const tipEl = document.getElementById('world-loading-tip-text');
         if (titleEl) titleEl.innerText = 'Connecting to Server';
-        if (roomEl) roomEl.innerText = `Joining ${roomName}`;
+        if (roomEl) roomEl.innerText = roomName ? `Joining ${roomName}` : 'Connecting to multiplayer room';
         if (errorEl) { errorEl.innerText = ''; errorEl.classList.remove('visible'); }
         if (actionsEl) actionsEl.classList.add('hidden');
+        if (tipEl) {
+            tipEl.innerText = (typeof window !== 'undefined' && typeof window.getRandomLoadingTip === 'function') 
+                ? window.getRandomLoadingTip() 
+                : "Always carry spare torches when exploring cavern depths.";
+        }
         setMultiplayerLoadingStatus('Signing in', 12);
     }
 
     export function showMultiplayerLoading(roomName) {
         const loadingScreen = document.getElementById('loading-screen');
         if (!loadingScreen) return;
-        document.getElementById('multiplayer-modal').classList.add('hidden');
-        document.getElementById('main-menu').classList.add('hidden');
-        document.getElementById('worlds-menu').classList.add('hidden');
-        document.getElementById('shared-menu-bg').classList.add('hidden');
+        document.getElementById('multiplayer-modal')?.classList.add('hidden');
+        document.getElementById('main-menu')?.classList.add('hidden');
+        document.getElementById('worlds-menu')?.classList.add('hidden');
+        document.getElementById('shared-menu-bg')?.classList.add('hidden');
         loadingScreen.classList.remove('hidden');
         loadingScreen.style.setProperty('display', 'flex', 'important');
-        loadingScreen.style.setProperty('z-index', '400', 'important');
-        loadingScreen.style.setProperty('background', 'rgba(0, 0, 0, 0.9)', 'important');
+        loadingScreen.style.setProperty('z-index', '90000', 'important');
+        loadingScreen.style.setProperty('background', '#000000', 'important');
         resetMultiplayerLoadingScreen(roomName);
     }
 
@@ -2383,11 +2392,23 @@ if (typeof window !== 'undefined') {
         const roomEl = document.getElementById('multiplayer-loading-room');
         const errorEl = document.getElementById('multiplayer-loading-error');
         const actionsEl = document.getElementById('multiplayer-loading-actions');
+        const tipEl = document.getElementById('world-loading-tip-text');
         if (titleEl) titleEl.innerText = 'Loading World';
         if (roomEl) roomEl.innerText = worldName ? `Opening ${worldName}` : 'Opening single-player world';
         if (errorEl) { errorEl.innerText = ''; errorEl.classList.remove('visible'); }
         if (actionsEl) actionsEl.classList.add('hidden');
-        document.getElementById('loading-screen').classList.remove('hidden');
+        if (tipEl) {
+            tipEl.innerText = (typeof window !== 'undefined' && typeof window.getRandomLoadingTip === 'function') 
+                ? window.getRandomLoadingTip() 
+                : "Always carry spare torches when exploring cavern depths.";
+        }
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.classList.remove('hidden');
+            loadingScreen.style.setProperty('display', 'flex', 'important');
+            loadingScreen.style.setProperty('z-index', '90000', 'important');
+            loadingScreen.style.setProperty('background', '#000000', 'important');
+        }
         setMultiplayerLoadingStatus('Preparing world', 18);
     }
 
