@@ -4757,7 +4757,63 @@ export const SKIN_H = 32;
             return getActivePhysicsTerrain(this);
         }
 
+        canFitAt(targetX, targetY) {
+            const eps = 0.05;
+            const activeWorld = this.getActiveWorld();
+            if (!activeWorld) return false;
+            const curWorldW = activeWorld.length;
+            const curWorldH = activeWorld[0]?.length || 0;
+            if (!curWorldW || !curWorldH) return false;
+
+            let leftTile = Math.max(0, Math.floor((targetX + eps) / TILE_SIZE));
+            let rightTile = Math.min(curWorldW - 1, Math.floor((targetX + this.width - eps) / TILE_SIZE));
+            let topTile = Math.max(0, Math.floor((targetY + eps) / TILE_SIZE));
+            let bottomTile = Math.min(curWorldH - 1, Math.floor((targetY + this.height - eps) / TILE_SIZE));
+
+            for (let y = topTile; y <= bottomTile; y++) {
+                for (let x = leftTile; x <= rightTile; x++) {
+                    let block = activeWorld[x]?.[y];
+                    if (isSolidWorldBlock(x, y, block)) {
+                        let bMinX = x * TILE_SIZE;
+                        let bMaxX = (x + 1) * TILE_SIZE;
+                        let bMinY = y * TILE_SIZE;
+                        let bMaxY = (y + 1) * TILE_SIZE;
+
+                        if (block === IDS.DOOR || block === IDS.DOOR_TOP || block === IDS.JUNGLE_DOOR || block === IDS.JUNGLE_DOOR_TOP) {
+                            bMinX = x * TILE_SIZE + 2.5;
+                            bMaxX = x * TILE_SIZE + 12.5;
+                        }
+
+                        let curLeft = targetX + eps;
+                        let curRight = targetX + this.width - eps;
+                        let curTop = targetY + eps;
+                        let curBottom = targetY + this.height - eps;
+
+                        let isStairRight = (block === IDS.WOODEN_STAIRS_RIGHT || block === IDS.COBBLESTONE_STAIRS_RIGHT);
+                        let isStairLeft = (block === IDS.WOODEN_STAIRS || block === IDS.WOODEN_STAIRS_LEFT || block === IDS.COBBLESTONE_STAIRS || block === IDS.COBBLESTONE_STAIRS_LEFT);
+
+                        if (isStairRight || isStairLeft) {
+                            let slabMinY = bMinY + TILE_SIZE / 2;
+                            let hitSlab = (curRight > bMinX && curLeft < bMaxX && curBottom > slabMinY && curTop < bMaxY);
+                            let stepMinX = isStairRight ? bMinX + TILE_SIZE / 2 : bMinX;
+                            let stepMaxX = isStairRight ? bMaxX : bMinX + TILE_SIZE / 2;
+                            let hitStep = (curRight > stepMinX && curLeft < stepMaxX && curBottom > bMinY && curTop < slabMinY);
+                            if (hitSlab || hitStep) return false;
+                        } else {
+                            if (curRight > bMinX && curLeft < bMaxX && curBottom > bMinY && curTop < bMaxY) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
         applyPhysics() {
+            if (typeof window !== 'undefined' && window.devCheats?.noclip && (this instanceof Player || (typeof player !== 'undefined' && this === player))) {
+                return;
+            }
             const wasGrounded = this.isGrounded;
             const prevVy = this.vy;
             if (this.isGrounded) {
@@ -4786,14 +4842,28 @@ export const SKIN_H = 32;
                                        bUnder === IDS.COBBLESTONE_STAIRS || bUnder === IDS.COBBLESTONE_STAIRS_LEFT || bUnder === IDS.COBBLESTONE_STAIRS_RIGHT);
                 if (isUnderStairs) {
                     const isRight = (bUnder === IDS.WOODEN_STAIRS_RIGHT || bUnder === IDS.COBBLESTONE_STAIRS_RIGHT);
-                    const midX = this.x + this.width / 2;
-                    const bUnderMinX = footGx * TILE_SIZE;
-                    const bUnderMinY = footGy * TILE_SIZE;
-                    const onHigh = isRight ? (midX >= bUnderMinX + TILE_SIZE / 2) : (midX <= bUnderMinX + TILE_SIZE / 2);
-                    const targetFloor = onHigh ? bUnderMinY : (bUnderMinY + TILE_SIZE / 2);
-                    const dropDist = targetFloor - (this.y + this.height);
-                    if (dropDist > 0 && dropDist <= TILE_SIZE / 2 + 4) {
-                        this.y = targetFloor - this.height - 0.05;
+                    const isLeft = (bUnder === IDS.WOODEN_STAIRS || bUnder === IDS.WOODEN_STAIRS_LEFT ||
+                                   bUnder === IDS.COBBLESTONE_STAIRS || bUnder === IDS.COBBLESTONE_STAIRS_LEFT);
+
+                    // Downward slope assist ONLY applies when descending the slope
+                    const isDescending = (isRight && this.vx < -0.1) || (isLeft && this.vx > 0.1);
+                    if (isDescending) {
+                        const bUnderMinX = footGx * TILE_SIZE;
+                        const bUnderMinY = footGy * TILE_SIZE;
+                        const stepMinX = isRight ? bUnderMinX + TILE_SIZE / 2 : bUnderMinX;
+                        const stepMaxX = isRight ? bUnderMinX + TILE_SIZE : bUnderMinX + TILE_SIZE / 2;
+                        
+                        const curLeft = this.x + 0.05;
+                        const curRight = this.x + this.width - 0.05;
+                        const onHigh = isRight ? (curRight > stepMinX) : (curLeft < stepMaxX);
+                        const targetFloor = onHigh ? bUnderMinY : (bUnderMinY + TILE_SIZE / 2);
+                        const dropDist = targetFloor - (this.y + this.height);
+                        if (dropDist > 0 && dropDist <= TILE_SIZE / 2 + 4) {
+                            const testY = targetFloor - this.height - 0.05;
+                            if (this.canFitAt(this.x, testY)) {
+                                this.y = testY;
+                            }
+                        }
                     }
                 }
             }
@@ -4906,7 +4976,7 @@ export const SKIN_H = 32;
                         let curBottom = this.y + this.height - (isAxisX ? eps : 0);
 
                         let isStairRight = (block === IDS.WOODEN_STAIRS_RIGHT || block === IDS.COBBLESTONE_STAIRS_RIGHT);
-                        let isStairLeft = (block === IDS.WOODEN_STAIRS_LEFT || block === IDS.COBBLESTONE_STAIRS_LEFT);
+                        let isStairLeft = (block === IDS.WOODEN_STAIRS || block === IDS.WOODEN_STAIRS_LEFT || block === IDS.COBBLESTONE_STAIRS || block === IDS.COBBLESTONE_STAIRS_LEFT);
 
                         if (isStairRight || isStairLeft) {
                             let slabMinY = bMinY + TILE_SIZE / 2;
@@ -4917,32 +4987,28 @@ export const SKIN_H = 32;
 
                             if (hitSlab || hitStep) {
                                 if (isAxisX) {
-                                    if (this.vx > 0) this.x = (hitStep ? stepMinX : bMinX) - this.width - 0.1;
-                                    else if (this.vx < 0) this.x = (hitStep ? stepMaxX : bMaxX) + 0.1;
-                                    this.vx = 0;
                                     // Smooth step-up assist when walking onto stairs
+                                    const moveDir = this.vx;
                                     let targetSurface = null;
-                                    if (this.vx > 0) {
+                                    if (moveDir > 0) {
                                         if (isStairRight) {
-                                            targetSurface = (curRight <= stepMinX + 4) ? slabMinY : bMinY;
+                                            targetSurface = (hitStep || curRight > stepMinX) ? bMinY : slabMinY;
                                         } else {
                                             if (curBottom <= bMinY + 4) targetSurface = bMinY;
                                         }
-                                    } else if (this.vx < 0) {
+                                    } else if (moveDir < 0) {
                                         if (isStairLeft) {
-                                            targetSurface = (curLeft >= stepMaxX - 4) ? slabMinY : bMinY;
+                                            targetSurface = (hitStep || curLeft < stepMaxX) ? bMinY : slabMinY;
                                         } else {
                                             if (curBottom <= bMinY + 4) targetSurface = bMinY;
                                         }
                                     }
 
-                                    let stepHeight = targetSurface !== null ? (curBottom - targetSurface) : 999;
+                                    let stepHeight = targetSurface !== null ? ((this.y + this.height) - targetSurface) : 999;
                                     let canStepUp = false;
-                                    if (stepHeight > 0 && stepHeight <= TILE_SIZE / 2 + 3) {
-                                        let testTop = targetSurface - this.height;
-                                        let hTileX = Math.floor((this.x + this.width / 2) / TILE_SIZE);
-                                        let hTileY = Math.floor((testTop + 2) / TILE_SIZE);
-                                        if (!isSolidWorldBlock(hTileX, hTileY, activeWorld[hTileX]?.[hTileY])) {
+                                    if (stepHeight > 0 && stepHeight <= TILE_SIZE / 2 + 4) {
+                                        let testTargetY = targetSurface - this.height - 0.05;
+                                        if (this.canFitAt(this.x, testTargetY)) {
                                             canStepUp = true;
                                         }
                                     }
@@ -4952,13 +5018,12 @@ export const SKIN_H = 32;
                                         this.isGrounded = true;
                                         this.vy = 0;
                                     } else {
-                                        if (this.vx > 0) this.x = (hitStep ? stepMinX : bMinX) - this.width - 0.1;
-                                        else if (this.vx < 0) this.x = (hitStep ? stepMaxX : bMaxX) + 0.1;
+                                        if (moveDir > 0) this.x = (hitStep ? stepMinX : bMinX) - this.width - 0.1;
+                                        else if (moveDir < 0) this.x = (hitStep ? stepMaxX : bMaxX) + 0.1;
                                         this.vx = 0;
                                     }
                                 } else {
-                                    let entityMidX = this.x + this.width / 2;
-                                    let onHigh = isStairRight ? (entityMidX >= stepMinX) : (entityMidX <= stepMaxX);
+                                    let onHigh = isStairRight ? (curRight > stepMinX) : (curLeft < stepMaxX);
                                     let floorY = onHigh ? bMinY : slabMinY;
 
                                     if (this.vy >= 0) {
@@ -5498,6 +5563,46 @@ export const SKIN_H = 32;
         update() {
             if (this.isDead) return;
             if (isSleeping) return;
+
+            // Developer Cheats Hooks
+            if (typeof window !== 'undefined' && window.devCheats) {
+                if (window.devCheats.godMode) {
+                    this.health = this.maxHealth || 20;
+                    this.oxygen = this.maxOxygen || 20;
+                    this.hunger = 20;
+                    this.exhaustion = 0;
+                    this.poisonTimer = 0;
+                    this.gloomBlindTimer = 0;
+                    this.gloomTetherTimer = 0;
+                }
+                if (window.devCheats.infiniteOxygen) {
+                    this.oxygen = this.maxOxygen || 20;
+                }
+                if (window.devCheats.infiniteHunger) {
+                    this.hunger = 20;
+                    this.exhaustion = 0;
+                }
+                if (window.devCheats.noclip) {
+                    let flySpeed = (MOVE_SPEED * 2.5) * (window.devCheats.speedMultiplier || 1.0);
+                    const activeKeys = (typeof window !== 'undefined' && window.keys) ? window.keys : (typeof keys !== 'undefined' ? keys : {});
+                    if (isActionActive('left') || activeKeys['KeyA'] || activeKeys['ArrowLeft'] || activeKeys['a']) mx -= 1;
+                    if (isActionActive('right') || activeKeys['KeyD'] || activeKeys['ArrowRight'] || activeKeys['d']) mx += 1;
+                    if (isActionActive('jump') || activeKeys['KeyW'] || activeKeys['ArrowUp'] || activeKeys['Space'] || activeKeys['w'] || activeKeys[' ']) my -= 1;
+                    if (isActionActive('down') || activeKeys['KeyS'] || activeKeys['ArrowDown'] || activeKeys['ShiftLeft'] || activeKeys['s']) my += 1;
+                    if (mx < 0) this.facingRight = false;
+                    else if (mx > 0) this.facingRight = true;
+                    this.x += mx * flySpeed;
+                    this.y += my * flySpeed;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.fallStartY = this.y;
+                    this.isGrounded = false;
+                    this.x = Math.max(0, Math.min((WORLD_WIDTH - 1) * TILE_SIZE, this.x));
+                    this.y = Math.max(-500, Math.min((WORLD_HEIGHT + 20) * TILE_SIZE, this.y));
+                    return;
+                }
+            }
+
             if (this.damageCooldown > 0) this.damageCooldown--;
 
             // Handle Gloom and Shadow status effects
@@ -5576,7 +5681,8 @@ export const SKIN_H = 32;
                 if (this.gloomTetherTimer > 0) {
                     speedMult *= 0.55;
                 }
-                let targetVx = moveDir * MOVE_SPEED * speedMult;
+                let speedDevMult = (typeof window !== 'undefined' && window.devCheats?.speedMultiplier) ? window.devCheats.speedMultiplier : 1.0;
+                let targetVx = moveDir * MOVE_SPEED * speedMult * speedDevMult;
                 if (this.isGrounded) {
                     this.vx += (targetVx - this.vx) * 0.45;
                 } else {
@@ -5594,7 +5700,9 @@ export const SKIN_H = 32;
             }
 
             if (isActionActive('jump') && this.isGrounded) {
-                this.vy = JUMP_FORCE; this.isGrounded = false;
+                let jumpMult = (typeof window !== 'undefined' && window.devCheats?.highJump) ? 1.8 : 1.0;
+                this.vy = JUMP_FORCE * jumpMult;
+                this.isGrounded = false;
                 this.exhaustion += 0.05 * hungerRate;
             }
             
@@ -5890,6 +5998,11 @@ export const SKIN_H = 32;
         }
 
         takeDamage(amt) {
+            if (typeof window !== 'undefined' && window.devCheats?.godMode) {
+                this.health = this.maxHealth || 20;
+                this.oxygen = this.maxOxygen || 20;
+                return;
+            }
             if (this.damageCooldown > 0 || this.isDead) return;
             let diff = DIFFICULTIES[currentDifficulty] || DIFFICULTIES.normal;
 
@@ -6130,26 +6243,25 @@ export const SKIN_H = 32;
             if (checkX < 0 || checkX >= curWorldW) return;
 
             const footY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
-            const waistY = Math.floor((this.y + this.height * 0.5) / TILE_SIZE);
             const headY = Math.floor((this.y + 4) / TILE_SIZE);
             const above1Y = headY - 1;
             const above2Y = headY - 2;
 
             const bFoot = activeWorld[checkX]?.[footY];
-            const bWaist = activeWorld[checkX]?.[waistY];
-            const bAbove1 = activeWorld[checkX]?.[above1Y];
-            const bAbove2 = activeWorld[checkX]?.[above2Y];
+            const bHead = activeWorld[checkX]?.[headY];
+            const bAbove1 = (above1Y >= 0) ? activeWorld[checkX]?.[above1Y] : IDS.AIR;
+            const bAbove2 = (above2Y >= 0) ? activeWorld[checkX]?.[above2Y] : IDS.AIR;
 
-            // 1-block obstacle: jump over it
-            if (isSolidWorldBlock(checkX, footY, bFoot) && !isSolidWorldBlock(checkX, waistY, bWaist)) {
+            // 1-block obstacle: block at foot level, open clearance at head level
+            if (isSolidWorldBlock(checkX, footY, bFoot) && !isSolidWorldBlock(checkX, headY, bHead)) {
                 this.vy = JUMP_FORCE;
                 this.isGrounded = false;
                 return;
             }
 
-            // 2-block obstacle / high ledge: if target is above the zombie, perform a powerful vault leap!
+            // 2-block obstacle / high ledge: both foot and head level solid, but clearance above; vault if target elevated
             if (target && target.y < this.y - TILE_SIZE * 0.8) {
-                if (isSolidWorldBlock(checkX, footY, bFoot) && isSolidWorldBlock(checkX, waistY, bWaist) && !isSolidWorldBlock(checkX, above1Y, bAbove1) && !isSolidWorldBlock(checkX, above2Y, bAbove2)) {
+                if (isSolidWorldBlock(checkX, footY, bFoot) && isSolidWorldBlock(checkX, headY, bHead) && !isSolidWorldBlock(checkX, above1Y, bAbove1) && !isSolidWorldBlock(checkX, above2Y, bAbove2)) {
                     this.vy = -6.2; // High vault jump
                     this.vx = stepDir * this.speed * 1.25;
                     this.isGrounded = false;
@@ -10250,6 +10362,109 @@ export const SKIN_H = 32;
         return kaelSkinCanvas;
     }
 
+    export function findSafeKaelPositionNear(playerRef, minDist = 2, maxDist = 5) {
+        const curWorld = (typeof world !== 'undefined' && world) ? world : ((typeof window !== 'undefined' && window.world) ? window.world : null);
+        if (!curWorld || !playerRef) return null;
+
+        const curWorldW = curWorld.length || WORLD_WIDTH;
+        const pGx = Math.floor((playerRef.x + (playerRef.width || 24) / 2) / TILE_SIZE);
+        const pFootGy = Math.floor((playerRef.y + (playerRef.height || 48) - 2) / TILE_SIZE);
+        const pFacingDir = (playerRef.facingRight !== false) ? 1 : -1;
+
+        // Distances prioritizing a few blocks away, and sometimes close (2 to 4 blocks)
+        const distances = [2, 3, 4, 3, 2, 5, 1, 6];
+        for (let i = distances.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const tmp = distances[i];
+            distances[i] = distances[j];
+            distances[j] = tmp;
+        }
+
+        const dirs = [pFacingDir, -pFacingDir];
+        const verticalOffsets = [0, -1, 1, -2, 2, -3, 3, -4, 4, 5, -5];
+
+        const kaelW = TILE_SIZE * 0.75;
+        const kaelH = TILE_SIZE * 1.8;
+
+        // 1. Primary pass: close distance (2-6 blocks) around player's current elevation
+        for (const dist of distances) {
+            if (dist < minDist && dist !== 1) continue;
+            for (const dir of dirs) {
+                const candGx = pGx + (dist * dir);
+                if (candGx < 3 || candGx >= curWorldW - 3) continue;
+
+                for (const dy of verticalOffsets) {
+                    const candGy = pFootGy + dy;
+                    if (candGy < 3 || candGy >= WORLD_HEIGHT - 3) continue;
+
+                    const floorB = curWorld[candGx]?.[candGy + 1];
+                    const feetB = curWorld[candGx]?.[candGy];
+                    const torsoB = curWorld[candGx]?.[candGy - 1];
+                    const headB = curWorld[candGx]?.[candGy - 2];
+
+                    const isFloorSolid = floorB !== undefined && isSolidWorldBlock(candGx, candGy + 1, floorB) && floorB !== IDS.LAVA && floorB !== IDS.WATER && floorB !== IDS.CACTUS;
+                    const isFeetClear = feetB === IDS.AIR || (feetB !== undefined && !isSolidWorldBlock(candGx, candGy, feetB) && feetB !== IDS.LAVA && feetB !== IDS.CACTUS);
+                    const isTorsoClear = torsoB === IDS.AIR || (torsoB !== undefined && !isSolidWorldBlock(candGx, candGy - 1, torsoB) && torsoB !== IDS.LAVA && torsoB !== IDS.CACTUS);
+                    const isHeadClear = headB === IDS.AIR || (headB !== undefined && !isSolidWorldBlock(candGx, candGy - 2, headB) && headB !== IDS.LAVA && headB !== IDS.CACTUS);
+
+                    if (isFloorSolid && isFeetClear && isTorsoClear && isHeadClear) {
+                        // Check left/right so he's not inside a 1-block suffocating gap
+                        const leftB = curWorld[candGx - 1]?.[candGy];
+                        const rightB = curWorld[candGx + 1]?.[candGy];
+                        const leftSolid = isSolidWorldBlock(candGx - 1, candGy, leftB);
+                        const rightSolid = isSolidWorldBlock(candGx + 1, candGy, rightB);
+                        if (leftSolid && rightSolid) continue;
+
+                        return {
+                            x: candGx * TILE_SIZE + (TILE_SIZE - kaelW) / 2,
+                            y: (candGy + 1) * TILE_SIZE - kaelH,
+                            gx: candGx,
+                            gy: candGy
+                        };
+                    }
+                }
+            }
+        }
+
+        // 2. Fallback pass: slightly wider search (up to 8 blocks, +/- 8 vertical)
+        for (let dist = 2; dist <= 8; dist++) {
+            for (const dir of dirs) {
+                const candGx = pGx + (dist * dir);
+                if (candGx < 3 || candGx >= curWorldW - 3) continue;
+
+                for (let dy = -8; dy <= 8; dy++) {
+                    const candGy = pFootGy + dy;
+                    if (candGy < 3 || candGy >= WORLD_HEIGHT - 3) continue;
+
+                    const floorB = curWorld[candGx]?.[candGy + 1];
+                    const feetB = curWorld[candGx]?.[candGy];
+                    const torsoB = curWorld[candGx]?.[candGy - 1];
+
+                    const isFloorSolid = floorB !== undefined && isSolidWorldBlock(candGx, candGy + 1, floorB) && floorB !== IDS.LAVA && floorB !== IDS.WATER && floorB !== IDS.CACTUS;
+                    const isFeetClear = feetB === IDS.AIR || (feetB !== undefined && !isSolidWorldBlock(candGx, candGy, feetB) && feetB !== IDS.LAVA);
+                    const isTorsoClear = torsoB === IDS.AIR || (torsoB !== undefined && !isSolidWorldBlock(candGx, candGy - 1, torsoB) && torsoB !== IDS.LAVA);
+
+                    if (isFloorSolid && isFeetClear && isTorsoClear) {
+                        return {
+                            x: candGx * TILE_SIZE + (TILE_SIZE - kaelW) / 2,
+                            y: (candGy + 1) * TILE_SIZE - kaelH,
+                            gx: candGx,
+                            gy: candGy
+                        };
+                    }
+                }
+            }
+        }
+
+        // 3. Ultimate safe fallback: right next to player
+        return {
+            x: playerRef.x + (pFacingDir * (TILE_SIZE * 2.2)),
+            y: playerRef.y,
+            gx: pGx + (pFacingDir * 2),
+            gy: pFootGy
+        };
+    }
+
     export class AtlasExplorer extends PhysicsEntity {
         constructor(x, y) {
             super(x, y, TILE_SIZE * 0.75, TILE_SIZE * 1.8);
@@ -10270,6 +10485,61 @@ export const SKIN_H = 32;
             this.mapReadingTimer = 120;
             this.walkAnimTime = 0;
             this.damageCooldown = 0;
+            this.tooFarTimer = 0;
+            this.teleportCooldown = 0;
+            this.teleportVfxTimer = 0;
+        }
+
+        teleportNearPlayer(curPlayer) {
+            if (!curPlayer || curPlayer.isDead) return false;
+            const targetPos = findSafeKaelPositionNear(curPlayer, 2, 5);
+            if (!targetPos) return false;
+
+            // 1. Departure VFX at current position
+            if (Array.isArray(particles)) {
+                for (let i = 0; i < 14; i++) {
+                    const p = new Particle(this.x + this.width / 2 + (Math.random() - 0.5) * 16, this.y + this.height / 2 + (Math.random() - 0.5) * 32, (i % 2 === 0) ? '#c084fc' : '#38bdf8');
+                    p.vx = (Math.random() - 0.5) * 3;
+                    p.vy = -0.5 - Math.random() * 1.5;
+                    particles.push(p);
+                }
+            }
+            playSound('portal_warp', { vol: 0.55 });
+
+            // 2. Relocate to safe spot near player
+            this.x = targetPos.x;
+            this.y = targetPos.y;
+            this.vx = 0;
+            this.vy = 0;
+            this.isGrounded = true;
+            this.tetherX = targetPos.x;
+            this.facingRight = (curPlayer.x >= this.x);
+            this.tooFarTimer = 0;
+            this.teleportCooldown = 80;
+            this.teleportVfxTimer = 24;
+            this.isPacing = false;
+            this.mapReadingTimer = 90;
+
+            // 3. Arrival VFX at target position
+            if (Array.isArray(particles)) {
+                for (let i = 0; i < 18; i++) {
+                    const p = new Particle(this.x + this.width / 2 + (Math.random() - 0.5) * 16, this.y + this.height / 2 + (Math.random() - 0.5) * 32, (i % 2 === 0) ? '#c084fc' : '#38bdf8');
+                    p.vx = (Math.random() - 0.5) * 3.5;
+                    p.vy = -0.8 - Math.random() * 2.0;
+                    particles.push(p);
+                }
+            }
+
+            // 4. Multiplayer synchronization
+            if (isMultiplayer && typeof isMultiplayerAuthority === 'function' && isMultiplayerAuthority() && typeof broadcastDataPacket === 'function') {
+                broadcastDataPacket({
+                    type: 'ATLAS_EXPLORER_TELEPORT',
+                    x: this.x,
+                    y: this.y,
+                    facingRight: this.facingRight
+                });
+            }
+            return true;
         }
 
         takeDamage(amt, knockbackDir) {
@@ -10395,11 +10665,30 @@ export const SKIN_H = 32;
                 this.vy = Math.min(this.vy, -2.4);
             }
 
+            if (this.teleportCooldown > 0) this.teleportCooldown--;
+            if (this.teleportVfxTimer > 0) this.teleportVfxTimer--;
+
             const curPlayer = (typeof player !== 'undefined') ? player : window.player;
-            if (curPlayer) {
+            if (curPlayer && !curPlayer.isDead) {
                 const dx = (curPlayer.x + curPlayer.width / 2) - (this.x + this.width / 2);
                 const dy = (curPlayer.y + curPlayer.height / 2) - (this.y + this.height / 2);
                 const dist = Math.hypot(dx, dy);
+
+                // Auto-teleport if too far from the player:
+                // Horizontal threshold ~16 blocks, vertical threshold ~8 blocks (cavern elevation/shaft)
+                const isFarHorizontally = Math.abs(dx) > TILE_SIZE * 16;
+                const isFarVertically = Math.abs(dy) > TILE_SIZE * 8;
+                const isTooFar = dist > TILE_SIZE * 18 || isFarHorizontally || isFarVertically;
+                const isExtremeFar = dist > TILE_SIZE * 32 || Math.abs(dy) > TILE_SIZE * 16;
+
+                if (isTooFar && this.warpState === 'active') {
+                    this.tooFarTimer = (this.tooFarTimer || 0) + (isExtremeFar ? 4 : 1);
+                    if (this.tooFarTimer >= 75 && this.teleportCooldown <= 0) {
+                        this.teleportNearPlayer(curPlayer);
+                    }
+                } else if (dist < TILE_SIZE * 12 && !isFarVertically) {
+                    this.tooFarTimer = 0;
+                }
 
                 if (dist < TILE_SIZE * 6) {
                     // Smart gaze & posture towards player
@@ -10622,7 +10911,7 @@ export const SKIN_H = 32;
                     ctx, kCanvas, drawX, drawY, w, h,
                     this.facingRight, this.walkAnimTime, isReallyMoving, false,
                     null, null, false, null,
-                    false, null, null, null
+                    false, [null, null, null, null], null, null
                 );
             }
 
@@ -15315,6 +15604,36 @@ export const SKIN_H = 32;
         droppedItems.forEach(d => { if (d && typeof d.draw === 'function') d.draw(ctx, camX, camY); });
         entities.forEach(e => e.draw(ctx, camX, camY));
         player.draw(ctx, camX, camY);
+
+        // Developer Cheats: Render Hitboxes
+        if (typeof window !== 'undefined' && window.devCheats?.showHitboxes) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            if (player) {
+                ctx.strokeStyle = '#22c55e';
+                ctx.strokeRect(player.x - camX, player.y - camY, player.width, player.height);
+                ctx.font = '14px VT323, monospace';
+                ctx.fillStyle = '#22c55e';
+                ctx.fillText(`Player HP:${Math.round(player.health)}`, player.x - camX, player.y - camY - 4);
+            }
+            entities.forEach(e => {
+                const isHostile = (e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker);
+                ctx.strokeStyle = isHostile ? '#ef4444' : '#38bdf8';
+                ctx.strokeRect(e.x - camX, e.y - camY, e.width, e.height);
+                ctx.font = '12px VT323, monospace';
+                ctx.fillStyle = ctx.strokeStyle;
+                const name = e.constructor?.name || 'Entity';
+                ctx.fillText(`${name} ${e.health !== undefined ? Math.round(e.health) : ''}`, e.x - camX, e.y - camY - 2);
+            });
+            if (Array.isArray(droppedItems)) {
+                droppedItems.forEach(item => {
+                    if (!item) return;
+                    ctx.strokeStyle = '#eab308';
+                    ctx.strokeRect(item.x - camX, item.y - camY, item.width || 12, item.height || 12);
+                });
+            }
+            ctx.restore();
+        }
         
         // Poison particles rising from local player
         if (player.poisonTimer > 0 && frameCount % 14 === 0 && !player.isDead) {
@@ -15611,7 +15930,9 @@ export const SKIN_H = 32;
         }
         ctx.globalCompositeOperation = 'source-over';
         ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(lightCanvas, 0, 0);
+        if (typeof window === 'undefined' || !window.devCheats?.fullbright) {
+            ctx.drawImage(lightCanvas, 0, 0);
+        }
 
         if (advancedGraphics || fabulousGraphics) {
             ctx.save();
@@ -16678,6 +16999,7 @@ try { if (typeof drawShoulderParrot !== "undefined") window.drawShoulderParrot =
 try { if (typeof dismountParrot !== "undefined") window.dismountParrot = dismountParrot; } catch(e) {}
 try { if (typeof dismountAllShoulderParrots !== "undefined") window.dismountAllShoulderParrots = dismountAllShoulderParrots; } catch(e) {}
 try { if (typeof AtlasExplorer !== "undefined") window.AtlasExplorer = AtlasExplorer; } catch(e) {}
+try { if (typeof findSafeKaelPositionNear !== "undefined") window.findSafeKaelPositionNear = findSafeKaelPositionNear; } catch(e) {}
 try { if (typeof worldBiomes !== "undefined") window.worldBiomes = worldBiomes; } catch(e) {}
 try { if (typeof signs !== "undefined") window.signs = signs; } catch(e) {}
 try { if (typeof setEngineSigns !== "undefined") window.setEngineSigns = setEngineSigns; } catch(e) {}

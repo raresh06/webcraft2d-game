@@ -317,13 +317,12 @@
             z-index: 10 !important;
         }
         .whats-new-startup-toggle {
-            position: absolute; top: 8px; right: 54px; z-index: 2; min-width: 142px; height: 38px; padding: 0 8px;
-            background: #d8d9dc; color: #111; border: 3px solid; border-top-color: #fff; border-left-color: #fff;
-            border-right-color: #58585a; border-bottom-color: #58585a; font: 18px/1 'VT323', monospace;
-            cursor: pointer; text-shadow: 1px 1px 0 rgba(255,255,255,0.8);
+            position: absolute !important; top: 8px !important; right: 54px !important; z-index: 2 !important;
+            min-width: 142px !important; height: 38px !important; padding: 0 10px !important;
+            font-family: 'VT323', monospace !important; font-size: 20px !important; line-height: 1 !important;
+            display: inline-flex !important; align-items: center !important; justify-content: center !important;
+            cursor: pointer !important;
         }
-        .whats-new-startup-toggle:hover { background: #e8e9eb; }
-        .whats-new-startup-toggle:active { border-top-color: #58585a; border-left-color: #58585a; border-right-color: #fff; border-bottom-color: #fff; }
         .whats-new-close { z-index: 2; }
         .whats-new-close:active { border-top-color: #6d1414; border-left-color: #6d1414; border-right-color: #ff8a80; border-bottom-color: #ff8a80; }
         .whats-new-content {
@@ -3301,6 +3300,8 @@
             border-left-color: #aebac2 !important;
             color: #ffffff !important;
         }
+        .mc-btn.is-on,
+        .toggle-btn.is-on,
         #fabulous-settings-modal .mc-btn.is-on {
             background-color: #205c36 !important;
             border-color: #111820 !important;
@@ -3310,13 +3311,18 @@
             border-bottom-color: #0b2b16 !important;
             color: #ffffff !important;
             text-shadow: 2px 2px 0 #080a0c !important;
+            font-family: 'VT323', monospace !important;
         }
+        .mc-btn.is-on:hover,
+        .toggle-btn.is-on:hover,
         #fabulous-settings-modal .mc-btn.is-on:hover {
             background-color: #276f41 !important;
             border-top-color: #86efac !important;
             border-left-color: #86efac !important;
             color: #ffffff !important;
         }
+        .mc-btn.is-off,
+        .toggle-btn.is-off,
         #fabulous-settings-modal .mc-btn.is-off {
             background-color: #2b3138 !important;
             border-color: #111820 !important;
@@ -3327,7 +3333,10 @@
             color: #ffffff !important;
             text-shadow: 2px 2px 0 #080a0c !important;
             opacity: 0.85;
+            font-family: 'VT323', monospace !important;
         }
+        .mc-btn.is-off:hover,
+        .toggle-btn.is-off:hover,
         #fabulous-settings-modal .mc-btn.is-off:hover {
             background-color: #38404a !important;
             border-top-color: #7b8b99 !important;
@@ -3335,10 +3344,31 @@
             color: #ffffff !important;
             opacity: 1;
         }
-        #fabulous-presets-bar .settings-tab-btn {
-            color: #ffffff !important;
+        .settings-tab-btn,
+        .preset-tab-btn,
+        .diff-btn {
+            color: #d9e1e7 !important;
             text-shadow: 2px 2px 0 #080a0c !important;
+            background: #333a41;
+            border: 2px solid #111820;
+            border-top-color: #69737b;
+            border-left-color: #69737b;
+            border-right-color: #080a0c;
+            border-bottom-color: #080a0c;
+            font-family: 'VT323', monospace;
+            transition: background-color 0.05s ease, color 0.05s ease;
         }
+        .settings-tab-btn:hover,
+        .preset-tab-btn:hover,
+        .diff-btn:hover {
+            background: #46515a !important;
+            color: #fff !important;
+            border-top-color: #aebac2 !important;
+            border-left-color: #aebac2 !important;
+        }
+        .settings-tab-btn.active,
+        .preset-tab-btn.active,
+        .diff-btn.active,
         #fabulous-presets-bar .settings-tab-btn.active {
             background: #946800 !important;
             border-color: #ffd34d !important;
@@ -3350,12 +3380,74 @@
             color: #ffffff !important;
             text-shadow: 2px 2px 0 #080a0c !important;
         }
-        #fabulous-settings-modal .settings-label {
+        .mc-btn.btn-secondary {
+            background-color: #3d454e !important;
+            border: 2px solid #111820 !important;
+            border-top-color: #788591 !important;
+            border-left-color: #788591 !important;
+            border-right-color: #080a0c !important;
+            border-bottom-color: #080a0c !important;
             color: #ffffff !important;
             text-shadow: 2px 2px 0 #080a0c !important;
         }
-        #fabulous-settings-modal .fabulous-option-desc,
-        #fabulous-settings-modal .settings-row span:not(.settings-label) {
+        .mc-btn.btn-secondary:hover {
+            background-color: #4c5661 !important;
+            border-top-color: #aebac2 !important;
+            border-left-color: #aebac2 !important;
+        }
+        .mc-btn.btn-primary {
+            background-color: #16a34a !important;
+            border: 2px solid #111820 !important;
+            border-top-color: #4ade80 !important;
+            border-left-color: #4ade80 !important;
+            border-right-color: #14532d !important;
+            border-bottom-color: #14532d !important;
+            color: #ffffff !important;
+            text-shadow: 2px 2px 0 #080a0c !important;
+        }
+        .mc-btn.btn-primary:hover {
+            background-color: #22c55e !important;
+            border-top-color: #86efac !important;
+            border-left-color: #86efac !important;
+        }
+        .mc-btn.btn-danger {
+            background-color: #991b1b !important;
+            border: 2px solid #111820 !important;
+            border-top-color: #ef4444 !important;
+            border-left-color: #ef4444 !important;
+            border-right-color: #450a0a !important;
+            border-bottom-color: #450a0a !important;
+            color: #ffffff !important;
+            text-shadow: 2px 2px 0 #080a0c !important;
+        }
+        .mc-btn.btn-danger:hover {
+            background-color: #b91c1c !important;
+            border-top-color: #f87171 !important;
+            border-left-color: #f87171 !important;
+        }
+        .mc-btn.btn-amber {
+            background-color: #946800 !important;
+            border: 2px solid #ffd34d !important;
+            border-top-color: #ffe580 !important;
+            border-left-color: #ffe580 !important;
+            border-right-color: #080a0c !important;
+            border-bottom-color: #080a0c !important;
+            color: #ffffff !important;
+            text-shadow: 2px 2px 0 #080a0c !important;
+        }
+        .mc-btn.btn-amber:hover {
+            background-color: #b47f00 !important;
+            border-top-color: #fff0a0 !important;
+            border-left-color: #fff0a0 !important;
+        }
+        .settings-row .settings-label {
+            color: #ffffff !important;
+            text-shadow: 2px 2px 0 #080a0c !important;
+            font-family: 'VT323', monospace !important;
+            font-size: 20px !important;
+        }
+        .fabulous-option-desc,
+        .settings-row span:not(.settings-label) {
             color: #f1f5f9 !important;
             text-shadow: 1px 1px 0 #080a0c !important;
             font-size: 16px !important;

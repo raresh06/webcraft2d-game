@@ -2093,6 +2093,13 @@ if (typeof window !== 'undefined') {
                         break;
                     }
 
+                    case 'ATLAS_EXPLORER_TELEPORT': {
+                        if (typeof window !== 'undefined' && window.RiftExplorerSpawner && typeof window.RiftExplorerSpawner.handleRemoteTeleport === 'function') {
+                            window.RiftExplorerSpawner.handleRemoteTeleport(packet);
+                        }
+                        break;
+                    }
+
                     case 'EXECUTE_ATLAS_TRADE_REQ': {
                         if (typeof window !== 'undefined' && window.AtlasTradeManager && typeof window.AtlasTradeManager.handleTradeRequest === 'function') {
                             window.AtlasTradeManager.handleTradeRequest(packet);

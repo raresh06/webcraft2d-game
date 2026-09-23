@@ -9,6 +9,7 @@ import * as UI from './ui.js';
 import * as Gamepad from './gamepad.js';
 import { RiftExplorerSpawner } from './RiftExplorerSpawner.js';
 import { AtlasTradeManager } from './AtlasTradeManager.js';
+import { DevConsole } from './devConsole.js';
 
 // Expose exports to window for HTML inline event handlers (e.g. onclick)
 import {
@@ -764,7 +765,7 @@ export function initJukeboxFileInput() {
         ));
 
         const visibleOverlays = candidateOverlays.filter(el => {
-            if (!el || el.id === 'main-menu' || el.id === 'shared-menu-bg') return false;
+            if (!el || el.id === 'main-menu' || el.id === 'shared-menu-bg' || el.id === 'dev-console-modal' || el.id === 'dev-debug-panel' || el.closest('#dev-console-modal') || el.closest('#dev-debug-panel') || el.closest('.dev-debug-panel') || el.closest('.dev-drawer-panel')) return false;
             if (el.classList.contains('hidden') || el.style.display === 'none') return false;
             return (el.offsetWidth > 0 || el.offsetHeight > 0 || (typeof window.getComputedStyle === 'function' && window.getComputedStyle(el).display !== 'none'));
         });
@@ -864,8 +865,23 @@ export function initJukeboxFileInput() {
 
     window.addEventListener('keydown', (e) => {
         let k = (e.key || '').toLowerCase();
-        const isEscape = k === 'escape' || k === 'esc' || e.code === 'Escape' || e.keyCode === 27;
+        const isEscape = e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27;
+        const isF7Standard = (e.key && e.key.toUpperCase() === 'F7') || e.code === 'F7' || e.keyCode === 118;
+        const isF7Media = e.key === 'MediaTrackPrevious' || e.code === 'MediaTrackPrevious' || e.key === 'MediaRewind' || e.code === 'MediaRewind' || e.keyCode === 177;
+        const isBackquote = (e.key === '`' || e.key === '~' || e.code === 'Backquote' || e.keyCode === 192) &&
+                            !(document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA'));
         lastPlayerActivityAt = Date.now();
+
+        if (isF7Standard || isF7Media || isBackquote) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof DevConsole !== 'undefined' && typeof DevConsole.toggle === 'function') {
+                DevConsole.toggle();
+            } else if (typeof window !== 'undefined' && typeof window.toggleDevConsole === 'function') {
+                window.toggleDevConsole();
+            }
+            return;
+        }
 
         // Skin Editor Keyboard Shortcuts (Ctrl+Z for Undo, Ctrl+Y or Ctrl+Shift+Z for Redo)
         const skinEditorContainer = document.getElementById('skin-editor-container');
@@ -922,6 +938,12 @@ export function initJukeboxFileInput() {
         if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
             if (isEscape) {
                 e.preventDefault();
+                if (document.activeElement.id === 'dev-cmd-input' || document.activeElement.id === 'dev-item-search') {
+                    document.activeElement.blur();
+                    const canvas = document.getElementById('gameCanvas');
+                    if (canvas && typeof canvas.focus === 'function') canvas.focus();
+                    return;
+                }
                 if (document.activeElement.id === 'crafting-search') {
                     if (document.activeElement.value) {
                         clearCraftingSearch();
@@ -935,9 +957,17 @@ export function initJukeboxFileInput() {
                 }
                 return;
             }
-            if (e.key === 'Enter' && document.activeElement.id === 'crafting-search') {
-                document.activeElement.blur();
-                return;
+            if (e.key === 'Enter') {
+                if (document.activeElement.id === 'crafting-search') {
+                    document.activeElement.blur();
+                    return;
+                }
+                if (document.activeElement.id === 'dev-cmd-input') {
+                    document.activeElement.blur();
+                    const canvas = document.getElementById('gameCanvas');
+                    if (canvas && typeof canvas.focus === 'function') canvas.focus();
+                    return;
+                }
             }
             return;
         }
@@ -1067,6 +1097,13 @@ export function initJukeboxFileInput() {
     });
     window.addEventListener('mousedown', (e) => {
         lastPlayerActivityAt = Date.now();
+        // Unfocus any lingering text input or button when clicking into the game world so WASD always works
+        const isTextInput = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+        if (!isTextInput && document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'BUTTON')) {
+            document.activeElement.blur();
+            const canvas = document.getElementById('gameCanvas');
+            if (canvas && typeof canvas.focus === 'function') canvas.focus();
+        }
         const curHeld = (typeof window !== 'undefined' && window.heldItemObj) ? window.heldItemObj : heldItemObj;
         if (e.button !== 0 || !isInventoryOpen || !curHeld || !heldItemDraggedOutside) return;
         const clickedInventory = e.target && typeof e.target.closest === 'function' && e.target.closest('#inventory-menu');
@@ -1809,7 +1846,8 @@ export function initJukeboxFileInput() {
         let bCX = gridX * TILE_SIZE + TILE_SIZE / 2; let bCY = gridY * TILE_SIZE + TILE_SIZE / 2;
         
         const dist = Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE;
-        if (dist > REACH) {
+        const maxReach = REACH * (typeof window !== 'undefined' && window.devCheats?.reachMultiplier ? window.devCheats.reachMultiplier : 1.0);
+        if (dist > maxReach) {
             miningTarget.progress = 0;
             return;
         }
@@ -1829,7 +1867,7 @@ export function initJukeboxFileInput() {
             }
 
             let reqHardness = HARDNESS[bgBlockId] || 100;
-            if (miningTarget.progress >= reqHardness) {
+            if ((typeof window !== 'undefined' && window.devCheats?.instantMine) || miningTarget.progress >= reqHardness) {
                 playSound('break');
                 if (typeof Gamepad !== 'undefined' && typeof Gamepad.triggerGamepadVibration === 'function') {
                     Gamepad.triggerGamepadVibration(90, 0.4, 0.6);
@@ -1897,7 +1935,7 @@ export function initJukeboxFileInput() {
         }
 
         let reqHardness = HARDNESS[blockId] || 100;
-        if (heldTool && heldTool.id === IDS.KINETIC_SHEARS && [IDS.LEAVES, IDS.JUNGLE_LEAVES, IDS.VINES, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FERN].includes(blockId)) {
+        if ((typeof window !== 'undefined' && window.devCheats?.instantMine) || (heldTool && heldTool.id === IDS.KINETIC_SHEARS && [IDS.LEAVES, IDS.JUNGLE_LEAVES, IDS.VINES, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FERN].includes(blockId))) {
             miningTarget.progress = reqHardness;
         }
         
@@ -2373,7 +2411,8 @@ export function initJukeboxFileInput() {
         if (gx < 0 || gx >= WORLD_WIDTH || gy < 0 || gy >= WORLD_HEIGHT) return false;
         let pCX = player.x + player.width / 2; let pCY = player.y + player.height / 2;
         let bCX = gx * TILE_SIZE + TILE_SIZE / 2; let bCY = gy * TILE_SIZE + TILE_SIZE / 2;
-        if (Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE > REACH) return false;
+        const maxPlaceReach = REACH * (typeof window !== 'undefined' && window.devCheats?.reachMultiplier ? window.devCheats.reachMultiplier : 1.0);
+        if (Math.hypot(pCX - bCX, pCY - bCY) / TILE_SIZE > maxPlaceReach) return false;
 
         const curBgMode = (typeof window !== 'undefined' && window.isBackgroundBuildMode !== undefined) ? window.isBackgroundBuildMode : isBackgroundBuildMode;
         if (curBgMode) {
@@ -2851,8 +2890,10 @@ export function initJukeboxFileInput() {
         setEngineFrameCount(frameCount + 1);
 
         let previousDayCount = dayCount;
+        let activeTimeSpeed = 1.0;
         if (!isMultiplayer || isMultiplayerAuthority()) {
-            let newTimeOfDay = timeOfDay + 1 / DAY_LENGTH_FRAMES;
+            activeTimeSpeed = (typeof window !== 'undefined' && window.devCheats && typeof window.devCheats.timeSpeed === 'number') ? window.devCheats.timeSpeed : 1.0;
+            let newTimeOfDay = timeOfDay + (1 / DAY_LENGTH_FRAMES) * activeTimeSpeed;
             if (newTimeOfDay >= 1) {
                 setEngineTimeOfDay(0);
                 setEngineDayCount(dayCount + 1);
@@ -2876,7 +2917,7 @@ export function initJukeboxFileInput() {
             updateFluids();
             if (fluidTick % 12 === 0) syncFluidState();
         }
-        if (frameCount % 60 === 0) updateTimeUI();
+        if (frameCount % 60 === 0 || activeTimeSpeed !== 1.0) updateTimeUI();
 
         const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
         const curOpenedFurnace = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
@@ -3045,12 +3086,14 @@ export function initJukeboxFileInput() {
                     if (Number.isFinite(rx)) playerXPositions.push(rx + 15);
                 });
             }
-            entities.forEach(e => {
-                const isNearAnyPlayer = playerXPositions.some(px => Math.abs(e.x - px) < 1800);
-                if (isNearAnyPlayer || !e.isGrounded || frameCount % 6 === 0) {
-                    e.update();
-                }
-            });
+            if (typeof window === 'undefined' || !window.devCheats?.freezeMobs) {
+                entities.forEach(e => {
+                    const isNearAnyPlayer = playerXPositions.some(px => Math.abs(e.x - px) < 1800);
+                    if (isNearAnyPlayer || !e.isGrounded || frameCount % 6 === 0) {
+                        e.update();
+                    }
+                });
+            }
             // Skip mob spawning on the day-rollover frame to avoid stacking with animal spawn queue init
             if (!dayJustRolled) spawnMobs();
             dayJustRolled = false; // consume the flag every frame regardless
@@ -3331,13 +3374,13 @@ export function initJukeboxFileInput() {
 
                 if (dbgEl) {
                     const curGraphicsMode = (typeof window !== 'undefined' && window.graphicsMode) ? window.graphicsMode : graphicsMode;
-                    let kaelStatus = 'Day 14';
+                    let kaelStatus = 'Day 1';
                     const spawner = (typeof window !== 'undefined' && window.RiftExplorerSpawner) ? window.RiftExplorerSpawner : (typeof RiftExplorerSpawner !== 'undefined' ? RiftExplorerSpawner : null);
                     if (spawner) {
                         if (spawner.activeExplorer && !spawner.activeExplorer.isDeparted) {
                             kaelStatus = 'Present in World';
                         } else {
-                            const nextDay = spawner.nextArrivalDay !== undefined ? spawner.nextArrivalDay : 14;
+                            const nextDay = spawner.nextArrivalDay !== undefined ? spawner.nextArrivalDay : 1;
                             const diff = nextDay - dayCount;
                             if (diff > 1) {
                                 kaelStatus = `Day ${nextDay} (in ${diff} days)`;
@@ -3363,9 +3406,9 @@ export function initJukeboxFileInput() {
                         `Biome: ${biome}\n` +
                         `Diff: ${currentDifficulty.toUpperCase()}\n` +
                         `Multiplayer: ${isMultiplayer ? currentMpRoom : 'Local'}\n` +
-                        `Entities: ${entities.length} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Pigeons:${pigeons}, Bad:${hostiles})\n` +
+                        `Entities: ${entities.length}${window.devCheats?.freezeMobs ? ' [FROZEN]' : ''} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Pigeons:${pigeons}, Bad:${hostiles})\n` +
                         `Target: ${targetBlockName}\n` +
-                        `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%) | Day Scale: ${typeof getDayDifficultyMultiplier === 'function' ? getDayDifficultyMultiplier().toFixed(2) : 1}x (Hunger: ${typeof getDayHungerDrainMultiplier === 'function' ? getDayHungerDrainMultiplier().toFixed(2) : 1}x)\n` +
+                        `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%)${(window.devCheats?.timeSpeed === 0) ? ' [PAUSED]' : (window.devCheats?.timeSpeed && window.devCheats.timeSpeed !== 1.0 ? ` [${window.devCheats.timeSpeed}x]` : '')} | Day Scale: ${typeof getDayDifficultyMultiplier === 'function' ? getDayDifficultyMultiplier().toFixed(2) : 1}x (Hunger: ${typeof getDayHungerDrainMultiplier === 'function' ? getDayHungerDrainMultiplier().toFixed(2) : 1}x)\n` +
                         `Kael: ${kaelStatus}`;
                 }
             }
@@ -3707,6 +3750,13 @@ export function lockClosedBeta() {
 }
 
 export function proceedWithBoot() {
+    try {
+        if (typeof DevConsole !== 'undefined' && typeof DevConsole.init === 'function') {
+            DevConsole.init();
+        }
+    } catch (e) {
+        console.warn('DevConsole init error:', e);
+    }
     if (typeof UI !== 'undefined' && typeof UI.startIntro === 'function') {
         UI.startIntro();
     } else if (typeof startIntro === 'function') {
@@ -3744,6 +3794,11 @@ export async function bootGame() {
     if (typeof loadSavedSettings === 'function') loadSavedSettings();
     if (typeof updateSettingsUI === 'function') updateSettingsUI();
     if (typeof initEmeraldSystem === 'function') initEmeraldSystem();
+    try {
+        if (typeof DevConsole !== 'undefined' && typeof DevConsole.init === 'function') {
+            DevConsole.init();
+        }
+    } catch (e) {}
 
     // Closed Beta Authorization Gate: verify access before displaying intro or starting loop
     try {

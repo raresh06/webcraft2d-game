@@ -7,15 +7,15 @@ import {
     IDS, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT,
     entities, isSolidWorldBlock, showToast, playSound,
     isMultiplayer, isMultiplayerAuthority, broadcastDataPacket,
-    AtlasExplorer
+    AtlasExplorer, findSafeKaelPositionNear
 } from './engine.js';
 import { showKaelArrivalBanner, showKaelDepartureBanner } from './ui.js';
 
 class RiftExplorerSpawnerManager {
     constructor() {
         this.lastCheckedDay = 0;
-        this.nextArrivalDay = 14;
-        this.nextArrivalDayTime = 0.20;
+        this.nextArrivalDay = 1;
+        this.nextArrivalDayTime = 0.02;
         this.activeExplorer = null;
         this.hasSpawnedInitial = false;
         this.lastArrivalDay = 0;
@@ -24,19 +24,19 @@ class RiftExplorerSpawnerManager {
     }
 
     initNewWorld() {
-        this.lastCheckedDay = 1;
+        this.lastCheckedDay = 0;
         this.hasSpawnedInitial = true;
         this.activeExplorer = null;
         this.lastArrivalDay = 0;
-        // Kael always spawns in each world, arriving on Day 14 (late game stage)
-        this.nextArrivalDay = 14;
-        this.nextArrivalDayTime = 0.20;
+        // Kael arrives on Day 1 near the player
+        this.nextArrivalDay = 1;
+        this.nextArrivalDayTime = 0.02;
     }
 
     reset() {
         this.lastCheckedDay = 0;
-        this.nextArrivalDay = 14;
-        this.nextArrivalDayTime = 0.20;
+        this.nextArrivalDay = 1;
+        this.nextArrivalDayTime = 0.02;
         this.activeExplorer = null;
         this.hasSpawnedInitial = false;
         this.lastArrivalDay = 0;
@@ -77,20 +77,21 @@ class RiftExplorerSpawnerManager {
             return;
         }
 
-        // If legacy world was not initialized, schedule first arrival for Day 14 (or next day if already past Day 14)
+        if (!playerRef || playerRef.isDead) return;
+
         if (!this.hasSpawnedInitial) {
             this.hasSpawnedInitial = true;
-            this.nextArrivalDay = Math.max(14, currentDayCount + 1);
-            this.nextArrivalDayTime = 0.20;
+            this.nextArrivalDay = Math.max(1, currentDayCount);
+            this.nextArrivalDayTime = 0.02;
             return;
         }
 
         // Check if day has advanced to or past scheduled arrival day
         if (currentDayCount >= this.nextArrivalDay) {
-            const targetTime = this.nextArrivalDayTime !== undefined ? this.nextArrivalDayTime : 0.20;
+            const targetTime = this.nextArrivalDayTime !== undefined ? this.nextArrivalDayTime : 0.02;
             if (currentDayCount > this.nextArrivalDay || timeOfDay >= targetTime) {
-                // Prevent duplicate spawn on same day
-                if (this.lastArrivalDay === currentDayCount) return;
+                // Prevent duplicate spawn on same day if already present
+                if (this.lastArrivalDay === currentDayCount && this.activeExplorer) return;
 
                 this.lastArrivalDay = currentDayCount;
                 this.lastCheckedDay = currentDayCount;
@@ -107,8 +108,19 @@ class RiftExplorerSpawnerManager {
     }
 
     findSafeArrivalLocation(playerRef) {
+        if (!playerRef) return null;
+        // Always spawn right near the player (2 to 5 blocks away, prioritizing close 2-3 blocks)
+        if (typeof findSafeKaelPositionNear === 'function') {
+            return findSafeKaelPositionNear(playerRef, 2, 5);
+        }
+
         const curWorld = (typeof window !== 'undefined' && window.world) ? window.world : null;
-        if (!curWorld || !playerRef) return null;
+        if (!curWorld) {
+            return {
+                x: playerRef.x + (playerRef.facingRight ? 80 : -80),
+                y: playerRef.y
+            };
+        }
 
         const pGx = Math.floor((playerRef.x + playerRef.width / 2) / TILE_SIZE);
         const pGy = Math.floor((playerRef.y + playerRef.height / 2) / TILE_SIZE);
@@ -138,7 +150,13 @@ class RiftExplorerSpawnerManager {
         }
 
         // 2. Otherwise, find safe natural surface 10 to 20 blocks horizontally from player
-        return this.findSurfaceNear(curWorld, pGx, 10, 20);
+        const surfacePos = this.findSurfaceNear(curWorld, pGx, 10, 20);
+        if (surfacePos) return surfacePos;
+
+        return {
+            x: playerRef.x + (playerRef.facingRight ? 80 : -80),
+            y: playerRef.y
+        };
     }
 
     findSurfaceNear(curWorld, centerGx, minOffset, maxOffset) {
@@ -248,6 +266,19 @@ class RiftExplorerSpawnerManager {
                 playSound('portal_warp');
                 showToast('Planar Rift Closed: Kael steps through a collapsing rift into the Astral Void.', 5000);
             }
+        }
+    }
+
+    handleRemoteTeleport(packet) {
+        if (!packet || packet.x === undefined || packet.y === undefined) return;
+        const existing = entities.find(e => (e instanceof AtlasExplorer || (e && e.constructor && e.constructor.name === 'AtlasExplorer')) && !e.isDeparted);
+        if (existing) {
+            existing.x = packet.x;
+            existing.y = packet.y;
+            existing.tetherX = packet.x;
+            if (packet.facingRight !== undefined) existing.facingRight = packet.facingRight;
+            existing.teleportVfxTimer = 24;
+            playSound('portal_warp', { vol: 0.55 });
         }
     }
 }

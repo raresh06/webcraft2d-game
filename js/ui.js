@@ -42,6 +42,21 @@ import {
 import * as Gamepad from './gamepad.js';
 import { jukebox, getAudioTrack, saveAudioTrack, deleteAudioTrack } from './jukebox.js';
 import { RiftExplorerSpawner } from './RiftExplorerSpawner.js';
+import {
+    getPixelIconSvg,
+    getPixelEmeraldSvg as getPixelEmeraldSvgDef,
+    getPixelAstralEmeraldSvg as getPixelAstralEmeraldSvgDef,
+    getPixelPadlockSvg as getPixelPadlockSvgDef,
+    getPixelWarningSvg as getPixelWarningSvgDef
+} from './icons/pixelIcons.js';
+import {
+    updateToggleBtnState,
+    updatePresetTabsState,
+    renderStandardOptionRow,
+    renderStandardToggleRow,
+    renderStandardButton,
+    renderStandardModal
+} from './ui/standardComponents.js';
 
 export const INVENTORY_SIZE = 28;
 export const SKIN_W = 16;
@@ -270,6 +285,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export const GAME_BUILD = 'webcraft2d-beta-0.1.6';
 
     export function updateVersionLabels() {
+        if (typeof document === 'undefined') return;
         const versionLabel = document.getElementById('game-version-label');
         if (versionLabel) versionLabel.innerHTML = `<a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v${DISPLAY_VERSION}`;
     }
@@ -732,10 +748,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const activeKeys = (typeof window !== 'undefined' && window.keys) ? window.keys : keys;
         if (boundKey && activeKeys[boundKey]) return true;
 
-        if (actionName === 'left') return activeKeys['a'] || activeKeys['arrowleft'];
-        if (actionName === 'right') return activeKeys['d'] || activeKeys['arrowright'];
-        if (actionName === 'jump') return activeKeys[' '] || activeKeys['w'] || activeKeys['arrowup'];
-        if (actionName === 'down') return activeKeys['s'] || activeKeys['arrowdown'] || activeKeys['shift'];
+        if (actionName === 'left') return !!(activeKeys['a'] || activeKeys['arrowleft'] || activeKeys['KeyA'] || activeKeys['ArrowLeft']);
+        if (actionName === 'right') return !!(activeKeys['d'] || activeKeys['arrowright'] || activeKeys['KeyD'] || activeKeys['ArrowRight']);
+        if (actionName === 'jump') return !!(activeKeys[' '] || activeKeys['w'] || activeKeys['arrowup'] || activeKeys['Space'] || activeKeys['KeyW'] || activeKeys['ArrowUp']);
+        if (actionName === 'down') return !!(activeKeys['s'] || activeKeys['arrowdown'] || activeKeys['shift'] || activeKeys['KeyS'] || activeKeys['ArrowDown'] || activeKeys['ShiftLeft']);
         return false;
     }
 
@@ -902,14 +918,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof textures !== 'undefined' && textures && textures[IDS?.EMERALD]?.src) {
             return `<img src="${textures[IDS.EMERALD].src}" class="pixelated inline-block object-contain" width="${size}" height="${size}" alt="Emerald" style="vertical-align: middle;" />`;
         }
-        return `<svg class="emerald-pixel-art" viewBox="0 0 16 16" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="5" y="1" width="6" height="1" fill="#0b3d1d"/><rect x="4" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="2" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="3" width="1" height="1" fill="#0b3d1d"/><rect x="2" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="4" width="1" height="1" fill="#0b3d1d"/><rect x="1" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="14" y="5" width="1" height="6" fill="#0b3d1d"/><rect x="2" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="13" y="11" width="1" height="1" fill="#0b3d1d"/><rect x="3" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="12" y="12" width="1" height="1" fill="#0b3d1d"/><rect x="4" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="11" y="13" width="1" height="1" fill="#0b3d1d"/><rect x="5" y="14" width="6" height="1" fill="#0b3d1d"/><rect x="11" y="5" width="3" height="6" fill="#136d33"/><rect x="5" y="13" width="6" height="1" fill="#136d33"/><rect x="10" y="11" width="3" height="2" fill="#136d33"/><rect x="8" y="12" width="3" height="1" fill="#0e5326"/><rect x="5" y="2" width="6" height="1" fill="#1b9549"/><rect x="4" y="4" width="8" height="1" fill="#46f381"/><rect x="3" y="5" width="8" height="6" fill="#17c858"/><rect x="3" y="11" width="7" height="1" fill="#17c858"/><rect x="4" y="12" width="4" height="1" fill="#136d33"/><rect x="5" y="2" width="5" height="1" fill="#a8ffc6"/><rect x="4" y="3" width="3" height="1" fill="#a8ffc6"/><rect x="3" y="4" width="2" height="1" fill="#a8ffc6"/><rect x="2" y="5" width="1" height="3" fill="#a8ffc6"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#a8ffc6"/></svg>`;
+        return getPixelEmeraldSvgDef(size);
     }
 
     export function getPixelAstralEmeraldSvg(size = 14) {
         if (typeof textures !== 'undefined' && textures && textures[IDS?.ASTRAL_EMERALD]?.src) {
             return `<img src="${textures[IDS.ASTRAL_EMERALD].src}" class="pixelated inline-block object-contain" width="${size}" height="${size}" alt="Astral Emerald" style="vertical-align: middle;" />`;
         }
-        return `<svg class="astral-emerald-pixel-art" viewBox="0 0 16 16" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="5" y="1" width="6" height="1" fill="#1e0836"/><rect x="4" y="2" width="1" height="1" fill="#1e0836"/><rect x="11" y="2" width="1" height="1" fill="#1e0836"/><rect x="3" y="3" width="1" height="1" fill="#1e0836"/><rect x="12" y="3" width="1" height="1" fill="#1e0836"/><rect x="2" y="4" width="1" height="1" fill="#1e0836"/><rect x="13" y="4" width="1" height="1" fill="#1e0836"/><rect x="1" y="5" width="1" height="6" fill="#1e0836"/><rect x="14" y="5" width="1" height="6" fill="#1e0836"/><rect x="2" y="11" width="1" height="1" fill="#1e0836"/><rect x="13" y="11" width="1" height="1" fill="#1e0836"/><rect x="3" y="12" width="1" height="1" fill="#1e0836"/><rect x="12" y="12" width="1" height="1" fill="#1e0836"/><rect x="4" y="13" width="1" height="1" fill="#1e0836"/><rect x="11" y="13" width="1" height="1" fill="#1e0836"/><rect x="5" y="14" width="6" height="1" fill="#1e0836"/><rect x="11" y="5" width="3" height="6" fill="#4c1d95"/><rect x="5" y="13" width="6" height="1" fill="#4c1d95"/><rect x="10" y="11" width="3" height="2" fill="#4c1d95"/><rect x="8" y="12" width="3" height="1" fill="#3b0764"/><rect x="5" y="2" width="6" height="1" fill="#6d28d9"/><rect x="4" y="4" width="8" height="1" fill="#c084fc"/><rect x="3" y="5" width="8" height="6" fill="#9333ea"/><rect x="3" y="11" width="7" height="1" fill="#9333ea"/><rect x="4" y="12" width="4" height="1" fill="#4c1d95"/><rect x="5" y="2" width="5" height="1" fill="#e9d5ff"/><rect x="4" y="3" width="3" height="1" fill="#e9d5ff"/><rect x="3" y="4" width="2" height="1" fill="#e9d5ff"/><rect x="2" y="5" width="1" height="3" fill="#e9d5ff"/><rect x="5" y="3" width="3" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="1" fill="#ffffff"/><rect x="6" y="5" width="2" height="1" fill="#e9d5ff"/></svg>`;
+        return getPixelAstralEmeraldSvgDef(size);
     }
 
     export function getMiniPixelEmeraldHtml(size = 12) {
@@ -979,7 +995,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function getPixelPadlockSvg(size = 12) {
-        return `<svg viewBox="0 0 12 12" width="${size}" height="${size}" style="image-rendering: pixelated; shape-rendering: crispEdges; display: inline-block; vertical-align: middle;"><rect x="3" y="1" width="6" height="5" fill="#94a3b8"/><rect x="5" y="3" width="2" height="3" fill="#1e293b"/><rect x="2" y="5" width="8" height="6" fill="#f59e0b"/><rect x="5" y="7" width="2" height="2" fill="#78350f"/></svg>`;
+        return getPixelPadlockSvgDef(size);
     }
 
     export function getPlayerEmeralds() {
@@ -4431,7 +4447,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export let craftedItemsCount = 0;
 
     export function getPixelWarningSvg(size = 18, extraClass = '') {
-        return `<svg viewBox="0 0 16 16" width="${size}" height="${size}" class="pixel-art-warning-icon inline-block flex-shrink-0 align-middle ${extraClass}" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="7" y="1" width="2" height="2" fill="#fbbf24"/><rect x="6" y="3" width="4" height="2" fill="#fbbf24"/><rect x="5" y="5" width="6" height="2" fill="#fbbf24"/><rect x="4" y="7" width="8" height="2" fill="#fbbf24"/><rect x="3" y="9" width="10" height="2" fill="#fbbf24"/><rect x="2" y="11" width="12" height="2" fill="#fbbf24"/><rect x="1" y="13" width="14" height="2" fill="#f59e0b"/><rect x="7" y="5" width="2" height="4" fill="#000000"/><rect x="7" y="10" width="2" height="2" fill="#000000"/></svg>`;
+        return getPixelWarningSvgDef(size, extraClass);
     }
 
     export function updateNewWorldAchievementWarning() {
@@ -5326,9 +5342,30 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         document.getElementById('diff-desc').innerText = diffDescriptions[diffKey];
         const keepInventoryInput = document.getElementById('new-world-keep-inventory');
         const keepInventoryLabel = document.getElementById('new-world-keep-inventory-label');
-        keepInventoryInput.disabled = diffKey === 'hardcore';
-        keepInventoryLabel.style.opacity = diffKey === 'hardcore' ? '0.55' : '1';
-        if (diffKey === 'hardcore') keepInventoryInput.checked = false;
+        if (keepInventoryInput) keepInventoryInput.disabled = diffKey === 'hardcore';
+        if (keepInventoryLabel) keepInventoryLabel.style.opacity = diffKey === 'hardcore' ? '0.55' : '1';
+        if (diffKey === 'hardcore') {
+            if (keepInventoryInput) keepInventoryInput.checked = false;
+            updateToggleBtnState('btn-new-world-keep-inventory', false);
+        }
+        updateNewWorldAchievementWarning();
+    }
+
+    export function toggleNewWorldOption(optKey) {
+        if (optKey === 'starterItems') {
+            const checkbox = document.getElementById('new-world-starter-items');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                updateToggleBtnState('btn-new-world-starter-items', checkbox.checked);
+            }
+        } else if (optKey === 'keepInventory') {
+            if (selectedDiffChoice === 'hardcore') return;
+            const checkbox = document.getElementById('new-world-keep-inventory');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                updateToggleBtnState('btn-new-world-keep-inventory', checkbox.checked);
+            }
+        }
         updateNewWorldAchievementWarning();
     }
 
@@ -5352,8 +5389,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function updateWhatsNewStartupToggle() {
         const toggleButton = document.getElementById('whats-new-startup-toggle');
         if (!toggleButton) return;
-        toggleButton.innerText = `Startup: ${whatsNewStartupEnabled ? 'ON' : 'OFF'}`;
-        toggleButton.setAttribute('aria-pressed', String(whatsNewStartupEnabled));
+        updateToggleBtnState(toggleButton, whatsNewStartupEnabled, 'Startup: ON', 'Startup: OFF');
         toggleButton.setAttribute('aria-label', `${whatsNewStartupEnabled ? 'Disable' : 'Enable'} What's New on startup`);
     }
 
@@ -8059,10 +8095,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         document.getElementById('new-world-modal').classList.remove('hidden');
         selectDifficulty('normal');
         selectWorldSize('small');
-        document.getElementById('new-world-starter-items').checked = true;
-        document.getElementById('new-world-keep-inventory').checked = true;
+        const chkStarter = document.getElementById('new-world-starter-items');
+        if (chkStarter) chkStarter.checked = true;
+        updateToggleBtnState('btn-new-world-starter-items', true);
+
+        const chkKeep = document.getElementById('new-world-keep-inventory');
+        if (chkKeep) chkKeep.checked = true;
+        updateToggleBtnState('btn-new-world-keep-inventory', true);
+
         updateNewWorldAchievementWarning();
-        document.getElementById('new-world-name').focus();
+        const nameInput = document.getElementById('new-world-name');
+        if (nameInput) nameInput.focus();
     }
     export function closeNewWorldModal() { document.getElementById('new-world-modal').classList.add('hidden'); }
 
@@ -8888,7 +8931,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 } else {
                     RiftExplorerSpawner.loadState({
                         hasSpawnedInitial: true,
-                        nextArrivalDay: Math.max(14, (dayCount || 1) + 1)
+                        nextArrivalDay: Math.max(1, dayCount || 1),
+                        nextArrivalDayTime: 0.02
                     });
                 }
                 const activeAtlas = entities.find(e => e instanceof AtlasExplorer && !e.isDeparted);
@@ -8896,6 +8940,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     RiftExplorerSpawner.activeExplorer = activeAtlas;
                 } else {
                     RiftExplorerSpawner.activeExplorer = null;
+                    RiftExplorerSpawner.nextArrivalDay = Math.max(1, dayCount || 1);
+                    RiftExplorerSpawner.nextArrivalDayTime = 0.02;
                 }
             }
             
@@ -9044,15 +9090,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function updateSettingsUI() {
-        if (document.getElementById('btn-toggle-clouds')) document.getElementById('btn-toggle-clouds').innerText = showClouds ? "ON" : "OFF";
-        if (document.getElementById('btn-toggle-debug')) document.getElementById('btn-toggle-debug').innerText = showDebug ? "ON" : "OFF";
-        if (document.getElementById('btn-toggle-autojump')) document.getElementById('btn-toggle-autojump').innerText = autoJumpEnabled ? "ON" : "OFF";
-        if (document.getElementById('btn-toggle-intro')) document.getElementById('btn-toggle-intro').innerText = introEnabled ? "ON" : "OFF";
-        if (document.getElementById('btn-toggle-item-popups')) document.getElementById('btn-toggle-item-popups').innerText = showItemPopups ? "ON" : "OFF";
-        if (document.getElementById('btn-toggle-screenshake')) document.getElementById('btn-toggle-screenshake').innerText = showScreenShake ? "ON" : "OFF";
-        if (document.getElementById('btn-toggle-vignette')) document.getElementById('btn-toggle-vignette').innerText = showVignette ? "ON" : "OFF";
-        if (document.getElementById('btn-toggle-shimmer')) document.getElementById('btn-toggle-shimmer').innerText = showHeatShimmer ? "ON" : "OFF";
-        if (document.getElementById('btn-toggle-grading')) document.getElementById('btn-toggle-grading').innerText = showBiomeGrading ? "ON" : "OFF";
+        updateToggleBtnState('btn-toggle-clouds', showClouds);
+        updateToggleBtnState('btn-toggle-debug', showDebug);
+        updateToggleBtnState('btn-toggle-autojump', autoJumpEnabled);
+        updateToggleBtnState('btn-toggle-intro', introEnabled);
+        updateToggleBtnState('btn-toggle-item-popups', showItemPopups);
+        updateToggleBtnState('btn-toggle-screenshake', showScreenShake);
+        updateToggleBtnState('btn-toggle-vignette', showVignette);
+        updateToggleBtnState('btn-toggle-shimmer', showHeatShimmer);
+        updateToggleBtnState('btn-toggle-grading', showBiomeGrading);
         if (document.getElementById('btn-toggle-minimap-shape')) document.getElementById('btn-toggle-minimap-shape').innerText = minimapShape === 'circle' ? "CIRCLE" : "SQUARE";
         const accentPreview = document.getElementById('settings-accent-preview');
         if (accentPreview) accentPreview.style.backgroundColor = currentAccentColor;
@@ -9066,8 +9112,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (sSfx) { sSfx.value = Math.round(sfxVolume * 100); const b = document.getElementById('badge-sfx-vol'); if (b) b.innerText = `${sSfx.value}%`; }
         const sUi = document.getElementById('slider-ui-vol');
         if (sUi) { sUi.value = Math.round(uiVolume * 100); const b = document.getElementById('badge-ui-vol'); if (b) b.innerText = `${sUi.value}%`; }
-        if (document.getElementById('btn-toggle-footsteps')) document.getElementById('btn-toggle-footsteps').innerText = footstepsEnabled ? "ON" : "OFF";
-        if (document.getElementById('btn-toggle-mute')) document.getElementById('btn-toggle-mute').innerText = isAudioMuted ? "ON (Muted)" : "OFF (Audio ON)";
+        updateToggleBtnState('btn-toggle-footsteps', footstepsEnabled);
+        updateToggleBtnState('btn-toggle-mute', isAudioMuted, "ON (Muted)", "OFF (Audio ON)");
 
         // Controls
         const sSens = document.getElementById('slider-scroll-sens');
@@ -9254,16 +9300,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
 
             // Auto-Aim Facing
-            const autoAimBtn = document.getElementById('btn-gp-auto-aim');
-            if (autoAimBtn) {
-                autoAimBtn.innerText = Gamepad.gamepadSettings.autoAimFacing ? 'ON' : 'OFF';
-            }
+            updateToggleBtnState('btn-gp-auto-aim', !!Gamepad.gamepadSettings.autoAimFacing);
 
             // Vibration
-            const vibBtn = document.getElementById('btn-gp-vibration');
-            if (vibBtn) {
-                vibBtn.innerText = Gamepad.gamepadSettings.vibrationEnabled ? 'ON' : 'OFF';
-            }
+            updateToggleBtnState('btn-gp-vibration', !!Gamepad.gamepadSettings.vibrationEnabled);
         }
     }
 
@@ -9313,8 +9353,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof Gamepad !== 'undefined') {
             const newVal = !Gamepad.gamepadSettings.autoAimFacing;
             Gamepad.setGamepadSetting('autoAimFacing', newVal);
-            const btn = document.getElementById('btn-gp-auto-aim');
-            if (btn) btn.innerText = newVal ? 'ON' : 'OFF';
+            updateToggleBtnState('btn-gp-auto-aim', newVal);
             showToast(`Auto-Aim Facing: ${newVal ? 'Enabled' : 'Disabled'}`);
         }
     }
@@ -9323,8 +9362,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (typeof Gamepad !== 'undefined') {
             const newVal = !Gamepad.gamepadSettings.vibrationEnabled;
             Gamepad.setGamepadSetting('vibrationEnabled', newVal);
-            const btn = document.getElementById('btn-gp-vibration');
-            if (btn) btn.innerText = newVal ? 'ON' : 'OFF';
+            updateToggleBtnState('btn-gp-vibration', newVal);
             showToast(`Controller Vibration: ${newVal ? 'ON' : 'OFF'}`);
         }
     }
@@ -9413,15 +9451,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function toggleFootsteps() {
         footstepsEnabled = !footstepsEnabled;
-        const btn = document.getElementById('btn-toggle-footsteps');
-        if (btn) btn.innerText = footstepsEnabled ? "ON" : "OFF";
+        updateToggleBtnState('btn-toggle-footsteps', footstepsEnabled);
         saveCurrentSettings();
     }
 
     export function toggleMuteAudio() {
         isAudioMuted = !isAudioMuted;
-        const btn = document.getElementById('btn-toggle-mute');
-        if (btn) btn.innerText = isAudioMuted ? "ON (Muted)" : "OFF (Audio ON)";
+        updateToggleBtnState('btn-toggle-mute', isAudioMuted, "ON (Muted)", "OFF (Audio ON)");
         saveCurrentSettings();
     }
 
@@ -9452,22 +9488,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function toggleItemPopups() {
         showItemPopups = !showItemPopups;
-        const btn = document.getElementById('btn-toggle-item-popups');
-        if (btn) btn.innerText = showItemPopups ? "ON" : "OFF";
+        updateToggleBtnState('btn-toggle-item-popups', showItemPopups);
         saveCurrentSettings();
     }
 
     export function toggleScreenShake() {
         showScreenShake = !showScreenShake;
-        const btn = document.getElementById('btn-toggle-screenshake');
-        if (btn) btn.innerText = showScreenShake ? "ON" : "OFF";
+        updateToggleBtnState('btn-toggle-screenshake', showScreenShake);
         saveCurrentSettings();
     }
 
     export function toggleVignette() {
         showVignette = !showVignette;
-        const btn = document.getElementById('btn-toggle-vignette');
-        if (btn) btn.innerText = showVignette ? "ON" : "OFF";
+        updateToggleBtnState('btn-toggle-vignette', showVignette);
         if (typeof window !== 'undefined') {
             window.showVignette = showVignette;
             if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showVignette', showVignette);
@@ -9477,8 +9510,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function toggleShimmer() {
         showHeatShimmer = !showHeatShimmer;
-        const btn = document.getElementById('btn-toggle-shimmer');
-        if (btn) btn.innerText = showHeatShimmer ? "ON" : "OFF";
+        updateToggleBtnState('btn-toggle-shimmer', showHeatShimmer);
         if (typeof window !== 'undefined') {
             window.showHeatShimmer = showHeatShimmer;
             if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showHeatShimmer', showHeatShimmer);
@@ -9488,8 +9520,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function toggleGrading() {
         showBiomeGrading = !showBiomeGrading;
-        const btn = document.getElementById('btn-toggle-grading');
-        if (btn) btn.innerText = showBiomeGrading ? "ON" : "OFF";
+        updateToggleBtnState('btn-toggle-grading', showBiomeGrading);
         if (typeof window !== 'undefined') {
             window.showBiomeGrading = showBiomeGrading;
             if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showBiomeGrading', showBiomeGrading);
@@ -10004,8 +10035,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function toggleClouds() { 
         showClouds = !showClouds; 
-        const btn = document.getElementById('btn-toggle-clouds');
-        if (btn) btn.innerText = showClouds ? "ON" : "OFF"; 
+        updateToggleBtnState('btn-toggle-clouds', showClouds);
         if (typeof window !== 'undefined') {
             window.showClouds = showClouds;
             if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showClouds', showClouds);
@@ -10014,8 +10044,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
     export function toggleDebug() {
         showDebug = !showDebug;
-        const btn = document.getElementById('btn-toggle-debug');
-        if (btn) btn.innerText = showDebug ? "ON" : "OFF";
+        updateToggleBtnState('btn-toggle-debug', showDebug);
         const dbg = document.getElementById('debug-info');
         if (dbg) dbg.classList.toggle('hidden', !showDebug);
         if (typeof window !== 'undefined') {
@@ -10026,8 +10055,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
     export function toggleAutoJump() { 
         autoJumpEnabled = !autoJumpEnabled; 
-        const btn = document.getElementById('btn-toggle-autojump');
-        if (btn) btn.innerText = autoJumpEnabled ? "ON" : "OFF"; 
+        updateToggleBtnState('btn-toggle-autojump', autoJumpEnabled);
         if (typeof window !== 'undefined') {
             window.autoJumpEnabled = autoJumpEnabled;
             if (typeof window.setEngineSetting === 'function') window.setEngineSetting('autoJumpEnabled', autoJumpEnabled);
@@ -10168,8 +10196,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function toggleIntro() {
         introEnabled = !introEnabled;
         localStorage.setItem('swc_intro_enabled', introEnabled ? 'true' : 'false');
-        const btn = document.getElementById('btn-toggle-intro');
-        if (btn) btn.innerText = introEnabled ? "ON" : "OFF";
+        updateToggleBtnState('btn-toggle-intro', introEnabled);
         saveCurrentSettings();
     }
 
@@ -13850,6 +13877,7 @@ try { if (typeof toggleInvertWheel !== "undefined") window.toggleInvertWheel = t
 try { if (typeof toggleItemPopups !== "undefined") window.toggleItemPopups = toggleItemPopups; } catch(e) {}
 try { if (typeof toggleMinimapShape !== "undefined") window.toggleMinimapShape = toggleMinimapShape; } catch(e) {}
 try { if (typeof toggleMuteAudio !== "undefined") window.toggleMuteAudio = toggleMuteAudio; } catch(e) {}
+try { if (typeof toggleNewWorldOption !== "undefined") window.toggleNewWorldOption = toggleNewWorldOption; } catch(e) {}
 try { if (typeof toggleScreenShake !== "undefined") window.toggleScreenShake = toggleScreenShake; } catch(e) {}
 try { if (typeof toggleShimmer !== "undefined") window.toggleShimmer = toggleShimmer; } catch(e) {}
 try { if (typeof toggleSkinEditorGrid !== "undefined") window.toggleSkinEditorGrid = toggleSkinEditorGrid; } catch(e) {}
