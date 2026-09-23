@@ -246,7 +246,7 @@ export function renderStandardModal({
 }) {
     const idAttr = id ? ` id="${id}"` : '';
     const tabsHtml = tabs && tabs.length > 0 ? renderStandardPresetTabs({ presets: tabs, activeValue: activeTab }) : '';
-    const subtitleHtml = subtitle ? `<p class="text-xl text-[#d9e1e7] font-['VT323'] text-center mb-3 text-shadow-sm">${subtitle}</p>` : '';
+    const subtitleHtml = subtitle ? `<p class="modal-subtitle text-center mb-3 text-shadow-sm">${subtitle}</p>` : '';
     const closeBtnHtml = onclose
         ? `<button type="button" class="modal-close-red-btn absolute top-3 right-3" onclick="${onclose}" aria-label="Close">✕</button>`
         : '';
@@ -255,7 +255,7 @@ export function renderStandardModal({
         <div class="menu-overlay hidden backdrop-blur-sm z-[160] flex items-center justify-center p-3 select-none ${extraClasses}"${idAttr} role="dialog" aria-modal="true">
             <section class="settings-panel select-none" style="max-width:${maxWidth};max-height:${maxHeight};">
                 ${closeBtnHtml}
-                <h1 class="screen-title text-center font-['VT323']">${title}</h1>
+                <h1 class="screen-title text-center font-pixeloid-bold">${title}</h1>
                 ${subtitleHtml}
                 ${tabsHtml}
                 <div class="fabulous-tab-content custom-scrollbar flex-1 min-h-0">

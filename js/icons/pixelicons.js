@@ -457,6 +457,187 @@ export const PIXEL_ICON_DEFS = {
             <rect x="7" y="5" width="2" height="4" fill="#000000"/>
             <rect x="7" y="10" width="2" height="2" fill="#000000"/>
         </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Cogwheel / Settings / General (Bedrock General Tab)
+    // -------------------------------------------------------------------------
+    gear: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <!-- Outer teeth -->
+            <rect x="7" y="1" width="2" height="2" fill="#d97706"/>
+            <rect x="7" y="13" width="2" height="2" fill="#92400e"/>
+            <rect x="1" y="7" width="2" height="2" fill="#b45309"/>
+            <rect x="13" y="7" width="2" height="2" fill="#92400e"/>
+            <rect x="3" y="3" width="2" height="2" fill="#f59e0b"/>
+            <rect x="11" y="3" width="2" height="2" fill="#d97706"/>
+            <rect x="3" y="11" width="2" height="2" fill="#92400e"/>
+            <rect x="11" y="11" width="2" height="2" fill="#78350f"/>
+            <!-- Wheel Body -->
+            <rect x="4" y="4" width="8" height="8" fill="#f59e0b"/>
+            <rect x="5" y="5" width="6" height="6" fill="#fbbf24"/>
+            <!-- Center Hole -->
+            <rect x="7" y="7" width="2" height="2" fill="#1e293b"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Mountain / Terrain / World Generation (Bedrock World Tab)
+    // -------------------------------------------------------------------------
+    terrain: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <!-- Sky -->
+            <rect x="1" y="1" width="14" height="6" fill="#38bdf8"/>
+            <rect x="12" y="2" width="2" height="2" fill="#fef08a"/>
+            <!-- Snow Cap Peak Left -->
+            <rect x="4" y="4" width="3" height="2" fill="#ffffff"/>
+            <rect x="3" y="6" width="5" height="2" fill="#64748b"/>
+            <!-- Snow Cap Peak Right -->
+            <rect x="10" y="3" width="3" height="2" fill="#ffffff"/>
+            <rect x="9" y="5" width="5" height="3" fill="#475569"/>
+            <!-- Grass & Earth Foothills -->
+            <rect x="1" y="8" width="14" height="4" fill="#16a34a"/>
+            <rect x="2" y="9" width="4" height="2" fill="#22c55e"/>
+            <rect x="1" y="12" width="14" height="3" fill="#78350f"/>
+            <rect x="3" y="13" width="2" height="1" fill="#92400e"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Sword / Gameplay & Combat (Bedrock Gameplay Tab)
+    // -------------------------------------------------------------------------
+    sword: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <!-- Diamond Blade Point -->
+            <rect x="12" y="1" width="3" height="3" fill="#38bdf8"/>
+            <rect x="13" y="2" width="1" height="1" fill="#bae6fd"/>
+            <rect x="10" y="3" width="3" height="3" fill="#0284c7"/>
+            <rect x="11" y="3" width="2" height="2" fill="#38bdf8"/>
+            <rect x="8" y="5" width="3" height="3" fill="#0284c7"/>
+            <rect x="9" y="5" width="2" height="2" fill="#38bdf8"/>
+            <rect x="6" y="7" width="3" height="3" fill="#0369a1"/>
+            <rect x="7" y="7" width="2" height="2" fill="#0284c7"/>
+            <!-- Crossguard (Gold / Brass) -->
+            <rect x="4" y="8" width="3" height="2" fill="#f59e0b"/>
+            <rect x="7" y="11" width="2" height="3" fill="#d97706"/>
+            <rect x="5" y="9" width="3" height="3" fill="#78350f"/>
+            <!-- Hilt Handle -->
+            <rect x="3" y="11" width="2" height="2" fill="#92400e"/>
+            <!-- Pommel -->
+            <rect x="1" y="13" width="2" height="2" fill="#f59e0b"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Dice / Random Seed Generator
+    // -------------------------------------------------------------------------
+    dice: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <!-- Die Body -->
+            <rect x="2" y="2" width="12" height="12" fill="#f8fafc"/>
+            <rect x="2" y="13" width="12" height="1" fill="#cbd5e1"/>
+            <rect x="13" y="2" width="1" height="12" fill="#cbd5e1"/>
+            <rect x="1" y="2" width="1" height="12" fill="#94a3b8"/>
+            <rect x="2" y="1" width="12" height="1" fill="#94a3b8"/>
+            <rect x="2" y="14" width="12" height="1" fill="#64748b"/>
+            <rect x="14" y="2" width="1" height="12" fill="#64748b"/>
+            <!-- 5 Pips Pattern -->
+            <rect x="4" y="4" width="2" height="2" fill="#0f172a"/>
+            <rect x="10" y="4" width="2" height="2" fill="#0f172a"/>
+            <rect x="7" y="7" width="2" height="2" fill="#dc2626"/>
+            <rect x="4" y="10" width="2" height="2" fill="#0f172a"/>
+            <rect x="10" y="10" width="2" height="2" fill="#0f172a"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Grid View Switcher
+    // -------------------------------------------------------------------------
+    grid: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="5" height="5" fill="#4ade80"/>
+            <rect x="9" y="2" width="5" height="5" fill="#4ade80"/>
+            <rect x="2" y="9" width="5" height="5" fill="#4ade80"/>
+            <rect x="9" y="9" width="5" height="5" fill="#4ade80"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // List View Switcher
+    // -------------------------------------------------------------------------
+    list: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="3" width="12" height="2" fill="#94a3b8"/>
+            <rect x="2" y="7" width="12" height="2" fill="#94a3b8"/>
+            <rect x="2" y="11" width="12" height="2" fill="#94a3b8"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Pencil / Rename World
+    // -------------------------------------------------------------------------
+    pencil: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <!-- Eraser & Metal Band -->
+            <rect x="12" y="1" width="3" height="3" fill="#f43f5e"/>
+            <rect x="11" y="3" width="2" height="2" fill="#cbd5e1"/>
+            <!-- Yellow Wooden Body -->
+            <rect x="9" y="4" width="3" height="3" fill="#facc15"/>
+            <rect x="7" y="6" width="3" height="3" fill="#eab308"/>
+            <rect x="5" y="8" width="3" height="3" fill="#facc15"/>
+            <rect x="3" y="10" width="3" height="3" fill="#ca8a04"/>
+            <!-- Wood Tip -->
+            <rect x="2" y="12" width="2" height="2" fill="#fed7aa"/>
+            <!-- Graphite Lead -->
+            <rect x="1" y="14" width="2" height="1" fill="#0f172a"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Clone / Duplicate World
+    // -------------------------------------------------------------------------
+    clone: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <!-- Back Card -->
+            <rect x="5" y="1" width="10" height="10" fill="#475569"/>
+            <rect x="6" y="2" width="8" height="8" fill="#64748b"/>
+            <!-- Front Card -->
+            <rect x="1" y="5" width="10" height="10" fill="#1e293b"/>
+            <rect x="2" y="6" width="8" height="8" fill="#38bdf8"/>
+            <rect x="3" y="7" width="6" height="2" fill="#bae6fd"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Trash / Delete World
+    // -------------------------------------------------------------------------
+    trash: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <!-- Lid -->
+            <rect x="6" y="1" width="4" height="2" fill="#ef4444"/>
+            <rect x="2" y="3" width="12" height="2" fill="#dc2626"/>
+            <!-- Can Body -->
+            <rect x="3" y="5" width="10" height="10" fill="#991b1b"/>
+            <rect x="4" y="6" width="8" height="8" fill="#7f1d1d"/>
+            <!-- Vertical Grooves -->
+            <rect x="5" y="7" width="1" height="6" fill="#ef4444"/>
+            <rect x="8" y="7" width="1" height="6" fill="#ef4444"/>
+            <rect x="10" y="7" width="1" height="6" fill="#ef4444"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Play Triangle
+    // -------------------------------------------------------------------------
+    play: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="2" width="2" height="12" fill="#22c55e"/>
+            <rect x="5" y="3" width="2" height="10" fill="#22c55e"/>
+            <rect x="7" y="4" width="2" height="8" fill="#4ade80"/>
+            <rect x="9" y="5" width="2" height="6" fill="#4ade80"/>
+            <rect x="11" y="6" width="2" height="4" fill="#86efac"/>
+            <rect x="13" y="7" width="1" height="2" fill="#ffffff"/>
+        </svg>
     `
 };
 

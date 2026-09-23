@@ -57,6 +57,7 @@ import {
     renderStandardButton,
     renderStandardModal
 } from './ui/standardcomponents.js';
+import { generateProceduralThumbnail, captureWorldThumbnail } from './ui/worldthumbnails.js';
 
 export const INVENTORY_SIZE = 28;
 export const SKIN_W = 16;
@@ -4556,12 +4557,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function updateNewWorldAchievementWarning() {
         const starter = document.getElementById('new-world-starter-items')?.checked;
         const keep = document.getElementById('new-world-keep-inventory')?.checked;
+        const cheats = document.getElementById('new-world-allow-cheats')?.checked;
+        const isCreative = (typeof selectedGameModeChoice !== 'undefined' && selectedGameModeChoice === 'creative');
         const warning = document.getElementById('new-world-achievement-warning');
         if (warning) {
-            if (starter || keep) {
+            if (starter || keep || cheats || isCreative) {
                 warning.classList.remove('hidden');
-                let reason = starter && keep ? 'Starter Items and Keep Inventory' : (starter ? 'Starter Items' : 'Keep Inventory');
-                warning.innerHTML = `${getPixelWarningSvg(18, 'mt-0.5')} <div><span class="font-bold text-yellow-400">Achievements Disabled:</span> Starting with ${reason} disables achievements in this world. Disable both options to earn achievements.</div>`;
+                let reasons = [];
+                if (isCreative) reasons.push('Creative Mode');
+                if (cheats) reasons.push('Cheats Enabled');
+                if (starter) reasons.push('Starter Items');
+                if (keep) reasons.push('Keep Inventory');
+                const reasonStr = reasons.join(' & ');
+                warning.innerHTML = `${getPixelWarningSvg(18, 'mt-0.5')} <div><span class="font-bold text-yellow-400">Achievements Disabled:</span> ${reasonStr} disables achievements in this world. Play in Survival without cheats or bonus items to earn achievements.</div>`;
             } else {
                 warning.classList.add('hidden');
             }
@@ -5438,11 +5446,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function selectDifficulty(diffKey) {
         selectedDiffChoice = diffKey;
-        document.querySelectorAll('#diff-selector .diff-btn').forEach(btn => {
+        document.querySelectorAll('#diff-selector button').forEach(btn => {
             if (btn.dataset.diff === diffKey) btn.classList.add('active');
             else btn.classList.remove('active');
         });
-        document.getElementById('diff-desc').innerText = diffDescriptions[diffKey];
+        const diffDescEl = document.getElementById('diff-desc');
+        if (diffDescEl && diffDescriptions[diffKey]) {
+            diffDescEl.innerText = diffDescriptions[diffKey];
+        }
         const keepInventoryInput = document.getElementById('new-world-keep-inventory');
         const keepInventoryLabel = document.getElementById('new-world-keep-inventory-label');
         if (keepInventoryInput) keepInventoryInput.disabled = diffKey === 'hardcore';
@@ -5454,26 +5465,120 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         updateNewWorldAchievementWarning();
     }
 
+    export let selectedGameModeChoice = 'survival';
+    export let selectedStartingBiomeChoice = 'plains';
+    export let selectedCreateWorldTab = 'general';
+
+    export function switchCreateWorldTab(tabKey) {
+        selectedCreateWorldTab = tabKey;
+        document.querySelectorAll('#create-world-sidebar-tabs button').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabKey);
+        });
+        const panels = ['general', 'world', 'gameplay', 'cheats'];
+        panels.forEach(p => {
+            const el = document.getElementById(`create-world-tab-${p}`);
+            if (el) el.classList.toggle('hidden', p !== tabKey);
+        });
+    }
+
+    export function selectGameMode(modeKey) {
+        selectedGameModeChoice = modeKey === 'creative' ? 'creative' : 'survival';
+        document.querySelectorAll('#game-mode-selector button').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === selectedGameModeChoice);
+        });
+        const desc = document.getElementById('game-mode-desc');
+        if (desc) {
+            desc.innerText = selectedGameModeChoice === 'creative'
+                ? 'Creative: Unlimited resources, free flying, instant block destruction, and immunity to all damage. Achievements disabled.'
+                : 'Survival: Search for resources, craft tools, gain levels, manage health and hunger, and defend against hostile monsters.';
+        }
+        const previewMode = document.getElementById('new-world-preview-mode');
+        if (previewMode) {
+            previewMode.innerText = selectedGameModeChoice.toUpperCase();
+            previewMode.className = selectedGameModeChoice === 'creative' ? 'text-blue-400 font-bold uppercase tracking-wider' : 'text-emerald-400 font-bold uppercase tracking-wider';
+        }
+        updateCreateWorldPreview();
+        updateNewWorldAchievementWarning();
+    }
+
+    export function selectStartingBiome(biomeKey) {
+        selectedStartingBiomeChoice = biomeKey;
+        document.querySelectorAll('#biome-selector button').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.biome === biomeKey);
+        });
+        const previewBiome = document.getElementById('new-world-preview-biome');
+        if (previewBiome) {
+            previewBiome.innerText = biomeKey.toUpperCase();
+        }
+        updateCreateWorldPreview();
+    }
+
+    export function randomizeWorldSeed() {
+        const seedInput = document.getElementById('new-world-seed');
+        const randomSeed = Math.floor(Math.random() * 900000000 + 100000000);
+        if (seedInput) {
+            seedInput.value = String(randomSeed);
+        }
+        updateCreateWorldPreview();
+    }
+
+    export function updateCreateWorldPreview() {
+        const cv = document.getElementById('new-world-preview-canvas');
+        if (!cv) return;
+        const seedVal = document.getElementById('new-world-seed')?.value || document.getElementById('new-world-name')?.value || 12345;
+        const sizeVal = selectedWorldSizeChoice || 'small';
+        const biomeVal = selectedStartingBiomeChoice || 'plains';
+        const modeVal = selectedGameModeChoice || 'survival';
+
+        const generator = (typeof generateProceduralThumbnail === 'function')
+            ? generateProceduralThumbnail
+            : ((typeof WorldThumbnails !== 'undefined' && WorldThumbnails.generateProceduralThumbnail) ? WorldThumbnails.generateProceduralThumbnail : null);
+
+        if (generator) {
+            const thumbUrl = generator({
+                seed: seedVal,
+                biome: biomeVal,
+                worldSize: sizeVal,
+                mode: modeVal,
+                includePill: false
+            });
+            const img = new Image();
+            img.onload = () => {
+                const ctx = cv.getContext('2d');
+                if (ctx) {
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+                }
+            };
+            img.src = thumbUrl;
+        }
+    }
+
     export function toggleNewWorldOption(optKey) {
-        if (optKey === 'starterItems') {
-            const checkbox = document.getElementById('new-world-starter-items');
+        const map = {
+            starterItems: { chk: 'new-world-starter-items', btn: 'btn-new-world-starter-items' },
+            keepInventory: { chk: 'new-world-keep-inventory', btn: 'btn-new-world-keep-inventory' },
+            dayCycle: { chk: 'new-world-day-cycle', btn: 'btn-new-world-day-cycle' },
+            mobSpawning: { chk: 'new-world-mob-spawning', btn: 'btn-new-world-mob-spawning' },
+            hungerDepletion: { chk: 'new-world-hunger-depletion', btn: 'btn-new-world-hunger-depletion' },
+            allowCheats: { chk: 'new-world-allow-cheats', btn: 'btn-new-world-allow-cheats' },
+            bonusChest: { chk: 'new-world-bonus-chest', btn: 'btn-new-world-bonus-chest' },
+            naturalRegen: { chk: 'new-world-natural-regen', btn: 'btn-new-world-natural-regen' }
+        };
+        if (optKey === 'keepInventory' && selectedDiffChoice === 'hardcore') return;
+        const entry = map[optKey];
+        if (entry) {
+            const checkbox = document.getElementById(entry.chk);
             if (checkbox) {
                 checkbox.checked = !checkbox.checked;
-                updateToggleBtnState('btn-new-world-starter-items', checkbox.checked);
-            }
-        } else if (optKey === 'keepInventory') {
-            if (selectedDiffChoice === 'hardcore') return;
-            const checkbox = document.getElementById('new-world-keep-inventory');
-            if (checkbox) {
-                checkbox.checked = !checkbox.checked;
-                updateToggleBtnState('btn-new-world-keep-inventory', checkbox.checked);
+                updateToggleBtnState(entry.btn, checkbox.checked);
             }
         }
         updateNewWorldAchievementWarning();
     }
 
     export function selectWorldSize(size) {
-        selectedWorldSizeChoice = (size === 'big') ? 'big' : 'small';
+        selectedWorldSizeChoice = (size === 'big') ? 'big' : ((size === 'flat') ? 'flat' : 'small');
         if (typeof window !== 'undefined') {
             window.selectedWorldSizeChoice = selectedWorldSizeChoice;
         }
@@ -5481,6 +5586,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (btn.dataset.size === selectedWorldSizeChoice) btn.classList.add('active');
             else btn.classList.remove('active');
         });
+        updateCreateWorldPreview();
     }
 
     export function openWhatsNewOnce() {
@@ -8127,105 +8233,422 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         confirmConvertWorld015();
     }
 
-    export function renderWorldsList() {
-        const listEl = document.getElementById('worlds-list');
-        listEl.innerHTML = '';
-        let worlds = getSavedWorlds();
-        if(worlds.length === 0) {
-            listEl.innerHTML = '<p class="text-gray-400 text-center text-xl py-6 font-bold font-[\'VT323\']">No worlds found. Create one!</p>';
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    export let currentWorldViewMode = typeof localStorage !== 'undefined' ? (localStorage.getItem('swc_worlds_view_mode') || 'grid') : 'grid';
+    export let worldSearchQuery = '';
+
+    export function setWorldViewMode(mode) {
+        currentWorldViewMode = (mode === 'list') ? 'list' : 'grid';
+        try { localStorage.setItem('swc_worlds_view_mode', currentWorldViewMode); } catch(e) {}
+        renderWorldsList();
+    }
+
+    export function filterWorldsSearch(val) {
+        worldSearchQuery = (val || '').trim().toLowerCase();
+        renderWorldsList();
+    }
+
+    export function playWorldById(id) {
+        const worlds = getSavedWorlds();
+        const w = worlds.find(item => item.id === id);
+        if (!w) {
+            showToast('World not found.');
             return;
         }
-        worlds.sort((a,b) => b.lastPlayed - a.lastPlayed).forEach(w => {
-            let row = document.createElement('div');
-            row.className = 'world-row flex justify-between items-center cursor-pointer';
-            row.tabIndex = 0;
-            row.setAttribute('role', 'button');
-            
-            let hasSaveData = (typeof localStorage !== 'undefined') && !!localStorage.getItem('swc_data_' + w.id);
-            let difficulty = (w.difficulty || 'normal').toLowerCase();
-            let diffName = difficulty.toUpperCase();
-            let sizeName = (w.worldSize || (w.worldWidth > 700 ? 'big' : 'small')).toUpperCase();
-            let isCurrentVersion = (w.gameVersion === GAME_VERSION && w.gameBuild === GAME_BUILD);
-            let is015 = isWorldVersion015(w.gameVersion, w.gameBuild);
-            let isCompatible = isCurrentVersion || is015;
-            let versionClass = isCurrentVersion
-                ? 'world-badge-version'
-                : (is015 ? 'world-badge-version !bg-emerald-900 !text-emerald-100 border border-emerald-500/50' : 'world-badge-version-invalid');
+        const isCurrentVersion = (w.gameVersion === GAME_VERSION && w.gameBuild === GAME_BUILD);
+        const is015 = isWorldVersion015(w.gameVersion, w.gameBuild);
+        const isCompatible = isCurrentVersion || is015;
 
-            let info = document.createElement('div'); info.className = 'world-info flex-1';
-            info.tabIndex = 0;
-            info.setAttribute('role', 'button');
-            info.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <p class="world-name text-2xl font-bold font-['VT323'] leading-none truncate">${w.name}</p>
-                    <span class="world-badge world-badge-mode font-['VT323']">SURVIVAL</span>
-                    <span class="world-badge font-['VT323'] bg-slate-700 text-slate-200">${sizeName}</span>
-                    <span class="world-badge world-badge-difficulty-${difficulty} font-['VT323']">${diffName}</span>
-                    <span class="world-badge ${versionClass} font-['VT323']">v${w.gameVersion || (is015 ? '0.1.5' : 'older')}</span>
-                    ${is015 ? '<span class="world-badge font-[\'VT323\'] bg-amber-700/85 text-amber-100 border border-amber-500/50" title="Click to convert and play in Beta 0.1.6">CONVERTIBLE</span>' : ''}
-                    ${!isCompatible ? '<span class="world-badge world-badge-version-invalid font-[\'VT323\']">INCOMPATIBLE</span>' : ''}
-                    ${!hasSaveData ? '<span class="world-badge font-[\'VT323\'] bg-amber-700 text-amber-100" title="Save data missing">NO SAVE DATA</span>' : ''}
-                </div>
-                <p class="world-meta text-lg font-['VT323'] font-bold mt-0.5">${hasSaveData ? `Day ${w.dayCount || 1} • ` : '<span class="inline-flex items-center text-amber-400 align-middle mr-1"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><polygon points="7,1 13,12 1,12" fill="#f59e0b"/><rect x="6" y="4" width="2" height="4" fill="#080a0c"/><rect x="6" y="9" width="2" height="2" fill="#080a0c"/></svg></span>Missing save data (click to repair or delete) • '}${new Date(w.lastPlayed).toLocaleString()}</p>
-            `;
-            if (isCompatible) {
-                if (is015) {
-                    info.onclick = () => promptConvertWorld015(w.id);
-                } else {
-                    info.onclick = () => loadWorld(w.id);
-                }
+        if (!isCompatible) {
+            showToast(`Cannot play world '${w.name}': Incompatible version (Created in v${w.gameVersion || 'older'}, Client is v${GAME_VERSION}).`);
+            return;
+        }
+        if (is015) {
+            promptConvertWorld015(w.id);
+        } else {
+            loadWorld(w.id);
+        }
+    }
+
+    export function duplicateWorld(id) {
+        const worlds = getSavedWorlds();
+        const sourceWorld = worlds.find(w => w.id === id);
+        if (!sourceWorld) return;
+
+        const rawData = localStorage.getItem('swc_data_' + id);
+        if (!rawData) {
+            showToast('Cannot duplicate world: save data missing.');
+            return;
+        }
+
+        const newId = 'world_' + Date.now();
+        const newName = `Copy of ${sourceWorld.name}`;
+
+        try {
+            const clonedData = JSON.parse(rawData);
+            localStorage.setItem('swc_data_' + newId, JSON.stringify(clonedData));
+
+            const clonedWorld = {
+                ...sourceWorld,
+                id: newId,
+                name: newName,
+                lastPlayed: Date.now()
+            };
+            worlds.unshift(clonedWorld);
+            saveWorldsList(worlds);
+            renderWorldsList();
+            showToast(`Duplicated "${sourceWorld.name}"!`);
+        } catch (e) {
+            console.error('Failed to duplicate world', e);
+            showToast('Failed to duplicate world.');
+        }
+    }
+
+    export function renameWorld(id) {
+        const worlds = getSavedWorlds();
+        const targetWorld = worlds.find(w => w.id === id);
+        if (!targetWorld) return;
+
+        const newName = prompt('Enter new world name:', targetWorld.name);
+        if (newName && newName.trim() && newName.trim() !== targetWorld.name) {
+            targetWorld.name = newName.trim().slice(0, 28);
+            saveWorldsList(worlds);
+            renderWorldsList();
+            showToast(`World renamed to "${targetWorld.name}"`);
+        }
+    }
+
+    export function renderWorldsList() {
+        const listEl = document.getElementById('worlds-list');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        // Update view mode toggle buttons state
+        const btnGrid = document.getElementById('btn-view-grid');
+        const btnList = document.getElementById('btn-view-list');
+        if (btnGrid) {
+            btnGrid.classList.toggle('is-on', currentWorldViewMode === 'grid');
+            btnGrid.classList.toggle('is-off', currentWorldViewMode !== 'grid');
+        }
+        if (btnList) {
+            btnList.classList.toggle('is-on', currentWorldViewMode === 'list');
+            btnList.classList.toggle('is-off', currentWorldViewMode !== 'list');
+        }
+
+        let allWorlds = getSavedWorlds();
+        let worlds = allWorlds.slice().sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+
+        // Filter by search query if any
+        if (worldSearchQuery) {
+            worlds = worlds.filter(w => (w.name || '').toLowerCase().includes(worldSearchQuery));
+        }
+
+        const summaryCountEl = document.getElementById('worlds-summary-count');
+        if (summaryCountEl) {
+            if (worldSearchQuery) {
+                summaryCountEl.innerText = `${worlds.length} of ${allWorlds.length} Worlds Matching "${worldSearchQuery}"`;
             } else {
-                info.onclick = () => {
-                    showToast(`Cannot play world '${w.name}': Incompatible version (Created in v${w.gameVersion || 'older'}, Client is v${GAME_VERSION}).`);
-                };
-                row.classList.add('opacity-70');
+                summaryCountEl.innerText = `${allWorlds.length} World${allWorlds.length === 1 ? '' : 's'} Found`;
             }
-            
-            let btnGroup = document.createElement('div'); btnGroup.className = 'flex gap-1.5';
-            let expBtn = document.createElement('button');
-            expBtn.className = 'mc-btn !w-12 !p-0.5 !text-xl !m-0 !bg-blue-600 hover:!bg-blue-500 !text-white';
-            expBtn.innerText = '↓'; expBtn.title = 'Export World'; expBtn.onclick = (e) => { e.stopPropagation(); exportWorld(w.id, w.name); };
-            let delBtn = document.createElement('button');
-            delBtn.className = 'mc-btn !w-12 !p-0.5 !text-xl !m-0 !bg-red-600 hover:!bg-red-500 !text-white';
-            delBtn.innerText = 'X'; delBtn.title = 'Delete World'; delBtn.onclick = (e) => { e.stopPropagation(); deleteWorld(w.id); };
+        }
 
-            btnGroup.appendChild(expBtn); btnGroup.appendChild(delBtn);
-            row.appendChild(info); row.appendChild(btnGroup); listEl.appendChild(row);
-        });
+        if (worlds.length === 0) {
+            if (allWorlds.length === 0) {
+                listEl.innerHTML = `
+                    <div class="worlds-empty-state">
+                        <p class="worlds-empty-title">No worlds found</p>
+                        <p class="worlds-empty-desc">Create your first 2D sandbox world to begin surviving!</p>
+                        <button type="button" class="mc-btn btn-primary worlds-empty-btn" onclick="openNewWorldModal()">+ Create New World</button>
+                    </div>
+                `;
+            } else {
+                listEl.innerHTML = `
+                    <div class="worlds-empty-state">
+                        <p class="worlds-empty-title">No matching worlds found</p>
+                        <p class="worlds-empty-desc">No worlds match "${worldSearchQuery}"</p>
+                        <button type="button" class="mc-btn btn-secondary !w-auto !py-2 !px-6 !text-xl" onclick="document.getElementById('world-search-input').value = ''; filterWorldsSearch('');">Clear Search</button>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        if (currentWorldViewMode === 'grid') {
+            const gridEl = document.createElement('div');
+            gridEl.className = 'world-cards-grid';
+
+            worlds.forEach(w => {
+                const hasSaveData = (typeof localStorage !== 'undefined') && !!localStorage.getItem('swc_data_' + w.id);
+                const difficulty = (w.difficulty || 'normal').toLowerCase();
+                const diffName = difficulty.toUpperCase();
+                const sizeName = (w.worldSize || (w.worldWidth > 700 ? 'big' : 'small')).toUpperCase();
+                const gameMode = (w.gameMode || 'survival').toLowerCase();
+                const isCreative = gameMode === 'creative';
+                const isCurrentVersion = (w.gameVersion === GAME_VERSION && w.gameBuild === GAME_BUILD);
+                const is015 = isWorldVersion015(w.gameVersion, w.gameBuild);
+                const isCompatible = isCurrentVersion || is015;
+
+                let thumbUrl = w.thumbnail;
+                if (!thumbUrl && typeof generateProceduralThumbnail === 'function') {
+                    thumbUrl = generateProceduralThumbnail({
+                        seed: w.seed || w.id,
+                        biome: w.startingBiome || 'plains',
+                        worldSize: w.worldSize || 'small',
+                        mode: gameMode,
+                        dayCount: w.dayCount || 1
+                    });
+                    w.thumbnail = thumbUrl;
+                }
+
+                const card = document.createElement('div');
+                card.className = `world-card ${!isCompatible ? 'opacity-65' : ''}`;
+                card.dataset.id = w.id;
+
+                const escapedName = escapeHtml(w.name);
+                card.innerHTML = `
+                    <div class="world-card-thumb-wrap" onclick="playWorldById('${w.id}')" title="Play ${escapedName}">
+                        ${thumbUrl ? `<img src="${thumbUrl}" alt="${escapedName}" class="world-card-thumb" loading="lazy">` : `<div class="w-full h-full bg-[#12161b] flex items-center justify-center text-gray-500 font-['VT323'] text-xl">No Preview</div>`}
+                        <div class="world-card-play-overlay">
+                            <div class="world-card-play-badge">
+                                <svg viewBox="0 0 16 16" width="14" height="14" style="image-rendering:pixelated;shape-rendering:crispEdges;"><polygon points="4,2 14,8 4,14" fill="#ffffff"/></svg>
+                                PLAY WORLD
+                            </div>
+                        </div>
+                    </div>
+                    <div class="world-card-body">
+                        <div class="flex items-center justify-between gap-1">
+                            <h2 class="world-card-name" title="${escapedName}">${escapedName}</h2>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 my-0.5">
+                            <span class="world-badge ${isCreative ? 'world-badge-mode-creative' : 'world-badge-mode'} font-['VT323']">${isCreative ? 'CREATIVE' : 'SURVIVAL'}</span>
+                            <span class="world-badge font-['VT323'] bg-slate-700 text-slate-200">${sizeName}</span>
+                            <span class="world-badge world-badge-difficulty-${difficulty} font-['VT323']">${diffName}</span>
+                            <span class="world-badge ${isCurrentVersion ? 'world-badge-version' : (is015 ? 'world-badge-version !bg-emerald-900 !text-emerald-100 border border-emerald-500/50' : 'world-badge-version-invalid')} font-['VT323']">v${w.gameVersion || (is015 ? '0.1.5' : 'older')}</span>
+                            ${is015 ? '<span class="world-badge font-[\'VT323\'] bg-amber-700/85 text-amber-100 border border-amber-500/50" title="Convert to Beta 0.1.6">CONVERTIBLE</span>' : ''}
+                            ${!isCompatible ? '<span class="world-badge world-badge-version-invalid font-[\'VT323\']">INCOMPATIBLE</span>' : ''}
+                            ${!hasSaveData ? '<span class="world-badge font-[\'VT323\'] bg-amber-700 text-amber-100" title="Save data missing">NO SAVE DATA</span>' : ''}
+                        </div>
+                        <p class="text-sm font-['VT323'] text-gray-300 leading-tight">
+                            Day ${w.dayCount || 1} • Last played ${w.lastPlayed ? new Date(w.lastPlayed).toLocaleDateString() : 'Recently'}
+                        </p>
+                        <div class="world-card-actions">
+                            <button type="button" class="mc-btn btn-primary !w-auto !py-1 !px-3 !text-lg !m-0 flex items-center gap-1" onclick="playWorldById('${w.id}')" title="Play World">
+                                ▶ Play
+                            </button>
+                            <div class="flex items-center gap-1">
+                                <button type="button" class="mc-btn btn-secondary !w-8 !h-8 !p-0 !text-base !m-0 flex items-center justify-center" onclick="renameWorld('${w.id}')" title="Rename World">
+                                    <svg viewBox="0 0 16 16" width="14" height="14" style="image-rendering:pixelated;shape-rendering:crispEdges;"><polygon points="12,1 15,4 6,13 3,13 3,10" fill="#f8fafc"/><rect x="1" y="15" width="14" height="1" fill="#94a3b8"/></svg>
+                                </button>
+                                <button type="button" class="mc-btn btn-secondary !w-8 !h-8 !p-0 !text-base !m-0 flex items-center justify-center" onclick="duplicateWorld('${w.id}')" title="Duplicate World (Clone)">
+                                    <svg viewBox="0 0 16 16" width="14" height="14" style="image-rendering:pixelated;shape-rendering:crispEdges;"><rect x="5" y="2" width="9" height="9" fill="none" stroke="#f8fafc" stroke-width="1.5"/><rect x="2" y="5" width="9" height="9" fill="#38bdf8"/></svg>
+                                </button>
+                                <button type="button" class="mc-btn btn-secondary !w-8 !h-8 !p-0 !text-base !m-0 flex items-center justify-center" onclick="exportWorld('${w.id}', '${escapedName}')" title="Export World JSON">
+                                    <svg viewBox="0 0 16 16" width="14" height="14" style="image-rendering:pixelated;shape-rendering:crispEdges;"><path d="M8 2v8m-3-3l3 3 3-3M2 13h12" stroke="#f8fafc" stroke-width="1.5" fill="none"/></svg>
+                                </button>
+                                <button type="button" class="mc-btn !w-8 !h-8 !p-0 !text-base !m-0 !bg-red-700 hover:!bg-red-600 !text-white flex items-center justify-center" onclick="deleteWorld('${w.id}')" title="Delete World">
+                                    <svg viewBox="0 0 16 16" width="14" height="14" style="image-rendering:pixelated;shape-rendering:crispEdges;"><rect x="4" y="2" width="8" height="2" fill="#ffffff"/><rect x="3" y="4" width="10" height="10" fill="#ffffff"/><rect x="5" y="6" width="2" height="6" fill="#dc2626"/><rect x="9" y="6" width="2" height="6" fill="#dc2626"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                gridEl.appendChild(card);
+            });
+            listEl.appendChild(gridEl);
+        } else {
+            // List view mode: compact rows
+            const rowsWrap = document.createElement('div');
+            rowsWrap.className = 'flex flex-col gap-2 w-full';
+
+            worlds.forEach(w => {
+                const hasSaveData = (typeof localStorage !== 'undefined') && !!localStorage.getItem('swc_data_' + w.id);
+                const difficulty = (w.difficulty || 'normal').toLowerCase();
+                const diffName = difficulty.toUpperCase();
+                const sizeName = (w.worldSize || (w.worldWidth > 700 ? 'big' : 'small')).toUpperCase();
+                const gameMode = (w.gameMode || 'survival').toLowerCase();
+                const isCreative = gameMode === 'creative';
+                const isCurrentVersion = (w.gameVersion === GAME_VERSION && w.gameBuild === GAME_BUILD);
+                const is015 = isWorldVersion015(w.gameVersion, w.gameBuild);
+                const isCompatible = isCurrentVersion || is015;
+
+                let thumbUrl = w.thumbnail;
+                if (!thumbUrl && typeof generateProceduralThumbnail === 'function') {
+                    thumbUrl = generateProceduralThumbnail({
+                        seed: w.seed || w.id,
+                        biome: w.startingBiome || 'plains',
+                        worldSize: w.worldSize || 'small',
+                        mode: gameMode,
+                        dayCount: w.dayCount || 1
+                    });
+                    w.thumbnail = thumbUrl;
+                }
+
+                const row = document.createElement('div');
+                row.className = `world-row flex items-center justify-between gap-3 p-2.5 cursor-pointer ${!isCompatible ? 'opacity-70' : ''}`;
+                row.tabIndex = 0;
+                row.setAttribute('role', 'button');
+
+                const escapedName = escapeHtml(w.name);
+                row.innerHTML = `
+                    <div class="flex items-center gap-3 min-w-0 flex-1" onclick="playWorldById('${w.id}')">
+                        <div class="w-20 h-12 bg-[#090d16] border-2 border-[#46515a] overflow-hidden shrink-0 shadow">
+                            ${thumbUrl ? `<img src="${thumbUrl}" alt="${escapedName}" class="w-full h-full object-cover pixelated" loading="lazy">` : `<div class="w-full h-full flex items-center justify-center font-['VT323'] text-xs text-gray-500">No Art</div>`}
+                        </div>
+                        <div class="flex flex-col min-w-0 flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="world-name text-2xl font-bold font-['VT323'] leading-none truncate">${escapedName}</span>
+                                <span class="world-badge ${isCreative ? 'world-badge-mode-creative' : 'world-badge-mode'} font-['VT323']">${isCreative ? 'CREATIVE' : 'SURVIVAL'}</span>
+                                <span class="world-badge font-['VT323'] bg-slate-700 text-slate-200">${sizeName}</span>
+                                <span class="world-badge world-badge-difficulty-${difficulty} font-['VT323']">${diffName}</span>
+                                <span class="world-badge ${isCurrentVersion ? 'world-badge-version' : (is015 ? 'world-badge-version !bg-emerald-900 !text-emerald-100 border border-emerald-500/50' : 'world-badge-version-invalid')} font-['VT323']">v${w.gameVersion || (is015 ? '0.1.5' : 'older')}</span>
+                                ${is015 ? '<span class="world-badge font-[\'VT323\'] bg-amber-700/85 text-amber-100 border border-amber-500/50">CONVERTIBLE</span>' : ''}
+                                ${!isCompatible ? '<span class="world-badge world-badge-version-invalid font-[\'VT323\']">INCOMPATIBLE</span>' : ''}
+                                ${!hasSaveData ? '<span class="world-badge font-[\'VT323\'] bg-amber-700 text-amber-100">NO SAVE DATA</span>' : ''}
+                            </div>
+                            <p class="world-meta text-lg font-['VT323'] font-bold mt-0.5 text-gray-300">
+                                Day ${w.dayCount || 1} • Last played ${w.lastPlayed ? new Date(w.lastPlayed).toLocaleString() : 'Recently'}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
+                        <button type="button" class="mc-btn btn-primary !w-auto !py-1 !px-3 !text-lg !m-0" onclick="playWorldById('${w.id}')" title="Play">▶</button>
+                        <button type="button" class="mc-btn btn-secondary !w-9 !h-8 !p-0 !text-sm !m-0 flex items-center justify-center" onclick="renameWorld('${w.id}')" title="Rename">✏</button>
+                        <button type="button" class="mc-btn btn-secondary !w-9 !h-8 !p-0 !text-sm !m-0 flex items-center justify-center" onclick="duplicateWorld('${w.id}')" title="Duplicate">📋</button>
+                        <button type="button" class="mc-btn btn-secondary !w-9 !h-8 !p-0 !text-sm !m-0 flex items-center justify-center" onclick="exportWorld('${w.id}', '${escapedName}')" title="Export">↓</button>
+                        <button type="button" class="mc-btn !w-9 !h-8 !p-0 !text-sm !m-0 !bg-red-700 hover:!bg-red-600 !text-white flex items-center justify-center" onclick="deleteWorld('${w.id}')" title="Delete">✕</button>
+                    </div>
+                `;
+                rowsWrap.appendChild(row);
+            });
+            listEl.appendChild(rowsWrap);
+        }
     }
 
     export function openNewWorldModal() {
-        document.getElementById('new-world-modal').classList.remove('hidden');
-        selectDifficulty('normal');
-        selectWorldSize('small');
-        const chkStarter = document.getElementById('new-world-starter-items');
-        if (chkStarter) chkStarter.checked = true;
-        updateToggleBtnState('btn-new-world-starter-items', true);
+        const modal = document.getElementById('new-world-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
 
-        const chkKeep = document.getElementById('new-world-keep-inventory');
-        if (chkKeep) chkKeep.checked = true;
-        updateToggleBtnState('btn-new-world-keep-inventory', true);
+        // Reset to General tab
+        switchCreateWorldTab('general');
+
+        // Reset name
+        const nameInput = document.getElementById('new-world-name');
+        if (nameInput) {
+            nameInput.value = 'New World';
+            nameInput.focus();
+        }
+
+        // Reset game mode
+        selectGameMode('survival');
+
+        // Reset difficulty
+        selectDifficulty('normal');
+
+        // Reset world size
+        selectWorldSize('small');
+
+        // Reset seed
+        const seedInput = document.getElementById('new-world-seed');
+        if (seedInput) {
+            seedInput.value = '';
+        }
+
+        // Reset starting biome
+        selectStartingBiome('plains');
+
+        // Reset toggle checkboxes
+        const resetToggle = (chkId, btnId, defaultVal) => {
+            const chk = document.getElementById(chkId);
+            if (chk) {
+                chk.checked = defaultVal;
+                updateToggleBtnState(btnId, defaultVal);
+            }
+        };
+
+        resetToggle('new-world-starter-items', 'btn-new-world-starter-items', true);
+        resetToggle('new-world-keep-inventory', 'btn-new-world-keep-inventory', true);
+        resetToggle('new-world-day-cycle', 'btn-new-world-day-cycle', true);
+        resetToggle('new-world-mob-spawning', 'btn-new-world-mob-spawning', true);
+        resetToggle('new-world-hunger-depletion', 'btn-new-world-hunger-depletion', true);
+        resetToggle('new-world-allow-cheats', 'btn-new-world-allow-cheats', false);
+        resetToggle('new-world-bonus-chest', 'btn-new-world-bonus-chest', true);
+        resetToggle('new-world-natural-regen', 'btn-new-world-natural-regen', true);
 
         updateNewWorldAchievementWarning();
-        const nameInput = document.getElementById('new-world-name');
-        if (nameInput) nameInput.focus();
+        updateCreateWorldPreview();
     }
-    export function closeNewWorldModal() { document.getElementById('new-world-modal').classList.add('hidden'); }
+
+    export function closeNewWorldModal() {
+        const modal = document.getElementById('new-world-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    export function spawnBonusChest(spawn) {
+        const curSurfaces = (typeof window !== 'undefined' && window.surfaceHeights) ? window.surfaceHeights : surfaceHeights;
+        const curWorld = (typeof window !== 'undefined' && window.world) ? window.world : world;
+        const curChests = (typeof window !== 'undefined' && window.chests) ? window.chests : chests;
+        if (!curWorld || !curSurfaces) return;
+
+        const spawnTileX = Math.floor(spawn.x / TILE_SIZE);
+        const chestTileX = Math.max(5, Math.min(WORLD_WIDTH - 6, spawnTileX + 3));
+        const surfaceY = (curSurfaces[chestTileX] !== undefined) ? curSurfaces[chestTileX] : Math.floor(WORLD_HEIGHT / 2);
+        const chestTileY = surfaceY - 1;
+
+        if (chestTileY > 2 && curWorld[chestTileX]) {
+            curWorld[chestTileX][chestTileY] = IDS.CHEST;
+            
+            // Place torches beside chest if air
+            if (curWorld[chestTileX - 1] && curWorld[chestTileX - 1][chestTileY] === IDS.AIR) {
+                curWorld[chestTileX - 1][chestTileY] = IDS.TORCH;
+            }
+            if (curWorld[chestTileX + 1] && curWorld[chestTileX + 1][chestTileY] === IDS.AIR) {
+                curWorld[chestTileX + 1][chestTileY] = IDS.TORCH;
+            }
+
+            const chestKey = `${chestTileX}_${chestTileY}`;
+            const bonusItems = new Array(27).fill(null);
+            bonusItems[0] = { id: IDS.STONE_PICKAXE, count: 1, durability: TOOL_DURABILITY[IDS.STONE_PICKAXE] || 131, maxDurability: TOOL_DURABILITY[IDS.STONE_PICKAXE] || 131 };
+            bonusItems[1] = { id: IDS.STONE_AXE, count: 1, durability: TOOL_DURABILITY[IDS.STONE_AXE] || 131, maxDurability: TOOL_DURABILITY[IDS.STONE_AXE] || 131 };
+            bonusItems[2] = { id: IDS.APPLE, count: 6 };
+            bonusItems[3] = { id: IDS.BREAD, count: 4 };
+            bonusItems[4] = { id: IDS.WOOD, count: 16 };
+            bonusItems[5] = { id: IDS.TORCH, count: 12 };
+            bonusItems[6] = { id: IDS.SAPLING, count: 4 };
+            bonusItems[7] = { id: IDS.SEEDS, count: 6 };
+            bonusItems[8] = { id: IDS.RAW_PORKCHOP, count: 3 };
+
+            curChests.set(chestKey, { items: bonusItems });
+        }
+    }
 
     export function confirmCreateWorld() {
-        let name = document.getElementById('new-world-name').value.trim() || "New World";
+        let name = document.getElementById('new-world-name')?.value.trim() || "New World";
+        let seedStr = document.getElementById('new-world-seed')?.value.trim() || '';
 
         let chosenSize = 'small';
         const activeSizeBtn = document.querySelector('#world-size-selector button.active');
         if (activeSizeBtn && activeSizeBtn.dataset && activeSizeBtn.dataset.size) {
-            chosenSize = activeSizeBtn.dataset.size === 'big' ? 'big' : 'small';
+            chosenSize = activeSizeBtn.dataset.size;
         } else if (typeof window !== 'undefined' && window.selectedWorldSizeChoice) {
-            chosenSize = window.selectedWorldSizeChoice === 'big' ? 'big' : 'small';
+            chosenSize = window.selectedWorldSizeChoice;
         } else if (selectedWorldSizeChoice) {
-            chosenSize = selectedWorldSizeChoice === 'big' ? 'big' : 'small';
+            chosenSize = selectedWorldSizeChoice;
         }
-        selectedWorldSizeChoice = chosenSize;
-        if (typeof window !== 'undefined') window.selectedWorldSizeChoice = chosenSize;
+        selectedWorldSizeChoice = (chosenSize === 'big') ? 'big' : 'small';
+        if (typeof window !== 'undefined') window.selectedWorldSizeChoice = selectedWorldSizeChoice;
+
+        const chosenGameMode = selectedGameModeChoice || 'survival';
+        const chosenBiome = selectedStartingBiomeChoice || 'plains';
 
         closeNewWorldModal();
         
@@ -8236,16 +8659,75 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         currentDifficulty = selectedDiffChoice;
         if (typeof setEngineCurrentDifficulty === 'function') setEngineCurrentDifficulty(currentDifficulty);
         if (typeof window !== 'undefined') window.currentDifficulty = currentDifficulty;
-        setWorldDimensions(chosenSize);
-        let starterItems = document.getElementById('new-world-starter-items').checked;
-        keepInventory = currentDifficulty !== 'hardcore' && document.getElementById('new-world-keep-inventory').checked;
-        currentWorldAchievementsEnabled = (!starterItems && !keepInventory);
+        setWorldDimensions(selectedWorldSizeChoice);
+
+        let starterItems = document.getElementById('new-world-starter-items')?.checked ?? true;
+        keepInventory = currentDifficulty !== 'hardcore' && (document.getElementById('new-world-keep-inventory')?.checked ?? true);
+        const dayCycle = document.getElementById('new-world-day-cycle')?.checked ?? true;
+        const mobSpawning = document.getElementById('new-world-mob-spawning')?.checked ?? true;
+        const hungerDepletion = document.getElementById('new-world-hunger-depletion')?.checked ?? true;
+        const allowCheats = document.getElementById('new-world-allow-cheats')?.checked ?? (chosenGameMode === 'creative');
+        const bonusChest = document.getElementById('new-world-bonus-chest')?.checked ?? true;
+        const naturalRegen = document.getElementById('new-world-natural-regen')?.checked ?? true;
+
+        currentWorldAchievementsEnabled = (!starterItems && !keepInventory && chosenGameMode !== 'creative' && !allowCheats);
+
+        // Calculate numeric seed from seedStr or roll random
+        let seedVal = seedStr.trim();
+        if (!seedVal) {
+            seedVal = String(Math.floor(Math.random() * 900000000 + 100000000));
+        }
+        let numericSeed = parseInt(seedVal, 10);
+        if (isNaN(numericSeed)) {
+            numericSeed = 0;
+            for (let i = 0; i < seedVal.length; i++) {
+                numericSeed = ((numericSeed << 5) - numericSeed) + seedVal.charCodeAt(i);
+                numericSeed |= 0;
+            }
+            numericSeed = Math.abs(numericSeed);
+        }
+
+        // Generate procedural thumbnail
+        let initialThumbnail = null;
+        if (typeof generateProceduralThumbnail === 'function') {
+            initialThumbnail = generateProceduralThumbnail({
+                seed: seedVal,
+                biome: chosenBiome,
+                worldSize: selectedWorldSizeChoice,
+                mode: chosenGameMode,
+                dayCount: 1
+            });
+        }
 
         let worlds = getSavedWorlds();
-        worlds.push({ id: currentWorldId, name: name, difficulty: currentDifficulty, worldSize: currentWorldSize, worldWidth: WORLD_WIDTH, worldHeight: WORLD_HEIGHT, starterItems, keepInventory, achievementsEnabled: currentWorldAchievementsEnabled, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD, lastPlayed: Date.now(), dayCount: 1 });
+        worlds.push({
+            id: currentWorldId,
+            name: name,
+            difficulty: currentDifficulty,
+            worldSize: currentWorldSize,
+            worldWidth: WORLD_WIDTH,
+            worldHeight: WORLD_HEIGHT,
+            gameMode: chosenGameMode,
+            startingBiome: chosenBiome,
+            seed: seedVal,
+            starterItems,
+            keepInventory,
+            dayCycle,
+            mobSpawning,
+            hungerDepletion,
+            allowCheats,
+            bonusChest,
+            naturalRegen,
+            achievementsEnabled: currentWorldAchievementsEnabled,
+            gameVersion: GAME_VERSION,
+            gameBuild: GAME_BUILD,
+            lastPlayed: Date.now(),
+            dayCount: 1,
+            thumbnail: initialThumbnail
+        });
         saveWorldsList(worlds);
         
-        generateWorld();
+        generateWorld(numericSeed);
         if (typeof window !== 'undefined' && window.world) world = window.world;
         if (typeof window !== 'undefined' && window.surfaceHeights) surfaceHeights = window.surfaceHeights;
         if (typeof setEngineWorld === 'function') setEngineWorld(world);
@@ -8346,6 +8828,28 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         chests = new Map();
         if (typeof setEngineChests === 'function') setEngineChests(chests);
         if (typeof window !== 'undefined') window.chests = chests;
+
+        // Bonus Chest Spawn
+        if (bonusChest) {
+            spawnBonusChest(spawn);
+        }
+
+        // Creative Mode and Dev Cheats Setup
+        if (chosenGameMode === 'creative') {
+            window.devCheats = window.devCheats || {};
+            window.devCheats.godMode = true;
+            window.devCheats.noclip = true;
+            window.devCheats.instantMine = true;
+            window.devCheats.infiniteOxygen = true;
+            window.devCheats.infiniteHunger = true;
+        } else if (!allowCheats) {
+            if (window.devCheats) {
+                window.devCheats.godMode = false;
+                window.devCheats.noclip = false;
+                window.devCheats.instantMine = false;
+            }
+        }
+
         if (starterItems) {
             giveItem(IDS.WOOD_AXE, 1); giveItem(IDS.WOOD_PICKAXE, 1); giveItem(IDS.WOOD, 32); giveItem(IDS.RAW_PORKCHOP, 5); giveItem(IDS.TORCH, 16); giveItem(IDS.SAPLING, 4);
         }
@@ -8399,6 +8903,17 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             wInfo.gameVersion = GAME_VERSION;
             wInfo.gameBuild = GAME_BUILD;
             wInfo.achievementsEnabled = currentWorldAchievementsEnabled;
+            const cv = (typeof document !== 'undefined') ? document.getElementById('gameCanvas') : null;
+            if (cv && typeof captureWorldThumbnail === 'function') {
+                try {
+                    const snap = captureWorldThumbnail(cv);
+                    if (snap) {
+                        wInfo.thumbnail = snap;
+                    }
+                } catch(e) {
+                    console.warn('Failed to capture world thumbnail', e);
+                }
+            }
         }
         
         const liveWorld = (typeof window !== 'undefined' && window.world) ? window.world : world;
@@ -8949,6 +9464,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             keepInventory = currentDifficulty !== 'hardcore' && data.keepInventory === true;
             currentWorldAchievementsEnabled = data.achievementsEnabled !== undefined ? data.achievementsEnabled : (data.starterItems !== true && data.keepInventory !== true);
             
+            const isCreativeMode = (wInfo && wInfo.gameMode === 'creative') || (data.gameMode === 'creative');
+            if (isCreativeMode) {
+                window.devCheats = window.devCheats || {};
+                window.devCheats.godMode = true;
+                window.devCheats.noclip = true;
+                window.devCheats.instantMine = true;
+                window.devCheats.infiniteOxygen = true;
+                window.devCheats.infiniteHunger = true;
+            } else if (!wInfo?.allowCheats && !data.allowCheats) {
+                if (window.devCheats) {
+                    window.devCheats.godMode = false;
+                    window.devCheats.noclip = false;
+                    window.devCheats.instantMine = false;
+                }
+            }
+
             // 4. Validate & safely position player
             if (!player) player = (typeof window !== 'undefined' && window.player) ? window.player : new Player(0, 0);
             if (Number.isFinite(data.player.x) && Number.isFinite(data.player.y)) {
@@ -14301,3 +14832,22 @@ try { if (typeof toggleFabulousOption !== "undefined") window.toggleFabulousOpti
 try { if (typeof resetFabulousDefaults !== "undefined") window.resetFabulousDefaults = resetFabulousDefaults; } catch(e) {}
 try { if (typeof renderFabulousSettingsUI !== "undefined") window.renderFabulousSettingsUI = renderFabulousSettingsUI; } catch(e) {}
 try { if (typeof getPlayerUnlockedCosmetics !== "undefined") window.getPlayerUnlockedCosmetics = getPlayerUnlockedCosmetics; } catch(e) {}
+try { if (typeof playWorldById !== "undefined") window.playWorldById = playWorldById; } catch(e) {}
+try { if (typeof duplicateWorld !== "undefined") window.duplicateWorld = duplicateWorld; } catch(e) {}
+try { if (typeof renameWorld !== "undefined") window.renameWorld = renameWorld; } catch(e) {}
+try { if (typeof filterWorldsSearch !== "undefined") window.filterWorldsSearch = filterWorldsSearch; } catch(e) {}
+try { if (typeof setWorldViewMode !== "undefined") window.setWorldViewMode = setWorldViewMode; } catch(e) {}
+try { if (typeof switchCreateWorldTab !== "undefined") window.switchCreateWorldTab = switchCreateWorldTab; } catch(e) {}
+try { if (typeof selectGameMode !== "undefined") window.selectGameMode = selectGameMode; } catch(e) {}
+try { if (typeof selectStartingBiome !== "undefined") window.selectStartingBiome = selectStartingBiome; } catch(e) {}
+try { if (typeof randomizeWorldSeed !== "undefined") window.randomizeWorldSeed = randomizeWorldSeed; } catch(e) {}
+try { if (typeof updateCreateWorldPreview !== "undefined") window.updateCreateWorldPreview = updateCreateWorldPreview; } catch(e) {}
+try { if (typeof toggleNewWorldOption !== "undefined") window.toggleNewWorldOption = toggleNewWorldOption; } catch(e) {}
+try { if (typeof openNewWorldModal !== "undefined") window.openNewWorldModal = openNewWorldModal; } catch(e) {}
+try { if (typeof closeNewWorldModal !== "undefined") window.closeNewWorldModal = closeNewWorldModal; } catch(e) {}
+try { if (typeof confirmCreateWorld !== "undefined") window.confirmCreateWorld = confirmCreateWorld; } catch(e) {}
+try { if (typeof promptConvertWorld015 !== "undefined") window.promptConvertWorld015 = promptConvertWorld015; } catch(e) {}
+try { if (typeof closeConvertWorldModal !== "undefined") window.closeConvertWorldModal = closeConvertWorldModal; } catch(e) {}
+try { if (typeof confirmConvertWorld015 !== "undefined") window.confirmConvertWorld015 = confirmConvertWorld015; } catch(e) {}
+try { if (typeof exportBackup015Only !== "undefined") window.exportBackup015Only = exportBackup015Only; } catch(e) {}
+try { if (typeof exportBackupAndConvert015 !== "undefined") window.exportBackupAndConvert015 = exportBackupAndConvert015; } catch(e) {}

@@ -157,12 +157,14 @@ class DevConsoleManager {
                 gap: 6px;
             }
             .dev-title {
-                font-size: 22px;
-                font-weight: bold;
+                font-family: 'Pixeloid Sans', monospace !important;
+                font-size: 15px !important;
+                font-weight: bold !important;
                 color: #ffd34d;
                 text-shadow: 2px 2px 0 #000;
                 line-height: 1;
                 margin: 0;
+                letter-spacing: 0.5px;
             }
             .dev-hotkey-badge {
                 background: #11151a;
@@ -712,7 +714,7 @@ class DevConsoleManager {
             <section id="dev-item-drawer" class="dev-item-drawer hidden" role="dialog" aria-label="Item Spawner Drawer">
                 <div class="dev-header">
                     <div class="dev-title-wrap">
-                        <span class="dev-title" style="font-size: 20px; display:inline-flex; align-items:center; gap:6px;">${getPixelIconSvg('chest', 18)} ITEM SPAWNER</span>
+                        <span class="dev-title" style="display:inline-flex; align-items:center; gap:6px;">${getPixelIconSvg('chest', 18)} ITEM SPAWNER</span>
                         <span id="dev-items-count-label" class="dev-badge-off" style="color: #ffd34d;">Loading...</span>
                     </div>
                     <button type="button" class="dev-ctrl-btn close" id="dev-drawer-close" title="Close Item Drawer">✕</button>

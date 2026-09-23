@@ -7,11 +7,29 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="preload" href="fonts/PixeloidSans.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="fonts/PixeloidSans-Bold.ttf" as="font" type="font/ttf" crossorigin>
+    <style>
+        @font-face {
+            font-family: 'Pixeloid Sans';
+            src: url('fonts/PixeloidSans.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Pixeloid Sans';
+            src: url('fonts/PixeloidSans-Bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="icon" type="image/png" href="data:image/png;base64,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">
-    <link rel="icon" type="image/x-icon" href="favicon.ico?v=2">
-    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?v=2">
-    <link rel="apple-touch-icon" href="favicon.png?v=2">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=3">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?v=3">
+    <link rel="icon" type="image/png" href="favicon.png?v=3">
+    <link rel="apple-touch-icon" href="favicon.png?v=3">
     <script>
         try {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
@@ -33,7 +51,7 @@
                 </span>
             </div>
             <!-- Title -->
-            <h2 id="closed-beta-title" class="text-3xl sm:text-4xl text-[#ffcc00] font-bold tracking-wider drop-shadow-[2px_2px_0_#000] mb-3 font-['VT323']">
+            <h2 id="closed-beta-title" class="text-[#ffcc00] font-bold tracking-wider mb-3">
                 CLOSED BETA ACCESS
             </h2>
             <!-- Informational Text -->
@@ -215,7 +233,7 @@
         <section class="achievements-panel select-none">
             <div class="flex justify-between items-center pb-2 mb-3 border-b-2 border-[#46515a]">
                 <div class="flex items-center gap-3">
-                    <h2 id="achievements-title" class="screen-title text-4xl font-bold text-[var(--mc-accent-color)] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323']">Achievements</h2>
+                    <h2 id="achievements-title" class="screen-title text-[var(--mc-accent-color)] m-0">Achievements</h2>
                     <span id="achievements-progress-badge" class="bg-[#171b20] border-2 border-[var(--mc-accent-color)] text-[var(--mc-accent-color)] font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">0 / 33 (0%)</span>
                 </div>
                 <button class="modal-close-red-btn" type="button" onclick="closeAchievements()" title="Close" aria-label="Close">X</button>
@@ -359,7 +377,7 @@
                             <img id="vault-header-emerald-img" class="pixelated w-8 h-8 object-contain" alt="Emerald" />
                         </div>
                         <div>
-                            <h2 id="vault-modal-title" class="screen-title text-2xl sm:text-3xl md:text-4xl font-bold text-[#4eed99] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide leading-none">Emerald Vault & Economy Hub</h2>
+                            <h2 id="vault-modal-title" class="screen-title text-[#4eed99] m-0 tracking-wide leading-none">Emerald Vault & Economy Hub</h2>
                             <div class="text-xs sm:text-sm text-[#95a5b5] font-['VT323'] tracking-wider mt-0.5">Mined Wealth • Daily Challenges • Astral Emerald Exchange</div>
                         </div>
                     </div>
@@ -780,7 +798,7 @@
                             <img id="atlas-market-gem-img" class="pixelated w-8 h-8 object-contain" alt="Astral Emerald" />
                         </div>
                         <div>
-                            <h2 id="atlas-market-title" class="screen-title text-2xl sm:text-3xl md:text-4xl font-bold text-[#c084fc] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide leading-none">Atlas Market &amp; Planar Outpost</h2>
+                            <h2 id="atlas-market-title" class="screen-title text-[#c084fc] m-0 tracking-wide leading-none">Atlas Market &amp; Planar Outpost</h2>
                             <div class="text-xs sm:text-sm text-cyan-300 font-['VT323'] tracking-wider mt-0.5">Kael the Atlas Explorer • Interdimensional Relics &amp; Planar Oddities</div>
                         </div>
                     </div>
@@ -1920,7 +1938,7 @@
                             <rect x="14" y="2" width="1" height="1" fill="#fb7185"/>
                         </svg>
                         <div>
-                            <h2 id="profile-editor-title" class="screen-title text-2xl sm:text-3xl font-bold text-[#ffd447] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide leading-none">EDIT WEBCRAFT PROFILE</h2>
+                            <h2 id="profile-editor-title" class="screen-title text-[#ffd447] m-0 tracking-wide leading-none">EDIT WEBCRAFT PROFILE</h2>
                             <div class="text-xs sm:text-sm text-cyan-300 font-['VT323'] tracking-wider mt-0.5">Customize Player Card • Real-Time Live Preview • Cloud Sync</div>
                         </div>
                     </div>
@@ -2283,7 +2301,7 @@
                             <img id="shop-header-gem-img" class="pixelated w-8 h-8 object-contain" alt="Astral Gem" />
                         </div>
                         <div>
-                            <h2 id="shop-modal-title" class="screen-title text-2xl sm:text-3xl md:text-4xl font-bold text-[#c084fc] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323'] tracking-wide leading-none">The Astral Emporium</h2>
+                            <h2 id="shop-modal-title" class="screen-title text-[#c084fc] m-0 tracking-wide leading-none">The Astral Emporium</h2>
                             <div class="text-xs sm:text-sm text-cyan-300 font-['VT323'] tracking-wider mt-0.5">Profile Cosmetics • Astral Gem Exchange • Atlas Outpost</div>
                         </div>
                     </div>
@@ -2522,7 +2540,7 @@
         <section class="whats-new-panel">
             <button id="whats-new-startup-toggle" class="mc-btn is-on whats-new-startup-toggle" type="button" onclick="toggleWhatsNewStartup()" aria-pressed="true">Startup: ON</button>
             <button class="modal-close-red-btn whats-new-close" type="button" onclick="closeWhatsNew()" aria-label="Close What's New" title="Close">X</button>
-            <h2 id="whats-new-title" class="screen-title text-4xl font-bold mb-3 font-['VT323'] pr-10">What's New in <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:text-amber-200 underline" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta 0.1.6</h2>
+            <h2 id="whats-new-title" class="screen-title mb-3 pr-10">What's New in <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:text-amber-200 underline" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta 0.1.6</h2>
             <div class="whats-new-content" tabindex="0">
                 <div id="whats-new-entries"></div>
             </div>
@@ -2534,7 +2552,7 @@
             
             <!-- Header -->
             <div class="bg-[#333a41] px-4 py-3 border-b-4 border-[#111820] flex justify-between items-center shadow-md">
-                <h2 class="screen-title text-4xl font-bold text-[#f2f6f8] drop-shadow-[2px_2px_0_#000] m-0 tracking-wide font-['VT323']">Multiplayer Lobby</h2>
+                <h2 class="screen-title text-[#f2f6f8] m-0 tracking-wide">Multiplayer Lobby</h2>
                 <button class="modal-close-red-btn" type="button" onclick="closeMultiplayerMenu()" aria-label="Close multiplayer menu" title="Close">X</button>
             </div>
 
@@ -2667,100 +2685,315 @@
 
 
     <!-- Worlds Menu -->
-    <div id="worlds-menu" class="menu-overlay hidden bg-black/70 backdrop-blur-md z-[110]">
+    <!-- Worlds Menu (Bedrock Dashboard Layout) -->
+    <div id="worlds-menu" class="menu-overlay hidden bg-black/75 backdrop-blur-md z-[110] flex items-center justify-center p-2 sm:p-4 select-none">
         <section class="worlds-panel">
-            <h1 class="screen-title mc-title mb-4">Select World</h1>
-            <div id="worlds-list" class="flex flex-col overflow-y-auto custom-scrollbar">
+            <!-- Top Dashboard Header Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-3 mb-3 border-b-2 border-[#46515a] w-full">
+                <div class="flex items-center gap-3">
+                    <button type="button" class="mc-btn btn-secondary !w-auto !py-1 !px-3 !text-lg !m-0" onclick="closeWorldsMenu()">← Back</button>
+                    <h1 class="screen-title m-0 text-3xl sm:text-4xl text-[var(--mc-accent-color,#ffd34d)]">Select World</h1>
+                </div>
+
+                <div class="flex items-center flex-wrap gap-2.5">
+                    <!-- Live Search Input -->
+                    <div class="relative flex items-center">
+                        <input type="text" id="world-search-input" placeholder="Search worlds..." class="px-2.5 py-1 text-xl font-['VT323'] bg-[#12161b] text-white border-2 border-[#333a41] border-t-[#46515a] border-l-[#46515a] border-r-[#080a0c] border-b-[#080a0c] outline-none focus:border-amber-400 w-36 sm:w-52 placeholder-gray-500 shadow-inner" oninput="filterWorldsSearch(this.value)">
+                    </div>
+
+                    <!-- View Switcher (Grid vs List) -->
+                    <div class="flex items-center gap-1 bg-[#171b20] p-1 border-2 border-[#333a41] border-t-[#46515a] border-l-[#46515a] border-r-[#080a0c] border-b-[#080a0c]">
+                        <button type="button" id="btn-view-grid" class="mc-btn !w-9 !h-8 !p-0 !m-0 is-on flex items-center justify-center" onclick="setWorldViewMode('grid')" title="Grid View (World Art Cards)">
+                            <svg viewBox="0 0 16 16" width="16" height="16" style="image-rendering:pixelated;shape-rendering:crispEdges;"><rect x="2" y="2" width="5" height="5" fill="#ffffff"/><rect x="9" y="2" width="5" height="5" fill="#ffffff"/><rect x="2" y="9" width="5" height="5" fill="#ffffff"/><rect x="9" y="9" width="5" height="5" fill="#ffffff"/></svg>
+                        </button>
+                        <button type="button" id="btn-view-list" class="mc-btn !w-9 !h-8 !p-0 !m-0 is-off flex items-center justify-center" onclick="setWorldViewMode('list')" title="Compact List View">
+                            <svg viewBox="0 0 16 16" width="16" height="16" style="image-rendering:pixelated;shape-rendering:crispEdges;"><rect x="2" y="3" width="12" height="2" fill="#cbd5e1"/><rect x="2" y="7" width="12" height="2" fill="#cbd5e1"/><rect x="2" y="11" width="12" height="2" fill="#cbd5e1"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <button type="button" class="mc-btn btn-primary !w-auto !py-1 !px-4 !text-xl !m-0 flex items-center gap-1.5" onclick="openNewWorldModal()">
+                        <span class="font-bold">+</span> Create New
+                    </button>
+                    <label class="mc-btn btn-secondary !w-auto !py-1 !px-3 !text-xl !m-0 cursor-pointer flex items-center gap-1">
+                        Import
+                        <input type="file" class="hidden" accept=".json" id="import-world-input" onchange="importWorld(event)">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Worlds Display Area (populated by JS into Grid or List) -->
+            <div id="worlds-list" class="flex-1 overflow-y-auto custom-scrollbar min-h-0 pr-1 w-full">
                 <!-- populated by JS -->
             </div>
-            <div class="world-actions flex gap-3">
-                <button class="mc-btn btn-primary flex-1 !w-auto !text-xl" onclick="openNewWorldModal()">Create New</button>
-                <label class="mc-btn btn-secondary flex-1 !w-auto !text-xl cursor-pointer">
-                    Import World
-                    <input type="file" class="hidden" accept=".json" id="import-world-input" onchange="importWorld(event)">
-                </label>
-                <button class="mc-btn btn-secondary flex-1 !w-auto !text-xl" onclick="closeWorldsMenu()">Cancel</button>
+
+            <!-- Bottom Status Footer -->
+            <div class="pt-2 mt-2 border-t-2 border-[#46515a] flex items-center justify-between w-full">
+                <span id="worlds-summary-count" class="worlds-footer-text">0 Worlds Found</span>
+                <span id="worlds-storage-status" class="worlds-footer-text">Saved locally in browser storage</span>
             </div>
         </section>
     </div>
 
-    <!-- Create New World Modal -->
-    <div id="new-world-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-md z-[250] flex items-center justify-center p-3 select-none" role="dialog" aria-modal="true" aria-labelledby="new-world-title">
-        <section class="settings-panel select-none !w-[500px] !max-w-[calc(100vw-28px)] !h-auto !max-h-[min(670px,calc(100vh-28px))] flex flex-col">
-            <h1 id="new-world-title" class="screen-title text-center font-['VT323'] !text-4xl !mb-3">Create New World</h1>
-            
-            <div class="overflow-y-auto custom-scrollbar flex-1 pr-1 flex flex-col gap-2.5 min-h-0">
-                <!-- World Name -->
-                <div class="settings-row flex-col !items-start gap-1">
-                    <span class="settings-label">World Name</span>
-                    <input type="text" id="new-world-name" class="w-full text-2xl px-2 py-1 font-['VT323'] bg-[#12161b] text-white border-2 border-[#333a41] border-t-[#46515a] border-l-[#46515a] border-r-[#080a0c] border-b-[#080a0c] outline-none focus:border-amber-400 shadow-inner" value="New World" maxlength="24">
+    <!-- Create New World Modal (Bedrock 2-Column Split Layout) -->
+    <div id="new-world-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md z-[250] flex items-center justify-center p-2 sm:p-4 select-none" role="dialog" aria-modal="true" aria-labelledby="new-world-title">
+        <section class="create-world-modal-panel select-none">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-2 mb-3 border-b-2 border-[#46515a] w-full">
+                <div class="flex items-center gap-3">
+                    <button type="button" class="mc-btn btn-secondary !w-auto !py-1 !px-3 !text-lg !m-0" onclick="closeNewWorldModal()">← Back</button>
+                    <h1 id="new-world-title" class="screen-title m-0 text-3xl sm:text-4xl text-[var(--mc-accent-color,#ffd34d)]">Create New World</h1>
                 </div>
-                
-                <!-- Difficulty Selection -->
-                <div class="flex flex-col gap-1">
-                    <div class="settings-section-title !text-xl !m-0">Difficulty</div>
-                    <div class="settings-tabs-bar !mb-1 !pb-0 !border-b-0" id="diff-selector">
-                        <button type="button" class="settings-tab-btn diff-btn" data-diff="peaceful" onclick="selectDifficulty('peaceful')">Peaceful</button>
-                        <button type="button" class="settings-tab-btn diff-btn" data-diff="easy" onclick="selectDifficulty('easy')">Easy</button>
-                        <button type="button" class="settings-tab-btn diff-btn active" data-diff="normal" onclick="selectDifficulty('normal')">Normal</button>
-                        <button type="button" class="settings-tab-btn diff-btn" data-diff="hard" onclick="selectDifficulty('hard')">Hard</button>
-                        <button type="button" class="settings-tab-btn diff-btn" data-diff="hardcore" onclick="selectDifficulty('hardcore')">Hardcore</button>
-                    </div>
-                    <p id="diff-desc" class="text-xl font-['VT323'] text-[#f1f5f9] bg-[#171b20] p-2 border-2 border-[#333a41] border-t-[#46515a] border-l-[#46515a] border-r-[#080a0c] border-b-[#080a0c] w-full min-h-[50px] shadow-inner">
-                        Normal: Standard survival mode. Monsters spawn at night and hunger depletes.
-                    </p>
-                </div>
-
-                <!-- World Size Selection -->
-                <div class="flex flex-col gap-1">
-                    <div class="settings-section-title !text-xl !m-0">World Size</div>
-                    <div class="settings-tabs-bar !mb-1 !pb-0 !border-b-0" id="world-size-selector">
-                        <button type="button" class="settings-tab-btn flex-1 active" data-size="small" onclick="selectWorldSize('small')">Small (1024x320)</button>
-                        <button type="button" class="settings-tab-btn flex-1" data-size="big" onclick="selectWorldSize('big')">Big (2048x512)</button>
-                    </div>
-                </div>
-
-                <!-- Starter Items Option -->
-                <div class="settings-row" id="row-new-world-starter-items">
-                    <div class="flex flex-col min-w-0 pr-2">
-                        <span class="settings-label" title="Start with starter tools, food, wood and torches">Starter Items</span>
-                        <span class="fabulous-option-desc font-['VT323'] truncate">Begin with standard tools &amp; resources</span>
-                    </div>
-                    <input type="checkbox" id="new-world-starter-items" class="hidden" checked>
-                    <button type="button" class="mc-btn is-on" id="btn-new-world-starter-items" onclick="toggleNewWorldOption('starterItems')">ON</button>
-                </div>
-
-                <!-- Keep Inventory Option -->
-                <div class="settings-row" id="new-world-keep-inventory-label">
-                    <div class="flex flex-col min-w-0 pr-2">
-                        <span class="settings-label" title="Keep your inventory upon death">Keep Inventory</span>
-                        <span class="fabulous-option-desc font-['VT323'] truncate">Retain items after respawning</span>
-                    </div>
-                    <input type="checkbox" id="new-world-keep-inventory" class="hidden" checked>
-                    <button type="button" class="mc-btn is-on" id="btn-new-world-keep-inventory" onclick="toggleNewWorldOption('keepInventory')">ON</button>
-                </div>
-
-                <!-- Achievement Warning -->
-                <div id="new-world-achievement-warning" class="text-lg font-['VT323'] text-amber-300 bg-[#251e12] p-2.5 border border-amber-500/60 w-full leading-tight flex items-start gap-2 shadow-inner">
-                    <svg viewBox="0 0 16 16" width="18" height="18" class="pixel-art-warning-icon flex-shrink-0 mt-0.5" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                        <rect x="7" y="1" width="2" height="2" fill="#fbbf24"/>
-                        <rect x="6" y="3" width="4" height="2" fill="#fbbf24"/>
-                        <rect x="5" y="5" width="6" height="2" fill="#fbbf24"/>
-                        <rect x="4" y="7" width="8" height="2" fill="#fbbf24"/>
-                        <rect x="3" y="9" width="10" height="2" fill="#fbbf24"/>
-                        <rect x="2" y="11" width="12" height="2" fill="#fbbf24"/>
-                        <rect x="1" y="13" width="14" height="2" fill="#f59e0b"/>
-                        <rect x="7" y="5" width="2" height="4" fill="#000000"/>
-                        <rect x="7" y="10" width="2" height="2" fill="#000000"/>
-                    </svg>
-                    <div><span class="font-bold text-yellow-400">Achievements Disabled:</span> Starting with Starter Items or Keep Inventory disables achievements in this world. Disable both options to enable achievements.</div>
-                </div>
+                <button type="button" class="modal-close-red-btn" onclick="closeNewWorldModal()" aria-label="Close">✕</button>
             </div>
 
-            <!-- Footer Action Buttons -->
-            <div class="mt-3 pt-2 border-t-2 border-[#46515a] flex justify-between items-center gap-3">
-                <button type="button" class="mc-btn btn-secondary flex-1 !w-auto !py-1 !text-2xl !m-0 text-white" onclick="closeNewWorldModal()">Cancel</button>
-                <button type="button" class="mc-btn btn-primary flex-1 !w-auto !py-1 !text-2xl !m-0 text-white" onclick="confirmCreateWorld()">Create World</button>
+            <!-- Two-Column Body -->
+            <div class="create-world-split-layout">
+                <!-- LEFT COLUMN: World Preview + Create Button + Sidebar Tabs -->
+                <div class="create-world-sidebar-col">
+                    <!-- Dynamic 16:9 World Art Preview Card -->
+                    <div id="new-world-preview-card" class="create-world-preview-card">
+                        <canvas id="new-world-preview-canvas" width="160" height="90" class="create-world-preview-canvas"></canvas>
+                        <div class="create-world-preview-overlay">
+                            <span id="new-world-preview-mode" class="text-emerald-400 font-bold uppercase tracking-wider">SURVIVAL</span>
+                            <span id="new-world-preview-biome" class="text-amber-300 font-bold uppercase tracking-wider">PLAINS</span>
+                        </div>
+                    </div>
+
+                    <!-- Prominent Green "CREATE WORLD" Button -->
+                    <button type="button" id="btn-confirm-create-world" class="mc-btn btn-primary !w-full !py-2.5 !text-2xl font-bold shadow-lg !m-0 shrink-0" onclick="confirmCreateWorld()">
+                        Create World
+                    </button>
+
+                    <!-- Sidebar Navigation Tabs -->
+                    <div class="create-world-sidebar-tabs-list custom-scrollbar" id="create-world-sidebar-tabs">
+                        <button type="button" class="create-world-sidebar-tab active" data-tab="general" onclick="switchCreateWorldTab('general')">
+                            <span class="inline-flex items-center shrink-0">
+                                <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering:pixelated;shape-rendering:crispEdges;"><rect x="7" y="1" width="2" height="2" fill="#d97706"/><rect x="7" y="13" width="2" height="2" fill="#92400e"/><rect x="1" y="7" width="2" height="2" fill="#b45309"/><rect x="13" y="7" width="2" height="2" fill="#92400e"/><rect x="4" y="4" width="8" height="8" fill="#f59e0b"/><rect x="5" y="5" width="6" height="6" fill="#fbbf24"/><rect x="7" y="7" width="2" height="2" fill="#1e293b"/></svg>
+                            </span>
+                            <span>General</span>
+                        </button>
+                        <button type="button" class="create-world-sidebar-tab" data-tab="world" onclick="switchCreateWorldTab('world')">
+                            <span class="inline-flex items-center shrink-0">
+                                <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering:pixelated;shape-rendering:crispEdges;"><rect x="1" y="1" width="14" height="6" fill="#38bdf8"/><rect x="4" y="4" width="3" height="2" fill="#ffffff"/><rect x="10" y="3" width="3" height="2" fill="#ffffff"/><rect x="1" y="8" width="14" height="4" fill="#16a34a"/><rect x="1" y="12" width="14" height="3" fill="#78350f"/></svg>
+                            </span>
+                            <span>World &amp; Seed</span>
+                        </button>
+                        <button type="button" class="create-world-sidebar-tab" data-tab="gameplay" onclick="switchCreateWorldTab('gameplay')">
+                            <span class="inline-flex items-center shrink-0">
+                                <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering:pixelated;shape-rendering:crispEdges;"><rect x="12" y="1" width="3" height="3" fill="#38bdf8"/><rect x="10" y="3" width="3" height="3" fill="#0284c7"/><rect x="8" y="5" width="3" height="3" fill="#0284c7"/><rect x="6" y="7" width="3" height="3" fill="#0369a1"/><rect x="4" y="8" width="3" height="2" fill="#f59e0b"/><rect x="1" y="13" width="2" height="2" fill="#f59e0b"/></svg>
+                            </span>
+                            <span>Gameplay Rules</span>
+                        </button>
+                        <button type="button" class="create-world-sidebar-tab" data-tab="cheats" onclick="switchCreateWorldTab('cheats')">
+                            <span class="inline-flex items-center shrink-0">
+                                <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering:pixelated;shape-rendering:crispEdges;"><rect x="7" y="1" width="4" height="2" fill="#fde047"/><rect x="6" y="3" width="4" height="2" fill="#facc15"/><rect x="5" y="5" width="4" height="2" fill="#fde047"/><rect x="4" y="7" width="9" height="2" fill="#facc15"/><rect x="6" y="9" width="4" height="2" fill="#eab308"/><rect x="5" y="11" width="3" height="2" fill="#ca8a04"/><rect x="4" y="13" width="2" height="2" fill="#fde047"/></svg>
+                            </span>
+                            <span>Cheats &amp; Advanced</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Tab Panels Content Area -->
+                <div class="create-world-content-col custom-scrollbar" id="create-world-tab-panels">
+                    <!-- Bedrock Informational Card -->
+                    <div class="bedrock-info-card">
+                        <div class="flex flex-col min-w-0">
+                            <span class="font-['Pixeloid_Sans',monospace] text-base font-bold text-[#ffd34d] leading-tight">Welcome to the World Creator!</span>
+                            <span class="font-['VT323',monospace] text-lg text-gray-300 leading-tight">Configure world generation, game rules, seed parameters and modes.</span>
+                        </div>
+                    </div>
+
+                    <!-- 1. GENERAL TAB PANEL -->
+                    <div id="create-world-tab-general" class="create-world-panel flex flex-col gap-3">
+                        <!-- World Name -->
+                        <div class="settings-row flex-col !items-start gap-1">
+                            <span class="settings-label">World Name</span>
+                            <input type="text" id="new-world-name" class="w-full text-2xl px-2.5 py-1.5 font-['VT323'] bg-[#12161b] text-white border-2 border-[#333a41] border-t-[#46515a] border-l-[#46515a] border-r-[#080a0c] border-b-[#080a0c] outline-none focus:border-amber-400 shadow-inner" value="My World" maxlength="28" oninput="updateCreateWorldPreview()">
+                        </div>
+
+                        <!-- Game Mode Segmented Selector (Bedrock Style) -->
+                        <div class="flex flex-col gap-1.5">
+                            <div class="settings-section-title !text-xl !m-0">Default Game Mode</div>
+                            <div class="bedrock-mode-toggle" id="game-mode-selector">
+                                <button type="button" class="bedrock-mode-btn active" data-mode="survival" onclick="selectGameMode('survival')">Survival</button>
+                                <button type="button" class="bedrock-mode-btn mode-creative" data-mode="creative" onclick="selectGameMode('creative')">Creative</button>
+                            </div>
+                            <p id="game-mode-desc" class="bedrock-desc-box">
+                                Survival: Search for resources, craft tools, gain levels, manage health and hunger, and defend against hostile monsters.
+                            </p>
+                        </div>
+
+                        <!-- Difficulty Selection (Bedrock Style) -->
+                        <div class="flex flex-col gap-1.5">
+                            <div class="settings-section-title !text-xl !m-0">Difficulty</div>
+                            <div class="bedrock-diff-toggle" id="diff-selector">
+                                <button type="button" class="bedrock-diff-btn" data-diff="peaceful" onclick="selectDifficulty('peaceful')">Peaceful</button>
+                                <button type="button" class="bedrock-diff-btn" data-diff="easy" onclick="selectDifficulty('easy')">Easy</button>
+                                <button type="button" class="bedrock-diff-btn active" data-diff="normal" onclick="selectDifficulty('normal')">Normal</button>
+                                <button type="button" class="bedrock-diff-btn" data-diff="hard" onclick="selectDifficulty('hard')">Hard</button>
+                                <button type="button" class="bedrock-diff-btn" data-diff="hardcore" onclick="selectDifficulty('hardcore')">Hardcore</button>
+                            </div>
+                            <p id="diff-desc" class="bedrock-desc-box">
+                                Normal: Standard survival mode. Monsters spawn at night and hunger depletes.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 2. WORLD & SEED TAB PANEL -->
+                    <div id="create-world-tab-world" class="create-world-panel hidden flex flex-col gap-3">
+                        <!-- World Size Selection -->
+                        <div class="flex flex-col gap-1.5">
+                            <div class="settings-section-title !text-xl !m-0">World Size</div>
+                            <div class="bedrock-diff-toggle" id="world-size-selector">
+                                <button type="button" class="bedrock-diff-btn active" data-size="small" onclick="selectWorldSize('small')">Small (1024x320)</button>
+                                <button type="button" class="bedrock-diff-btn" data-size="big" onclick="selectWorldSize('big')">Big (2048x512)</button>
+                            </div>
+                            <p class="bedrock-desc-box">Small worlds generate faster; big worlds offer massive horizons for exploration.</p>
+                        </div>
+
+                        <!-- Seed Input & Randomize Dice Button -->
+                        <div class="settings-row flex-col !items-start gap-1">
+                            <div class="flex items-center justify-between w-full">
+                                <span class="settings-label">World Seed</span>
+                                <span class="text-lg font-['VT323'] text-gray-300">Leave blank for random generation</span>
+                            </div>
+                            <div class="flex items-center gap-2 w-full">
+                                <input type="text" id="new-world-seed" class="flex-1 text-2xl px-2.5 py-1.5 font-['VT323'] bg-[#12161b] text-white border-2 border-[#333a41] border-t-[#46515a] border-l-[#46515a] border-r-[#080a0c] border-b-[#080a0c] outline-none focus:border-amber-400 shadow-inner" placeholder="Random Seed" oninput="updateCreateWorldPreview()">
+                                <button type="button" class="mc-btn btn-secondary !w-auto !py-1.5 !px-3.5 !text-xl !m-0 flex items-center gap-2 cursor-pointer shadow" onclick="randomizeWorldSeed()" title="Roll Random Seed">
+                                    <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="2" y="2" width="12" height="12" fill="#f8fafc"/>
+                                        <rect x="2" y="13" width="12" height="1" fill="#cbd5e1"/>
+                                        <rect x="13" y="2" width="1" height="12" fill="#cbd5e1"/>
+                                        <rect x="1" y="2" width="1" height="12" fill="#94a3b8"/>
+                                        <rect x="2" y="1" width="12" height="1" fill="#94a3b8"/>
+                                        <rect x="2" y="14" width="12" height="1" fill="#64748b"/>
+                                        <rect x="14" y="2" width="1" height="12" fill="#64748b"/>
+                                        <rect x="4" y="4" width="2" height="2" fill="#0f172a"/>
+                                        <rect x="10" y="4" width="2" height="2" fill="#0f172a"/>
+                                        <rect x="7" y="7" width="2" height="2" fill="#dc2626"/>
+                                        <rect x="4" y="10" width="2" height="2" fill="#0f172a"/>
+                                        <rect x="10" y="10" width="2" height="2" fill="#0f172a"/>
+                                    </svg>
+                                    <span>Roll Seed</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Starting Biome Preference -->
+                        <div class="flex flex-col gap-1.5">
+                            <div class="settings-section-title !text-xl !m-0">Starting Biome Focus</div>
+                            <div class="bedrock-diff-toggle" id="biome-selector">
+                                <button type="button" class="bedrock-diff-btn active" data-biome="plains" onclick="selectStartingBiome('plains')">Plains</button>
+                                <button type="button" class="bedrock-diff-btn" data-biome="desert" onclick="selectStartingBiome('desert')">Desert</button>
+                                <button type="button" class="bedrock-diff-btn" data-biome="snow" onclick="selectStartingBiome('snow')">Snow Taiga</button>
+                                <button type="button" class="bedrock-diff-btn" data-biome="mountains" onclick="selectStartingBiome('mountains')">Mountains</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. GAMEPLAY RULES TAB PANEL -->
+                    <div id="create-world-tab-gameplay" class="create-world-panel hidden flex flex-col gap-2.5">
+                        <!-- Starter Items Option -->
+                        <div class="settings-row" id="row-new-world-starter-items">
+                            <div class="flex flex-col min-w-0 pr-2">
+                                <span class="settings-label" title="Start with starter tools, food, wood and torches">Starter Items</span>
+                                <span class="fabulous-option-desc font-['VT323'] truncate">Begin with wooden tools, bread, saplings and torches</span>
+                            </div>
+                            <input type="checkbox" id="new-world-starter-items" class="hidden" checked>
+                            <button type="button" class="mc-btn is-on" id="btn-new-world-starter-items" onclick="toggleNewWorldOption('starterItems')">ON</button>
+                        </div>
+
+                        <!-- Keep Inventory Option -->
+                        <div class="settings-row" id="new-world-keep-inventory-label">
+                            <div class="flex flex-col min-w-0 pr-2">
+                                <span class="settings-label" title="Keep your inventory upon death">Keep Inventory</span>
+                                <span class="fabulous-option-desc font-['VT323'] truncate">Retain hotbar and inventory items after respawning</span>
+                            </div>
+                            <input type="checkbox" id="new-world-keep-inventory" class="hidden" checked>
+                            <button type="button" class="mc-btn is-on" id="btn-new-world-keep-inventory" onclick="toggleNewWorldOption('keepInventory')">ON</button>
+                        </div>
+
+                        <!-- Day / Night Cycle Option -->
+                        <div class="settings-row" id="row-new-world-day-cycle">
+                            <div class="flex flex-col min-w-0 pr-2">
+                                <span class="settings-label">Day / Night Cycle</span>
+                                <span class="fabulous-option-desc font-['VT323'] truncate">Sun and moon advance across the celestial sky</span>
+                            </div>
+                            <input type="checkbox" id="new-world-day-cycle" class="hidden" checked>
+                            <button type="button" class="mc-btn is-on" id="btn-new-world-day-cycle" onclick="toggleNewWorldOption('dayCycle')">ON</button>
+                        </div>
+
+                        <!-- Mob Spawning Option -->
+                        <div class="settings-row" id="row-new-world-mob-spawning">
+                            <div class="flex flex-col min-w-0 pr-2">
+                                <span class="settings-label">Mob Spawning</span>
+                                <span class="fabulous-option-desc font-['VT323'] truncate">Animals spawn by day; monsters spawn in dark depths and night</span>
+                            </div>
+                            <input type="checkbox" id="new-world-mob-spawning" class="hidden" checked>
+                            <button type="button" class="mc-btn is-on" id="btn-new-world-mob-spawning" onclick="toggleNewWorldOption('mobSpawning')">ON</button>
+                        </div>
+
+                        <!-- Hunger Depletion Option -->
+                        <div class="settings-row" id="row-new-world-hunger-depletion">
+                            <div class="flex flex-col min-w-0 pr-2">
+                                <span class="settings-label">Hunger Depletion</span>
+                                <span class="fabulous-option-desc font-['VT323'] truncate">Mining and sprinting deplete the food bar</span>
+                            </div>
+                            <input type="checkbox" id="new-world-hunger-depletion" class="hidden" checked>
+                            <button type="button" class="mc-btn is-on" id="btn-new-world-hunger-depletion" onclick="toggleNewWorldOption('hungerDepletion')">ON</button>
+                        </div>
+                    </div>
+
+                    <!-- 4. CHEATS & ADVANCED TAB PANEL -->
+                    <div id="create-world-tab-cheats" class="create-world-panel hidden flex flex-col gap-2.5">
+                        <!-- Allow Cheats (F7 DevConsole & Spawner) -->
+                        <div class="settings-row" id="row-new-world-allow-cheats">
+                            <div class="flex flex-col min-w-0 pr-2">
+                                <span class="settings-label">Allow Cheats &amp; Dev Tools</span>
+                                <span class="fabulous-option-desc font-['VT323'] truncate">Unlocks F7 Developer Console, Item Spawner Drawer, and fly mode</span>
+                            </div>
+                            <input type="checkbox" id="new-world-allow-cheats" class="hidden">
+                            <button type="button" class="mc-btn is-off" id="btn-new-world-allow-cheats" onclick="toggleNewWorldOption('allowCheats')">OFF</button>
+                        </div>
+
+                        <!-- Bonus Chest Option -->
+                        <div class="settings-row" id="row-new-world-bonus-chest">
+                            <div class="flex flex-col min-w-0 pr-2">
+                                <span class="settings-label">Bonus Chest</span>
+                                <span class="fabulous-option-desc font-['VT323'] truncate">Spawns a wooden chest containing starter supplies near your bed</span>
+                            </div>
+                            <input type="checkbox" id="new-world-bonus-chest" class="hidden" checked>
+                            <button type="button" class="mc-btn is-on" id="btn-new-world-bonus-chest" onclick="toggleNewWorldOption('bonusChest')">ON</button>
+                        </div>
+
+                        <!-- Natural Health Regeneration -->
+                        <div class="settings-row" id="row-new-world-natural-regen">
+                            <div class="flex flex-col min-w-0 pr-2">
+                                <span class="settings-label">Natural Health Regeneration</span>
+                                <span class="fabulous-option-desc font-['VT323'] truncate">Health slowly recovers when hunger is high</span>
+                            </div>
+                            <input type="checkbox" id="new-world-natural-regen" class="hidden" checked>
+                            <button type="button" class="mc-btn is-on" id="btn-new-world-natural-regen" onclick="toggleNewWorldOption('naturalRegen')">ON</button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Achievement Warning Banner -->
+                    <div id="new-world-achievement-warning" class="text-lg font-['VT323'] text-amber-300 bg-[#251e12] p-2.5 border border-amber-500/60 w-full leading-tight flex items-start gap-2 shadow-inner mt-auto">
+                        <svg viewBox="0 0 16 16" width="18" height="18" class="pixel-art-warning-icon flex-shrink-0 mt-0.5" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                            <rect x="7" y="1" width="2" height="2" fill="#fbbf24"/>
+                            <rect x="6" y="3" width="4" height="2" fill="#fbbf24"/>
+                            <rect x="5" y="5" width="6" height="2" fill="#fbbf24"/>
+                            <rect x="4" y="7" width="8" height="2" fill="#fbbf24"/>
+                            <rect x="3" y="9" width="10" height="2" fill="#fbbf24"/>
+                            <rect x="2" y="11" width="12" height="2" fill="#fbbf24"/>
+                            <rect x="1" y="13" width="14" height="2" fill="#f59e0b"/>
+                            <rect x="7" y="5" width="2" height="4" fill="#000000"/>
+                            <rect x="7" y="10" width="2" height="2" fill="#000000"/>
+                        </svg>
+                        <div id="achievement-warning-text"><span class="font-bold text-yellow-400">Achievements Disabled:</span> Starter Items or Keep Inventory disables achievements in this world. Disable both options to earn achievements.</div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
@@ -2768,7 +3001,7 @@
     <!-- Convert World 0.1.5 to 0.1.6 Modal -->
     <div id="convert-world-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="convert-world-title" onclick="if (event.target === this) closeConvertWorldModal();">
         <section class="convert-world-panel select-none">
-            <h1 id="convert-world-title" class="screen-title text-center font-['VT323']">Convert World</h1>
+            <h1 id="convert-world-title" class="screen-title text-center">Convert World</h1>
             <p class="convert-world-subtitle">This world was created in Beta 0.1.5 and requires a format upgrade</p>
 
             <!-- Target World Card -->
@@ -3495,7 +3728,7 @@
     <div id="credits-modal" class="menu-overlay credits-modal hidden" role="dialog" aria-modal="true" aria-labelledby="credits-title">
         <section class="whats-new-panel credits-panel">
             <button class="modal-close-red-btn whats-new-close" type="button" onclick="closeCredits()" aria-label="Close Credits" title="Close">X</button>
-            <h2 id="credits-title" class="screen-title text-4xl font-bold mb-2 font-['VT323'] pr-10">Credits</h2>
+            <h2 id="credits-title" class="screen-title mb-2 pr-10">Credits</h2>
             <div class="credits-content custom-scrollbar" tabindex="0">
                 <div class="credits-banner">
                     <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="credits-game-title game-github-link hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a>
@@ -3563,7 +3796,7 @@
 
     <div id="skins-menu" class="menu-overlay hidden bg-black/70 backdrop-blur-sm z-[120]">
         <div id="skins-header-bar" class="flex items-center justify-between w-full max-w-[760px] mb-2 px-1 transition-[max-width] duration-150">
-            <h1 id="skins-title" class="screen-title mc-title text-white !text-4xl m-0">Skins</h1>
+            <h1 id="skins-title" class="screen-title mc-title text-white m-0">Skins</h1>
             <div class="skin-emerald-badge" title="Your Emeralds (Earned from Achievements)">
                 <div class="emerald-gem-socket">
                     <svg class="emerald-pixel-art" viewBox="0 0 16 16" width="18" height="18">
@@ -3992,8 +4225,8 @@
 
     <div id="publish-multiplayer-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-md z-[250]" role="dialog" aria-modal="true" aria-labelledby="publish-mp-title">
         <section class="publish-mp-panel settings-panel !w-[480px] !max-w-[calc(100vw-28px)] flex flex-col items-center">
-            <h2 id="publish-mp-title" class="screen-title text-4xl font-bold mb-1 font-['VT323'] text-[#ffd34d]" style="text-shadow: 3px 3px 0 #080a0c;">Open to Multiplayer</h2>
-            <p class="text-[#d9e1e7] text-xl mb-4 font-['VT323'] text-center" style="text-shadow: 2px 2px 0 #080a0c;">Convert this singleplayer world into an online server so friends can join!</p>
+            <h2 id="publish-mp-title" class="screen-title mb-1 text-[#ffd34d]">Open to Multiplayer</h2>
+            <p class="modal-subtitle mb-4 text-center">Convert this singleplayer world into an online server so friends can join!</p>
             
             <div class="w-full mb-3 text-left">
                 <label class="block text-[#d9e1e7] font-['VT323'] text-xl mb-1" style="text-shadow: 2px 2px 0 #080a0c;">Server Room Name:</label>
@@ -4054,7 +4287,7 @@
             <!-- Header -->
             <div class="flex justify-between items-center pb-2 mb-2.5 border-b-2 border-[#46515a]">
                 <div class="flex items-center gap-3">
-                    <h2 id="tutorial-title" class="screen-title text-4xl font-bold text-[var(--mc-accent-color)] drop-shadow-[2px_2px_0_#000] m-0 font-['VT323']">Survival Guide</h2>
+                    <h2 id="tutorial-title" class="screen-title text-[var(--mc-accent-color)] m-0">Survival Guide</h2>
                     <span id="tutorial-step-indicator" class="bg-[#171b20] border-2 border-[var(--mc-accent-color)] text-[var(--mc-accent-color)] font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">1 / 9</span>
                 </div>
                 <button class="modal-close-red-btn" type="button" onclick="closeTutorialModal()" aria-label="Close Guide" title="Close">X</button>
@@ -4110,7 +4343,7 @@
 
     <div id="kick-modal" class="menu-overlay hidden bg-black/80 backdrop-blur-md z-[340]" role="dialog" aria-modal="true" aria-labelledby="kick-title">
         <div class="bg-[#c6c6c6] p-5 border-4 border-white border-b-gray-600 border-r-gray-600 w-full max-w-[420px] flex flex-col items-center shadow-2xl rounded text-center">
-            <h2 id="kick-title" class="screen-title text-4xl font-bold mb-3 font-['VT323'] text-black">Disconnected</h2>
+            <h2 id="kick-title" class="screen-title mb-3 !text-black !shadow-none" style="text-shadow: none !important;">Disconnected</h2>
             <p id="kick-message" class="text-black text-2xl mb-5 font-['VT323'] leading-snug">You were kicked from the server.</p>
             <button class="mc-btn !w-full !text-xl !mb-0 !p-1.5 !bg-red-600 !border-t-red-400 !border-l-red-400 !border-b-red-800 !border-r-red-800 !text-white" onclick="dismissKickModal()">Understand</button>
         </div>
@@ -4261,19 +4494,19 @@
         <div id="inventory-container" class="fixed inset-0 flex items-center justify-center pointer-events-none z-50 hidden bg-black/50 backdrop-blur-sm">
             <div id="inventory-menu" class="p-4 relative">
                 <div id="header-inventory" class="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-[#20252b] border-3 border-[#69737b] border-b-0 px-6 py-1 shadow-xl z-10 hidden">
-                    <h1 class="text-3xl text-white drop-shadow whitespace-nowrap m-0 font-['VT323']">Backpack</h1>
+                    <h1 class="inventory-title text-white drop-shadow whitespace-nowrap m-0">Backpack</h1>
                 </div>
                 
                 <div id="header-crafting" class="absolute -top-11 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-[#5c3a1d] border-4 border-[#b07d4b] border-b-0 px-6 py-1.5 shadow-2xl z-10 hidden">
                     <div id="ct-icon" class="w-7 h-7 flex items-center justify-center filter drop-shadow"></div>
                     <div class="flex flex-col">
-                        <h1 class="text-3xl text-[#ffd899] font-bold drop-shadow whitespace-nowrap m-0 font-['VT323'] leading-none">Crafting Table</h1>
+                        <h1 class="inventory-title text-[#ffd899] font-bold drop-shadow whitespace-nowrap m-0 leading-none">Crafting Table</h1>
                     </div>
                 </div>
 
                 <div class="flex flex-col md:flex-row items-start gap-5 pt-2">
                     <div id="chest-panel" class="hidden flex-col items-center bg-gray-700 border-3 border-black p-4 shadow-xl rounded">
-                        <h2 id="chest-title" class="text-white text-2xl mb-3 font-bold drop-shadow">Chest</h2>
+                        <h2 id="chest-title" class="inventory-title text-white mb-3 font-bold drop-shadow">Chest</h2>
                         <div id="chest-grid" class="grid grid-cols-9 gap-1 bg-gray-800 p-2 border-3 border-black rounded shadow-inner"></div>
                     </div>
 
@@ -4352,7 +4585,7 @@
                         <!-- Furnace Stone Arch & Header -->
                         <div class="furnace-header flex items-center justify-between w-full mb-3 pb-2 border-b-2 border-[#45474f]">
                             <div class="flex items-center gap-2">
-                                <h2 class="text-[#ffb347] text-2xl font-bold font-['VT323'] tracking-wide m-0">Furnace</h2>
+                                <h2 class="inventory-title text-[#ffb347] font-bold tracking-wide m-0">Furnace</h2>
                             </div>
                             <span class="furnace-badge text-sm font-['VT323'] px-2 py-0.5 rounded text-gray-300 bg-[#1e2025] border border-[#3e424b]">Smelting</span>
                         </div>
@@ -4461,6 +4694,7 @@
     <input type="file" id="jukebox-file-input" class="hidden" accept=".mp3,audio/mpeg,audio/*">
     <script type="module" src="js/icons/pixelicons.js"></script>
     <script type="module" src="js/ui/standardcomponents.js"></script>
+    <script type="module" src="js/ui/worldthumbnails.js"></script>
     <script type="module" src="js/devconsole.js"></script>
     <script type="module" src="js/main.js"></script>
 </body>
