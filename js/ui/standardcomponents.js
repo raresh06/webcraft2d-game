@@ -11,6 +11,8 @@
  *  - Standard action buttons: .btn-primary (green), .btn-secondary (slate), .btn-danger (red), .btn-amber (amber)
  */
 
+import { getPixelCloseSvg } from '../icons/pixelicons.js';
+
 /**
  * Update a toggle button element's DOM state, classes (.is-on / .is-off), and text.
  * @param {string|HTMLElement} btnOrId - Button element or its DOM ID
@@ -248,7 +250,7 @@ export function renderStandardModal({
     const tabsHtml = tabs && tabs.length > 0 ? renderStandardPresetTabs({ presets: tabs, activeValue: activeTab }) : '';
     const subtitleHtml = subtitle ? `<p class="modal-subtitle text-center mb-3 text-shadow-sm">${subtitle}</p>` : '';
     const closeBtnHtml = onclose
-        ? `<button type="button" class="modal-close-red-btn absolute top-3 right-3" onclick="${onclose}" aria-label="Close">✕</button>`
+        ? `<button type="button" class="modal-close-red-btn absolute top-3 right-3" onclick="${onclose}" aria-label="Close">${getPixelCloseSvg(12)}</button>`
         : '';
 
     return `

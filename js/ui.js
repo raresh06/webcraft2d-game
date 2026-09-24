@@ -47,7 +47,17 @@ import {
     getPixelEmeraldSvg as getPixelEmeraldSvgDef,
     getPixelAstralEmeraldSvg as getPixelAstralEmeraldSvgDef,
     getPixelPadlockSvg as getPixelPadlockSvgDef,
-    getPixelWarningSvg as getPixelWarningSvgDef
+    getPixelWarningSvg as getPixelWarningSvgDef,
+    getPixelSearchSvg as getPixelSearchSvgDef,
+    getPixelCheckSvg as getPixelCheckSvgDef,
+    getPixelPinSvg as getPixelPinSvgDef,
+    getPixelResetSvg as getPixelResetSvgDef,
+    getPixelTrophySvg as getPixelTrophySvgDef,
+    getPixelCloseSvg as getPixelCloseSvgDef,
+    getPixelSproutSvg as getPixelSproutSvgDef,
+    getPixelIngotSvg as getPixelIngotSvgDef,
+    getPixelDiamondSvg as getPixelDiamondSvgDef,
+    getPixelCrownSvg as getPixelCrownSvgDef
 } from './icons/pixelicons.js';
 import {
     updateToggleBtnState,
@@ -502,7 +512,20 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         map: 'm',
         drop: 'q',
         chat: 't',
-        debug: 'f3'
+        debug: 'f3',
+        astral: 'c',
+        bg_build: 'b',
+        devconsole: 'f7',
+        achievements: 'l',
+        slot1: '1',
+        slot2: '2',
+        slot3: '3',
+        slot4: '4',
+        slot5: '5',
+        slot6: '6',
+        slot7: '7',
+        slot8: '8',
+        slot9: '9'
     };
 
     export let KEYBINDS = Object.assign({}, DEFAULT_KEYBINDS);
@@ -866,12 +889,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 applyMinimapShape();
                 applyAccentColor(currentAccentColor, currentAccentName);
                 initMusicPlayerHUD();
+                updateSettingsUI();
             });
         } else {
             loadSavedSettings();
             applyMinimapShape();
             applyAccentColor(currentAccentColor, currentAccentName);
             initMusicPlayerHUD();
+            updateSettingsUI();
         }
     }
 
@@ -1102,6 +1127,46 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         return getPixelPadlockSvgDef(size);
     }
 
+    export function getPixelSearchSvg(size = 16) {
+        return getPixelSearchSvgDef(size);
+    }
+
+    export function getPixelCheckSvg(size = 14) {
+        return getPixelCheckSvgDef(size);
+    }
+
+    export function getPixelPinSvg(size = 14) {
+        return getPixelPinSvgDef(size);
+    }
+
+    export function getPixelResetSvg(size = 14) {
+        return getPixelResetSvgDef(size);
+    }
+
+    export function getPixelTrophySvg(size = 18) {
+        return getPixelTrophySvgDef(size);
+    }
+
+    export function getPixelCloseSvg(size = 12) {
+        return getPixelCloseSvgDef(size);
+    }
+
+    export function getPixelSproutSvg(size = 14) {
+        return getPixelSproutSvgDef(size);
+    }
+
+    export function getPixelIngotSvg(size = 14) {
+        return getPixelIngotSvgDef(size);
+    }
+
+    export function getPixelDiamondSvg(size = 14) {
+        return getPixelDiamondSvgDef(size);
+    }
+
+    export function getPixelCrownSvg(size = 14) {
+        return getPixelCrownSvgDef(size);
+    }
+
     export function getPlayerEmeralds() {
         try {
             const val = parseInt(localStorage.getItem('swc_emeralds_v1'), 10);
@@ -1269,12 +1334,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         return next;
     }
 
+    export const MAX_DAILY_EMERALD_MINES = 40;
+
     export function renderMiningTrackerUI() {
         const count = getDailyMinedEmeralds();
         const fill = document.getElementById('vault-mining-progress-fill');
         const label = document.getElementById('vault-mining-count-label');
-        if (fill) fill.style.width = Math.min(100, (count / 100) * 100) + '%';
-        if (label) label.innerText = `${count} / 100 Today`;
+        if (fill) fill.style.width = Math.min(100, (count / MAX_DAILY_EMERALD_MINES) * 100) + '%';
+        if (label) label.innerText = `${count} / ${MAX_DAILY_EMERALD_MINES} Today`;
 
         const guestNotice = document.getElementById('vault-guest-notice');
         if (guestNotice) {
@@ -3973,6 +4040,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function saveSkin() {
         persistSkin(true);
+        unlockAchievement('fashion_statement');
         closeSkinMaker();
     }
 
@@ -4202,6 +4270,60 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             difficulty: 'Easy',
             emeraldReward: 10
         },
+        {
+            id: 'notice_board',
+            title: 'Notice Board',
+            description: 'Craft and place a wooden sign to mark landmarks or leave notes.',
+            iconItem: IDS.SIGN,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 5
+        },
+        {
+            id: 'knock_knock',
+            title: 'Knock Knock',
+            description: 'Craft or install a wooden or jungle door to secure your shelter.',
+            iconItem: IDS.DOOR,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 5
+        },
+        {
+            id: 'moo_harvest',
+            title: 'Moo-ver and Shaker',
+            description: 'Harvest fresh leather and beef from cattle.',
+            iconItem: IDS.LEATHER,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 10
+        },
+        {
+            id: 'feather_gatherer',
+            title: 'Feathered Fletching',
+            description: 'Collect feathers dropped by chickens.',
+            iconItem: IDS.FEATHER,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 5
+        },
+        {
+            id: 'shear_sheep',
+            title: 'Shear Determination',
+            description: 'Shear a sheep using shears to gather soft raw wool.',
+            iconItem: IDS.WOOL,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 10
+        },
+        {
+            id: 'fashion_statement',
+            title: 'Fresh Threads',
+            description: 'Customize and save a bespoke player skin in the Wardrobe.',
+            iconItem: IDS.CHEST,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 10
+        },
 
         // --- MEDIUM TIER ---
         {
@@ -4372,6 +4494,60 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             difficulty: 'Medium',
             emeraldReward: 15
         },
+        {
+            id: 'desert_stinger',
+            title: 'Desert Stinger',
+            description: 'Slay a venomous scorpion prowling the desert sands or caverns.',
+            iconItem: IDS.BONE,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'defuse_fuse',
+            title: 'Defuse the Fuse',
+            description: 'Defeat a volatile creeper before it detonates.',
+            iconItem: IDS.COAL,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 25
+        },
+        {
+            id: 'solar_harvest',
+            title: 'Solar Harvest',
+            description: 'Cultivate and harvest a glowing Sunburst Melon.',
+            iconItem: IDS.SUNBURST_MELON,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'deep_diver_breath',
+            title: 'Hold Your Breath',
+            description: 'Dive deep underwater and safely resurface after depleting half your oxygen.',
+            iconItem: IDS.WATER_BUCKET,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
+        {
+            id: 'craft_vinyl',
+            title: 'Disc Jockey',
+            description: 'Craft a blank Vinyl Disc at the Crafting Table to prepare your own beats.',
+            iconItem: IDS.EMPTY_VINYL,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 15
+        },
+        {
+            id: 'prism_glass_art',
+            title: 'Prismatic Radiance',
+            description: 'Craft or place a shimmering Prism Glass block.',
+            iconItem: IDS.PRISM_GLASS,
+            badge: 'Medium',
+            difficulty: 'Medium',
+            emeraldReward: 20
+        },
 
         // --- HARD TIER ---
         {
@@ -4474,6 +4650,60 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             difficulty: 'Hard',
             emeraldReward: 35
         },
+        {
+            id: 'gold_standard',
+            title: 'Gold Standard',
+            description: 'Forge and equip a complete 4-piece set of gleaming Golden Armor (Helmet, Chest, Legs, Boots).',
+            iconItem: IDS.CHESTPLATE_GOLD,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 35
+        },
+        {
+            id: 'forge_shadowfang',
+            title: 'Shadowfang',
+            description: 'Forge the lethal Shadowfang dagger using Gloom Silk and Shadow Carapace.',
+            iconItem: IDS.SHADOWFANG,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 35
+        },
+        {
+            id: 'gloom_lantern_placed',
+            title: 'Void Illuminator',
+            description: 'Craft and place a Gloom Lantern to illuminate dark depths with void silk light.',
+            iconItem: IDS.GLOOM_LANTERN,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 30
+        },
+        {
+            id: 'strider_speed',
+            title: 'Warp Speed',
+            description: 'Equip Strider Boots and dash across the terrain with enhanced velocity.',
+            iconItem: IDS.STRIDER_BOOTS,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 30
+        },
+        {
+            id: 'solar_nourishment',
+            title: 'Solar Vitality',
+            description: 'Consume a Sunburst Melon slice or Golden Apple to restore vital strength.',
+            iconItem: IDS.SUNBURST_MELON_SLICE,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 30
+        },
+        {
+            id: 'stellar_arsenal',
+            title: 'Stellar Arsenal',
+            description: 'Forge an Astral Sword, Astral Axe, or Astral Shovel at the Astral Infuser.',
+            iconItem: IDS.ASTRAL_SWORD,
+            badge: 'Hard',
+            difficulty: 'Hard',
+            emeraldReward: 40
+        },
 
         // --- MASTER TIER ---
         {
@@ -4540,6 +4770,42 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             badge: 'Master',
             difficulty: 'Master',
             emeraldReward: 50
+        },
+        {
+            id: 'slay_gloomstalker',
+            title: 'Shadow of the Deep',
+            description: 'Conquer and defeat the terrifying Gloomstalker boss in the dark cavern depths.',
+            iconItem: IDS.SHADOW_CARAPACE,
+            badge: 'Master',
+            difficulty: 'Master',
+            emeraldReward: 75
+        },
+        {
+            id: 'monster_slayer_50',
+            title: 'Monster Slayer',
+            description: 'Slay 50 hostile monsters across your survival odyssey.',
+            iconItem: IDS.DIAMOND_SWORD,
+            badge: 'Master',
+            difficulty: 'Master',
+            emeraldReward: 60
+        },
+        {
+            id: 'immortal_legend',
+            title: 'Immortal Legend',
+            description: 'Survive for 10 full in-game days without meeting an untimely demise.',
+            iconItem: IDS.BED,
+            badge: 'Master',
+            difficulty: 'Master',
+            emeraldReward: 80
+        },
+        {
+            id: 'grand_archon',
+            title: 'Grand Archon',
+            description: 'Unlock at least 45 milestones to become a legendary Webcraft champion.',
+            iconItem: IDS.ASTRAL_EMERALD,
+            badge: 'Master',
+            difficulty: 'Master',
+            emeraldReward: 100
         }
     ];
 
@@ -4614,7 +4880,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function filterAchievementsByDiff(diff) {
         selectedAchDifficultyFilter = diff;
-        document.querySelectorAll('.ach-filter-btn').forEach(btn => {
+        document.querySelectorAll('.ach-filter-btn, .ach-tier-tab').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.diff === diff);
         });
         renderAchievementsList();
@@ -4672,6 +4938,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         if (Object.keys(data).length >= 25 && !data['completionist']) {
             unlockAchievement('completionist');
+        }
+        if (Object.keys(data).length >= 45 && !data['grand_archon']) {
+            unlockAchievement('grand_archon');
+        }
+
+        if (pinnedAchievementId === achId) {
+            renderPinnedAchievementHUD();
         }
 
         const modal = document.getElementById('achievements-modal');
@@ -4922,6 +5195,113 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         return `${day} ${m} ${y}, ${h}:${min}`;
     }
 
+    export let selectedAchStatusFilter = 'all'; // 'all', 'unlocked', 'locked'
+    export let achSearchTerm = '';
+    export let selectedAchSort = 'tier'; // 'tier', 'recent', 'alpha', 'reward'
+    export let pinnedAchievementId = (typeof localStorage !== 'undefined') ? localStorage.getItem('webcraft_pinned_ach') : null;
+
+    export function filterAchievementsByStatus(status) {
+        selectedAchStatusFilter = status;
+        document.querySelectorAll('.ach-status-btn, .ach-segment-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.status === status);
+        });
+        renderAchievementsList();
+    }
+
+    export function setAchievementSearchTerm(term) {
+        achSearchTerm = (term || '').trim().toLowerCase();
+        renderAchievementsList();
+    }
+
+    export function setAchievementSort(sortType) {
+        selectedAchSort = sortType;
+        document.querySelectorAll('.ach-sort-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.sort === sortType);
+        });
+        renderAchievementsList();
+    }
+
+    export function resetAchFilters() {
+        selectedAchDifficultyFilter = 'all';
+        selectedAchStatusFilter = 'all';
+        achSearchTerm = '';
+        selectedAchSort = 'tier';
+        const searchInput = document.getElementById('ach-search-input');
+        if (searchInput) searchInput.value = '';
+        document.querySelectorAll('.ach-tier-tab, .ach-filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.diff === 'all'));
+        document.querySelectorAll('.ach-segment-btn, .ach-status-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.status === 'all'));
+        document.querySelectorAll('.ach-sort-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.sort === 'tier'));
+        renderAchievementsList();
+    }
+
+    export function togglePinAchievement(achId) {
+        if (pinnedAchievementId === achId) {
+            pinnedAchievementId = null;
+            try { localStorage.removeItem('webcraft_pinned_ach'); } catch(e) {}
+            showToast('Achievement unpinned from HUD');
+        } else {
+            pinnedAchievementId = achId;
+            try { localStorage.setItem('webcraft_pinned_ach', achId); } catch(e) {}
+            const ach = ACHIEVEMENTS.find(a => a.id === achId);
+            showToast(`Pinned active goal: ${ach ? ach.title : 'Achievement'}`);
+        }
+        try { playSound('pop'); } catch(e) {}
+        renderAchievementsList();
+        renderPinnedAchievementHUD();
+    }
+
+    export function renderPinnedAchievementHUD() {
+        const el = document.getElementById('hud-pinned-achievement');
+        if (!el) return;
+        const curState = (typeof window !== 'undefined' && window.STATE) ? window.STATE : (typeof STATE !== 'undefined' ? STATE : 'MENU');
+        if (!pinnedAchievementId || (curState !== 'PLAYING' && curState !== 'PAUSED')) {
+            el.classList.add('hidden');
+            el.style.display = 'none';
+            return;
+        }
+        const ach = ACHIEVEMENTS.find(a => a.id === pinnedAchievementId);
+        if (!ach) {
+            el.classList.add('hidden');
+            el.style.display = 'none';
+            return;
+        }
+        const mode = (typeof isMultiplayer !== 'undefined' && isMultiplayer) ? 'mp' : 'sp';
+        const data = getAchievementsStorage(mode);
+        const isUnlocked = !!data[ach.id];
+
+        el.classList.remove('hidden');
+        el.style.display = 'flex';
+
+        let progText = '';
+        if (ach.id === 'master_crafter') progText = ` (${Math.min(20, (typeof craftedItemsCount !== 'undefined' ? craftedItemsCount : 0))}/20)`;
+        else if (ach.id === 'subterranean_miner') progText = ` (${Math.min(50, (typeof deepBlocksMinedCount !== 'undefined' ? deepBlocksMinedCount : 0))}/50)`;
+        else if (ach.id === 'sniper_duel') progText = ` (${Math.min(5, (typeof monstersKilledCount !== 'undefined' ? monstersKilledCount : 0))}/5)`;
+        else if (ach.id === 'apex_predator') progText = ` (${Math.min(15, (typeof monstersKilledCount !== 'undefined' ? monstersKilledCount : 0))}/15)`;
+        else if (ach.id === 'monster_slayer_50') progText = ` (${Math.min(50, (typeof monstersKilledCount !== 'undefined' ? monstersKilledCount : 0))}/50)`;
+        else if (ach.id === 'immortal_legend') {
+            const curDay = (typeof window !== 'undefined' && window.dayCount !== undefined) ? window.dayCount : (typeof dayCount !== 'undefined' ? dayCount : 0);
+            progText = ` (${Math.min(10, curDay)}/10 Days)`;
+        }
+
+        const iconTex = (typeof textures !== 'undefined' && textures[ach.iconItem]) ? textures[ach.iconItem].src : '';
+
+        el.innerHTML = `
+            <div class="hud-pin-icon-box">
+                ${iconTex ? `<img src="${iconTex}" class="w-5 h-5 pixelated object-contain" alt="" />` : getPixelTrophySvg(16)}
+            </div>
+            <div class="hud-pin-info">
+                <div class="hud-pin-title flex items-center gap-1">${isUnlocked ? getPixelCheckSvg(12) : getPixelPinSvg(12)}<span>${ach.title}${progText}</span></div>
+                <div class="hud-pin-desc">${ach.description}</div>
+            </div>
+            <button type="button" class="hud-pin-close" onclick="if(typeof togglePinAchievement==='function')togglePinAchievement('${ach.id}')" title="Unpin Goal">${getPixelCloseSvg(10)}</button>
+        `;
+        if (isUnlocked) {
+            el.classList.add('completed');
+        } else {
+            el.classList.remove('completed');
+        }
+    }
+
     export function renderAchievementsList() {
         const list = document.getElementById('achievements-list');
         if (!list) return;
@@ -4953,36 +5333,149 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const badge = document.getElementById('achievements-progress-badge');
         if (badge) badge.innerText = `${activeCount} / ${total} (${percent}%)`;
 
-        const frag = document.createDocumentFragment();
-        const DIFFICULTY_ORDER = { 'Easy': 1, 'Medium': 2, 'Hard': 3, 'Master': 4 };
-        const rawList = selectedAchDifficultyFilter === 'all' 
-            ? ACHIEVEMENTS 
-            : ACHIEVEMENTS.filter(a => a.difficulty === selectedAchDifficultyFilter);
+        // Update overall visual XP progress bar
+        const progressBarFill = document.getElementById('ach-progress-bar-fill');
+        if (progressBarFill) {
+            progressBarFill.style.width = `${percent}%`;
+        }
 
-        // Organize on difficulties: Easy -> Medium -> Hard -> Master
-        const filteredList = [...rawList].sort((a, b) => {
-            const orderA = DIFFICULTY_ORDER[a.difficulty] || 99;
-            const orderB = DIFFICULTY_ORDER[b.difficulty] || 99;
-            return orderA - orderB;
+        // Tier Breakdown Counters & Emerald tracking
+        let easyTotal = 0, easyUnlocked = 0;
+        let medTotal = 0, medUnlocked = 0;
+        let hardTotal = 0, hardUnlocked = 0;
+        let masterTotal = 0, masterUnlocked = 0;
+        let totalClaimableEmeralds = 0, totalEarnedEmeralds = 0;
+
+        const claimed = getClaimedAchievementRewards();
+
+        ACHIEVEMENTS.forEach(ach => {
+            const isU = !!activeData[ach.id];
+            const rAmt = getAchievementEmeraldReward(ach);
+            totalClaimableEmeralds += rAmt;
+            if (claimed.includes(ach.id)) {
+                totalEarnedEmeralds += rAmt;
+            }
+
+            if (ach.difficulty === 'Easy') {
+                easyTotal++;
+                if (isU) easyUnlocked++;
+            } else if (ach.difficulty === 'Medium') {
+                medTotal++;
+                if (isU) medUnlocked++;
+            } else if (ach.difficulty === 'Hard') {
+                hardTotal++;
+                if (isU) hardUnlocked++;
+            } else if (ach.difficulty === 'Master') {
+                masterTotal++;
+                if (isU) masterUnlocked++;
+            }
         });
+
+        const badgeAll = document.getElementById('ach-tier-all-count');
+        const badgeEasy = document.getElementById('ach-tier-easy-count');
+        const badgeMed = document.getElementById('ach-tier-med-count');
+        const badgeHard = document.getElementById('ach-tier-hard-count');
+        const badgeMaster = document.getElementById('ach-tier-master-count');
+        if (badgeAll) badgeAll.innerText = `${activeCount}/${total}`;
+        if (badgeEasy) badgeEasy.innerText = `${easyUnlocked}/${easyTotal}`;
+        if (badgeMed) badgeMed.innerText = `${medUnlocked}/${medTotal}`;
+        if (badgeHard) badgeHard.innerText = `${hardUnlocked}/${hardTotal}`;
+        if (badgeMaster) badgeMaster.innerText = `${masterUnlocked}/${masterTotal}`;
+
+        const emeraldsLabel = document.getElementById('ach-emeralds-earned-label');
+        if (emeraldsLabel) {
+            emeraldsLabel.innerHTML = `${getPixelEmeraldSvg(14)} <span class="text-white font-bold">${totalEarnedEmeralds}</span> / ${totalClaimableEmeralds} Claimed`;
+        }
+
+        const statusAllCount = document.getElementById('ach-status-all-count');
+        const statusUnlockedCount = document.getElementById('ach-status-unlocked-count');
+        const statusLockedCount = document.getElementById('ach-status-locked-count');
+        if (statusAllCount) statusAllCount.innerText = total;
+        if (statusUnlockedCount) statusUnlockedCount.innerText = activeCount;
+        if (statusLockedCount) statusLockedCount.innerText = total - activeCount;
+
+        // Filtering
+        let filteredList = ACHIEVEMENTS.filter(ach => {
+            if (selectedAchDifficultyFilter !== 'all' && ach.difficulty !== selectedAchDifficultyFilter) {
+                return false;
+            }
+            const isU = !!activeData[ach.id];
+            if (selectedAchStatusFilter === 'unlocked' && !isU) return false;
+            if (selectedAchStatusFilter === 'locked' && isU) return false;
+
+            if (achSearchTerm) {
+                const matchTitle = ach.title.toLowerCase().includes(achSearchTerm);
+                const matchDesc = ach.description.toLowerCase().includes(achSearchTerm);
+                const matchBadge = (ach.badge || ach.difficulty).toLowerCase().includes(achSearchTerm);
+                if (!matchTitle && !matchDesc && !matchBadge) return false;
+            }
+            return true;
+        });
+
+        // Sorting
+        const DIFFICULTY_ORDER = { 'Easy': 1, 'Medium': 2, 'Hard': 3, 'Master': 4 };
+        if (selectedAchSort === 'recent') {
+            filteredList.sort((a, b) => {
+                const timeA = activeData[a.id] || 0;
+                const timeB = activeData[b.id] || 0;
+                if (timeA && !timeB) return -1;
+                if (!timeA && timeB) return 1;
+                if (timeA && timeB) return timeB - timeA;
+                return (DIFFICULTY_ORDER[a.difficulty] || 99) - (DIFFICULTY_ORDER[b.difficulty] || 99);
+            });
+        } else if (selectedAchSort === 'alpha') {
+            filteredList.sort((a, b) => a.title.localeCompare(b.title));
+        } else if (selectedAchSort === 'reward') {
+            filteredList.sort((a, b) => getAchievementEmeraldReward(b) - getAchievementEmeraldReward(a));
+        } else {
+            // Default: tier order
+            filteredList.sort((a, b) => {
+                const orderA = DIFFICULTY_ORDER[a.difficulty] || 99;
+                const orderB = DIFFICULTY_ORDER[b.difficulty] || 99;
+                return orderA - orderB;
+            });
+        }
+
+        const visibleCountEl = document.getElementById('ach-visible-count');
+        if (visibleCountEl) {
+            visibleCountEl.innerText = `${filteredList.length} of ${total}`;
+        }
+
+        if (filteredList.length === 0) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'ach-empty-state';
+            emptyEl.innerHTML = `
+                <div class="ach-empty-icon mb-2">${getPixelSearchSvg(36)}</div>
+                <div class="text-2xl text-gray-200 font-bold font-['VT323']">No Milestones Found</div>
+                <div class="text-base text-gray-400 font-['VT323'] mt-1">No achievements match your active search terms or category filters.</div>
+                <button type="button" class="mc-btn btn-secondary !w-auto !px-5 !py-1.5 !text-xl !mt-3" onclick="if(typeof resetAchFilters==='function')resetAchFilters()">Reset Filters</button>
+            `;
+            list.appendChild(emptyEl);
+            return;
+        }
+
+        const frag = document.createDocumentFragment();
 
         filteredList.forEach(ach => {
             const unlockedAt = activeData[ach.id];
             const isUnlocked = !!unlockedAt;
             const rewardAmt = getAchievementEmeraldReward(ach);
-            const claimed = getClaimedAchievementRewards();
             const isClaimed = claimed.includes(ach.id);
+            const isPinned = pinnedAchievementId === ach.id;
 
             const card = document.createElement('div');
-            card.className = `achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+            card.className = `achievement-card ${isUnlocked ? 'unlocked' : 'locked'} ${isPinned ? 'pinned' : ''}`;
 
             const iconFrame = document.createElement('div');
             iconFrame.className = 'achievement-icon-frame';
             if (textures[ach.iconItem]) {
                 const img = document.createElement('img');
                 img.src = textures[ach.iconItem].src;
-                img.className = 'w-7 h-7 pixelated';
+                img.className = 'w-8 h-8 pixelated object-contain';
+                img.alt = ach.title;
                 iconFrame.appendChild(img);
+            } else {
+                iconFrame.innerHTML = getPixelTrophySvg(24);
             }
             card.appendChild(iconFrame);
 
@@ -4993,43 +5486,101 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             titleRow.className = 'flex items-center justify-between gap-2';
 
             const title = document.createElement('span');
-            title.className = `text-2xl font-bold font-['VT323'] ${isUnlocked ? 'text-[var(--mc-accent-color)]' : 'text-gray-400'}`;
+            title.className = `text-2xl font-bold font-['VT323'] truncate ${isUnlocked ? 'text-[var(--mc-accent-color)]' : 'text-[#cbd5e1]'}`;
             title.innerText = ach.title;
             titleRow.appendChild(title);
 
             const badgeGroup = document.createElement('div');
             badgeGroup.className = 'flex items-center gap-1.5 flex-shrink-0';
 
+            // Pin / Track Goal button
+            const pinBtn = document.createElement('button');
+            pinBtn.type = 'button';
+            pinBtn.className = `mc-card-btn ach-pin-btn ${isPinned ? 'active' : ''}`;
+            pinBtn.title = isPinned ? 'Unpin goal from in-game HUD' : 'Pin goal to in-game HUD';
+            pinBtn.innerHTML = `${getPixelPinSvg(13)} <span>${isPinned ? 'Pinned' : 'Pin Goal'}</span>`;
+            pinBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePinAchievement(ach.id);
+            });
+            badgeGroup.appendChild(pinBtn);
+
+            // Reward chip
             const emeraldBadge = document.createElement('span');
-            emeraldBadge.className = 'ach-emerald-badge';
-            emeraldBadge.innerHTML = `${getPixelEmeraldSvg(13)} +${rewardAmt}`;
+            emeraldBadge.className = 'ach-card-reward-badge';
+            emeraldBadge.innerHTML = `${getPixelEmeraldSvg(13)} <span>+${rewardAmt}</span>`;
             badgeGroup.appendChild(emeraldBadge);
 
-            const diffClass = ach.difficulty === 'Easy' ? 'ach-badge-easy'
-                : ach.difficulty === 'Medium' ? 'ach-badge-medium'
-                : ach.difficulty === 'Hard' ? 'ach-badge-hard'
-                : 'ach-badge-master';
+            // Tier badge with pixel icon
+            const diffClass = ach.difficulty === 'Easy' ? 'tier-easy'
+                : ach.difficulty === 'Medium' ? 'tier-medium'
+                : ach.difficulty === 'Hard' ? 'tier-hard'
+                : 'tier-master';
+
+            const tierIconSvg = ach.difficulty === 'Easy' ? getPixelSproutSvg(13)
+                : ach.difficulty === 'Medium' ? getPixelIngotSvg(13)
+                : ach.difficulty === 'Hard' ? getPixelDiamondSvg(13)
+                : getPixelCrownSvg(13);
 
             const badgeTag = document.createElement('span');
-            badgeTag.className = `text-sm font-['VT323'] px-2 py-0.5 border ${diffClass}`;
-            badgeTag.innerText = ach.badge || ach.difficulty;
+            badgeTag.className = `ach-card-tier-badge ${diffClass}`;
+            badgeTag.innerHTML = `${tierIconSvg} <span>${ach.badge || ach.difficulty}</span>`;
             badgeGroup.appendChild(badgeTag);
 
             titleRow.appendChild(badgeGroup);
             info.appendChild(titleRow);
 
             const desc = document.createElement('p');
-            desc.className = "text-base text-gray-300 font-['VT323'] m-0 leading-tight mt-0.5";
+            desc.className = 'ach-card-desc';
             desc.innerText = ach.description;
             info.appendChild(desc);
 
+            // Multi-step progress bar if applicable
+            let multiStepProg = null;
+            if (!isUnlocked) {
+                if (ach.id === 'master_crafter') {
+                    multiStepProg = { current: Math.min(20, (typeof craftedItemsCount !== 'undefined' ? craftedItemsCount : 0)), target: 20, label: 'Items Crafted' };
+                } else if (ach.id === 'subterranean_miner') {
+                    multiStepProg = { current: Math.min(50, (typeof deepBlocksMinedCount !== 'undefined' ? deepBlocksMinedCount : 0)), target: 50, label: 'Cavern Blocks' };
+                } else if (ach.id === 'sniper_duel') {
+                    multiStepProg = { current: Math.min(5, (typeof monstersKilledCount !== 'undefined' ? monstersKilledCount : 0)), target: 5, label: 'Monsters Slain' };
+                } else if (ach.id === 'apex_predator') {
+                    multiStepProg = { current: Math.min(15, (typeof monstersKilledCount !== 'undefined' ? monstersKilledCount : 0)), target: 15, label: 'Monsters Slain' };
+                } else if (ach.id === 'monster_slayer_50') {
+                    multiStepProg = { current: Math.min(50, (typeof monstersKilledCount !== 'undefined' ? monstersKilledCount : 0)), target: 50, label: 'Monsters Slain' };
+                } else if (ach.id === 'immortal_legend') {
+                    const curDay = (typeof window !== 'undefined' && window.dayCount !== undefined) ? window.dayCount : (typeof dayCount !== 'undefined' ? dayCount : 0);
+                    multiStepProg = { current: Math.min(10, curDay), target: 10, label: 'Days Survived' };
+                } else if (ach.id === 'completionist') {
+                    multiStepProg = { current: Math.min(25, activeCount), target: 25, label: 'Milestones' };
+                } else if (ach.id === 'grand_archon') {
+                    multiStepProg = { current: Math.min(45, activeCount), target: 45, label: 'Milestones' };
+                }
+            }
+
+            if (multiStepProg) {
+                const progPct = Math.round((multiStepProg.current / multiStepProg.target) * 100);
+                const progRow = document.createElement('div');
+                progRow.className = 'ach-card-progress mt-1.5';
+                progRow.innerHTML = `
+                    <div class="flex justify-between items-center text-xs font-['VT323'] text-gray-400 mb-0.5">
+                        <span>Progress: ${multiStepProg.label}</span>
+                        <span class="text-amber-300 font-bold">${multiStepProg.current} / ${multiStepProg.target} (${progPct}%)</span>
+                    </div>
+                    <div class="ach-card-progress-bar">
+                        <div class="ach-card-progress-fill" style="width: ${progPct}%;"></div>
+                    </div>
+                `;
+                info.appendChild(progRow);
+            }
+
             const statusRow = document.createElement('div');
-            statusRow.className = 'mt-1 text-sm font-["VT323"] flex items-center gap-1.5 flex-wrap';
+            statusRow.className = 'ach-card-status mt-1';
             if (isUnlocked) {
-                statusRow.innerHTML = `<span class="text-green-400 font-bold">✓ Unlocked:</span> <span class="text-gray-300">${formatAchievementDate(unlockedAt)}</span> ${isClaimed ? `<span class="text-[#4eed99] font-bold ml-1 font-['VT323'] text-sm inline-flex items-center gap-0.5">[+${rewardAmt} ${getPixelEmeraldSvg(12)} Claimed]</span>` : ''}`;
+                statusRow.innerHTML = `<span class="ach-status-unlocked-tag">${getPixelCheckSvg(13)} <span>Unlocked:</span></span> <span class="text-[#cbd5e1]">${formatAchievementDate(unlockedAt)}</span> ${isClaimed ? `<span class="ach-claimed-badge font-['VT323'] text-sm inline-flex items-center gap-1">[+${rewardAmt} ${getPixelEmeraldSvg(12)} Claimed]</span>` : ''}`;
             } else {
                 const guestNotice = isGuest ? ` <span class="text-amber-400 font-bold ml-1">(Guest - Log in to earn)</span>` : '';
-                statusRow.innerHTML = `<span class="text-gray-500 font-bold inline-flex items-center gap-1">${getPixelPadlockSvg(12)} Locked</span> <span class="text-gray-600">(${currentAchievementsTab === 'mp' ? 'Multiplayer' : 'Singleplayer'})</span>${guestNotice}`;
+                statusRow.innerHTML = `<span class="ach-status-locked-tag">${getPixelPadlockSvg(12)} <span>Locked</span></span> <span class="text-[#64748b]">(${currentAchievementsTab === 'mp' ? 'Multiplayer' : 'Singleplayer'})</span>${guestNotice}`;
             }
             info.appendChild(statusRow);
 
@@ -5434,6 +5985,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             else if ([IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE].includes(recipe.output.id)) unlockAchievement('time_to_cultivate');
             else if (recipe.output.id === IDS.BREAD) unlockAchievement('bake_bread');
             else if (recipe.output.id === IDS.ASTRAL_INFUSER) unlockAchievement('astral_infusion');
+            else if (recipe.output.id === IDS.SIGN) unlockAchievement('notice_board');
+            else if (recipe.output.id === IDS.DOOR || recipe.output.id === IDS.JUNGLE_DOOR) unlockAchievement('knock_knock');
+            else if (recipe.output.id === IDS.EMPTY_VINYL) unlockAchievement('craft_vinyl');
+            else if (recipe.output.id === IDS.PRISM_GLASS) unlockAchievement('prism_glass_art');
+            else if (recipe.output.id === IDS.SHADOWFANG) unlockAchievement('forge_shadowfang');
+            else if (recipe.output.id === IDS.GLOOM_LANTERN) unlockAchievement('gloom_lantern_placed');
+            else if ([IDS.ASTRAL_SWORD, IDS.ASTRAL_AXE, IDS.ASTRAL_SHOVEL].includes(recipe.output.id)) unlockAchievement('stellar_arsenal');
             if (isArmor(recipe.output.id)) {
                 unlockAchievement('suit_up');
                 if (recipe.output.id === IDS.HELMET_GOLD || recipe.output.id === IDS.CHESTPLATE_GOLD || recipe.output.id === IDS.LEGGINGS_GOLD || recipe.output.id === IDS.BOOTS_GOLD) {
@@ -7931,6 +8489,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         document.getElementById('multiplayer-modal').classList.add('hidden');
         document.getElementById('shared-menu-bg').classList.remove('hidden');
         document.getElementById('main-menu').classList.remove('hidden');
+        if (typeof DevConsole !== 'undefined' && DevConsole.isOpen) {
+            DevConsole.close();
+        } else if (typeof window !== 'undefined' && window.DevConsole && window.DevConsole.isOpen) {
+            window.DevConsole.close();
+        }
         if (!isMenuInit) {
             generateMenuWorld();
         }
@@ -8520,11 +9083,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
-                        <button type="button" class="mc-btn btn-primary !w-auto !py-1 !px-3 !text-lg !m-0" onclick="playWorldById('${w.id}')" title="Play">▶</button>
-                        <button type="button" class="mc-btn btn-secondary !w-9 !h-8 !p-0 !text-sm !m-0 flex items-center justify-center" onclick="renameWorld('${w.id}')" title="Rename">✏</button>
-                        <button type="button" class="mc-btn btn-secondary !w-9 !h-8 !p-0 !text-sm !m-0 flex items-center justify-center" onclick="duplicateWorld('${w.id}')" title="Duplicate">📋</button>
-                        <button type="button" class="mc-btn btn-secondary !w-9 !h-8 !p-0 !text-sm !m-0 flex items-center justify-center" onclick="exportWorld('${w.id}', '${escapedName}')" title="Export">↓</button>
-                        <button type="button" class="mc-btn !w-9 !h-8 !p-0 !text-sm !m-0 !bg-red-700 hover:!bg-red-600 !text-white flex items-center justify-center" onclick="deleteWorld('${w.id}')" title="Delete">✕</button>
+                        <button type="button" class="mc-btn btn-primary !w-auto !py-1 !px-3 !text-lg !m-0" onclick="playWorldById('${w.id}')" title="Play"><svg viewBox="0 0 16 16" width="12" height="12" style="image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg"><polygon points="3,1 14,8 3,15" fill="#ffffff"/></svg></button>
+                        <button type="button" class="mc-btn btn-secondary !w-9 !h-8 !p-0 !text-sm !m-0 flex items-center justify-center" onclick="renameWorld('${w.id}')" title="Rename"><svg viewBox="0 0 16 16" width="12" height="12" style="image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg"><polygon points="12,1 15,4 6,13 3,13 3,10" fill="#f8fafc"/><rect x="1" y="15" width="14" height="1" fill="#94a3b8"/></svg></button>
+                        <button type="button" class="mc-btn btn-secondary !w-9 !h-8 !p-0 !text-sm !m-0 flex items-center justify-center" onclick="duplicateWorld('${w.id}')" title="Duplicate"><svg viewBox="0 0 16 16" width="12" height="12" style="image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="7" height="10" fill="#64748b"/><rect x="6" y="1" width="7" height="10" fill="#cbd5e1"/></svg></button>
+                        <button type="button" class="mc-btn btn-secondary !w-9 !h-8 !p-0 !text-sm !m-0 flex items-center justify-center" onclick="exportWorld('${w.id}', '${escapedName}')" title="Export"><svg viewBox="0 0 16 16" width="12" height="12" style="image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="1" width="2" height="8" fill="#ffffff"/><polygon points="4,9 12,9 8,14" fill="#ffffff"/></svg></button>
+                        <button type="button" class="mc-btn !w-9 !h-8 !p-0 !text-sm !m-0 !bg-red-700 hover:!bg-red-600 !text-white flex items-center justify-center" onclick="deleteWorld('${w.id}')" title="Delete"><svg viewBox="0 0 16 16" width="12" height="12" style="image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="2" height="2" fill="#ffffff"/><rect x="4" y="4" width="2" height="2" fill="#ffffff"/><rect x="6" y="6" width="4" height="4" fill="#ffffff"/><rect x="10" y="4" width="2" height="2" fill="#ffffff"/><rect x="12" y="2" width="2" height="2" fill="#ffffff"/><rect x="4" y="10" width="2" height="2" fill="#ffffff"/><rect x="2" y="12" width="2" height="2" fill="#ffffff"/><rect x="10" y="10" width="2" height="2" fill="#ffffff"/><rect x="12" y="12" width="2" height="2" fill="#ffffff"/></svg></button>
                     </div>
                 `;
                 rowsWrap.appendChild(row);
@@ -9977,4877 +10540,5 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             // Invert Y
             const invBtn = document.getElementById('btn-gp-invert-y');
             if (invBtn) {
-                invBtn.innerText = Gamepad.gamepadSettings.invertAimY ? 'Inverted' : 'Normal';
-            }
-
-            // Auto-Aim Facing
-            updateToggleBtnState('btn-gp-auto-aim', !!Gamepad.gamepadSettings.autoAimFacing);
-
-            // Vibration
-            updateToggleBtnState('btn-gp-vibration', !!Gamepad.gamepadSettings.vibrationEnabled);
-        }
-    }
-
-    export function startGamepadRebindingUI(action, btnEl) {
-        if (typeof Gamepad !== 'undefined' && typeof Gamepad.startGamepadRebinding === 'function') {
-            Gamepad.startGamepadRebinding(action, btnEl);
-        }
-    }
-
-    export function resetGamepadBindingsToDefault() {
-        if (typeof Gamepad !== 'undefined') {
-            Gamepad.resetGamepadBindings();
-            updateGamepadUI();
-            showToast('Controller bindings reset to default.');
-        }
-    }
-
-    export function updateGamepadDeadzoneUI(val) {
-        const numVal = parseInt(val, 10) / 100;
-        if (typeof Gamepad !== 'undefined') {
-            Gamepad.setGamepadSetting('deadzone', numVal);
-        }
-        const badge = document.getElementById('badge-gp-deadzone');
-        if (badge) badge.innerText = `${val}%`;
-    }
-
-    export function updateGamepadAimSensUI(val) {
-        const numVal = parseInt(val, 10) / 10;
-        if (typeof Gamepad !== 'undefined') {
-            Gamepad.setGamepadSetting('aimSensitivity', numVal);
-        }
-        const badge = document.getElementById('badge-gp-aim-sens');
-        if (badge) badge.innerText = `${numVal.toFixed(1)}x`;
-    }
-
-    export function toggleGamepadInvertYUI() {
-        if (typeof Gamepad !== 'undefined') {
-            const newVal = !Gamepad.gamepadSettings.invertAimY;
-            Gamepad.setGamepadSetting('invertAimY', newVal);
-            const btn = document.getElementById('btn-gp-invert-y');
-            if (btn) btn.innerText = newVal ? 'Inverted' : 'Normal';
-            showToast(`Aim Y-Axis: ${newVal ? 'Inverted' : 'Normal'}`);
-        }
-    }
-
-    export function toggleGamepadAutoAimUI() {
-        if (typeof Gamepad !== 'undefined') {
-            const newVal = !Gamepad.gamepadSettings.autoAimFacing;
-            Gamepad.setGamepadSetting('autoAimFacing', newVal);
-            updateToggleBtnState('btn-gp-auto-aim', newVal);
-            showToast(`Auto-Aim Facing: ${newVal ? 'Enabled' : 'Disabled'}`);
-        }
-    }
-
-    export function toggleGamepadVibrationUI() {
-        if (typeof Gamepad !== 'undefined') {
-            const newVal = !Gamepad.gamepadSettings.vibrationEnabled;
-            Gamepad.setGamepadSetting('vibrationEnabled', newVal);
-            updateToggleBtnState('btn-gp-vibration', newVal);
-            showToast(`Controller Vibration: ${newVal ? 'ON' : 'OFF'}`);
-        }
-    }
-
-    export function testGamepadRumbleUI() {
-        if (typeof Gamepad !== 'undefined') {
-            if (!Gamepad.isGamepadConnected()) {
-                showToast('No controller detected to vibrate.');
-                return;
-            }
-            Gamepad.triggerGamepadVibration(300, 0.7, 0.9);
-            showToast('Vibrating controller...');
-        }
-    }
-
-    export function startRebinding(action, btnEl) {
-        if (rebindingAction && rebindingBtnEl) {
-            rebindingBtnEl.classList.remove('waiting');
-            rebindingBtnEl.innerText = formatKeyDisplay(KEYBINDS[rebindingAction]);
-        }
-        rebindingAction = action;
-        rebindingBtnEl = btnEl;
-        btnEl.classList.add('waiting');
-        btnEl.innerText = '> PRESS <';
-    }
-
-    export function handleRebindKey(e) {
-        if (!rebindingAction || !rebindingBtnEl) return;
-        e.preventDefault();
-        e.stopPropagation();
-
-        const key = e.key.toLowerCase();
-        if (key === 'escape') {
-            rebindingBtnEl.classList.remove('waiting');
-            rebindingBtnEl.innerText = formatKeyDisplay(KEYBINDS[rebindingAction]);
-            rebindingAction = null;
-            rebindingBtnEl = null;
-            return;
-        }
-
-        KEYBINDS[rebindingAction] = key;
-        rebindingBtnEl.classList.remove('waiting');
-        rebindingBtnEl.innerText = formatKeyDisplay(key);
-        rebindingAction = null;
-        rebindingBtnEl = null;
-        saveCurrentSettings();
-    }
-
-    export function resetKeybindsToDefault() {
-        KEYBINDS = Object.assign({}, DEFAULT_KEYBINDS);
-        saveCurrentSettings();
-        updateKeybindButtonsUI();
-        showToast('Keybinds reset to default.');
-    }
-
-    export function updateKeybindButtonsUI() {
-        document.querySelectorAll('.keybind-btn').forEach(btn => {
-            const action = btn.dataset.action;
-            if (action && KEYBINDS[action] !== undefined) {
-                btn.innerText = formatKeyDisplay(KEYBINDS[action]);
-                btn.classList.remove('waiting');
-            }
-        });
-    }
-
-    export function updateMasterVolume(val) {
-        masterVolume = Number(val) / 100;
-        const badge = document.getElementById('badge-master-vol');
-        if (badge) badge.innerText = `${val}%`;
-        saveCurrentSettings();
-    }
-
-    export function updateSfxVolume(val) {
-        sfxVolume = Number(val) / 100;
-        const badge = document.getElementById('badge-sfx-vol');
-        if (badge) badge.innerText = `${val}%`;
-        saveCurrentSettings();
-    }
-
-    export function updateUiVolume(val) {
-        uiVolume = Number(val) / 100;
-        const badge = document.getElementById('badge-ui-vol');
-        if (badge) badge.innerText = `${val}%`;
-        saveCurrentSettings();
-    }
-
-    export function toggleFootsteps() {
-        footstepsEnabled = !footstepsEnabled;
-        updateToggleBtnState('btn-toggle-footsteps', footstepsEnabled);
-        saveCurrentSettings();
-    }
-
-    export function toggleMuteAudio() {
-        isAudioMuted = !isAudioMuted;
-        updateToggleBtnState('btn-toggle-mute', isAudioMuted, "ON (Muted)", "OFF (Audio ON)");
-        saveCurrentSettings();
-    }
-
-    export function playTestSound() {
-        playSound('craft', { vol: 1.0 });
-    }
-
-    export function updateScrollSens(val) {
-        scrollSensitivity = Number(val);
-        const badge = document.getElementById('badge-scroll-sens');
-        if (badge) badge.innerText = `${val}x`;
-        saveCurrentSettings();
-    }
-
-    export function toggleInvertWheel() {
-        invertScrollWheel = !invertScrollWheel;
-        const btn = document.getElementById('btn-invert-wheel');
-        if (btn) btn.innerText = invertScrollWheel ? "Inverted" : "Normal";
-        saveCurrentSettings();
-    }
-
-    export function toggleHotbarWrap() {
-        hotbarWrapAround = !hotbarWrapAround;
-        const btn = document.getElementById('btn-hotbar-wrap');
-        if (btn) btn.innerText = hotbarWrapAround ? "Wrap (1-9)" : "Clamp (1-9)";
-        saveCurrentSettings();
-    }
-
-    export function toggleItemPopups() {
-        showItemPopups = !showItemPopups;
-        updateToggleBtnState('btn-toggle-item-popups', showItemPopups);
-        saveCurrentSettings();
-    }
-
-    export function toggleScreenShake() {
-        showScreenShake = !showScreenShake;
-        updateToggleBtnState('btn-toggle-screenshake', showScreenShake);
-        saveCurrentSettings();
-    }
-
-    export function toggleVignette() {
-        showVignette = !showVignette;
-        updateToggleBtnState('btn-toggle-vignette', showVignette);
-        if (typeof window !== 'undefined') {
-            window.showVignette = showVignette;
-            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showVignette', showVignette);
-        }
-        saveCurrentSettings();
-    }
-
-    export function toggleShimmer() {
-        showHeatShimmer = !showHeatShimmer;
-        updateToggleBtnState('btn-toggle-shimmer', showHeatShimmer);
-        if (typeof window !== 'undefined') {
-            window.showHeatShimmer = showHeatShimmer;
-            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showHeatShimmer', showHeatShimmer);
-        }
-        saveCurrentSettings();
-    }
-
-    export function toggleGrading() {
-        showBiomeGrading = !showBiomeGrading;
-        updateToggleBtnState('btn-toggle-grading', showBiomeGrading);
-        if (typeof window !== 'undefined') {
-            window.showBiomeGrading = showBiomeGrading;
-            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showBiomeGrading', showBiomeGrading);
-        }
-        saveCurrentSettings();
-    }
-
-    export function openSettings() { 
-        settingsPreviousState = STATE;
-        if (STATE === 'MENU') {
-            document.getElementById('main-menu').classList.add('hidden'); 
-        } else {
-            document.getElementById('pause-menu').classList.add('hidden');
-        }
-        document.getElementById('settings-menu').classList.remove('hidden'); 
-        updateSettingsUI();
-    }
-    export function openSettingsFromPause() {
-        settingsPreviousState = 'PAUSED';
-        document.getElementById('pause-menu').classList.add('hidden');
-        document.getElementById('settings-menu').classList.remove('hidden');
-        updateSettingsUI();
-    }
-    export function openCredits() {
-        document.getElementById('settings-menu').classList.add('hidden');
-        document.getElementById('credits-modal').classList.remove('hidden');
-    }
-    export function closeCredits() {
-        document.getElementById('credits-modal').classList.add('hidden');
-        document.getElementById('settings-menu').classList.remove('hidden');
-    }
-    export function closeSettings() { 
-        stopGamepadUiMonitor();
-        closeFabulousSettingsModal();
-        document.getElementById('settings-menu').classList.add('hidden'); 
-        if (STATE === 'PAUSED' || settingsPreviousState === 'PAUSED' || (STATE === 'PLAYING' && settingsPreviousState !== 'MENU')) {
-            document.getElementById('pause-menu').classList.remove('hidden');
-            lastRenderTime = performance.now();
-            lastFrameTime = performance.now();
-        } else {
-            showMainMenu(); 
-        }
-    }
-
-    export function updateSettingsDifficultyUI() {
-        const diffRow = document.getElementById('settings-row-difficulty');
-        const diffBtn = document.getElementById('btn-settings-difficulty');
-        if (!diffRow || !diffBtn) return;
-
-        // Difficulty is always accessible in settings
-        diffRow.style.display = 'flex';
-
-        const activeDiff = currentDifficulty || (typeof window !== 'undefined' && window.currentDifficulty) || localStorage.getItem('swc_difficulty') || 'normal';
-
-        if (activeDiff === 'hardcore') {
-            diffBtn.innerText = 'Hardcore (Locked)';
-            diffBtn.disabled = true;
-            diffBtn.classList.add('opacity-75', 'cursor-not-allowed');
-        } else {
-            const diffName = DIFFICULTIES[activeDiff]?.name || 'Normal';
-            diffBtn.innerText = diffName;
-            diffBtn.disabled = false;
-            diffBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-        }
-    }
-
-    export function cycleWorldDifficulty() {
-        const activeDiff = currentDifficulty || (typeof window !== 'undefined' && window.currentDifficulty) || localStorage.getItem('swc_difficulty') || 'normal';
-        if (activeDiff === 'hardcore') {
-            showToast('Difficulty is locked in Hardcore mode');
-            return;
-        }
-        const diffKeys = Object.keys(DIFFICULTIES).filter(k => k !== 'hardcore');
-        const currentIndex = diffKeys.indexOf(activeDiff);
-        const nextIndex = (currentIndex + 1) % diffKeys.length;
-        const newDiff = diffKeys[nextIndex];
-        
-        currentDifficulty = newDiff;
-        if (typeof setEngineCurrentDifficulty === 'function') {
-            setEngineCurrentDifficulty(newDiff);
-        }
-        if (typeof window !== 'undefined') {
-            window.currentDifficulty = newDiff;
-        }
-        try {
-            localStorage.setItem('swc_difficulty', newDiff);
-        } catch(e) {}
-        selectedDiffChoice = newDiff;
-
-        // Despawn hostile mobs when switching to peaceful
-        if (newDiff === 'peaceful') {
-            const liveEntities = (typeof window !== 'undefined' && Array.isArray(window.entities)) ? window.entities : entities;
-            if (Array.isArray(liveEntities)) {
-                const peacefulEntities = liveEntities.filter(e => {
-                    const type = e.constructor?.name || e.type;
-                    return type !== 'Zombie' && type !== 'Creeper' && type !== 'Scorpion';
-                });
-                if (typeof setEngineEntities === 'function') setEngineEntities(peacefulEntities);
-                if (typeof window !== 'undefined') window.entities = peacefulEntities;
-            }
-        }
-
-        // If inside an active world, persist new difficulty to saved world record
-        if (currentWorldId) {
-            let worlds = getSavedWorlds();
-            let wIdx = worlds.findIndex(w => w.id === currentWorldId);
-            if (wIdx > -1) {
-                worlds[wIdx].difficulty = newDiff;
-                saveWorldsList(worlds);
-            }
-            saveCurrentWorld();
-        }
-
-        updateSettingsDifficultyUI();
-
-        // If in multiplayer and host, update room difficulty safely
-        const hostActive = (typeof isHost !== 'undefined' ? isHost : (typeof window !== 'undefined' && window.isHost));
-        if (isMultiplayer && hostActive && typeof window !== 'undefined' && window.fbDb && window.fbModules && currentMpRoom) {
-            const { doc, updateDoc } = window.fbModules;
-            updateDoc(doc(window.fbDb, 'artifacts', window.fbAppId, 'public', 'data', 'rooms', currentMpRoom), {
-                difficulty: currentDifficulty
-            }).catch(() => {});
-        }
-
-        showToast(`Difficulty set to ${DIFFICULTIES[newDiff]?.name || newDiff}`);
-    }
-
-    export function cycleAutosaveInterval() {
-        const curSec = autosaveInterval || 60;
-        const idx = AUTOSAVE_INTERVALS.findIndex(opt => opt.seconds === curSec);
-        const nextIdx = (idx + 1) % AUTOSAVE_INTERVALS.length;
-        autosaveInterval = AUTOSAVE_INTERVALS[nextIdx].seconds;
-        if (typeof window !== 'undefined') window.autosaveInterval = autosaveInterval;
-        saveCurrentSettings();
-        updateSettingsUI();
-        showToast(`Autosave interval set to ${AUTOSAVE_INTERVALS[nextIdx].label}`);
-    }
-
-
-    let isQuittingToMenu = false;
-    export function quitToMenu() {
-        if (isQuittingToMenu) return;
-        isQuittingToMenu = true;
-
-        try {
-            const activeWorldId = currentWorldId || (typeof window !== 'undefined' && window.currentWorldId);
-            const activeState = (typeof window !== 'undefined' && window.STATE) ? window.STATE : STATE;
-            if (activeWorldId && (activeState === 'PLAYING' || activeState === 'PAUSED' || (activeState === 'DEAD' && currentDifficulty !== 'hardcore'))) {
-                try {
-                    saveCurrentWorld();
-                } catch (saveErr) {
-                    console.error("Save before quit failed:", saveErr);
-                }
-            }
-            if (isMultiplayer) {
-                try {
-                    const user = window.user || window.fbAuth?.currentUser;
-                    broadcastDataPacket({ type: 'leave', uid: user?.uid });
-                    cleanUpPeerConnection();
-                    mpUnsubscribers.forEach(u => u()); mpUnsubscribers = [];
-                    isMultiplayer = false;
-                    remotePlayers = {};
-                    lastSentSkinData = null; // Force skin re-upload on next connect
-                    mpPeerIds = new Set(); lastWorldSyncTime = 0; lastWorldStateTimestamp = 0; mpPlayerSyncPending = false; mpPlayerSyncQueued = false; mpWorldSyncPending = false; pendingDropRequest = null; isSleeping = false; sleepWakeVersion = 0; currentMpWorldName = null; currentMpRoom = null;
-                    closeChat();
-                    const chatContainer = document.getElementById('mp-chat-container');
-                    if (chatContainer) chatContainer.classList.add('hidden');
-                    const chatMessages = document.getElementById('mp-chat-messages');
-                    if (chatMessages) chatMessages.innerHTML = '';
-                    chatSeenMessageIds = new Set();
-                } catch (mpErr) {
-                    console.error("Error leaving multiplayer during quitToMenu:", mpErr);
-                }
-            }
-
-            setUIState('MENU');
-            if (typeof setEngineState === 'function') setEngineState('MENU');
-            if (typeof window !== 'undefined') {
-                window.STATE = 'MENU';
-                if (typeof window.setGameState === 'function') window.setGameState('MENU');
-            }
-
-            if (typeof jukebox !== 'undefined' && jukebox.stop) {
-                try { jukebox.stop(); } catch(e) {}
-            }
-            if (typeof ejectActiveJukebox === 'function') {
-                try { ejectActiveJukebox(); } catch(e) {}
-            }
-            
-            // Clear active gameplay world references so menu background never cross-contaminates
-            try {
-                world = null;
-                if (typeof window !== 'undefined') window.world = null;
-                if (typeof setEngineWorld === 'function') setEngineWorld(null);
-                
-                surfaceHeights = [];
-                if (typeof window !== 'undefined') window.surfaceHeights = [];
-                if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights([]);
-                
-                if (typeof window !== 'undefined') window.worldBiomes = null;
-                if (typeof setEngineWorldBiomes === 'function') setEngineWorldBiomes(null);
-                
-                entities = [];
-                if (typeof window !== 'undefined') window.entities = [];
-                if (typeof setEngineEntities === 'function') setEngineEntities([]);
-
-                if (typeof particles !== 'undefined' && Array.isArray(particles)) particles.length = 0;
-                if (typeof window !== 'undefined' && Array.isArray(window.particles)) window.particles.length = 0;
-                if (typeof noteParticles !== 'undefined' && Array.isArray(noteParticles)) noteParticles.length = 0;
-                if (typeof window !== 'undefined' && Array.isArray(window.noteParticles)) window.noteParticles.length = 0;
-                if (typeof droppedItems !== 'undefined' && Array.isArray(droppedItems)) droppedItems.length = 0;
-                if (typeof window !== 'undefined' && Array.isArray(window.droppedItems)) window.droppedItems.length = 0;
-                if (typeof fluidWakeQueue !== 'undefined' && fluidWakeQueue && typeof fluidWakeQueue.clear === 'function') fluidWakeQueue.clear();
-
-                if (typeof RiftExplorerSpawner !== 'undefined') {
-                    RiftExplorerSpawner.activeExplorer = null;
-                }
-                if (typeof closeAtlasDialogue === 'function') closeAtlasDialogue();
-                if (typeof closeAtlasMarket === 'function') closeAtlasMarket();
-                const kaelBannerContainer = document.getElementById('kael-banner-container');
-                if (kaelBannerContainer) kaelBannerContainer.innerHTML = '';
-            } catch (clearErr) {
-                console.error("Error clearing world/entities on quit:", clearErr);
-            }
-
-            try {
-                const idsToHide = [
-                    'pause-menu', 'death-menu', 'settings-menu', 'inventory-container',
-                    'achievements-modal', 'emerald-vault-modal', 'atlas-market-modal',
-                    'sign-edit-modal', 'astral-infuser-modal', 'world-map-modal',
-                    'unified-shop-modal', 'skins-menu', 'tutorial-modal', 'bg-build-overlay',
-                    'publish-multiplayer-modal', 'guest-confirm-modal', 'profile-editor-modal'
-                ];
-                idsToHide.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                });
-                isInventoryOpen = false;
-                if (typeof setEngineIsInventoryOpen === 'function') setEngineIsInventoryOpen(false);
-                if (typeof window !== 'undefined') {
-                    window.isInventoryOpen = false;
-                    if (typeof window.setMainIsInventoryOpen === 'function') window.setMainIsInventoryOpen(false);
-                }
-            } catch (modalErr) {
-                console.error("Error hiding overlays on quit:", modalErr);
-            }
-
-            try {
-                inventory = new Array(INVENTORY_SIZE).fill(null);
-                if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
-                if (typeof window !== 'undefined') window.inventory = inventory;
-
-                equippedArmor = [null, null, null, null];
-                if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
-                if (typeof window !== 'undefined') window.equippedArmor = equippedArmor;
-
-                currentWorldId = null;
-                if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(null);
-                if (typeof window !== 'undefined') window.currentWorldId = null;
-
-                const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
-                if (curPlayer) {
-                    curPlayer.poisonTimer = 0;
-                    curPlayer.health = curPlayer.maxHealth || 20;
-                    curPlayer.hunger = 20;
-                    curPlayer.exhaustion = 0;
-                    curPlayer.oxygen = curPlayer.maxOxygen || 20;
-                    curPlayer.isDead = false;
-                    curPlayer.damageCooldown = 0;
-                    curPlayer.vx = 0;
-                    curPlayer.vy = 0;
-                }
-
-                try { updateArmorUI(); } catch(e) {}
-                try { updateHudArmorBar(); } catch(e) {}
-                try { updateHealthUI(); } catch(e) {}
-                try { updateHungerUI(); } catch(e) {}
-            } catch (playerErr) {
-                console.error("Error resetting player state on quit:", playerErr);
-            }
-
-            try {
-                const hud = document.getElementById('hud');
-                if (hud) hud.style.display = 'none'; 
-                const gameCanvas = document.getElementById('gameCanvas') || document.getElementById('game-canvas');
-                if (gameCanvas) gameCanvas.classList.add('hidden');
-                const sharedBg = document.getElementById('shared-menu-bg');
-                if (sharedBg) sharedBg.classList.remove('hidden');
-
-                showMainMenu();
-            } catch (menuErr) {
-                console.error("Error transitioning to main menu on quit:", menuErr);
-            }
-        } finally {
-            isQuittingToMenu = false;
-        }
-    }
-
-    window.addEventListener('beforeunload', () => {
-        if (isMultiplayer) {
-            const user = window.user || window.fbAuth?.currentUser;
-            broadcastDataPacket({ type: 'leave', uid: user?.uid });
-            cleanUpPeerConnection();
-        }
-    });
-
-    window.addEventListener('pagehide', () => {
-        if (isMultiplayer) {
-            const user = window.user || window.fbAuth?.currentUser;
-            broadcastDataPacket({ type: 'leave', uid: user?.uid });
-            cleanUpPeerConnection();
-        }
-    });
-
-    export function checkAfkKick() {
-        if (!isMultiplayer || STATE !== 'PLAYING') return;
-        const afkMs = 5 * 60 * 1000;
-        if (Date.now() - lastPlayerActivityAt > afkMs && !document.getElementById('kick-modal').classList.contains('hidden')) return;
-        if (Date.now() - lastPlayerActivityAt > afkMs) {
-            showKickModal('You were kicked for being AFK for more than 5 minutes.');
-            const user = window.user || window.fbAuth?.currentUser;
-            broadcastDataPacket({ type: 'leave', uid: user?.uid });
-            cleanUpPeerConnection();
-            STATE = 'PAUSED';
-            return;
-        }
-    }
-
-    export function setupDeathScreen() {
-        const container = document.getElementById('death-astral-container');
-        const respawnKeepBtn = document.getElementById('respawn-keep-items-btn');
-        const balanceCountEl = document.getElementById('death-astral-balance-count');
-        const gemIconEl = document.getElementById('death-astral-gem-icon');
-
-        if (!container) return;
-
-        const isHardcore = (typeof diff !== 'undefined' && diff && diff.permadeath) ||
-                           (typeof currentDifficulty !== 'undefined' && currentDifficulty === 'hardcore');
-        const keepInvActive = (typeof keepInventory !== 'undefined' && keepInventory) ||
-                              (typeof window !== 'undefined' && window.keepInventory);
-
-        if (isHardcore || keepInvActive) {
-            container.classList.add('hidden');
-            return;
-        }
-
-        const profileEmeralds = (typeof getPlayerAstralEmeralds === 'function') ? getPlayerAstralEmeralds() : 0;
-        let invEmeralds = 0;
-        const curInv = (typeof inventory !== 'undefined' && Array.isArray(inventory)) ? inventory : (typeof window !== 'undefined' && Array.isArray(window.inventory) ? window.inventory : []);
-        const emeraldId = (typeof IDS !== 'undefined' && IDS.ASTRAL_EMERALD) ? IDS.ASTRAL_EMERALD : 165;
-        for (const item of curInv) {
-            if (item && item.id === emeraldId) {
-                invEmeralds += (item.count || 1);
-            }
-        }
-        const totalAstral = profileEmeralds + invEmeralds;
-
-        container.classList.remove('hidden');
-
-        if (balanceCountEl) {
-            balanceCountEl.innerText = totalAstral.toLocaleString();
-        }
-
-        if (gemIconEl) {
-            const tex = (typeof textures !== 'undefined' && textures && textures[emeraldId]) ? textures[emeraldId] : null;
-            if (tex && tex.src) {
-                gemIconEl.innerHTML = `<img src="${tex.src}" class="w-6 h-6 pixelated inline-block object-contain" alt="Astral Emerald" />`;
-            } else {
-                gemIconEl.innerHTML = `<span class="text-purple-300 font-bold text-lg">✦</span>`;
-            }
-        }
-
-        if (respawnKeepBtn) {
-            if (totalAstral >= 1) {
-                respawnKeepBtn.removeAttribute('disabled');
-                respawnKeepBtn.classList.remove('disabled', 'opacity-50', 'pointer-events-none', 'cursor-not-allowed', 'filter', 'grayscale');
-                respawnKeepBtn.title = "Respawn immediately and retain all your items and equipped armor!";
-            } else {
-                respawnKeepBtn.setAttribute('disabled', 'true');
-                respawnKeepBtn.classList.add('disabled', 'opacity-50', 'pointer-events-none', 'cursor-not-allowed', 'filter', 'grayscale');
-                respawnKeepBtn.title = "You need at least 1 Astral Emerald (from balance or inventory) to keep items.";
-            }
-        }
-    }
-
-    export function respawnWithAstralProtection() {
-        const isHardcore = (typeof diff !== 'undefined' && diff && diff.permadeath) ||
-                           (typeof currentDifficulty !== 'undefined' && currentDifficulty === 'hardcore');
-        if (isHardcore) return;
-
-        const profileEmeralds = (typeof getPlayerAstralEmeralds === 'function') ? getPlayerAstralEmeralds() : 0;
-        let invEmeralds = 0;
-        const curInv = (typeof inventory !== 'undefined' && Array.isArray(inventory)) ? inventory : (typeof window !== 'undefined' && Array.isArray(window.inventory) ? window.inventory : []);
-        const emeraldId = (typeof IDS !== 'undefined' && IDS.ASTRAL_EMERALD) ? IDS.ASTRAL_EMERALD : 165;
-        let invSlotIndex = -1;
-        for (let i = 0; i < curInv.length; i++) {
-            const item = curInv[i];
-            if (item && item.id === emeraldId) {
-                invEmeralds += (item.count || 1);
-                if (invSlotIndex === -1) invSlotIndex = i;
-            }
-        }
-
-        const totalAstral = profileEmeralds + invEmeralds;
-        if (totalAstral < 1) {
-            if (typeof showToast === 'function') {
-                showToast("You need 1 Astral Emerald to keep your items!", "warning");
-            }
-            return;
-        }
-
-        // Deduct 1 Astral Emerald:
-        if (profileEmeralds >= 1) {
-            if (typeof addPlayerAstralEmeralds === 'function') {
-                addPlayerAstralEmeralds(-1);
-            }
-        } else if (invSlotIndex !== -1) {
-            const slotItem = curInv[invSlotIndex];
-            if (slotItem.count > 1) {
-                slotItem.count--;
-            } else {
-                curInv[invSlotIndex] = null;
-            }
-        }
-
-        if (typeof playSound === 'function') {
-            playSound('astral_exchange', { vol: 1.0 });
-        }
-        if (typeof showToast === 'function') {
-            showToast("✦ Astral Protection active: All items and armor retained! ✦", "success");
-        }
-
-        respawn(true);
-    }
-
-    export function respawn(keepItems = false) {
-        const deathMenu = document.getElementById('death-menu');
-        if (deathMenu) deathMenu.classList.add('hidden');
-        const hud = document.getElementById('hud');
-        if (hud) hud.style.display = 'block';
-
-        const curPlayer = player || (typeof window !== 'undefined' && window.player);
-        if (!curPlayer) return;
-
-        const keepInvActive = (typeof keepInventory !== 'undefined' && keepInventory) ||
-                              (typeof window !== 'undefined' && window.keepInventory);
-        if (!keepItems && !keepInvActive) {
-            if (typeof inventory !== 'undefined' && Array.isArray(inventory)) {
-                inventory.fill(null);
-            }
-            if (typeof equippedArmor !== 'undefined' && Array.isArray(equippedArmor)) {
-                equippedArmor.fill(null);
-            }
-            if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
-            if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
-            if (typeof window !== 'undefined') {
-                window.inventory = inventory;
-                window.equippedArmor = equippedArmor;
-            }
-        }
-
-        const spawn = (typeof getInitialSpawnPoint === 'function') ? getInitialSpawnPoint() : { x: 50 * TILE_SIZE, y: 50 * TILE_SIZE };
-        curPlayer.x = spawn.x;
-        curPlayer.y = spawn.y;
-        curPlayer.vx = 0;
-        curPlayer.vy = 0;
-        curPlayer.damageCooldown = 60;
-        curPlayer.fallStartY = curPlayer.y;
-        curPlayer.isGrounded = true;
-        curPlayer.health = curPlayer.maxHealth || 20;
-        curPlayer.isDead = false;
-        curPlayer.hunger = 20;
-        curPlayer.exhaustion = 0;
-        curPlayer.oxygen = curPlayer.maxOxygen || 10;
-        curPlayer.poisonTimer = 0;
-
-        player = curPlayer;
-        if (typeof window !== 'undefined') window.player = curPlayer;
-        if (typeof setEnginePlayer === 'function') setEnginePlayer(curPlayer);
-
-        const curCanvas = (typeof canvas !== 'undefined' ? canvas : null) || (typeof window !== 'undefined' && window.canvas) || (typeof document !== 'undefined' ? (document.getElementById('game-canvas') || document.getElementById('gameCanvas')) : null);
-        const cW = curCanvas ? curCanvas.width : 1280;
-        const cH = curCanvas ? curCanvas.height : 720;
-
-        camera.x = curPlayer.x + (curPlayer.width || 24) / 2 - cW / 2;
-        camera.y = curPlayer.y + (curPlayer.height || 48) / 2 - cH / 2;
-        camera.x = Math.max(-cW / 3, Math.min(camera.x, WORLD_WIDTH * TILE_SIZE - cW + cW / 3));
-        camera.y = Math.max(0, Math.min(camera.y, WORLD_HEIGHT * TILE_SIZE - cH));
-
-        caveSkyOpacity = (typeof getPlayerCaveSkyOpacity === 'function') ? getPlayerCaveSkyOpacity() : 0;
-        keys = {};
-
-        STATE = 'PLAYING';
-        if (typeof window !== 'undefined') window.STATE = 'PLAYING';
-        if (typeof setEngineState === 'function') setEngineState('PLAYING');
-        if (typeof window.setGameState === 'function') window.setGameState('PLAYING');
-
-        updateHealthUI();
-        updateHungerUI();
-        updateOxygenUI(false);
-        updateArmorUI();
-        updateHudArmorBar();
-        updateUI();
-
-        if (isMultiplayer && window.user && currentMpRoom) {
-            syncLocalPlayerState(true);
-        } else if (!isMultiplayer && typeof saveCurrentWorld === 'function') {
-            saveCurrentWorld();
-        }
-    }
-
-
-    export function toggleClouds() { 
-        showClouds = !showClouds; 
-        updateToggleBtnState('btn-toggle-clouds', showClouds);
-        if (typeof window !== 'undefined') {
-            window.showClouds = showClouds;
-            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showClouds', showClouds);
-        }
-        saveCurrentSettings();
-    }
-    export function toggleDebug() {
-        showDebug = !showDebug;
-        updateToggleBtnState('btn-toggle-debug', showDebug);
-        const dbg = document.getElementById('debug-info');
-        if (dbg) dbg.classList.toggle('hidden', !showDebug);
-        if (typeof window !== 'undefined') {
-            window.showDebug = showDebug;
-            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showDebug', showDebug);
-        }
-        saveCurrentSettings();
-    }
-    export function toggleAutoJump() { 
-        autoJumpEnabled = !autoJumpEnabled; 
-        updateToggleBtnState('btn-toggle-autojump', autoJumpEnabled);
-        if (typeof window !== 'undefined') {
-            window.autoJumpEnabled = autoJumpEnabled;
-            if (typeof window.setEngineSetting === 'function') window.setEngineSetting('autoJumpEnabled', autoJumpEnabled);
-        }
-        saveCurrentSettings();
-    }
-    export function toggleGraphics() {
-        if (graphicsMode === 'base') {
-            graphicsMode = 'advanced';
-        } else if (graphicsMode === 'advanced') {
-            graphicsMode = 'fabulous';
-        } else {
-            graphicsMode = 'base';
-        }
-        advancedGraphics = (graphicsMode !== 'base');
-        fabulousGraphics = (graphicsMode === 'fabulous');
-        if (typeof window !== 'undefined') {
-            window.graphicsMode = graphicsMode;
-            window.advancedGraphics = advancedGraphics;
-            window.fabulousGraphics = fabulousGraphics;
-            if (typeof window.setEngineGraphicsMode === 'function') {
-                window.setEngineGraphicsMode(graphicsMode);
-            }
-        }
-        localStorage.setItem('swc_graphics_mode', graphicsMode);
-        localStorage.setItem('swc_advanced_graphics', advancedGraphics ? 'true' : 'false');
-        updateGraphicsButton();
-        saveCurrentSettings();
-    }
-    export function cycleFpsCap() {
-        let currentIndex = FPS_CAP_OPTIONS.indexOf(fpsCap);
-        if (currentIndex === -1) currentIndex = 0;
-        fpsCap = FPS_CAP_OPTIONS[(currentIndex + 1) % FPS_CAP_OPTIONS.length];
-        localStorage.setItem('swc_fps_cap', String(fpsCap));
-        if (typeof setEngineFpsCap === 'function') {
-            setEngineFpsCap(fpsCap);
-        }
-        if (typeof window !== 'undefined') {
-            window.fpsCap = fpsCap;
-            if (typeof window.setEngineFpsCap === 'function') {
-                window.setEngineFpsCap(fpsCap);
-            }
-        }
-        const btn = document.getElementById('btn-toggle-fps-cap');
-        if (btn) btn.innerText = getFpsCapText(fpsCap);
-        saveCurrentSettings();
-    }
-
-    export function openFabulousSettingsModal() {
-        const modal = document.getElementById('fabulous-settings-modal');
-        if (!modal) return;
-        modal.classList.remove('hidden');
-        const tabContent = document.getElementById('fabulous-tab-content');
-        if (tabContent) {
-            tabContent.style.setProperty('display', 'flex', 'important');
-        }
-        renderFabulousSettingsUI();
-    }
-
-    export function closeFabulousSettingsModal() {
-        const modal = document.getElementById('fabulous-settings-modal');
-        if (modal) modal.classList.add('hidden');
-    }
-
-    export function selectFabulousPreset(presetName) {
-        if (typeof applyFabulousPreset === 'function') {
-            applyFabulousPreset(presetName);
-        } else if (typeof window !== 'undefined' && typeof window.applyFabulousPreset === 'function') {
-            window.applyFabulousPreset(presetName);
-        }
-        renderFabulousSettingsUI();
-    }
-
-    export function toggleFabulousOption(optionKey) {
-        const curCfg = (typeof window !== 'undefined' && window.fabulousConfig) ? window.fabulousConfig : fabulousConfig;
-        const currentVal = !!curCfg[optionKey];
-        const nextVal = !currentVal;
-        const patch = { [optionKey]: nextVal, preset: 'custom' };
-        if (typeof setFabulousConfig === 'function') {
-            setFabulousConfig(patch);
-        } else if (typeof window !== 'undefined' && typeof window.setFabulousConfig === 'function') {
-            window.setFabulousConfig(patch);
-        }
-        renderFabulousSettingsUI();
-    }
-
-    export function resetFabulousDefaults() {
-        selectFabulousPreset('high');
-    }
-
-    export function renderFabulousSettingsUI() {
-        const curCfg = (typeof window !== 'undefined' && window.fabulousConfig) ? window.fabulousConfig : fabulousConfig;
-        if (!curCfg) return;
-
-        // Ensure options tab content is visible
-        const tabContent = document.getElementById('fabulous-tab-content');
-        if (tabContent) {
-            tabContent.style.setProperty('display', 'flex', 'important');
-        }
-
-        // 1. Update active preset badge
-        const badge = document.getElementById('fabulous-active-preset-badge');
-        const activePreset = curCfg.preset || 'custom';
-        if (badge) {
-            badge.innerText = activePreset.toUpperCase();
-        }
-
-        // Highlight active preset tab button
-        const presets = ['low', 'medium', 'high', 'custom'];
-        presets.forEach(p => {
-            const pBtn = document.getElementById(`btn-fab-preset-${p}`);
-            if (pBtn) {
-                if (activePreset === p) {
-                    pBtn.classList.add('active');
-                    if (p === 'custom') pBtn.style.display = 'inline-flex';
-                } else {
-                    pBtn.classList.remove('active');
-                    if (p === 'custom') pBtn.style.display = 'none';
-                }
-            }
-        });
-
-        // 2. Update each of the 11 option buttons (standard mc-btn styling)
-        const optionKeys = [
-            'colorGrading', 'volumetricFog', 'godRays', 'vignette', 'heatShimmer',
-            'foliageSway', 'windBreeze', 'waterEffects', 'ambientParticles', 'lavaGlow', 'bloomAura'
-        ];
-
-        optionKeys.forEach(key => {
-            const btn = document.getElementById(`btn-fab-opt-${key}`);
-            if (btn) {
-                const isOn = !!curCfg[key];
-                btn.innerText = isOn ? "ON" : "OFF";
-                btn.className = isOn ? "mc-btn is-on" : "mc-btn is-off";
-            }
-        });
-    }
-    export function toggleIntro() {
-        introEnabled = !introEnabled;
-        localStorage.setItem('swc_intro_enabled', introEnabled ? 'true' : 'false');
-        updateToggleBtnState('btn-toggle-intro', introEnabled);
-        saveCurrentSettings();
-    }
-
-    export function getMemoryUsageText() {
-        if (performance.memory && Number.isFinite(performance.memory.usedJSHeapSize)) {
-            const usedMb = performance.memory.usedJSHeapSize / (1024 * 1024);
-            const limitMb = performance.memory.jsHeapSizeLimit / (1024 * 1024);
-            return `${usedMb.toFixed(1)} MB / ${limitMb.toFixed(0)} MB`;
-        }
-        return 'Unavailable in this browser';
-    }
-
-    export function checkNearCraftingTable() {
-        const p = player || (typeof window !== 'undefined' ? window.player : null);
-        if (!p) return false;
-        let px = Math.floor((p.x + p.width / 2) / TILE_SIZE); 
-        let py = Math.floor((p.y + p.height / 2) / TILE_SIZE);
-        const w = (typeof world !== 'undefined' && world) || (typeof window !== 'undefined' ? window.world : null);
-        if (!w) return false;
-        for(let x = px - 3; x <= px + 3; x++) {
-            for(let y = py - 3; y <= py + 3; y++) {
-                if(x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT && w[x] && w[x][y] === IDS.CRAFTING_TABLE) return true;
-            }
-        }
-        return false;
-    }
-
-    export function checkNearFurnace() {
-        const p = player || (typeof window !== 'undefined' ? window.player : null);
-        if (!p) return null;
-        let px = Math.floor((p.x + p.width / 2) / TILE_SIZE); 
-        let py = Math.floor((p.y + p.height / 2) / TILE_SIZE);
-        const w = (typeof world !== 'undefined' && world) || (typeof window !== 'undefined' ? window.world : null);
-        if (!w) return null;
-        for(let x = px - 3; x <= px + 3; x++) {
-            for(let y = py - 3; y <= py + 3; y++) {
-                if(x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT && w[x] && w[x][y] === IDS.FURNACE) {
-                    return { x, y };
-                }
-            }
-        }
-        return null;
-    }
-
-    export function findNearbyWorkstation() {
-        const p = player || (typeof window !== 'undefined' ? window.player : null);
-        if (!p) return null;
-        const w = (typeof world !== 'undefined' && world) || (typeof window !== 'undefined' ? window.world : null);
-        if (!w) return null;
-
-        const pCX = p.x + p.width / 2;
-        const pCY = p.y + p.height / 2;
-        const px = Math.floor(pCX / TILE_SIZE);
-        const py = Math.floor(pCY / TILE_SIZE);
-
-        const m = (typeof window !== 'undefined' && window.mouse) ? window.mouse : ((typeof mouse !== 'undefined' && mouse) ? mouse : null);
-        let mTileX = -999, mTileY = -999;
-        if (m && Number.isFinite(m.worldX) && Number.isFinite(m.worldY)) {
-            mTileX = Math.floor(m.worldX / TILE_SIZE);
-            mTileY = Math.floor(m.worldY / TILE_SIZE);
-        }
-
-        const candidates = [];
-        for (let x = px - 3; x <= px + 3; x++) {
-            for (let y = py - 3; y <= py + 3; y++) {
-                if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) continue;
-                const bId = w[x]?.[y];
-                if (bId === IDS.FURNACE || bId === IDS.CRAFTING_TABLE) {
-                    const bCX = (x + 0.5) * TILE_SIZE;
-                    const bCY = (y + 0.5) * TILE_SIZE;
-                    const distP = Math.hypot(pCX - bCX, pCY - bCY);
-                    if (distP > 3.6 * TILE_SIZE) continue;
-
-                    const isDirectMouse = (x === mTileX && y === mTileY);
-                    const distM = (m && Number.isFinite(m.worldX)) ? Math.hypot(m.worldX - bCX, m.worldY - bCY) : 9999;
-                    const isFacing = p.facingRight ? (bCX >= pCX - 8) : (bCX <= pCX + 8);
-
-                    let score = distP;
-                    if (isFacing) score -= 1.2 * TILE_SIZE;
-                    if (distM < 2.5 * TILE_SIZE) score -= (2.5 * TILE_SIZE - distM) * 0.5;
-                    if (isDirectMouse) score -= 10000;
-
-                    candidates.push({ type: bId, x, y, score, distP });
-                }
-            }
-        }
-
-        if (candidates.length === 0) return null;
-        candidates.sort((a, b) => a.score - b.score);
-        return candidates[0];
-    }
-
-    export function toggleInventory() {
-        isInventoryOpen = !isInventoryOpen;
-        if (typeof window !== 'undefined') window.isInventoryOpen = isInventoryOpen;
-        if (typeof setEngineIsInventoryOpen === 'function') setEngineIsInventoryOpen(isInventoryOpen);
-        if (typeof window !== 'undefined' && typeof window.setMainIsInventoryOpen === 'function') window.setMainIsInventoryOpen(isInventoryOpen);
-        const container = document.getElementById('inventory-container');
-        if (isInventoryOpen) {
-            if (container) container.classList.remove('hidden');
-            keys = {};
-
-            // If neither furnace nor chest was explicitly opened prior to this (e.g. opened via 'E' key), determine best nearby station
-            if (!openedFurnace && !openedChest) {
-                const bestStation = findNearbyWorkstation();
-                if (bestStation && bestStation.type === IDS.FURNACE) {
-                    const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
-                    let f = liveFurnaces.find(item => item.x === bestStation.x && item.y === bestStation.y);
-                    if (!f) {
-                        f = { x: bestStation.x, y: bestStation.y, input: null, fuel: null, output: null, progress: 0, burnTime: 0, maxBurnTime: 0 };
-                        liveFurnaces.push(f);
-                    }
-                    setOpenedFurnace(f);
-                    if (typeof window !== 'undefined' && typeof window.setMainOpenedFurnace === 'function') {
-                        window.setMainOpenedFurnace(f);
-                    }
-                }
-            }
-
-            updateUI();
-            const tip = typeof document !== 'undefined' ? (document.getElementById('item-tooltip') || document.getElementById('tooltip')) : null;
-            if (tip) tip.style.display = 'none';
-            unlockAchievement('taking_inventory');
-        } 
-        else {
-            if (container) container.classList.add('hidden');
-            if (typeof window !== 'undefined' && typeof window.resetMouseInputState === 'function') {
-                window.resetMouseInputState();
-            }
-            hotbarWheelLockUntil = performance.now() + 500;
-            if (heldItemObj) { 
-                if(!giveItem(heldItemObj.id, heldItemObj.count)) { } 
-                setHeldItemObj(null); 
-                heldItemIndex = -1; 
-            }
-            const wasChestOpen = !!(openedChest || (typeof window !== 'undefined' && window.openedChest));
-            openedFurnace = null;
-            openedChest = null;
-            if (typeof window !== 'undefined') {
-                window.openedFurnace = null;
-                window.openedChest = null;
-                if (typeof window.setMainOpenedFurnace === 'function') window.setMainOpenedFurnace(null);
-                if (typeof window.setMainOpenedChest === 'function') window.setMainOpenedChest(null);
-            }
-            if (wasChestOpen && !isMultiplayer) {
-                saveCurrentWorld();
-            }
-            const searchInput = document.getElementById('crafting-search');
-            if (searchInput && document.activeElement === searchInput) {
-                searchInput.blur();
-            }
-        }
-        if (typeof MouseEvent !== 'undefined' && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-            window.dispatchEvent(new MouseEvent('mousemove', {clientX: mouse ? mouse.clientX : 0, clientY: mouse ? mouse.clientY : 0}));
-        }
-    }
-
-    export function updateHealthUI() {
-        const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
-        if (!curPlayer) return;
-        const hb = document.getElementById('health-bar');
-        if (hb) {
-            hb.innerHTML = '';
-            let fullHearts = Math.floor(curPlayer.health / 2);
-            let hasHalf = (curPlayer.health % 2) === 1;
-            let isPoisoned = curPlayer.poisonTimer > 0;
-            for (let i = 0; i < 10; i++) { 
-                let h = document.createElement('div'); 
-                if (i < fullHearts) h.className = isPoisoned ? 'heart heart-poison-full' : 'heart heart-full';
-                else if (i === fullHearts && hasHalf) h.className = isPoisoned ? 'heart heart-poison-half' : 'heart heart-half';
-                else h.className = 'heart heart-empty';
-                hb.appendChild(h); 
-            }
-        }
-        updateHudArmorBar();
-    }
-    export function updateHungerUI() {
-        const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
-        if (!curPlayer) return;
-        const hb = document.getElementById('hunger-bar'); 
-        if (!hb) return;
-        hb.innerHTML = '';
-        hb.classList.toggle('shake-ui', curPlayer.hunger === 0);
-        let fullShanks = Math.floor(curPlayer.hunger / 2);
-        let hasHalf = (curPlayer.hunger % 2) === 1;
-        for (let i = 0; i < 10; i++) { 
-            let m = document.createElement('div'); 
-            if (i < fullShanks) m.className = 'hunger hunger-full';
-            else if (i === fullShanks && hasHalf) m.className = 'hunger hunger-half';
-            else m.className = 'hunger hunger-empty';
-            hb.appendChild(m); 
-        }
-        updateOxygenUI();
-    }
-    export function updateOxygenUI(isSubmerged = false) {
-        const curPlayer = (typeof window !== 'undefined' && window.player) ? window.player : player;
-        if (!curPlayer) return;
-        const oxygenBar = document.getElementById('oxygen-bar');
-        if (!oxygenBar) return;
-        oxygenBar.classList.toggle('visible', isSubmerged || curPlayer.oxygen < curPlayer.maxOxygen);
-        oxygenBar.innerHTML = '';
-        for (let i = 0; i < curPlayer.maxOxygen; i++) {
-            const bubble = document.createElement('div');
-            bubble.className = `oxygen-bubble${i < Math.ceil(curPlayer.oxygen) ? '' : ' empty'}`;
-            oxygenBar.appendChild(bubble);
-        }
-    }
-
-    export function triggerHotbarItemPopup() {
-        const nameEl = document.getElementById('hotbar-item-name');
-        let sel = inventory[selectedHotbarIndex];
-        if (hotbarPopupTimeout) clearTimeout(hotbarPopupTimeout);
-        if (sel && (sel.customName || ID_NAMES[sel.id])) {
-            nameEl.innerText = sel.customName || ID_NAMES[sel.id];
-            nameEl.style.display = 'block';
-            nameEl.style.opacity = '1';
-            hotbarPopupTimeout = setTimeout(() => {
-                nameEl.style.opacity = '0';
-                nameEl.style.display = 'none';
-            }, 2000);
-        } else {
-            nameEl.style.opacity = '0';
-            nameEl.style.display = 'none';
-        }
-    }
-
-    export function getSmeltResult(id) {
-        if (id === IDS.RAW_PORKCHOP) return IDS.COOKED_PORKCHOP;
-        if (id === IDS.RAW_CHICKEN) return IDS.COOKED_CHICKEN;
-        if (id === IDS.RAW_MUTTON) return IDS.COOKED_MUTTON;
-        if (id === IDS.RAW_BEEF) return IDS.COOKED_BEEF;
-        if (id === IDS.GOLD_ORE) return IDS.GOLD_INGOT;
-        if (id === IDS.IRON_ORE) return IDS.IRON_INGOT;
-        if (id === IDS.COAL_ORE) return IDS.COAL;
-        if (id === IDS.COBBLESTONE) return IDS.STONE;
-        return null;
-    }
-    export function getFuelValue(id) {
-        if (id === IDS.COAL) return 1600;
-        if (id === IDS.LAVA_BUCKET) return 20000;
-        if (id === IDS.WOOD || id === IDS.PLANKS || id === IDS.JUNGLE_WOOD || id === IDS.JUNGLE_PLANKS) return 300;
-        if (id === IDS.CHEST || id === IDS.CRAFTING_TABLE || id === IDS.DOOR || id === IDS.JUNGLE_DOOR ||
-            id === IDS.WOODEN_STAIRS || id === IDS.WOODEN_STAIRS_RIGHT || id === IDS.WOODEN_STAIRS_LEFT) return 300;
-        if (id === IDS.STICK || id === IDS.LADDER || id === IDS.SIGN) return 100;
-        if (id === IDS.WOOD_PICKAXE || id === IDS.WOOD_AXE || id === IDS.WOOD_SWORD || id === IDS.WOOD_SHOVEL || id === IDS.WOOD_HOE) return 200;
-        if (id === IDS.SAPLING || id === IDS.JUNGLE_SAPLING || id === IDS.BAMBOO) return 100;
-        return 0;
-    }
-
-    export function updateFurnaceVisual(furnace) {
-        const curOpened = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
-        if (!furnace || curOpened !== furnace || !isInventoryOpen) return;
-        const flame = document.getElementById('f-flame');
-        const progress = document.getElementById('f-prog');
-        const isBurning = furnace.burnTime > 0;
-
-        if (flame) flame.style.height = isBurning ? `${Math.round((furnace.burnTime / furnace.maxBurnTime) * 100)}%` : '0%';
-        if (progress) progress.style.width = `${Math.min(100, Math.round((furnace.progress / 200) * 100))}%`;
-
-        const fireChamber = document.getElementById('furnace-fire-chamber');
-        if (fireChamber) fireChamber.classList.toggle('is-burning', isBurning);
-
-        const workspace = document.querySelector('.furnace-workspace');
-        if (workspace) workspace.classList.toggle('is-burning', isBurning);
-    }
-
-    export function moveItemToContainer(sourceItem, targetArray, startIndex = 0, endIndex = targetArray.length) {
-        if (!sourceItem || sourceItem.count <= 0) return true;
-        const maxStack = getItemMaxStack(sourceItem.id);
-
-        // Pass 1: Smart Stacking into existing non-full matching stacks
-        if (maxStack > 1) {
-            for (let i = startIndex; i < endIndex; i++) {
-                const target = targetArray[i];
-                if (target && target.id === sourceItem.id && target.count < maxStack) {
-                    const space = maxStack - target.count;
-                    const toMove = Math.min(space, sourceItem.count);
-                    target.count += toMove;
-                    sourceItem.count -= toMove;
-                    if (sourceItem.count <= 0) return true;
-                }
-            }
-        }
-
-        // Pass 2: Place remaining into first available empty slots
-        for (let i = startIndex; i < endIndex; i++) {
-            if (!targetArray[i]) {
-                const toMove = Math.min(maxStack, sourceItem.count);
-                targetArray[i] = {
-                    id: sourceItem.id,
-                    count: toMove,
-                    ...(sourceItem.durability !== undefined ? { durability: sourceItem.durability, maxDurability: sourceItem.maxDurability } : {}),
-                    ...(sourceItem.customName ? { customName: sourceItem.customName } : {}),
-                    ...(sourceItem.trackId ? { trackId: sourceItem.trackId } : {})
-                };
-                sourceItem.count -= toMove;
-                if (sourceItem.count <= 0) return true;
-            }
-        }
-
-        return sourceItem.count <= 0;
-    }
-
-    export function handleSlotClick(index, type, isShift, isRightClick = false) {
-        const curOpenedFurnace = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
-        const curOpenedChest = openedChest || (typeof window !== 'undefined' ? window.openedChest : null);
-        const containerItems = type === 'inv' ? inventory : type === 'chest' ? curOpenedChest?.chest.items : curOpenedFurnace;
-        if (!containerItems) return;
-        let currentItem = containerItems[index];
-        
-        if (isShift && currentItem && !heldItemObj && !isRightClick) {
-            if (curOpenedChest) {
-                if (type === 'inv') {
-                    moveItemToContainer(currentItem, curOpenedChest.chest.items, 0, curOpenedChest.size);
-                    if (currentItem.count <= 0) containerItems[index] = null;
-                } else if (type === 'chest') {
-                    let done = moveItemToContainer(currentItem, inventory, 0, 9);
-                    if (!done && currentItem.count > 0) {
-                        moveItemToContainer(currentItem, inventory, 9, 27);
-                    }
-                    if (currentItem.count <= 0) containerItems[index] = null;
-                }
-                syncChest(curOpenedChest.key);
-                if (!isMultiplayer) saveCurrentWorld();
-            } else if (curOpenedFurnace) {
-                if (type === 'inv') {
-                    if (getSmeltResult(currentItem.id)) {
-                        let fInput = curOpenedFurnace.input;
-                        if (!fInput) {
-                            curOpenedFurnace.input = { id: currentItem.id, count: currentItem.count };
-                            containerItems[index] = null;
-                        } else if (fInput.id === currentItem.id && fInput.count < 64) {
-                            let space = 64 - fInput.count;
-                            let add = Math.min(space, currentItem.count);
-                            fInput.count += add;
-                            currentItem.count -= add;
-                            if (currentItem.count <= 0) containerItems[index] = null;
-                        }
-                    } else if (getFuelValue(currentItem.id) > 0) {
-                        let fFuel = curOpenedFurnace.fuel;
-                        if (!fFuel) {
-                            curOpenedFurnace.fuel = { id: currentItem.id, count: currentItem.count };
-                            containerItems[index] = null;
-                        } else if (fFuel.id === currentItem.id && fFuel.count < 64) {
-                            let space = 64 - fFuel.count;
-                            let add = Math.min(space, currentItem.count);
-                            fFuel.count += add;
-                            currentItem.count -= add;
-                            if (currentItem.count <= 0) containerItems[index] = null;
-                        }
-                    }
-                } else if (type === 'furnace') {
-                    let done = moveItemToContainer(currentItem, inventory, 0, 9);
-                    if (!done && currentItem.count > 0) {
-                        moveItemToContainer(currentItem, inventory, 9, 27);
-                    }
-                    if (index === 'output' && currentItem.id === IDS.IRON_INGOT) unlockAchievement('acquire_hardware');
-                    if (currentItem.count <= 0) containerItems[index] = null;
-                }
-                if (!isMultiplayer) saveCurrentWorld();
-            } else {
-                if (type === 'inv') {
-                    if (isArmor(currentItem.id)) {
-                        const slotIdx = getArmorSlotIndex(currentItem.id);
-                        if (slotIdx !== -1) {
-                            const oldPiece = equippedArmor[slotIdx];
-                            equippedArmor[slotIdx] = currentItem;
-                            containerItems[index] = oldPiece;
-                            playSound('pop');
-                            checkArmorAchievements();
-                            updateArmorUI();
-                            updateUI();
-                            return;
-                        }
-                    } else if (currentItem.id === IDS.TORCH && index !== 27 && !inventory[27]) {
-                        inventory[27] = currentItem;
-                        containerItems[index] = null;
-                        playSound('pop');
-                        updateUI();
-                        updateArmorUI();
-                        return;
-                    }
-                    let tStart = (index < 9 || index === 27) ? 9 : 0; 
-                    let tEnd = (index < 9 || index === 27) ? 27 : 9;
-                    moveItemToContainer(currentItem, inventory, tStart, tEnd);
-                    if (currentItem.count <= 0) containerItems[index] = null;
-                }
-            }
-        } else {
-            if (!heldItemObj) {
-                if (currentItem) {
-                    if (isRightClick && currentItem.count > 1) {
-                        let half = Math.ceil(currentItem.count / 2); let rem = currentItem.count - half;
-                        heldItemObj = { id: currentItem.id, count: half, ...(currentItem.durability !== undefined ? { durability: currentItem.durability, maxDurability: currentItem.maxDurability } : {}) };
-                        currentItem.count = rem;
-                    } else {
-                        heldItemObj = currentItem;
-                        containerItems[index] = null;
-                    }
-                    if (type === 'furnace' && index === 'output') {
-                        if (heldItemObj?.id === IDS.IRON_INGOT) unlockAchievement('acquire_hardware');
-                        playSound('pop');
-                    }
-                }
-            } else {
-                // Furnace slot interaction rules
-                if (type === 'furnace') {
-                    if (index === 'output') {
-                        // Output slot is strictly take-only! You cannot put items into it.
-                        const maxStack = getItemMaxStack(heldItemObj.id);
-                        if (currentItem && currentItem.id === heldItemObj.id && maxStack > 1 && heldItemObj.count < maxStack) {
-                            let space = maxStack - heldItemObj.count;
-                            let amount = Math.min(space, currentItem.count);
-                            heldItemObj.count += amount;
-                            currentItem.count -= amount;
-                            if (currentItem.count <= 0) containerItems[index] = null;
-                            if (heldItemObj.id === IDS.IRON_INGOT) unlockAchievement('acquire_hardware');
-                            playSound('pop');
-                        }
-                        setHeldItemObj(heldItemObj);
-                        updateUI(false);
-                        return;
-                    }
-                    if (index === 'input' && !getSmeltResult(heldItemObj.id)) {
-                        setHeldItemObj(heldItemObj);
-                        updateUI(false);
-                        return;
-                    }
-                    if (index === 'fuel' && getFuelValue(heldItemObj.id) <= 0) {
-                        setHeldItemObj(heldItemObj);
-                        updateUI(false);
-                        return;
-                    }
-                }
-
-                if (currentItem) {
-                    const maxStack = getItemMaxStack(currentItem.id);
-                    if (currentItem.id === heldItemObj.id && maxStack > 1 && currentItem.count < maxStack) {
-                        if (isRightClick) {
-                            currentItem.count += 1; heldItemObj.count -= 1;
-                            if (heldItemObj.count <= 0) heldItemObj = null;
-                        } else {
-                            let space = maxStack - currentItem.count; let amount = Math.min(space, heldItemObj.count);
-                            currentItem.count += amount; heldItemObj.count -= amount;
-                            if (heldItemObj.count <= 0) heldItemObj = null;
-                        }
-                    } else if (!isRightClick) {
-                        let temp = currentItem;
-                        containerItems[index] = heldItemObj;
-                        heldItemObj = temp;
-                    }
-                } else {
-                    if (isRightClick) {
-                        let placedItem = { id: heldItemObj.id, count: 1, ...(heldItemObj.durability !== undefined ? { durability: heldItemObj.durability, maxDurability: heldItemObj.maxDurability } : {}), ...(heldItemObj.customName ? { customName: heldItemObj.customName } : {}), ...(heldItemObj.trackId ? { trackId: heldItemObj.trackId } : {}) };
-                        containerItems[index] = placedItem;
-                        heldItemObj.count -= 1;
-                        if (heldItemObj.count <= 0) heldItemObj = null;
-                    } else {
-                        containerItems[index] = heldItemObj;
-                        heldItemObj = null;
-                    }
-                }
-            }
-            if (curOpenedChest && type === 'chest') {
-                syncChest(curOpenedChest.key);
-                if (!isMultiplayer) saveCurrentWorld();
-            }
-            if (type === 'furnace' && !isMultiplayer) {
-                saveCurrentWorld();
-            }
-        }
-        
-        setHeldItemObj(heldItemObj);
-        heldItemDraggedOutside = false;
-        updateUI(false);
-    }
-
-    export function populateSlotItemDOM(slot, item, imgClass = 'w-8 h-8') {
-        if (!item || !item.id) {
-            delete slot.dataset.tip;
-            return;
-        }
-        slot.dataset.tip = item.customName || ID_NAMES[item.id] || '';
-        ensureToolDurability(item);
-        const img = document.createElement('img');
-        img.src = textures[item.id]?.src || '';
-        img.className = `${imgClass} pixelated pointer-events-none`;
-        slot.appendChild(img);
-        if (item.count > 1) {
-            const count = document.createElement('span');
-            count.className = 'item-count pointer-events-none';
-            count.innerText = item.count;
-            slot.appendChild(count);
-        }
-        addDurabilityBar(slot, item);
-    }
-
-    export function setupFurnaceSlot(elementId, slotKey) {
-        const slot = document.getElementById(elementId);
-        if (!slot) return;
-        slot.innerHTML = '';
-        slot.onmousedown = (e) => { 
-            e.preventDefault();
-            window.getSelection()?.removeAllRanges();
-            if(e.button === 0 || e.button === 2) handleSlotClick(slotKey, 'furnace', e.shiftKey, e.button === 2); 
-        };
-        const curOpened = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
-        if (curOpened && curOpened[slotKey]) {
-            populateSlotItemDOM(slot, curOpened[slotKey]);
-        }
-    }
-
-    export let craftingSearchQuery = '';
-
-    export function handleCraftingSearch(query) {
-        craftingSearchQuery = (query || '').trim().toLowerCase();
-        const clearBtn = document.getElementById('crafting-search-clear');
-        if (clearBtn) clearBtn.classList.toggle('hidden', !craftingSearchQuery);
-        renderCraftingRecipes();
-    }
-
-    export function clearCraftingSearch() {
-        craftingSearchQuery = '';
-        const searchInput = document.getElementById('crafting-search');
-        if (searchInput) searchInput.value = '';
-        const clearBtn = document.getElementById('crafting-search-clear');
-        if (clearBtn) clearBtn.classList.add('hidden');
-        renderCraftingRecipes();
-    }
-
-    // ============================================================
-    // RECIPE PINNING (HUD TRACKER & CRAFTING TABLE)
-    // ============================================================
-    export let pinnedRecipeIndex = null;
-
-    export function loadPinnedRecipe() {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                const saved = localStorage.getItem('swc_pinned_recipe_v1');
-                if (saved !== null && saved !== '') {
-                    const parsed = parseInt(saved, 10);
-                    if (!isNaN(parsed) && parsed >= 0 && parsed < RECIPES.length) {
-                        pinnedRecipeIndex = parsed;
-                        return;
-                    }
-                }
-            }
-        } catch (e) {}
-        pinnedRecipeIndex = null;
-    }
-
-    export function getPinnedRecipeIndex() {
-        return pinnedRecipeIndex;
-    }
-
-    export function pinRecipe(recipeIndex) {
-        if (pinnedRecipeIndex === recipeIndex) {
-            unpinRecipe();
-            return;
-        }
-        if (recipeIndex >= 0 && recipeIndex < RECIPES.length) {
-            pinnedRecipeIndex = recipeIndex;
-            try {
-                if (typeof localStorage !== 'undefined') {
-                    localStorage.setItem('swc_pinned_recipe_v1', recipeIndex.toString());
-                }
-            } catch (e) {}
-            renderPinnedRecipeHUD();
-            renderCraftingRecipes();
-        }
-    }
-
-    export function unpinRecipe(e) {
-        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-        pinnedRecipeIndex = null;
-        try {
-            if (typeof localStorage !== 'undefined') {
-                localStorage.removeItem('swc_pinned_recipe_v1');
-            }
-        } catch (e) {}
-        renderPinnedRecipeHUD();
-        renderCraftingRecipes();
-    }
-
-    export function handlePinnedRecipeClick(e) {
-        if (e && e.target && typeof e.target.closest === 'function' && e.target.closest('.hud-pinned-unpin-btn')) return;
-        if (typeof isInventoryOpen !== 'undefined' && !isInventoryOpen) {
-            if (typeof window !== 'undefined' && typeof window.toggleInventory === 'function') {
-                window.toggleInventory();
-            } else if (typeof toggleInventory === 'function') {
-                toggleInventory();
-            }
-        }
-    }
-
-    export function renderPinnedRecipeHUD() {
-        const hudEl = document.getElementById('hud-pinned-recipe');
-        const contentEl = document.getElementById('hud-pinned-content');
-        if (!hudEl || !contentEl) return;
-
-        if (pinnedRecipeIndex === null || !RECIPES[pinnedRecipeIndex]) {
-            hudEl.classList.add('hidden');
-            contentEl.innerHTML = '';
-            return;
-        }
-
-        const recipe = RECIPES[pinnedRecipeIndex];
-        const output = recipe.output;
-        const outName = ID_NAMES[output.id] || 'Item';
-        const outTex = (typeof textures !== 'undefined' && textures[output.id]) ? textures[output.id].src : '';
-        const nearTable = checkNearCraftingTable();
-
-        let allIngredientsReady = true;
-        let materialsSummary = [];
-
-        recipe.inputs.forEach(r => {
-            const has = getRecipeInputCount(r);
-            const needed = r.count;
-            const ready = (has >= needed);
-            if (!ready) allIngredientsReady = false;
-            materialsSummary.push({
-                id: r.id,
-                name: r.name || ID_NAMES[r.id] || 'Material',
-                tex: (typeof textures !== 'undefined' && textures[r.id]) ? textures[r.id].src : '',
-                has,
-                needed,
-                ready
-            });
-        });
-
-        const canCraftNow = allIngredientsReady && (!recipe.reqTable || nearTable);
-
-        let html = `
-            <!-- Target Item Header -->
-            <div class="flex items-center justify-between gap-1.5 pb-1 mb-1 border-b border-[#3b4752]">
-                <div class="flex items-center gap-1.5 min-w-0">
-                    <img src="${outTex}" class="w-6 h-6 pixelated shrink-0" alt="${outName}" />
-                    <span class="text-white text-lg font-bold truncate leading-none">${outName} x${output.count}</span>
-                </div>
-                <span class="text-[11px] ${recipe.reqTable ? (nearTable ? 'bg-emerald-950 text-emerald-300 border-emerald-600' : 'bg-amber-950 text-amber-300 border-amber-600') : 'bg-slate-800 text-slate-300 border-slate-600'} border px-1 py-0.2 rounded font-['VT323'] leading-none shrink-0">
-                    ${recipe.reqTable ? (nearTable ? '3x3 Table' : 'Need Table') : '2x2 Hand'}
-                </span>
-            </div>
-
-            <!-- Ingredients Checklist -->
-            <div class="flex flex-col gap-1 my-1">
-        `;
-
-        materialsSummary.forEach(mat => {
-            const percent = Math.min(100, Math.round((mat.has / mat.needed) * 100));
-            html += `
-                <div class="flex flex-col">
-                    <div class="flex items-center justify-between text-base leading-none">
-                        <div class="flex items-center gap-1 min-w-0">
-                            <img src="${mat.tex}" class="w-4 h-4 pixelated shrink-0" alt="${mat.name}" />
-                            <span class="${mat.ready ? 'text-gray-200' : 'text-gray-300'} truncate">${mat.name}</span>
-                        </div>
-                        <div class="flex items-center gap-1 shrink-0 ml-1">
-                            <span class="${mat.ready ? 'text-emerald-400 font-bold' : 'text-amber-300 font-bold'}">
-                                ${mat.has}/${mat.needed}
-                            </span>
-                            ${mat.ready ? '<span class="text-emerald-400 text-xs font-bold leading-none">✓</span>' : ''}
-                        </div>
-                    </div>
-                    <div class="w-full bg-[#12161b] h-1 border border-[#2b353f] mt-0.5 overflow-hidden">
-                        <div class="h-full ${mat.ready ? 'bg-emerald-500' : 'bg-amber-500'}" style="width: ${percent}%;"></div>
-                    </div>
-                </div>
-            `;
-        });
-
-        html += `</div>`;
-
-        if (canCraftNow) {
-            html += `
-                <div class="text-xs text-emerald-300 font-bold bg-emerald-950/80 border border-emerald-500/80 px-1.5 py-0.5 text-center mt-1.5 leading-tight animate-pulse">
-                    READY TO CRAFT! [E]
-                </div>
-            `;
-        } else if (allIngredientsReady && recipe.reqTable && !nearTable) {
-            html += `
-                <div class="text-xs text-amber-300 font-bold bg-amber-950/80 border border-amber-500/80 px-1.5 py-0.5 text-center mt-1.5 leading-tight">
-                    MATERIALS READY! FIND TABLE
-                </div>
-            `;
-        } else {
-            const remaining = materialsSummary.filter(m => !m.ready).length;
-            html += `
-                <div class="text-[11px] text-gray-400 bg-black/40 px-1.5 py-0.5 text-center mt-1 leading-tight">
-                    ${remaining} material${remaining === 1 ? '' : 's'} needed
-                </div>
-            `;
-        }
-
-        contentEl.innerHTML = html;
-        hudEl.classList.remove('hidden');
-    }
-
-    try { loadPinnedRecipe(); } catch(e) {}
-
-    export function formatMusicTime(seconds) {
-        if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        return `${m}:${s < 10 ? '0' : ''}${s}`;
-    }
-
-    let isScrubbingMusic = false;
-
-    export function updateMusicPlayerHUD() {
-        const hud = document.getElementById('hud-music-player');
-        if (!hud) return;
-
-        const activeTrack = (typeof jukebox !== 'undefined') ? jukebox.getActiveTrack() : null;
-        const isPlaying = (typeof jukebox !== 'undefined') ? jukebox.isPlaying : false;
-
-        if (!activeTrack && !isPlaying) {
-            hud.classList.add('hidden');
-            return;
-        }
-
-        hud.classList.remove('hidden');
-
-        const titleEl = document.getElementById('hud-music-title');
-        const seekEl = document.getElementById('hud-music-seek');
-        const timeEl = document.getElementById('hud-music-time');
-        const discIcon = document.getElementById('hud-music-disc-icon');
-        const playPauseBtn = document.getElementById('hud-music-playpause-btn');
-
-        if (titleEl) {
-            const trackName = activeTrack?.name || 'Vinyl Disc';
-            titleEl.textContent = trackName;
-            titleEl.title = trackName;
-        }
-
-        const duration = (typeof jukebox !== 'undefined') ? jukebox.getDuration() : 0;
-        const curTime = (typeof jukebox !== 'undefined') ? jukebox.getCurrentTime() : 0;
-
-        if (seekEl && !isScrubbingMusic) {
-            seekEl.max = duration > 0 ? duration : 100;
-            seekEl.value = curTime;
-        }
-
-        if (timeEl) {
-            timeEl.textContent = `${formatMusicTime(curTime)} / ${formatMusicTime(duration)}`;
-        }
-
-        if (discIcon) {
-            if (isPlaying) {
-                discIcon.classList.remove('hud-music-disc-paused');
-            } else {
-                discIcon.classList.add('hud-music-disc-paused');
-            }
-        }
-
-        if (playPauseBtn) {
-            if (isPlaying) {
-                playPauseBtn.innerHTML = '<span class="inline-flex items-center gap-1"><svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><rect x="1" y="1" width="3" height="8"/><rect x="6" y="1" width="3" height="8"/></svg><span>Pause</span></span>';
-                playPauseBtn.title = 'Pause music';
-            } else {
-                playPauseBtn.innerHTML = '<span class="inline-flex items-center gap-1"><svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true"><polygon points="2,1 9,5 2,9"/></svg><span>Play</span></span>';
-                playPauseBtn.title = 'Play music';
-            }
-        }
-    }
-
-    export function ejectActiveJukebox() {
-        if (typeof jukebox === 'undefined') return;
-        const active = jukebox.getActiveJukebox();
-        const activeVinyl = jukebox.getActiveVinyl();
-        const activeTrack = jukebox.getActiveTrack();
-
-        if (active) {
-            const liveJbs = (typeof window !== 'undefined' && Array.isArray(window.jukeboxes)) ? window.jukeboxes : jukeboxes;
-            const jb = liveJbs.find(j => j.x === active.x && j.y === active.y);
-            if (jb) {
-                jb.record = null;
-                jb.isPlaying = false;
-            }
-        }
-
-        jukebox.stop();
-
-        if (activeVinyl || activeTrack) {
-            const vinylObj = {
-                id: IDS.EMPTY_VINYL,
-                count: 1,
-                customName: activeVinyl?.customName || activeTrack?.name || 'Vinyl Disc',
-                trackId: activeVinyl?.trackId || activeTrack?.trackId || null
-            };
-            const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
-            let placed = false;
-            for (let i = 0; i < 27; i++) {
-                if (!liveInv[i]) {
-                    liveInv[i] = vinylObj;
-                    placed = true;
-                    break;
-                }
-            }
-            if (!placed) {
-                const dropX = active ? (active.x * TILE_SIZE + 10) : (player.x + player.width / 2);
-                const dropY = active ? (active.y * TILE_SIZE + 10) : (player.y + 10);
-                if (typeof dropItemForWorld === 'function') dropItemForWorld(IDS.EMPTY_VINYL, dropX, dropY, 1);
-            }
-            updateUI();
-            showToast('Ejected: ' + (vinylObj.customName || 'Vinyl Disc'));
-        }
-
-        updateMusicPlayerHUD();
-    }
-
-    export function initMusicPlayerHUD() {
-        const seekEl = document.getElementById('hud-music-seek');
-        const playPauseBtn = document.getElementById('hud-music-playpause-btn');
-        const ejectBtn = document.getElementById('hud-music-eject-btn');
-
-        if (seekEl) {
-            seekEl.addEventListener('mousedown', () => { isScrubbingMusic = true; });
-            seekEl.addEventListener('touchstart', () => { isScrubbingMusic = true; }, { passive: true });
-
-            seekEl.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value) || 0;
-                const timeEl = document.getElementById('hud-music-time');
-                if (timeEl && typeof jukebox !== 'undefined') {
-                    timeEl.textContent = `${formatMusicTime(val)} / ${formatMusicTime(jukebox.getDuration())}`;
-                }
-            });
-
-            seekEl.addEventListener('change', (e) => {
-                isScrubbingMusic = false;
-                const val = parseFloat(e.target.value) || 0;
-                if (typeof jukebox !== 'undefined') jukebox.seek(val);
-                updateMusicPlayerHUD();
-            });
-
-            seekEl.addEventListener('mouseup', () => { isScrubbingMusic = false; });
-            seekEl.addEventListener('touchend', () => { isScrubbingMusic = false; });
-        }
-
-        if (playPauseBtn) {
-            playPauseBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (typeof jukebox === 'undefined') return;
-                if (jukebox.isPlaying) {
-                    jukebox.pause();
-                } else {
-                    if (jukebox.audio && jukebox.audio.src) {
-                        jukebox.resume();
-                    }
-                }
-                updateMusicPlayerHUD();
-            });
-        }
-
-        if (ejectBtn) {
-            ejectBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                ejectActiveJukebox();
-            });
-        }
-
-        if (typeof jukebox !== 'undefined' && typeof jukebox.subscribe === 'function') {
-            jukebox.subscribe((event) => {
-                if (event === 'timeupdate') {
-                    if (!isScrubbingMusic) updateMusicPlayerHUD();
-                } else if (event === 'statechange' || event === 'start' || event === 'stop' || event === 'ended') {
-                    updateMusicPlayerHUD();
-                }
-            });
-        }
-    }
-
-    export function renderCraftingRecipes() {
-        const craftList = document.getElementById('crafting-list');
-        if (!craftList) return;
-        craftList.innerHTML = '';
-        const nearTable = checkNearCraftingTable();
-        const query = craftingSearchQuery;
-
-        const filteredRecipes = [];
-        RECIPES.forEach((recipe, idx) => {
-            if (recipe.reqTable && !nearTable) return;
-            if (craftingCategory !== 'all' && getRecipeCategory(recipe) !== craftingCategory) return;
-            
-            if (query) {
-                const outName = (ID_NAMES[recipe.output.id] || '').toLowerCase();
-                const inNames = recipe.inputs.map(r => (ID_NAMES[r.id] || '').toLowerCase()).join(' ');
-                if (!outName.includes(query) && !inNames.includes(query)) return;
-            }
-            filteredRecipes.push({ recipe, idx });
-        });
-
-        if (filteredRecipes.length === 0) {
-            const emptyNotice = document.createElement('div');
-            emptyNotice.className = 'text-center py-6 text-gray-400 font-["VT323"] text-xl';
-            emptyNotice.innerText = query ? `No recipes found for "${query}"` : 'No recipes available';
-            craftList.appendChild(emptyNotice);
-            return;
-        }
-
-        const frag = document.createDocumentFragment();
-        filteredRecipes.forEach(({ recipe, idx }) => {
-            let canCraft = recipe.inputs.every(req => hasRecipeInput(req));
-            let isPinned = (pinnedRecipeIndex === idx);
-            let row = document.createElement('div');
-            row.className = `flex flex-col bg-black/40 p-1.5 rounded border ${isPinned ? 'crafting-row-pinned' : (canCraft ? 'border-[#8c5a2b]/80 bg-black/50' : 'border-gray-700/80 opacity-80')} mb-1 hover:bg-black/70 transition-colors cursor-pointer`;
-            
-            row.onclick = (e) => {
-                if (e.target && (e.target.closest('.craft-btn') || e.target.closest('.pin-recipe-btn'))) return;
-                pinRecipe(idx);
-            };
-
-            let topRow = document.createElement('div');
-            topRow.className = 'flex items-center justify-between gap-2';
-            let nameDiv = document.createElement('div');
-            nameDiv.className = 'flex items-center gap-1.5 min-w-0';
-            
-            let img = document.createElement('img');
-            img.src = textures[recipe.output.id] ? textures[recipe.output.id].src : '';
-            img.className = 'w-6 h-6 pixelated shrink-0';
-            nameDiv.appendChild(img);
-            
-            let t = document.createElement('span');
-            t.className = 'text-white text-xl font-bold font-["VT323"] text-shadow truncate';
-            t.innerText = `${ID_NAMES[recipe.output.id]} x${recipe.output.count}`;
-            nameDiv.appendChild(t);
-
-            if (isPinned) {
-                let pinnedBadge = document.createElement('span');
-                pinnedBadge.className = 'text-xs bg-amber-500/30 text-amber-300 border border-amber-500/60 px-1 py-0.2 rounded font-["VT323"] leading-none uppercase shrink-0';
-                pinnedBadge.innerText = 'PINNED';
-                nameDiv.appendChild(pinnedBadge);
-            }
-            
-            let actionDiv = document.createElement('div');
-            actionDiv.className = 'flex items-center gap-1.5 shrink-0';
-
-            // Pin button
-            let pinBtn = document.createElement('button');
-            pinBtn.type = 'button';
-            pinBtn.className = `pin-recipe-btn ${isPinned ? 'pinned' : ''}`;
-            pinBtn.title = isPinned ? 'Unpin from HUD' : 'Pin recipe to HUD';
-            pinBtn.setAttribute('aria-label', isPinned ? 'Unpin recipe' : 'Pin recipe');
-            pinBtn.innerHTML = `
-                <svg viewBox="0 0 16 16" width="14" height="14" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                    <rect x="7" y="1" width="2" height="3" fill="${isPinned ? '#fef08a' : '#fbbf24'}"/>
-                    <rect x="5" y="4" width="6" height="3" fill="${isPinned ? '#fbbf24' : '#f59e0b'}"/>
-                    <rect x="4" y="7" width="8" height="2" fill="${isPinned ? '#f59e0b' : '#d97706'}"/>
-                    <rect x="7" y="9" width="2" height="5" fill="${isPinned ? '#ffffff' : '#cbd5e1'}"/>
-                    <rect x="7" y="14" width="2" height="1" fill="${isPinned ? '#cbd5e1' : '#94a3b8'}"/>
-                </svg>
-            `;
-            pinBtn.onclick = (e) => {
-                e.stopPropagation();
-                pinRecipe(idx);
-            };
-            actionDiv.appendChild(pinBtn);
-
-            let btn = document.createElement('button');
-            btn.className = 'craft-btn shrink-0';
-            btn.innerText = 'Craft';
-            btn.disabled = !canCraft;
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                craftRecipe(idx);
-                updateUI();
-            };
-            actionDiv.appendChild(btn);
-            
-            topRow.appendChild(nameDiv);
-            topRow.appendChild(actionDiv);
-            
-            let reqs = document.createElement('div');
-            reqs.className = 'text-base text-gray-300 mt-0.5 pl-8 flex flex-wrap gap-2';
-            recipe.inputs.forEach(r => {
-                let has = hasRecipeInput(r);
-                let currentCount = getRecipeInputCount(r);
-                let displayName = r.name || ID_NAMES[r.id] || 'Material';
-                let reqSpan = document.createElement('span');
-                reqSpan.className = has ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
-                reqSpan.innerText = `${currentCount}/${r.count} ${displayName}`;
-                reqs.appendChild(reqSpan);
-            });
-            
-            row.appendChild(topRow);
-            row.appendChild(reqs);
-            frag.appendChild(row);
-        });
-        craftList.appendChild(frag);
-    }
-
-    export function updateUI(refreshCrafting = true) {
-        const curSel = (typeof window !== 'undefined' && window.selectedHotbarIndex !== undefined) ? window.selectedHotbarIndex : selectedHotbarIndex;
-        const hotbar = document.getElementById('hotbar');
-        if (hotbar.children.length !== hotbarSize) {
-            hotbar.innerHTML = '';
-            for (let i = 0; i < hotbarSize; i++) {
-                let slot = document.createElement('div');
-                slot.className = `hotbar-slot w-12 h-12 flex items-center justify-center relative border-3 cursor-pointer ${i === curSel ? 'active' : ''}`;
-                slot.onclick = () => { setSelectedHotbarIndex(i); updateUI(); triggerHotbarItemPopup(); };
-                let num = document.createElement('span');
-                num.className = 'absolute top-0 left-1 text-xs text-gray-300 font-bold pointer-events-none';
-                num.innerText = i + 1;
-                slot.appendChild(num);
-                hotbar.appendChild(slot);
-            }
-        }
-        for (let i = 0; i < hotbarSize; i++) {
-            let slot = hotbar.children[i];
-            if (!slot) continue;
-            slot.className = `hotbar-slot w-12 h-12 flex items-center justify-center relative border-3 cursor-pointer ${i === curSel ? 'active' : ''}`;
-            while (slot.childNodes && slot.childNodes.length > 1) slot.removeChild(slot.lastChild);
-            populateSlotItemDOM(slot, inventory[i]);
-        }
-
-        let currSelItem = inventory[curSel];
-        let currSelId = currSelItem ? currSelItem.id : null;
-        if (currSelId !== lastHotbarItemId) {
-            lastHotbarItemId = currSelId;
-            triggerHotbarItemPopup();
-        }
-
-        let hudOffhand = document.getElementById('hud-offhand-slot');
-        hudOffhand.innerHTML = '';
-        populateSlotItemDOM(hudOffhand, inventory[27], 'w-9 h-9');
-
-        updateHudArmorBar();
-        renderPinnedRecipeHUD();
-
-        if (!isInventoryOpen) return;
-
-        let nearTable = checkNearCraftingTable();
-        const invMenu = document.getElementById('inventory-menu');
-        const cPanel = document.getElementById('crafting-panel');
-        const fPanel = document.getElementById('furnace-panel');
-
-        const curOpenedFurnace = openedFurnace || (typeof window !== 'undefined' ? window.openedFurnace : null);
-        const curOpenedChest = openedChest || (typeof window !== 'undefined' ? window.openedChest : null);
-        const chestPanel = document.getElementById('chest-panel');
-
-        if (curOpenedFurnace) {
-            invMenu.classList.remove('crafting-table-mode');
-            document.getElementById('header-inventory').classList.add('hidden');
-            document.getElementById('header-crafting').classList.add('hidden');
-            cPanel.classList.add('hidden');
-            if (chestPanel) chestPanel.classList.add('hidden');
-            fPanel.classList.remove('hidden');
-            fPanel.style.display = 'flex';
-            setupFurnaceSlot('f-input', 'input');
-            setupFurnaceSlot('f-fuel', 'fuel');
-            setupFurnaceSlot('f-output', 'output');
-            updateFurnaceVisual(curOpenedFurnace);
-
-            // Quick switcher to nearby crafting table if both are accessible
-            let switchCraftBtn = document.getElementById('btn-furnace-switch-crafting');
-            if (nearTable) {
-                if (!switchCraftBtn) {
-                    switchCraftBtn = document.createElement('button');
-                    switchCraftBtn.id = 'btn-furnace-switch-crafting';
-                    switchCraftBtn.className = 'mt-3 px-3 py-1 bg-[#5c3a1d] hover:bg-[#7a4e27] text-[#ffd899] border-2 border-[#b07d4b] rounded text-sm font-["VT323"] cursor-pointer shadow transition-colors flex items-center gap-1.5';
-                    switchCraftBtn.innerHTML = '<span>Crafting Table</span> <svg viewBox="0 0 6 5" width="8" height="7" class="inline-block flex-shrink-0" style="shape-rendering: crispEdges;"><rect x="0" y="2" width="4" height="1" fill="currentColor"/><rect x="3" y="1" width="1" height="1" fill="currentColor"/><rect x="4" y="2" width="1" height="1" fill="currentColor"/><rect x="3" y="3" width="1" height="1" fill="currentColor"/></svg>';
-                    fPanel.appendChild(switchCraftBtn);
-                }
-                switchCraftBtn.style.display = 'flex';
-                switchCraftBtn.onclick = () => {
-                    setOpenedFurnace(null);
-                    if (typeof window !== 'undefined' && typeof window.setMainOpenedFurnace === 'function') {
-                        window.setMainOpenedFurnace(null);
-                    }
-                    updateUI();
-                };
-            } else if (switchCraftBtn) {
-                switchCraftBtn.style.display = 'none';
-            }
-        } else {
-            if (fPanel) {
-                fPanel.classList.add('hidden');
-                fPanel.style.display = '';
-            }
-            if (chestPanel) chestPanel.classList.toggle('hidden', !curOpenedChest);
-            if (curOpenedChest) {
-                invMenu.classList.remove('crafting-table-mode');
-                cPanel.classList.add('hidden');
-                document.getElementById('header-inventory').classList.add('hidden');
-                document.getElementById('header-crafting').classList.add('hidden');
-                document.getElementById('chest-title').innerText = curOpenedChest.size === 54 ? 'Large Chest' : 'Chest';
-                const chestGrid = document.getElementById('chest-grid');
-                chestGrid.innerHTML = '';
-                const frag = document.createDocumentFragment();
-                for (let i = 0; i < curOpenedChest.size; i++) {
-                    const slot = document.createElement('div');
-                    slot.className = 'slot';
-                    slot.onmousedown = e => {
-                        e.preventDefault();
-                        window.getSelection()?.removeAllRanges();
-                        if (e.button === 0 || e.button === 2) {
-                            handleSlotClick(i, 'chest', e.shiftKey, e.button === 2);
-                            syncChest(curOpenedChest.key);
-                            if (!isMultiplayer) saveCurrentWorld();
-                        }
-                    };
-                    populateSlotItemDOM(slot, curOpenedChest.chest.items[i]);
-                    frag.appendChild(slot);
-                }
-                chestGrid.appendChild(frag);
-            } else {
-                cPanel.classList.remove('hidden');
-            }
-            if (!curOpenedChest) cPanel.classList.remove('hidden');
-            
-            if (nearTable && !curOpenedChest) {
-                invMenu.classList.add('crafting-table-mode');
-                document.getElementById('header-inventory').classList.add('hidden');
-                document.getElementById('header-crafting').classList.remove('hidden');
-                document.getElementById('crafting-status').innerText = "Table Access (3x3)";
-                document.getElementById('crafting-status').className = 'text-lg text-[#ffd899] font-bold bg-black/40 px-2 py-0.5 rounded border border-[#8f5f2e]';
-                let ctIcon = document.getElementById('ct-icon');
-                ctIcon.innerHTML = '';
-                if (textures[IDS.CRAFTING_TABLE]) {
-                    ctIcon.appendChild(textures[IDS.CRAFTING_TABLE].cloneNode());
-                    ctIcon.firstChild.className = 'w-full h-full pixelated';
-                }
-
-                // Quick switcher to nearby furnace if both are accessible
-                const nearFurnacePos = checkNearFurnace();
-                let switchFurnaceBtn = document.getElementById('btn-crafting-switch-furnace');
-                if (nearFurnacePos) {
-                    if (!switchFurnaceBtn) {
-                        switchFurnaceBtn = document.createElement('button');
-                        switchFurnaceBtn.id = 'btn-crafting-switch-furnace';
-                        switchFurnaceBtn.className = 'px-2 py-0.5 bg-[#374151] hover:bg-[#4b5563] text-orange-300 border border-orange-500 rounded text-xs font-["VT323"] cursor-pointer shadow transition-colors ml-auto flex items-center gap-1';
-                        switchFurnaceBtn.innerHTML = '<span>Furnace</span> <svg viewBox="0 0 6 5" width="8" height="7" class="inline-block flex-shrink-0" style="shape-rendering: crispEdges;"><rect x="0" y="2" width="4" height="1" fill="currentColor"/><rect x="3" y="1" width="1" height="1" fill="currentColor"/><rect x="4" y="2" width="1" height="1" fill="currentColor"/><rect x="3" y="3" width="1" height="1" fill="currentColor"/></svg>';
-                        const cHeader = document.getElementById('header-crafting');
-                        if (cHeader) cHeader.appendChild(switchFurnaceBtn);
-                    }
-                    switchFurnaceBtn.style.display = 'inline-flex';
-                    switchFurnaceBtn.onclick = () => {
-                        const liveFurnaces = (typeof window !== 'undefined' && Array.isArray(window.furnaces)) ? window.furnaces : furnaces;
-                        let f = liveFurnaces.find(item => item.x === nearFurnacePos.x && item.y === nearFurnacePos.y);
-                        if (!f) {
-                            f = { x: nearFurnacePos.x, y: nearFurnacePos.y, input: null, fuel: null, output: null, progress: 0, burnTime: 0, maxBurnTime: 0 };
-                            liveFurnaces.push(f);
-                        }
-                        setOpenedFurnace(f);
-                        if (typeof window !== 'undefined' && typeof window.setMainOpenedFurnace === 'function') {
-                            window.setMainOpenedFurnace(f);
-                        }
-                        updateUI();
-                    };
-                } else if (switchFurnaceBtn) {
-                    switchFurnaceBtn.style.display = 'none';
-                }
-            } else {
-                invMenu.classList.remove('crafting-table-mode');
-                document.getElementById('header-crafting').classList.add('hidden');
-                document.getElementById('header-inventory').classList.remove('hidden');
-                document.getElementById('crafting-status').innerText = "Basic (2x2)";
-                document.getElementById('crafting-status').className = 'text-lg text-gray-400 font-bold bg-black/40 px-2 py-0.5 rounded';
-            }
-        }
-
-        function createInventorySlotElement(i) {
-            let slot = document.createElement('div');
-            slot.className = `slot ${i === selectedHotbarIndex && i < 9 ? 'selected' : ''}`;
-            slot.onmousedown = (e) => {
-                e.preventDefault();
-                window.getSelection()?.removeAllRanges();
-                if (e.button === 0 || e.button === 2) handleSlotClick(i, 'inv', e.shiftKey, e.button === 2);
-            };
-            populateSlotItemDOM(slot, inventory[i]);
-            return slot;
-        }
-
-        const storageGrid = document.getElementById('inventory-storage-grid');
-        if (storageGrid) {
-            storageGrid.innerHTML = '';
-            const sFrag = document.createDocumentFragment();
-            for (let i = 9; i < 27; i++) {
-                sFrag.appendChild(createInventorySlotElement(i));
-            }
-            storageGrid.appendChild(sFrag);
-        }
-
-        const hotbarGrid = document.getElementById('inventory-hotbar-grid');
-        if (hotbarGrid) {
-            hotbarGrid.innerHTML = '';
-            const hFrag = document.createDocumentFragment();
-            for (let i = 0; i < 9; i++) {
-                hFrag.appendChild(createInventorySlotElement(i));
-            }
-            hotbarGrid.appendChild(hFrag);
-        }
-
-        const legacyGrid = document.getElementById('inventory-grid');
-        if (legacyGrid) {
-            legacyGrid.innerHTML = '';
-            const gridFrag = document.createDocumentFragment();
-            for (let i = 0; i < 27; i++) {
-                gridFrag.appendChild(createInventorySlotElement(i));
-            }
-            legacyGrid.appendChild(gridFrag);
-        }
-        
-        let invOffhand = document.getElementById('inv-offhand-slot');
-        if (invOffhand) {
-            invOffhand.innerHTML = '';
-            if (inventory[27]) {
-                invOffhand.classList.remove('empty');
-                populateSlotItemDOM(invOffhand, inventory[27]);
-            } else {
-                invOffhand.classList.add('empty');
-            }
-            invOffhand.onmousedown = (e) => {
-                e.preventDefault();
-                window.getSelection()?.removeAllRanges();
-                if (e.button === 0 || e.button === 2) handleSlotClick(27, 'inv', e.shiftKey, e.button === 2);
-            };
-        }
-
-        updateArmorUI();
-
-        if (refreshCrafting) {
-            renderCraftingRecipes();
-        }
-    }
-
-    export function addArmorDurabilityBar(slotEl, item) {
-        if (!item || !isArmor(item.id)) return;
-        const maxDur = ARMOR_DURABILITY[item.id] || 100;
-        const curDur = item.durability !== undefined ? item.durability : maxDur;
-        if (curDur >= maxDur) return;
-
-        const ratio = Math.max(0, Math.min(1, curDur / maxDur));
-        const bar = document.createElement('div');
-        bar.className = 'durability-bar';
-        const fill = document.createElement('div');
-        fill.className = 'durability-fill';
-        fill.style.width = `${Math.round(ratio * 100)}%`;
-        fill.style.backgroundColor = ratio > 0.5 ? '#4ade80' : ratio > 0.2 ? '#facc15' : '#ef4444';
-        bar.appendChild(fill);
-        slotEl.appendChild(bar);
-    }
-
-    export function checkArmorAchievements() {
-        if (equippedArmor.some(p => p !== null)) {
-            unlockAchievement('suit_up');
-        }
-        if (equippedArmor[0]?.id === IDS.HELMET_IRON &&
-            equippedArmor[1]?.id === IDS.CHESTPLATE_IRON &&
-            equippedArmor[2]?.id === IDS.LEGGINGS_IRON &&
-            equippedArmor[3]?.id === IDS.BOOTS_IRON) {
-            unlockAchievement('heavy_metal');
-        }
-        if (equippedArmor[0]?.id === IDS.HELMET_DIAMOND &&
-            equippedArmor[1]?.id === IDS.CHESTPLATE_DIAMOND &&
-            equippedArmor[2]?.id === IDS.LEGGINGS_DIAMOND &&
-            equippedArmor[3]?.id === IDS.BOOTS_DIAMOND) {
-            unlockAchievement('covert_with_diamonds');
-        }
-        if (equippedArmor[0]?.id === IDS.ASTRAL_HELMET &&
-            equippedArmor[1]?.id === IDS.ASTRAL_CHESTPLATE &&
-            equippedArmor[2]?.id === IDS.ASTRAL_LEGGINGS &&
-            equippedArmor[3]?.id === IDS.ASTRAL_BOOTS) {
-            unlockAchievement('astral_ascension');
-        }
-        if (getTotalArmorDefense() >= 20) {
-            unlockAchievement('armored_tank');
-        }
-    }
-
-    export function updateArmorUI() {
-        for (let i = 0; i < 4; i++) {
-            const slotEl = document.getElementById(`armor-slot-${i}`);
-            if (!slotEl) continue;
-            slotEl.innerHTML = '';
-            const piece = equippedArmor[i];
-            if (piece && piece.id) {
-                slotEl.classList.remove('empty');
-                ensureArmorDurability(piece);
-                const img = document.createElement('img');
-                img.src = textures[piece.id]?.src || '';
-                img.className = 'w-8 h-8 pixelated pointer-events-none';
-                slotEl.appendChild(img);
-                addArmorDurabilityBar(slotEl, piece);
-            } else {
-                slotEl.classList.add('empty');
-            }
-
-            slotEl.onmousedown = (e) => {
-                e.preventDefault();
-                window.getSelection()?.removeAllRanges();
-                if (e.button === 0 || e.button === 2) {
-                    handleArmorSlotClick(i, e.shiftKey);
-                }
-            };
-        }
-
-        const invCanvas = document.getElementById('inv-player-preview-canvas');
-        if (invCanvas) {
-            const invCtx = invCanvas.getContext('2d');
-            invCtx.clearRect(0, 0, invCanvas.width, invCanvas.height);
-            invCtx.imageSmoothingEnabled = false;
-            drawCharacter(invCtx, skinCanvasObj, 0, 0, invCanvas.width, invCanvas.height, true, 0, false, false, null, null, false, null, false, equippedArmor);
-        }
-
-        const totalDefense = getTotalArmorDefense();
-        const reductionPct = Math.round(getArmorDamageReductionRatio() * 100);
-        const defensePctEl = document.getElementById('inv-defense-pct');
-        const defensePtsEl = document.getElementById('inv-defense-points');
-        const defenseCard = document.getElementById('inv-defense-card');
-        if (defensePctEl) {
-            defensePctEl.innerText = `${reductionPct}%`;
-            defensePctEl.className = reductionPct > 0 
-                ? "text-2xl font-bold text-cyan-300 font-['VT323'] leading-none drop-shadow"
-                : "text-2xl font-bold text-white font-['VT323'] leading-none drop-shadow";
-        }
-        if (defensePtsEl) {
-            defensePtsEl.innerText = `${totalDefense}/20`;
-            defensePtsEl.className = totalDefense > 0
-                ? "text-xs font-bold text-cyan-200 font-['VT323'] leading-none mt-1 drop-shadow"
-                : "text-xs font-bold text-[#ffd34d] font-['VT323'] leading-none mt-1";
-        }
-        if (defenseCard) {
-            defenseCard.classList.toggle('active-protection', reductionPct > 0);
-            defenseCard.dataset.tip = `Protection: ${reductionPct}% Damage Reduction (${totalDefense} / 20 Armor Points)`;
-        }
-        const defenseReadout = document.getElementById('inv-defense-readout');
-        if (defenseReadout && !defensePctEl) {
-            defenseReadout.innerText = `Defense: ${reductionPct}%`;
-        }
-
-        updateHudArmorBar();
-    }
-
-    export function updateHudArmorBar() {
-        const ab = document.getElementById('armor-bar');
-        if (!ab) return;
-        const defense = getTotalArmorDefense();
-        if (defense <= 0) {
-            ab.innerHTML = '';
-            ab.style.display = 'none';
-            return;
-        }
-        ab.style.display = 'flex';
-        ab.innerHTML = '';
-        const fullIcons = Math.floor(defense / 2);
-        const hasHalf = (defense % 2) === 1;
-        for (let i = 0; i < 10; i++) {
-            const icon = document.createElement('div');
-            if (i < fullIcons) icon.className = 'armor-icon armor-full';
-            else if (i === fullIcons && hasHalf) icon.className = 'armor-icon armor-half';
-            else icon.className = 'armor-icon armor-empty';
-            ab.appendChild(icon);
-        }
-    }
-
-    export function handleArmorSlotClick(armorIndex, isShift) {
-        const piece = equippedArmor[armorIndex];
-        if (heldItemObj) {
-            if (isArmor(heldItemObj.id) && getArmorSlotIndex(heldItemObj.id) === armorIndex) {
-                const prev = equippedArmor[armorIndex];
-                equippedArmor[armorIndex] = heldItemObj;
-                heldItemObj = prev;
-                playSound('pop');
-                checkArmorAchievements();
-                updateArmorUI();
-                updateUI();
-                setHeldItemObj(heldItemObj);
-            }
-        } else if (piece) {
-            if (isShift) {
-                const emptyIdx = inventory.findIndex((item, idx) => idx < 27 && item === null);
-                if (emptyIdx !== -1) {
-                    inventory[emptyIdx] = piece;
-                    equippedArmor[armorIndex] = null;
-                    playSound('pop');
-                    updateUI();
-                    updateArmorUI();
-                } else {
-                    showToast('Inventory full!');
-                }
-            } else {
-                heldItemObj = piece;
-                equippedArmor[armorIndex] = null;
-                playSound('pop');
-                updateArmorUI();
-                updateUI();
-                setHeldItemObj(heldItemObj);
-            }
-        }
-    }
-
-
-    export function toggleWorldMap(forceState) {
-        let newState = forceState !== undefined ? forceState : !isWorldMapOpen;
-        if (newState === isWorldMapOpen) return;
-        
-        if (newState) {
-            const curState = (typeof window !== 'undefined' && window.STATE) ? window.STATE : STATE;
-            if (curState !== 'PLAYING') return;
-            if (isInventoryOpen) toggleInventory();
-            isWorldMapOpen = true;
-            if (typeof window !== 'undefined') window.isWorldMapOpen = true;
-            if (typeof setIsWorldMapOpen === 'function') setIsWorldMapOpen(true);
-            const mapModal = document.getElementById('world-map-modal');
-            if (mapModal) mapModal.classList.remove('hidden');
-            
-            buildFullOffscreenMap();
-            updateMapWorldBadge();
-            resetMapView();
-            initWorldMapEvents();
-            renderWorldMapLoop();
-            unlockAchievement('cartographer');
-        } else {
-            isWorldMapOpen = false;
-            if (typeof window !== 'undefined') window.isWorldMapOpen = false;
-            if (typeof setIsWorldMapOpen === 'function') setIsWorldMapOpen(false);
-            const mapModal = document.getElementById('world-map-modal');
-            if (mapModal) mapModal.classList.add('hidden');
-            if (mapAnimFrameId) {
-                cancelAnimationFrame(mapAnimFrameId);
-                mapAnimFrameId = null;
-            }
-        }
-    }
-
-    export function toggleBackgroundBuildMode(forceState) {
-        let newState = forceState !== undefined ? forceState : !isBackgroundBuildMode;
-        if (newState === isBackgroundBuildMode) return;
-        isBackgroundBuildMode = newState;
-        if (typeof window !== 'undefined') window.isBackgroundBuildMode = newState;
-        if (typeof setEngineIsBackgroundBuildMode === 'function') setEngineIsBackgroundBuildMode(newState);
-        playSound('click');
-        const indicator = document.getElementById('bg-build-indicator');
-        if (indicator) {
-            indicator.classList.toggle('hidden', !isBackgroundBuildMode);
-        }
-        const overlay = document.getElementById('bg-build-overlay');
-        if (overlay) {
-            overlay.classList.toggle('hidden', !isBackgroundBuildMode);
-        }
-        showToast(isBackgroundBuildMode ? 'Background Build Mode: ON' : 'Background Build Mode: OFF');
-    }
-
-    export function updateMapWorldBadge() {
-        const badgeEl = document.getElementById('map-world-badge');
-        if (badgeEl) {
-            badgeEl.innerText = `${WORLD_WIDTH}x${WORLD_HEIGHT} ${currentWorldSize.toUpperCase()}`;
-        }
-    }
-
-    export function updateMapZoomBadge() {
-        const badge = document.getElementById('map-zoom-badge');
-        if (badge) {
-            badge.innerText = `${Math.round(mapZoom * 100)}%`;
-        }
-    }
-
-    export function centerMapOnPlayer() {
-        const curPlayer = player || (typeof window !== 'undefined' && window.player);
-        if (curPlayer) {
-            mapPanX = curPlayer.x / TILE_SIZE;
-            mapPanY = (curPlayer.y + (curPlayer.height || TILE_SIZE) / 2) / TILE_SIZE;
-        } else {
-            mapPanX = WORLD_WIDTH / 2;
-            mapPanY = WORLD_HEIGHT / 2;
-        }
-        if (typeof window !== 'undefined') {
-            window.mapPanX = mapPanX;
-            window.mapPanY = mapPanY;
-        }
-        if (typeof setMapPan === 'function') setMapPan(mapPanX, mapPanY);
-    }
-
-    export function resetMapView() {
-        centerMapOnPlayer();
-        const mapCanvas = document.getElementById('world-map-canvas');
-        if (mapCanvas && mapCanvas.clientWidth > 0) {
-            mapZoom = Math.max(0.6, Math.min(2.5, (mapCanvas.clientWidth / WORLD_WIDTH) * 1.6));
-        } else {
-            mapZoom = 1.0;
-        }
-        if (typeof window !== 'undefined') window.mapZoom = mapZoom;
-        if (typeof setMapZoom === 'function') setMapZoom(mapZoom);
-        updateMapZoomBadge();
-    }
-
-    export function changeMapZoom(factor) {
-        mapZoom = Math.max(0.25, Math.min(8.0, mapZoom * factor));
-        if (typeof window !== 'undefined') window.mapZoom = mapZoom;
-        if (typeof setMapZoom === 'function') setMapZoom(mapZoom);
-        updateMapZoomBadge();
-    }
-
-    export function initWorldMapEvents() {
-        if (mapEventsInitialized) return;
-        mapEventsInitialized = true;
-
-        const mapCanvas = document.getElementById('world-map-canvas');
-        if (!mapCanvas) return;
-
-        mapCanvas.addEventListener('mousedown', (e) => {
-            if (e.button === 0) {
-                isMapDragging = true;
-                mapDragStartX = e.clientX;
-                mapDragStartY = e.clientY;
-                mapDragOriginPanX = mapPanX;
-                mapDragOriginPanY = mapPanY;
-            }
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (!isWorldMapOpen) return;
-            const rect = mapCanvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            
-            const tileSize = Math.max(1, 4 * mapZoom);
-            const cx = mapCanvas.width / 2;
-            const cy = mapCanvas.height / 2;
-
-            if (isMapDragging) {
-                const dx = e.clientX - mapDragStartX;
-                const dy = e.clientY - mapDragStartY;
-                mapPanX = mapDragOriginPanX - dx / tileSize;
-                mapPanY = mapDragOriginPanY - dy / tileSize;
-                
-                mapPanX = Math.max(-50, Math.min(WORLD_WIDTH + 50, mapPanX));
-                mapPanY = Math.max(-30, Math.min(WORLD_HEIGHT + 30, mapPanY));
-                if (typeof window !== 'undefined') {
-                    window.mapPanX = mapPanX;
-                    window.mapPanY = mapPanY;
-                }
-                if (typeof setMapPan === 'function') setMapPan(mapPanX, mapPanY);
-            }
-
-            if (mouseX >= 0 && mouseX < mapCanvas.width && mouseY >= 0 && mouseY < mapCanvas.height) {
-                mapHoverTileX = Math.floor(mapPanX + (mouseX - cx) / tileSize);
-                mapHoverTileY = Math.floor(mapPanY + (mouseY - cy) / tileSize);
-                updateMapCoordinateReadout();
-            }
-        });
-
-        window.addEventListener('mouseup', () => {
-            isMapDragging = false;
-        });
-
-        mapCanvas.addEventListener('wheel', (e) => {
-            if (!isWorldMapOpen) return;
-            e.preventDefault();
-            e.stopPropagation();
-
-            const rect = mapCanvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            const cx = mapCanvas.width / 2;
-            const cy = mapCanvas.height / 2;
-
-            const oldTileSize = Math.max(1, 4 * mapZoom);
-            const worldUnderMouseX = mapPanX + (mouseX - cx) / oldTileSize;
-            const worldUnderMouseY = mapPanY + (mouseY - cy) / oldTileSize;
-
-            if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-                let panDelta = (e.deltaX || e.deltaY) / oldTileSize;
-                mapPanX += panDelta * 0.7;
-                mapPanX = Math.max(-50, Math.min(WORLD_WIDTH + 50, mapPanX));
-                if (typeof window !== 'undefined') window.mapPanX = mapPanX;
-                if (typeof setMapPan === 'function') setMapPan(mapPanX, mapPanY);
-                return;
-            }
-
-            const zoomFactor = e.deltaY < 0 ? 1.25 : (1 / 1.25);
-            mapZoom = Math.max(0.25, Math.min(8.0, mapZoom * zoomFactor));
-            updateMapZoomBadge();
-
-            const newTileSize = Math.max(1, 4 * mapZoom);
-            mapPanX = worldUnderMouseX - (mouseX - cx) / newTileSize;
-            mapPanY = worldUnderMouseY - (mouseY - cy) / newTileSize;
-
-            mapPanX = Math.max(-50, Math.min(WORLD_WIDTH + 50, mapPanX));
-            mapPanY = Math.max(-30, Math.min(WORLD_HEIGHT + 30, mapPanY));
-            if (typeof window !== 'undefined') {
-                window.mapPanX = mapPanX;
-                window.mapPanY = mapPanY;
-                window.mapZoom = mapZoom;
-            }
-            if (typeof setMapPan === 'function') setMapPan(mapPanX, mapPanY);
-            if (typeof setMapZoom === 'function') setMapZoom(mapZoom);
-        }, { passive: false });
-    }
-
-    export function updateMapCoordinateReadout() {
-        const playerCoordsEl = document.getElementById('map-player-coords');
-        const cursorCoordsEl = document.getElementById('map-cursor-coords');
-        if (playerCoordsEl) {
-            const curPlayer = player || (typeof window !== 'undefined' && window.player);
-            if (curPlayer && curPlayer.x !== undefined) {
-                let px = Math.floor(curPlayer.x / TILE_SIZE);
-                let py = Math.floor(((curPlayer.y || 0) + (curPlayer.height || 48)) / TILE_SIZE);
-                playerCoordsEl.innerText = `X: ${px}, Y: ${py}`;
-            } else {
-                playerCoordsEl.innerText = `X: 0, Y: 0`;
-            }
-        }
-        if (cursorCoordsEl) {
-            let hx = mapHoverTileX;
-            let hy = mapHoverTileY;
-            if (hx >= 0 && hx < WORLD_WIDTH && hy >= 0 && hy < WORLD_HEIGHT) {
-                const curWorld = world || (typeof window !== 'undefined' && window.world);
-                let block = curWorld ? curWorld[hx]?.[hy] : undefined;
-                let blockName = "Air";
-                if (block !== undefined && block !== IDS.AIR) {
-                    blockName = getMapBlockName(block);
-                } else if (typeof getFluid === 'function' && getFluid(hx, hy)) {
-                    blockName = getFluid(hx, hy).type === IDS.LAVA ? "Lava" : "Water";
-                }
-                cursorCoordsEl.innerText = `X: ${hx}, Y: ${hy} (${blockName})`;
-            } else {
-                cursorCoordsEl.innerText = `X: ${hx}, Y: ${hy} (Void)`;
-            }
-        }
-    }
-
-    export function getMapBlockName(id) {
-        switch(id) {
-            case IDS.GRASS: return "Grass Block";
-            case IDS.DIRT: return "Dirt";
-            case IDS.STONE: return "Stone";
-            case IDS.WOOD: return "Oak Wood";
-            case IDS.LEAVES: return "Leaves";
-            case IDS.SAND: return "Sand";
-            case IDS.SNOW: return "Snow";
-            case IDS.COAL_ORE: return "Coal Ore";
-            case IDS.IRON_ORE: return "Iron Ore";
-            case IDS.GOLD_ORE: return "Gold Ore";
-            case IDS.DIAMOND_ORE: return "Diamond Ore";
-            case IDS.TORCH: return "Torch";
-            case IDS.BED: return "Bed";
-            case IDS.CHEST: return "Chest";
-            case IDS.FURNACE: return "Furnace";
-            case IDS.CRAFTING_TABLE: return "Crafting Table";
-            case IDS.DOOR: case IDS.DOOR_TOP: case IDS.DOOR_OPEN: case IDS.DOOR_OPEN_TOP: return "Door";
-            case IDS.CACTUS: return "Cactus";
-            default: return "Block #" + id;
-        }
-    }
-
-    // =========================================================================
-    // =========================================================================
-    // ONBOARDING & TUTORIAL GUIDE SYSTEM (AUTHENTIC PIXEL-ART GAME DESIGN)
-    // =========================================================================
-    export let currentTutorialStep = 0;
-    export const TOTAL_TUTORIAL_STEPS = 9;
-
-    export function getTutorialTextureSrc(id) {
-        if (typeof textures !== 'undefined' && textures && textures[id]) {
-            return textures[id].src || '';
-        }
-        return '';
-    }
-
-    export function renderItemFrameHtml(id, label = '') {
-        const src = getTutorialTextureSrc(id);
-        const imgHtml = src ? `<img src="${src}" class="w-8 h-8 pixelated" alt="${label}" />` : `<div class="w-6 h-6 bg-amber-600/40"></div>`;
-        return `<div class="achievement-icon-frame" title="${label}">${imgHtml}</div>`;
-    }
-
-    export const TUTORIAL_STEPS = [
-        {
-            title: "The Infinite Sandbox",
-            badge: "World & Biomes",
-            render(container) {
-                container.innerHTML = `
-                    <div class="w-full flex flex-col items-center">
-                        <div class="tutorial-preview-box w-full mb-2">
-                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
-                        </div>
-                        <div class="tutorial-grid-2">
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.GRASS, "Biomes")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Vibrant Biomes</span>
-                                    <p class="tutorial-card-desc">Explore lush Plains, dense Plain Woods, scorching Deserts with cactuses, and snowy peaks with auroras.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.DIAMOND_ORE, "Minerals")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">Mineral Veins</span>
-                                    <p class="tutorial-card-desc">Excavate subterranean caverns beneath the soil to discover Coal, Iron, Gold, and precious Diamond veins.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.TORCH, "Light & Dark")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">Day & Night Dynamics</span>
-                                    <p class="tutorial-card-desc">Daylight provides a calm window for gathering resources. Nightfall brings dangerous monsters to unlit lands.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.COBBLESTONE, "Building")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title green">Complete Creative Freedom</span>
-                                    <p class="tutorial-card-desc">Place solid foreground blocks and background walls [B] to build reinforced shelters and grand castles.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                drawTutorialWorldScene();
-            }
-        },
-        {
-            title: "Controls & Navigation",
-            badge: "How to Play",
-            render(container) {
-                container.innerHTML = `
-                    <div class="w-full flex flex-col items-center">
-                        <div class="tutorial-grid-2 mb-2">
-                            <div class="tutorial-card">
-                                <div class="flex gap-1.5 min-w-[70px] justify-center">
-                                    <span class="mc-keycap">A</span>
-                                    <span class="mc-keycap">D</span>
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Horizontal Movement</span>
-                                    <p class="tutorial-card-desc">Walk and sprint left or right across the terrain.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1.5 min-w-[70px] justify-center">
-                                    <span class="mc-keycap">SPACE</span>
-                                    <span class="mc-keycap">W</span>
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Jump & Climb</span>
-                                    <p class="tutorial-card-desc">Leap over blocks and ascend vertical ladders.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="min-w-[70px] flex justify-center">
-                                    <span class="mc-mouse-btn">HOLD L-CLICK</span>
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">Mine / Attack</span>
-                                    <p class="tutorial-card-desc">Break target blocks in range or strike hostile mobs.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="min-w-[70px] flex justify-center">
-                                    <span class="mc-mouse-btn blue">R-CLICK</span>
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">Place / Interact</span>
-                                    <p class="tutorial-card-desc">Place held item, open chests & furnaces, sleep in bed.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="min-w-[70px] flex justify-center">
-                                    <span class="mc-keycap">E</span>
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Inventory & Interact</span>
-                                    <p class="tutorial-card-desc">Manage backpack storage, craft recipes, and talk/trade with NPCs like Kael.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="min-w-[70px] flex justify-center">
-                                    <span class="mc-keycap">B</span>
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">Background Build Mode</span>
-                                    <p class="tutorial-card-desc">Toggles orange screen overlay to place cozy back-wall blocks.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="min-w-[70px] flex justify-center">
-                                    <span class="mc-keycap">M</span>
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title green">World Map</span>
-                                    <p class="tutorial-card-desc">Open full interactive world map with smooth pan and zoom.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1 min-w-[70px] justify-center">
-                                    <span class="mc-keycap">1-9</span>
-                                    <span class="mc-keycap">WHEEL</span>
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Hotbar Select</span>
-                                    <p class="tutorial-card-desc">Select active tool or block to hold in your hand.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tutorial-tip-box">
-                            ${renderItemFrameHtml(IDS.WOOD_HOE, "Farming Tip")}
-                            <span><b>PRO TIP:</b> Left-Click with a <b>Hoe</b> on dirt to till farmland, then Right-Click with <b>Seeds</b> to plant crops! Toggle Background Build Mode with <b>'B'</b> to seal safe houses.</span>
-                        </div>
-                    </div>
-                `;
-            }
-        },
-        {
-            title: "Crafting & Tool Progression",
-            badge: "Tech Tree",
-            render(container) {
-                container.innerHTML = `
-                    <div class="w-full flex flex-col items-center">
-                        <div class="tutorial-preview-box w-full mb-2">
-                            <canvas id="tutorial-preview-canvas" width="760" height="125" class="tutorial-canvas"></canvas>
-                        </div>
-                        <div class="tutorial-grid-2">
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.WOOD, "Wood Logs")}
-                                    ${renderItemFrameHtml(IDS.PLANKS, "Planks")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">1. Harvest Timber</span>
-                                    <p class="tutorial-card-desc">Chop oak trees to obtain Wood Logs. In inventory [E], refine logs into Planks and Sticks.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.CRAFTING_TABLE, "Crafting Table")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">2. Build Crafting Table</span>
-                                    <p class="tutorial-card-desc">Combine 4 Planks to build a Crafting Table. Place it and Right-Click to unlock the 3x3 recipe grid!</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.WOOD_PICKAXE, "Wood")}
-                                    ${renderItemFrameHtml(IDS.IRON_PICKAXE, "Iron")}
-                                    ${renderItemFrameHtml(IDS.DIAMOND_PICKAXE, "Diamond")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">3. Tool Tiers</span>
-                                    <p class="tutorial-card-desc">Wood -> Stone -> Iron -> Gold -> Diamond. Stronger pickaxes harvest harder minerals (Iron for Diamond).</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.FURNACE, "Furnace")}
-                                    ${renderItemFrameHtml(IDS.IRON_INGOT, "Ingot")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">4. Smelting & Metal Ore</span>
-                                    <p class="tutorial-card-desc">Craft a Furnace with 8 Cobblestone. Fuel it with Coal or Wood to smelt raw Iron & Gold ores into ingots!</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                drawTutorialCraftingScene();
-            }
-        },
-        {
-            title: "Farming & Agriculture",
-            badge: "Cultivation & Food",
-            render(container) {
-                container.innerHTML = `
-                    <div class="w-full flex flex-col items-center">
-                        <div class="tutorial-preview-box w-full mb-2">
-                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
-                        </div>
-                        <div class="tutorial-grid-2">
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.WOOD_HOE, "Hoe")}
-                                    ${renderItemFrameHtml(IDS.FARMLAND, "Farmland")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">1. Till Farmland with a Hoe</span>
-                                    <p class="tutorial-card-desc">Craft a Hoe (2 Planks + 2 Sticks) at a Crafting Table. Left-Click grass or dirt with a Hoe to till the soil into rich Farmland.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.SEEDS, "Seeds")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title green">2. Plant Seeds</span>
-                                    <p class="tutorial-card-desc">Chop wild grass to collect Wheat Seeds. Right-Click on tilled Farmland while holding Seeds to plant your crop.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.WATER_BUCKET, "Water")}
-                                    ${renderItemFrameHtml(IDS.WHEAT_STAGE_2, "Crops")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">3. Irrigation & Growth Stages</span>
-                                    <p class="tutorial-card-desc">Crops grow through 4 visible growth stages. Hydrating soil within 4 blocks of water speeds up growth from 4 days to 3 days!</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.WHEAT, "Wheat")}
-                                    ${renderItemFrameHtml(IDS.BREAD, "Bread")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">4. Harvesting & Baking Bread</span>
-                                    <p class="tutorial-card-desc">Mine fully grown golden wheat (Stage 4) to harvest Wheat and extra Seeds. Combine 3 Wheat at a Crafting Table to bake nourishing Bread!</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tutorial-tip-box">
-                            ${renderItemFrameHtml(IDS.BREAD, "Nutrition Tip")}
-                            <span><b>FARMING TIP:</b> Bread restores substantial hunger and lets you sprint for longer adventures without needing to constantly hunt wildlife!</span>
-                        </div>
-                    </div>
-                `;
-                drawTutorialFarmingScene();
-            }
-        },
-        {
-            title: "Hostile Mobs & Combat Survival",
-            badge: "Smarter AI & Defense",
-            render(container) {
-                container.innerHTML = `
-                    <div class="w-full flex flex-col items-center">
-                        <div class="tutorial-preview-box w-full mb-2">
-                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
-                        </div>
-                        <div class="tutorial-grid-2">
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.IRON_SWORD, "Sword")}
-                                    ${renderItemFrameHtml(IDS.BONE, "Bone")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">1. Undead Bloodlust & Airborne Lunges</span>
-                                    <p class="tutorial-card-desc">Zombies sprint in frenzied bloodlust when near or wounded, vaulting 2-block walls and leaping through the air with knockback strikes. Damaging one alerts nearby packs!</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.DOOR, "Door")}
-                                    ${renderItemFrameHtml(IDS.TORCH, "Torch")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title purple">2. Shelter Defense & Door Splintering</span>
-                                    <p class="tutorial-card-desc">Wooden doors won't keep you safe forever on Normal and Hard! Relentless zombies bang on doors, fracturing and shattering them to reach you. Fortify your base!</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.IRON_SWORD, "Sword")}
-                                    ${renderItemFrameHtml(IDS.IRON_AXE, "Axe")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">3. Weapon Knockback & Mob Poise</span>
-                                    <p class="tutorial-card-desc">Bare hands and tools deal minimal knockback and cannot halt charging mobs. Forge Swords and heavy Axes to break mob poise and push attackers away.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.BED, "Bed")}
-                                    ${renderItemFrameHtml(IDS.SAND, "Sand")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">4. Ambush Stalkers & Desert Predators</span>
-                                    <p class="tutorial-card-desc">Creepers creep silently when you look away and drop-fuse from caverns above. Desert Scorpions burrow under sand to pounce and poison. Sleep at dusk to skip the night!</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                drawTutorialMobsScene();
-            }
-        },
-        {
-            title: "Armor & Equipment",
-            badge: "Defense & Storage",
-            render(container) {
-                container.innerHTML = `
-                    <div class="w-full flex flex-col items-center">
-                        <div class="tutorial-preview-box w-full mb-2">
-                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
-                        </div>
-                        <div class="tutorial-grid-2">
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.HELMET_IRON, "Helmet")}
-                                    ${renderItemFrameHtml(IDS.CHESTPLATE_IRON, "Chestplate")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">Head & Torso Defense</span>
-                                    <p class="tutorial-card-desc">Helmets and Chestplates provide primary damage absorption against monster attacks and falling debris.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.LEGGINGS_IRON, "Leggings")}
-                                    ${renderItemFrameHtml(IDS.BOOTS_IRON, "Boots")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">Leggings & Boots</span>
-                                    <p class="tutorial-card-desc">Complete your suit with Leggings and Boots to soften high impacts and cushion falls from underground caverns.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.IRON_INGOT, "Ingot")}
-                                    ${renderItemFrameHtml(IDS.DIAMOND, "Diamond")}
-                                    ${renderItemFrameHtml(IDS.ASTRAL_CHESTPLATE, "Astral Armor")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">Tier Progression & Astral</span>
-                                    <p class="tutorial-card-desc">Leather -> Iron -> Gold -> Diamond -> Astral. Diamond armor can be upgraded to celestial Astral Armor at an Astral Infuser!</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.CHEST, "Chest")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">Item Safeguarding</span>
-                                    <p class="tutorial-card-desc">Craft Chests (8 Planks) to stash your valuable minerals, backup tools, and armor so they are never lost upon death.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                drawTutorialArmorScene();
-            }
-        },
-        {
-            title: "Planar Cartography & Kael",
-            badge: "NPCs & Trading",
-            render(container) {
-                container.innerHTML = `
-                    <div class="w-full flex flex-col items-center">
-                        <div class="tutorial-preview-box w-full mb-2">
-                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
-                        </div>
-                        <div class="tutorial-grid-2">
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.VOID_STONE_BRICK, "Planar Rift")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title purple">1. Planar Rifts & Explorer Arrival</span>
-                                    <p class="tutorial-card-desc">Mysterious Planar Rifts pierce the world. Kael, The Atlas Explorer, steps through from across the cosmos to study anomalies.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="min-w-[70px] flex justify-center">
-                                    <span class="mc-keycap">E</span>
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">2. Speak & Interact [E]</span>
-                                    <p class="tutorial-card-desc">Approach Kael and press [E] (or Right-Click) to engage in interactive dialogue, discover planar secrets, and open trading.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.ASTRAL_EMERALD, "Atlas Market")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">3. The Atlas Market</span>
-                                    <p class="tutorial-card-desc">Browse Kael's revolving catalog of rare artifacts, biome charts, celestial gear, and exotic blocks. Stock rotates every visit!</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.EMERALD_ORE, "Astral Emeralds")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title green">4. Astral Emerald Economy</span>
-                                    <p class="tutorial-card-desc">Trade surplus supplies or exchange mined Emeralds for Astral Emeralds—the universal currency of planar travelers.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tutorial-tip-box">
-                            ${renderItemFrameHtml(IDS.ASTRAL_EMERALD, "Market Tip")}
-                            <span><b>EXPLORER TIP:</b> Talk to Kael whenever a rift opens! Fulfilling his trade requests earns you the <b>Planar Commerce</b> achievement and rare celestial artifacts.</span>
-                        </div>
-                    </div>
-                `;
-                drawTutorialKaelScene();
-            }
-        },
-        {
-            title: "Astral Infusion & Gems",
-            badge: "Endgame Alchemy",
-            render(container) {
-                container.innerHTML = `
-                    <div class="w-full flex flex-col items-center">
-                        <div class="tutorial-preview-box w-full mb-2">
-                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
-                        </div>
-                        <div class="tutorial-grid-2">
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.EMERALD_ORE, "Emerald Ore")}
-                                    ${renderItemFrameHtml(IDS.ASTRAL_SHARD, "Astral Shard")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title green">1. Deep Gems & Shards</span>
-                                    <p class="tutorial-card-desc">Mine Emerald Ore in the deepest caverns and harvest Astral Shards from dimensional anomalies and void flora.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.ASTRAL_EMERALD, "Astral Exchange")}
-                                    ${renderItemFrameHtml(IDS.DIAMOND, "Diamond")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">2. Astral Exchange Vault</span>
-                                    <p class="tutorial-card-desc">Access the Astral Exchange in inventory to convert valuable minerals and gems into Astral Emeralds at dynamic market rates.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                ${renderItemFrameHtml(IDS.ASTRAL_INFUSER, "Astral Infuser")}
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title purple">3. Craft the Astral Infuser</span>
-                                    <p class="tutorial-card-desc">Craft an Astral Infuser station (Void Stone Bricks, Diamonds, and Astral Shards) to establish your celestial transmutation forge.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="flex gap-1">
-                                    ${renderItemFrameHtml(IDS.CHESTPLATE_DIAMOND, "Diamond")}
-                                    ${renderItemFrameHtml(IDS.ASTRAL_CHESTPLATE, "Astral")}
-                                </div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title gold">4. Diamond to Astral Ascension</span>
-                                    <p class="tutorial-card-desc">Infuse Diamond Armor and tools with Astral Shards inside the Infuser to ascend them into Astral Tier—granting supreme defense!</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tutorial-tip-box">
-                            ${renderItemFrameHtml(IDS.ASTRAL_CHESTPLATE, "Ascension Tip")}
-                            <span><b>ALCHEMIST TIP:</b> Equipping a full 4-piece set of Astral Armor (Helmet, Chestplate, Leggings, Boots) unlocks the coveted <b>Celestial Juggernaut</b> achievement!</span>
-                        </div>
-                    </div>
-                `;
-                drawTutorialAstralScene();
-            }
-        },
-        {
-            title: "Multiplayer & Custom Skins",
-            badge: "Online Co-Op & Skins",
-            render(container) {
-                container.innerHTML = `
-                    <div class="w-full flex flex-col items-center">
-                        <div class="tutorial-preview-box w-full mb-2">
-                            <canvas id="tutorial-preview-canvas" width="760" height="135" class="tutorial-canvas"></canvas>
-                        </div>
-                        <div class="tutorial-grid-2">
-                            <div class="tutorial-card">
-                                <div class="achievement-icon-frame font-['VT323'] text-2xl text-emerald-400 font-bold">MP</div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title green">Instant P2P Hosting</span>
-                                    <p class="tutorial-card-desc">Press Esc -> 'Open to Multiplayer' in any singleplayer world. Set a room name and optional password to invite friends!</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="achievement-icon-frame font-['VT323'] text-2xl text-cyan-400 font-bold">SV</div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title cyan">Server Browser</span>
-                                    <p class="tutorial-card-desc">Browse active public rooms in the Multiplayer Lobby. Join survival adventures or build together in real-time.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="achievement-icon-frame font-['VT323'] text-2xl text-amber-400 font-bold">KEY</div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title orange">Private Co-Op Security</span>
-                                    <p class="tutorial-card-desc">Protect your private worlds with a password so only your invited friends can join and build with you.</p>
-                                </div>
-                            </div>
-                            <div class="tutorial-card">
-                                <div class="achievement-icon-frame font-['VT323'] text-2xl text-purple-400 font-bold">SK</div>
-                                <div class="tutorial-card-content">
-                                    <span class="tutorial-card-title purple">Pixel Skin Studio</span>
-                                    <p class="tutorial-card-desc">Open the built-in Skin Maker in the main menu to paint, save, and wear your own unique pixel-art character skin!</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                drawTutorialMultiplayerScene();
-            }
-        }
-    ];
-
-    function drawTutorialBlock(ctx, id, x, y, size = 32) {
-        if (typeof textures !== 'undefined' && textures && textures[id]) {
-            try {
-                ctx.drawImage(textures[id], Math.floor(x), Math.floor(y), size, size);
-                return;
-            } catch(e) {}
-        }
-        const ix = Math.floor(x);
-        const iy = Math.floor(y);
-        if (id === IDS.PLOWED_DIRT) {
-            ctx.fillStyle = '#795548';
-            ctx.fillRect(ix, iy, size, size);
-            ctx.fillStyle = '#452b16';
-            ctx.fillRect(ix, iy, size, Math.max(3, Math.floor(size * 0.25)));
-            ctx.fillStyle = '#2e190b';
-            for (let fx = 0; fx < size; fx += 6) {
-                ctx.fillRect(ix + fx, iy, 2, 2);
-            }
-            return;
-        }
-        if (id === IDS.GRASS) {
-            ctx.fillStyle = '#795548';
-            ctx.fillRect(ix, iy, size, size);
-            ctx.fillStyle = '#4caf50';
-            ctx.fillRect(ix, iy, size, Math.max(3, Math.floor(size * 0.25)));
-            return;
-        }
-        const fallbackColors = {
-            [IDS.DIRT]: '#795548',
-            [IDS.STONE]: '#78909c',
-            [IDS.COBBLESTONE]: '#607d8b',
-            [IDS.SAND]: '#e0c068',
-            [IDS.SNOW]: '#f0f8ff',
-            [IDS.WOOD]: '#6d4c41',
-            [IDS.PLANKS]: '#a1887f',
-            [IDS.LEAVES]: '#2e7d32',
-            [IDS.COAL_ORE]: '#424242',
-            [IDS.IRON_ORE]: '#d7ccc8',
-            [IDS.DIAMOND_ORE]: '#80deea',
-            [IDS.CACTUS]: '#2e7d32',
-            [IDS.FLOWER_RED]: '#e53935',
-            [IDS.FLOWER_YELLOW]: '#fdd835',
-            [IDS.SHORT_GRASS]: '#43a047',
-            [IDS.WHEAT_STAGE_1]: '#8bc34a',
-            [IDS.WHEAT_STAGE_2]: '#aed581',
-            [IDS.WHEAT_STAGE_3]: '#dce775',
-            [IDS.WHEAT_STAGE_4]: '#fbc02d',
-            [IDS.WHEAT]: '#fbc02d',
-            [IDS.BREAD]: '#d79948',
-            [IDS.BED]: '#e53935',
-            [IDS.TORCH]: '#ffb300',
-            [IDS.CHEST]: '#8d6e63',
-            [IDS.WOOD_HOE]: '#8d6e63',
-            [IDS.IRON_SWORD]: '#cfd8dc',
-            [IDS.DIAMOND_PICKAXE]: '#00e5ff',
-            [IDS.JUNGLE_WOOD]: '#564228',
-            [IDS.JUNGLE_LEAVES]: '#1e7e34',
-            [IDS.JUNGLE_PLANKS]: '#b8824f',
-            [IDS.JUNGLE_SAPLING]: '#28a745',
-            [IDS.JUNGLE_DOOR]: '#8d5d36',
-            [IDS.VINES]: '#2e7d32',
-            [IDS.MELON]: '#2e7d32',
-            [IDS.MELON_SLICE]: '#ef5350',
-            [IDS.MELON_SEEDS]: '#404040',
-            [IDS.FERN]: '#43a047',
-            [IDS.BAMBOO]: '#4caf50',
-            [IDS.VOID_STONE_BRICK]: '#1f1929',
-            [IDS.EMERALD_ORE]: '#10b981',
-            [IDS.ASTRAL_INFUSER]: '#7e22ce',
-            [IDS.ASTRAL_EMERALD]: '#34d399',
-            [IDS.ASTRAL_SHARD]: '#c084fc',
-            [IDS.ASTRAL_SWORD]: '#a855f7',
-            [IDS.ASTRAL_PICKAXE]: '#a855f7',
-            [IDS.ASTRAL_HELMET]: '#9333ea',
-            [IDS.ASTRAL_CHESTPLATE]: '#9333ea',
-            [IDS.ASTRAL_LEGGINGS]: '#9333ea',
-            [IDS.ASTRAL_BOOTS]: '#9333ea',
-            [IDS.KINETIC_SHEARS]: '#38bdf8',
-            [IDS.SHEARS]: '#94a3b8',
-            [IDS.CHESTPLATE_DIAMOND]: '#55e6e6',
-            [IDS.DIAMOND]: '#00e5ff',
-            [IDS.RAW_PORKCHOP]: '#f472b6',
-            [IDS.WOOL]: '#f8fafc',
-            [IDS.BONE]: '#f1f5f9',
-            [IDS.DOOR]: '#8d5d36',
-            [IDS.DOOR_TOP]: '#8d5d36',
-            [IDS.IRON_AXE]: '#cfd8dc'
-        };
-        ctx.fillStyle = fallbackColors[id] || '#5c4033';
-        ctx.fillRect(ix, iy, size, size);
-    }
-
-    function drawMountainRidge(ctx, startX, endX, groundY, color) {
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.moveTo(startX, groundY);
-        for (let x = startX; x <= endX; x += 16) {
-            const my = groundY - 34 - Math.sin(x * 0.015) * 16 - Math.cos(x * 0.03) * 6;
-            ctx.lineTo(x, Math.max(8, my));
-        }
-        ctx.lineTo(endX, groundY);
-        ctx.fill();
-    }
-
-    function drawWoodlandHills(ctx, startX, endX, groundY, color) {
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.moveTo(startX, groundY);
-        for (let x = startX; x <= endX; x += 12) {
-            const wy = groundY - 18 - Math.sin(x * 0.025) * 8;
-            ctx.lineTo(x, wy);
-        }
-        ctx.lineTo(endX, groundY);
-        ctx.fill();
-    }
-
-    function drawMinecraftSun(ctx, sunX, sunY, h, isSunset = false) {
-        if (isSunset) {
-            ctx.fillStyle = 'rgba(255, 140, 70, 0.14)';
-            ctx.fillRect(sunX - 10, 0, 52, h);
-            ctx.fillStyle = 'rgba(251, 146, 60, 0.25)';
-            ctx.fillRect(sunX - 6, sunY - 6, 44, 44);
-            ctx.fillStyle = '#ea580c';
-            ctx.fillRect(sunX, sunY, 32, 32);
-            ctx.fillStyle = '#fb923c';
-            ctx.fillRect(sunX + 4, sunY + 4, 24, 24);
-            ctx.fillStyle = '#fed7aa';
-            ctx.fillRect(sunX + 9, sunY + 9, 14, 14);
-        } else {
-            ctx.fillStyle = 'rgba(255, 240, 150, 0.12)';
-            ctx.fillRect(sunX - 10, 0, 52, h);
-            ctx.fillStyle = 'rgba(255, 230, 110, 0.25)';
-            ctx.fillRect(sunX - 6, sunY - 6, 44, 44);
-            ctx.fillStyle = '#ffd43f';
-            ctx.fillRect(sunX, sunY, 32, 32);
-            ctx.fillStyle = '#fff07a';
-            ctx.fillRect(sunX + 4, sunY + 4, 24, 24);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(sunX + 9, sunY + 9, 14, 14);
-        }
-    }
-
-    function drawMinecraftMoon(ctx, moonX, moonY, h) {
-        ctx.fillStyle = 'rgba(180, 210, 255, 0.08)';
-        ctx.fillRect(moonX - 8, 0, 48, h);
-        ctx.fillStyle = 'rgba(148, 163, 184, 0.2)';
-        ctx.fillRect(moonX - 5, moonY - 5, 42, 42);
-        ctx.fillStyle = '#cbd5e1';
-        ctx.fillRect(moonX, moonY, 32, 32);
-        ctx.fillStyle = '#f1f5f9';
-        ctx.fillRect(moonX + 3, moonY + 3, 26, 26);
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillRect(moonX + 7, moonY + 7, 5, 5);
-        ctx.fillRect(moonX + 16, moonY + 14, 7, 6);
-    }
-
-    function drawPixelCloud(ctx, cx, cy, cw, ch, color = 'rgba(255, 255, 255, 0.85)') {
-        ctx.fillStyle = color;
-        ctx.fillRect(cx, cy + Math.floor(ch * 0.3), cw, Math.floor(ch * 0.7));
-        ctx.fillRect(cx + Math.floor(cw * 0.2), cy, Math.floor(cw * 0.6), ch);
-    }
-
-    function drawTutorialBackdrop(ctx, w, h, groundY, theme = 'day') {
-        if (theme === 'day') {
-            const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
-            skyGrad.addColorStop(0, '#4a8ee8');
-            skyGrad.addColorStop(0.65, '#99caff');
-            skyGrad.addColorStop(1, '#d8edff');
-            ctx.fillStyle = skyGrad;
-            ctx.fillRect(0, 0, w, groundY);
-
-            drawMinecraftSun(ctx, w - 88, 12, h, false);
-            drawPixelCloud(ctx, 80, 14, 70, 16, 'rgba(255, 255, 255, 0.85)');
-            drawPixelCloud(ctx, 470, 18, 60, 14, 'rgba(255, 255, 255, 0.85)');
-
-            drawMountainRidge(ctx, 0, w, groundY, '#5c8299');
-            drawWoodlandHills(ctx, 0, w, groundY, '#426848');
-        } else if (theme === 'day_night_split') {
-            const halfW = Math.floor(w / 2);
-
-            const dayGrad = ctx.createLinearGradient(0, 0, 0, groundY);
-            dayGrad.addColorStop(0, '#4a8ee8');
-            dayGrad.addColorStop(0.65, '#99caff');
-            dayGrad.addColorStop(1, '#d8edff');
-            ctx.fillStyle = dayGrad;
-            ctx.fillRect(0, 0, halfW, groundY);
-
-            drawMinecraftSun(ctx, 50, 12, h, false);
-            drawPixelCloud(ctx, 150, 14, 60, 14, 'rgba(255, 255, 255, 0.85)');
-            drawMountainRidge(ctx, 0, halfW, groundY, '#5c8299');
-            drawWoodlandHills(ctx, 0, halfW, groundY, '#426848');
-
-            const nightGrad = ctx.createLinearGradient(0, 0, 0, groundY);
-            nightGrad.addColorStop(0, '#0c1222');
-            nightGrad.addColorStop(0.6, '#151d32');
-            nightGrad.addColorStop(1, '#1e293b');
-            ctx.fillStyle = nightGrad;
-            ctx.fillRect(halfW, 0, halfW, groundY);
-
-            ctx.fillStyle = '#ffffff';
-            const stars = [
-                [halfW + 35, 18], [halfW + 80, 38], [halfW + 130, 14],
-                [halfW + 180, 42], [halfW + 235, 20], [halfW + 280, 34],
-                [halfW + 320, 16], [halfW + 355, 40]
-            ];
-            stars.forEach(([sx, sy]) => ctx.fillRect(sx, sy, 2, 2));
-
-            drawMinecraftMoon(ctx, w - 75, 12, h);
-            drawPixelCloud(ctx, halfW + 60, 18, 55, 12, 'rgba(255, 255, 255, 0.15)');
-            drawMountainRidge(ctx, halfW, w, groundY, '#182030');
-            drawWoodlandHills(ctx, halfW, w, groundY, '#121b16');
-
-            ctx.strokeStyle = '#ffd34d';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(halfW, 0);
-            ctx.lineTo(halfW, groundY);
-            ctx.stroke();
-        } else if (theme === 'sunset') {
-            const sunsetGrad = ctx.createLinearGradient(0, 0, 0, groundY);
-            sunsetGrad.addColorStop(0, '#1c2438');
-            sunsetGrad.addColorStop(0.35, '#3d2e56');
-            sunsetGrad.addColorStop(0.7, '#823e59');
-            sunsetGrad.addColorStop(1, '#d97746');
-            ctx.fillStyle = sunsetGrad;
-            ctx.fillRect(0, 0, w, groundY);
-
-            drawMinecraftSun(ctx, w - 100, 38, h, true);
-            drawPixelCloud(ctx, 80, 14, 70, 16, 'rgba(253, 186, 116, 0.4)');
-            drawPixelCloud(ctx, 420, 18, 60, 14, 'rgba(253, 186, 116, 0.35)');
-
-            drawMountainRidge(ctx, 0, w, groundY, '#474063');
-            drawWoodlandHills(ctx, 0, w, groundY, '#273833');
-        }
-    }
-
-    function drawTutorialPlayer(ctx, px, py, options = {}) {
-        const isAlex = options.skin === 'alex';
-        const hairColor = isAlex ? '#c2410c' : '#45220c';
-        const skinColor = isAlex ? '#fbd7b5' : '#f8b584';
-        const shirtColor = isAlex ? '#16a34a' : '#299cd2';
-        const pantsColor = isAlex ? '#653818' : '#1c4a85';
-        const shoesColor = isAlex ? '#331f13' : '#262626';
-        const eyeColor = isAlex ? '#15803d' : '#1d4ed8';
-
-        // Head (12 x 12)
-        ctx.fillStyle = skinColor;
-        ctx.fillRect(px + 1, py + 2, 12, 12);
-        // Hair
-        ctx.fillStyle = hairColor;
-        ctx.fillRect(px, py, 14, 4);
-        ctx.fillRect(px, py + 4, 3, 4);
-        if (isAlex) {
-            ctx.fillRect(px + 11, py + 4, 3, 7);
-        }
-        // Eyes
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(px + 7, py + 5, 2, 2);
-        ctx.fillRect(px + 10, py + 5, 2, 2);
-        ctx.fillStyle = eyeColor;
-        ctx.fillRect(px + 8, py + 5, 1, 2);
-        ctx.fillRect(px + 11, py + 5, 1, 2);
-        // Nose / mouth
-        ctx.fillStyle = isAlex ? '#e29d72' : '#c97848';
-        ctx.fillRect(px + 8, py + 8, 3, 2);
-
-        // Torso / Shirt (14 x 14)
-        ctx.fillStyle = shirtColor;
-        ctx.fillRect(px, py + 14, 14, 14);
-        // Collar cutout
-        ctx.fillStyle = skinColor;
-        ctx.fillRect(px + 5, py + 14, 4, 3);
-
-        // Front Arm with sleeve
-        ctx.fillStyle = shirtColor;
-        ctx.fillRect(px + 10, py + 15, 4, 5);
-        ctx.fillStyle = skinColor;
-        ctx.fillRect(px + 10, py + 20, 4, 7);
-
-        // Legs / Pants (12 x 12)
-        ctx.fillStyle = pantsColor;
-        ctx.fillRect(px + 1, py + 28, 12, 12);
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(px + 6, py + 30, 1, 10);
-
-        // Boots / Shoes (14 x 4)
-        ctx.fillStyle = shoesColor;
-        ctx.fillRect(px, py + 40, 14, 4);
-
-        // Held item
-        if (options.heldItem) {
-            drawTutorialBlock(ctx, options.heldItem, px + 12, py + 14, 20);
-        }
-
-        // Name tag
-        if (options.name) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.font = 'bold 13px "VT323", monospace';
-            const tw = ctx.measureText(options.name).width;
-            ctx.fillRect(px + 7 - tw / 2 - 3, py - 14, tw + 6, 14);
-            ctx.fillStyle = options.nameColor || '#ffffff';
-            ctx.textAlign = 'center';
-            ctx.fillText(options.name, px + 7, py - 3);
-        }
-    }
-
-    export function drawTutorialWorldScene() {
-        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
-        if (!c) return;
-        const ctx = c.getContext('2d');
-        if (!ctx) return;
-        const w = c.width, h = c.height;
-        ctx.imageSmoothingEnabled = false;
-
-        const bSize = 24;
-        const groundY = 88;
-
-        // Unified Day Backdrop
-        drawTutorialBackdrop(ctx, w, h, groundY, 'day');
-
-        // Biome Terrain Surface & Subsoil (2 complete layers)
-        for (let x = 0; x < w; x += bSize) {
-            let topBlock = IDS.GRASS;
-            if (x < 180) topBlock = IDS.SAND;
-            else if (x >= 560) topBlock = IDS.SNOW;
-
-            drawTutorialBlock(ctx, topBlock, x, groundY, bSize);
-            drawTutorialBlock(ctx, topBlock === IDS.SAND ? IDS.SAND : IDS.DIRT, x, groundY + bSize, bSize);
-        }
-
-        // Subterranean Ore Veins in Underground Slice:
-        drawTutorialBlock(ctx, IDS.STONE, 240, groundY + bSize, bSize);
-        drawTutorialBlock(ctx, IDS.COAL_ORE, 264, groundY + bSize, bSize);
-        drawTutorialBlock(ctx, IDS.IRON_ORE, 288, groundY + bSize, bSize);
-        drawTutorialBlock(ctx, IDS.DIAMOND_ORE, 312, groundY + bSize, bSize);
-        drawTutorialBlock(ctx, IDS.STONE, 336, groundY + bSize, bSize);
-
-        // Desert Cactuses
-        drawTutorialBlock(ctx, IDS.CACTUS, 80, groundY - bSize, bSize);
-        drawTutorialBlock(ctx, IDS.CACTUS, 80, groundY - bSize * 2, bSize);
-
-        // Plains Oak Tree
-        const treeX = 440;
-        drawTutorialBlock(ctx, IDS.WOOD, treeX, groundY - bSize, bSize);
-        drawTutorialBlock(ctx, IDS.WOOD, treeX, groundY - bSize * 2, bSize);
-        drawTutorialBlock(ctx, IDS.WOOD, treeX, groundY - bSize * 3, bSize);
-        for (let lx = -bSize * 1.5; lx <= bSize * 1.5; lx += bSize) {
-            for (let ly = -bSize * 2; ly <= 0; ly += bSize) {
-                if (Math.abs(lx) === bSize * 1.5 && ly === -bSize * 2) continue;
-                drawTutorialBlock(ctx, IDS.LEAVES, treeX + lx, groundY - bSize * 3 + ly, bSize);
-            }
-        }
-
-        // Flowers & Vegetation
-        drawTutorialBlock(ctx, IDS.FLOWER_RED, 210, groundY - 18, 20);
-        drawTutorialBlock(ctx, IDS.FLOWER_YELLOW, 280, groundY - 18, 20);
-        drawTutorialBlock(ctx, IDS.SHORT_GRASS, 350, groundY - 16, 18);
-
-        // Steve Player Character
-        drawTutorialPlayer(ctx, 240, groundY - 44, {
-            skin: 'steve',
-            heldItem: IDS.DIAMOND_PICKAXE,
-            name: '<Steve>',
-            nameColor: '#38bdf8'
-        });
-    }
-
-    export function drawTutorialCraftingScene() {
-        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
-        if (!c) return;
-        const ctx = c.getContext('2d');
-        if (!ctx) return;
-        const w = c.width, h = c.height;
-        ctx.imageSmoothingEnabled = false;
-
-        // Dark workshop stone backdrop
-        ctx.fillStyle = '#15191d';
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.strokeStyle = '#1d232a';
-        ctx.lineWidth = 1;
-        for (let x = 0; x < w; x += 24) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-        }
-
-        const items = [
-            { id: IDS.WOOD, name: "Wood" },
-            { id: IDS.PLANKS, name: "Planks" },
-            { id: IDS.CRAFTING_TABLE, name: "Table" },
-            { id: IDS.STONE_PICKAXE, name: "Pickaxe" },
-            { id: IDS.FURNACE, name: "Furnace" },
-            { id: IDS.IRON_INGOT, name: "Ingot" },
-            { id: IDS.DIAMOND, name: "Diamond" }
-        ];
-
-        const slotSize = 44;
-        const spacing = w / items.length;
-
-        for (let i = 0; i < items.length; i++) {
-            const it = items[i];
-            const cx = Math.floor(i * spacing + spacing / 2);
-            const cy = Math.floor(h / 2) - 8;
-
-            ctx.fillStyle = '#101418';
-            ctx.fillRect(cx - slotSize / 2, cy - slotSize / 2, slotSize, slotSize);
-            ctx.strokeStyle = '#333a41';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(cx - slotSize / 2, cy - slotSize / 2, slotSize, slotSize);
-            ctx.strokeStyle = '#46515a';
-            ctx.beginPath();
-            ctx.moveTo(cx - slotSize / 2, cy + slotSize / 2);
-            ctx.lineTo(cx - slotSize / 2, cy - slotSize / 2);
-            ctx.lineTo(cx + slotSize / 2, cy - slotSize / 2);
-            ctx.stroke();
-
-            drawTutorialBlock(ctx, it.id, cx - 15, cy - 15, 30);
-
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 20px VT323, monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText(it.name, cx, cy + slotSize / 2 + 18);
-
-            if (i < items.length - 1) {
-                ctx.fillStyle = '#ffd34d';
-                ctx.font = '24px VT323, monospace';
-                ctx.fillText('▶', cx + spacing / 2, cy + 6);
-            }
-        }
-    }
-
-    export function drawTutorialFarmingScene() {
-        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
-        if (!c) return;
-        const ctx = c.getContext('2d');
-        if (!ctx) return;
-        const w = c.width, h = c.height;
-        ctx.imageSmoothingEnabled = false;
-
-        const groundY = 88;
-        const bSize = 24;
-
-        // Unified Day Backdrop (matching World scene art style!)
-        drawTutorialBackdrop(ctx, w, h, groundY, 'day');
-
-        // Left meadow: Grass & subsoil dirt (x: 0..216)
-        for (let x = 0; x < 216; x += bSize) {
-            drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
-            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
-        }
-
-        // Irrigation Water canal (x: 216..264)
-        for (let x = 216; x < 264; x += bSize) {
-            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
-            ctx.fillStyle = '#2563eb';
-            ctx.fillRect(x, groundY + 4, bSize, bSize - 4);
-            ctx.fillStyle = 'rgba(147, 197, 253, 0.7)';
-            ctx.fillRect(x, groundY + 4, bSize, 3);
-        }
-
-        // Farmland with the 4 crop growth stages (contiguous blocks, zero gaps, authentic plowed dirt texture!)
-        const stages = [
-            IDS.WHEAT_STAGE_1,
-            IDS.WHEAT_STAGE_1,
-            IDS.WHEAT_STAGE_2,
-            IDS.WHEAT_STAGE_2,
-            IDS.WHEAT_STAGE_3,
-            IDS.WHEAT_STAGE_3,
-            IDS.WHEAT_STAGE_4,
-            IDS.WHEAT_STAGE_4
-        ];
-
-        const farmStartX = 264;
-        for (let i = 0; i < stages.length; i++) {
-            const cx = farmStartX + i * bSize;
-            drawTutorialBlock(ctx, IDS.PLOWED_DIRT, cx, groundY, bSize);
-            drawTutorialBlock(ctx, IDS.DIRT, cx, groundY + bSize, bSize);
-            drawTutorialBlock(ctx, stages[i], cx, groundY - bSize, bSize);
-        }
-
-        const rightMeadowStartX = farmStartX + stages.length * bSize; // 456
-        // Right meadow: Grass & subsoil dirt (x: 456..w)
-        for (let x = rightMeadowStartX; x < w; x += bSize) {
-            drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
-            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
-        }
-
-        // Flowers & wild foliage
-        drawTutorialBlock(ctx, IDS.FLOWER_RED, 60, groundY - 18, 20);
-        drawTutorialBlock(ctx, IDS.FLOWER_YELLOW, 130, groundY - 18, 20);
-        drawTutorialBlock(ctx, IDS.SHORT_GRASS, 540, groundY - 16, 18);
-        drawTutorialBlock(ctx, IDS.FLOWER_RED, 610, groundY - 18, 20);
-
-        // Player Character with Hoe (unified pixel-art player)
-        drawTutorialPlayer(ctx, 160, groundY - 44, {
-            skin: 'steve',
-            heldItem: IDS.WOOD_HOE,
-            name: '<Farmer Steve>',
-            nameColor: '#fde047'
-        });
-
-        // Friendly Pig grazing in right meadow
-        try {
-            if (typeof Pig === 'function') {
-                const pig = new Pig(660, groundY - 21);
-                pig.facingRight = false;
-                pig.draw(ctx, 0, 0);
-            }
-        } catch(e) {}
-
-        // Wheat -> Bread craft showcase badge
-        const badgeX = 356, badgeY = 12;
-        ctx.fillStyle = 'rgba(23, 27, 32, 0.88)';
-        ctx.strokeStyle = '#eab308';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(badgeX - 45, badgeY - 4, 145, 30, 4);
-        } else {
-            ctx.rect(badgeX - 45, badgeY - 4, 145, 30);
-        }
-        ctx.fill();
-        ctx.stroke();
-
-        drawTutorialBlock(ctx, IDS.WHEAT, badgeX - 38, badgeY, 22);
-        ctx.fillStyle = '#fef08a';
-        ctx.font = 'bold 15px "VT323", monospace';
-        ctx.fillText('->', badgeX - 10, badgeY + 16);
-        drawTutorialBlock(ctx, IDS.BREAD, badgeX + 10, badgeY, 22);
-        ctx.fillText('BREAD', badgeX + 40, badgeY + 16);
-    }
-
-    export function drawTutorialMobsScene() {
-        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
-        if (!c) return;
-        const ctx = c.getContext('2d');
-        if (!ctx) return;
-        const w = c.width, h = c.height;
-        ctx.imageSmoothingEnabled = false;
-
-        const groundY = 88;
-        const bSize = 24;
-        const halfW = Math.floor(w / 2);
-
-        // Unified Day / Night Split Backdrop
-        drawTutorialBackdrop(ctx, w, h, groundY, 'day_night_split');
-
-        // Ground Terrain: Day side grass/dirt, Night side with sand patch & shelter
-        for (let x = 0; x < w; x += bSize) {
-            const isSandPatch = (x >= halfW + 65 && x < halfW + 155);
-            const topBlock = isSandPatch ? IDS.SAND : IDS.GRASS;
-            const subBlock = isSandPatch ? IDS.SAND : IDS.DIRT;
-            drawTutorialBlock(ctx, topBlock, x, groundY, bSize);
-            drawTutorialBlock(ctx, subBlock, x, groundY + bSize, bSize);
-        }
-
-        // Night Darkness overlay on ground terrain for right half
-        ctx.fillStyle = 'rgba(5, 10, 20, 0.45)';
-        ctx.fillRect(halfW, groundY, halfW, h - groundY);
-
-        // Top Centered Banners
-        ctx.fillStyle = '#22c55e';
-        ctx.font = 'bold 18px "VT323", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('DAY: PEACEFUL FAUNA', halfW / 2, 22);
-
-        ctx.fillStyle = '#ef4444';
-        ctx.fillText('NIGHT: SMARTER, DEADLIER MONSTERS', halfW + halfW / 2, 22);
-
-        // Day Animals (grounded properly with feet on groundY)
-        try {
-            if (typeof Pig === 'function') {
-                const p = new Pig(75, groundY - 21);
-                p.dir = 1;
-                p.draw(ctx, 0, 0);
-            }
-            if (typeof Sheep === 'function') {
-                const s = new Sheep(205, groundY - 22);
-                s.dir = 1;
-                s.draw(ctx, 0, 0);
-            }
-        } catch(e) {}
-
-        // Flowers & Vegetation on Day side
-        drawTutorialBlock(ctx, IDS.FLOWER_RED, 145, groundY - 18, 20);
-        drawTutorialBlock(ctx, IDS.FLOWER_YELLOW, 290, groundY - 18, 20);
-
-        // Night Hostile Mobs with Smarter AI visuals
-        try {
-            // Creeper stalking quietly
-            if (typeof Creeper === 'function') {
-                const cr = new Creeper(halfW + 20, groundY - 58);
-                cr.facingRight = true;
-                cr.draw(ctx, 0, 0);
-            }
-            // Desert Scorpion poised on sand with raised stinger
-            if (typeof Scorpion === 'function') {
-                const sc = new Scorpion(halfW + 95, groundY - 16);
-                sc.facingRight = true;
-                sc.tailStrikeTime = 12;
-                sc.draw(ctx, 0, 0);
-            }
-            // Frenzied Zombie lunging with glowing red eyes and snarling jaw towards shelter door
-            if (typeof Zombie === 'function') {
-                const z = new Zombie(halfW + 168, groundY - 58);
-                z.facingRight = true;
-                z.isFrenzied = true;
-                z.isLunging = true;
-                z.draw(ctx, 0, 0);
-            }
-        } catch(e) {}
-
-        // Shelter on right with Bed, Torch, Planks & Door
-        const shelterDoorX = halfW + 242;
-        // Wooden Door being breached
-        drawTutorialBlock(ctx, IDS.DOOR_TOP, shelterDoorX, groundY - 48, 24);
-        drawTutorialBlock(ctx, IDS.DOOR, shelterDoorX, groundY - 24, 24);
-
-        // Door stress/banging wood crack particles
-        ctx.fillStyle = '#ffedd5';
-        ctx.fillRect(shelterDoorX + 3, groundY - 34, 3, 3);
-        ctx.fillRect(shelterDoorX + 12, groundY - 22, 2, 2);
-        ctx.fillRect(shelterDoorX + 7, groundY - 14, 3, 2);
-        ctx.fillStyle = '#b45309';
-        ctx.fillRect(shelterDoorX + 9, groundY - 30, 1, 6);
-        ctx.fillRect(shelterDoorX + 5, groundY - 18, 1, 5);
-
-        // Planks frame & roof
-        drawTutorialBlock(ctx, IDS.PLANKS, shelterDoorX + 24, groundY - bSize * 2, bSize);
-        drawTutorialBlock(ctx, IDS.PLANKS, shelterDoorX + 48, groundY - bSize * 2, bSize);
-        drawTutorialBlock(ctx, IDS.PLANKS, shelterDoorX + 72, groundY - bSize * 2, bSize);
-        drawTutorialBlock(ctx, IDS.PLANKS, shelterDoorX + 96, groundY - bSize * 2, bSize);
-        drawTutorialBlock(ctx, IDS.PLANKS, shelterDoorX + 96, groundY - bSize, bSize);
-
-        // Bed & Torch inside shelter
-        drawTutorialBlock(ctx, IDS.BED, shelterDoorX + 36, groundY - 18, 36);
-        drawTutorialBlock(ctx, IDS.TORCH, shelterDoorX + 88, groundY - bSize * 1.5, 20);
-
-        // Warm torch glow
-        const tGlow = ctx.createRadialGradient(shelterDoorX + 96, groundY - 26, 2, shelterDoorX + 96, groundY - 26, 42);
-        tGlow.addColorStop(0, 'rgba(255, 180, 50, 0.4)');
-        tGlow.addColorStop(1, 'rgba(255, 180, 50, 0)');
-        ctx.fillStyle = tGlow;
-        ctx.fillRect(shelterDoorX + 50, groundY - 62, 90, 78);
-    }
-
-    export function drawTutorialArmorScene() {
-        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
-        if (!c) return;
-        const ctx = c.getContext('2d');
-        if (!ctx) return;
-        const w = c.width, h = c.height;
-        ctx.imageSmoothingEnabled = false;
-
-        // Dark armory stone backdrop
-        ctx.fillStyle = '#13171c';
-        ctx.fillRect(0, 0, w, h);
-
-        // Subtle armory stone grid
-        ctx.strokeStyle = '#1d232a';
-        ctx.lineWidth = 1;
-        for (let x = 0; x < w; x += 24) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-        }
-
-        // Top centered banner
-        ctx.fillStyle = '#1a222a';
-        ctx.fillRect(w / 2 - 200, 7, 400, 24);
-        ctx.strokeStyle = '#ffd34d';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(w / 2 - 200, 7, 400, 24);
-
-        ctx.fillStyle = '#ffd34d';
-        ctx.font = 'bold 18px VT323, monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("ARMOR & GEAR: +15 SUIT DEFENSE (60% DAMAGE REDUCTION)", w / 2, 24);
-
-        // 5 Armor & Weapon slots, perfectly centered in canvas
-        const armors = [
-            { id: IDS.HELMET_IRON, name: "Helmet", def: "+2 Armor" },
-            { id: IDS.CHESTPLATE_IRON, name: "Chestplate", def: "+6 Armor" },
-            { id: IDS.LEGGINGS_IRON, name: "Leggings", def: "+5 Armor" },
-            { id: IDS.BOOTS_IRON, name: "Boots", def: "+2 Armor" },
-            { id: IDS.IRON_SWORD, name: "Sword", def: "6 Attack" }
-        ];
-
-        const slotSize = 46;
-        const spacing = 110;
-        const totalW = (armors.length - 1) * spacing + slotSize;
-        const startX = Math.floor((w - totalW) / 2);
-        const sy = 40;
-
-        for (let i = 0; i < armors.length; i++) {
-            const it = armors[i];
-            const sx = startX + i * spacing;
-
-            // Slot shadow / base
-            ctx.fillStyle = '#0a0d10';
-            ctx.fillRect(sx, sy, slotSize, slotSize);
-            ctx.strokeStyle = '#333a41';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(sx, sy, slotSize, slotSize);
-
-            // Highlight bevel
-            ctx.strokeStyle = '#5a6672';
-            ctx.beginPath();
-            ctx.moveTo(sx, sy + slotSize);
-            ctx.lineTo(sx, sy);
-            ctx.lineTo(sx + slotSize, sy);
-            ctx.stroke();
-
-            // Inner dark inset
-            ctx.fillStyle = '#101418';
-            ctx.fillRect(sx + 3, sy + 3, slotSize - 6, slotSize - 6);
-
-            // Real Texture inside slot
-            drawTutorialBlock(ctx, it.id, sx + 7, sy + 7, 32);
-
-            // Label
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 18px VT323, monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText(it.name, sx + slotSize / 2, sy + slotSize + 16);
-
-            // Stat
-            ctx.fillStyle = (i === 4) ? '#fde047' : '#67e8f9';
-            ctx.font = '16px VT323, monospace';
-            ctx.fillText(it.def, sx + slotSize / 2, sy + slotSize + 30);
-        }
-
-        // Left and right Storage Chests for aesthetic balance
-        drawTutorialBlock(ctx, IDS.CHEST, 42, 46, 38);
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '16px VT323, monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("Storage", 61, 102);
-
-        drawTutorialBlock(ctx, IDS.CHEST, w - 80, 46, 38);
-        ctx.fillText("Storage", w - 61, 102);
-    }
-
-    export function drawTutorialKaelScene() {
-        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
-        if (!c) return;
-        const ctx = c.getContext('2d');
-        if (!ctx) return;
-        const w = c.width, h = c.height;
-        ctx.imageSmoothingEnabled = false;
-
-        const groundY = 88;
-        const bSize = 24;
-
-        // Dark celestial / rift sky
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
-        skyGrad.addColorStop(0, '#0a091e');
-        skyGrad.addColorStop(0.5, '#181335');
-        skyGrad.addColorStop(1, '#2c194d');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, w, groundY);
-
-        // Twinkling stars
-        ctx.fillStyle = '#ffffff';
-        const stars = [
-            [25, 12], [70, 32], [115, 15], [170, 24], [230, 10], [290, 36],
-            [340, 14], [395, 28], [450, 18], [510, 34], [570, 12], [630, 26], [690, 14], [730, 32]
-        ];
-        stars.forEach(([sx, sy]) => ctx.fillRect(sx, sy, 2, 2));
-
-        // Distant violet nebula mountains
-        drawMountainRidge(ctx, 0, w, groundY, '#2a1a45');
-        drawWoodlandHills(ctx, 0, w, groundY, '#1b2d2f');
-
-        // Ground terrain: 2 complete rows across entire canvas
-        for (let x = 0; x < w; x += bSize) {
-            let top = IDS.GRASS;
-            if (x >= 144 && x <= 240) top = IDS.VOID_STONE_BRICK;
-            drawTutorialBlock(ctx, top, x, groundY, bSize);
-            drawTutorialBlock(ctx, top === IDS.VOID_STONE_BRICK ? IDS.STONE : IDS.DIRT, x, groundY + bSize, bSize);
-        }
-
-        // Planar Rift Vortex at x: 192
-        const riftX = 192, riftY = groundY - 38;
-        const riftGrad = ctx.createRadialGradient(riftX, riftY, 4, riftX, riftY, 40);
-        riftGrad.addColorStop(0, 'rgba(192, 132, 252, 0.9)');
-        riftGrad.addColorStop(0.5, 'rgba(126, 34, 206, 0.6)');
-        riftGrad.addColorStop(0.8, 'rgba(6, 182, 212, 0.3)');
-        riftGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = riftGrad;
-        ctx.beginPath();
-        ctx.ellipse(riftX, riftY, 32, 42, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Rift core slit
-        ctx.fillStyle = '#f5d0fe';
-        ctx.beginPath();
-        ctx.ellipse(riftX, riftY, 5, 28, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Cosmic floating particles around rift
-        const riftParticles = [
-            [riftX - 18, riftY - 24, '#c084fc'],
-            [riftX + 22, riftY - 14, '#38bdf8'],
-            [riftX - 12, riftY + 18, '#a855f7'],
-            [riftX + 16, riftY + 22, '#34d399']
-        ];
-        riftParticles.forEach(([px, py, col]) => {
-            ctx.fillStyle = col;
-            ctx.fillRect(px, py, 3, 3);
-        });
-
-        // Kael, The Atlas Explorer standing at x: 232
-        const kCanvas = (typeof getKaelSkinCanvas === 'function') ? getKaelSkinCanvas() : null;
-        if (kCanvas) {
-            ctx.drawImage(kCanvas, 226, groundY - 48, 24, 48);
-        } else {
-            drawTutorialPlayer(ctx, 226, groundY - 44, { skin: 'alex' });
-        }
-
-        // Kael Name Tag
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(170, groundY - 66, 136, 15);
-        ctx.strokeStyle = '#c084fc';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(170, groundY - 66, 136, 15);
-        ctx.fillStyle = '#e9d5ff';
-        ctx.font = 'bold 12px "VT323", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('✦ Kael, The Atlas Explorer ✦', 238, groundY - 54);
-
-        // Steve / Player standing at x: 118 facing Kael
-        drawTutorialPlayer(ctx, 118, groundY - 44, {
-            skin: 'steve',
-            heldItem: IDS.ASTRAL_EMERALD,
-            name: '<Steve>',
-            nameColor: '#38bdf8'
-        });
-
-        // Speech bubble prompt: "[E] Talk / Open Atlas Market"
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-        ctx.fillRect(124, 12, 196, 26);
-        ctx.strokeStyle = '#fbbf24';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(124, 12, 196, 26);
-        ctx.fillStyle = '#fde047';
-        ctx.font = 'bold 16px "VT323", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('PRESS [E] TO TALK & TRADE', 222, 29);
-
-        // Right side: Atlas Market showcase HUD
-        const panelX = 390, panelY = 12, panelW = 350, panelH = 76;
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
-        ctx.fillRect(panelX, panelY, panelW, panelH);
-        ctx.strokeStyle = '#a855f7';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(panelX, panelY, panelW, panelH);
-
-        // Header
-        ctx.fillStyle = '#c084fc';
-        ctx.font = 'bold 18px "VT323", monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText('ATLAS MARKET CATALOG', panelX + 12, panelY + 18);
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '13px "VT323", monospace';
-        ctx.fillText('Rotating Planar Relics', panelX + 180, panelY + 18);
-
-        // Market item slots
-        const trades = [
-            { cost: '5x', costId: IDS.ASTRAL_EMERALD, outId: IDS.ASTRAL_SHARD, name: 'Shard' },
-            { cost: '12x', costId: IDS.ASTRAL_EMERALD, outId: IDS.ASTRAL_SWORD, name: 'Blade' },
-            { cost: '8x', costId: IDS.ASTRAL_EMERALD, outId: IDS.KINETIC_SHEARS, name: 'Shears' }
-        ];
-
-        const tSpacing = 110;
-        for (let i = 0; i < trades.length; i++) {
-            const tr = trades[i];
-            const tx = panelX + 12 + i * tSpacing;
-            const ty = panelY + 28;
-
-            ctx.fillStyle = '#101418';
-            ctx.fillRect(tx, ty, 100, 38);
-            ctx.strokeStyle = '#333a41';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(tx, ty, 100, 38);
-
-            drawTutorialBlock(ctx, tr.costId, tx + 4, ty + 7, 24);
-            ctx.fillStyle = '#34d399';
-            ctx.font = 'bold 14px "VT323", monospace';
-            ctx.textAlign = 'left';
-            ctx.fillText(tr.cost, tx + 30, ty + 23);
-
-            ctx.fillStyle = '#ffd34d';
-            ctx.font = '14px "VT323", monospace';
-            ctx.fillText('->', tx + 48, ty + 23);
-
-            drawTutorialBlock(ctx, tr.outId, tx + 66, ty + 7, 24);
-        }
-    }
-
-    export function drawTutorialAstralScene() {
-        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
-        if (!c) return;
-        const ctx = c.getContext('2d');
-        if (!ctx) return;
-        const w = c.width, h = c.height;
-        ctx.imageSmoothingEnabled = false;
-
-        // Dark celestial workshop backdrop
-        ctx.fillStyle = '#0f0c1b';
-        ctx.fillRect(0, 0, w, h);
-
-        // Subtle cosmic grid lines
-        ctx.strokeStyle = '#231838';
-        ctx.lineWidth = 1;
-        for (let x = 0; x < w; x += 24) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-        }
-
-        // Top banner: ASTRAL INFUSION & CELESTIAL ASCENSION
-        ctx.fillStyle = '#191228';
-        ctx.fillRect(w / 2 - 240, 7, 480, 24);
-        ctx.strokeStyle = '#c084fc';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(w / 2 - 240, 7, 480, 24);
-
-        ctx.fillStyle = '#c084fc';
-        ctx.font = 'bold 18px "VT323", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("ASTRAL INFUSION: DIAMOND GEAR -> ASTRAL ASCENSION (+9 DEFENSE)", w / 2, 24);
-
-        // Central Altar with Astral Infuser
-        const altarX = Math.floor(w / 2);
-        const altarY = 62;
-
-        // Infusion Energy Beam
-        const beamGrad = ctx.createLinearGradient(altarX, altarY - 45, altarX, altarY + 20);
-        beamGrad.addColorStop(0, 'rgba(192, 132, 252, 0)');
-        beamGrad.addColorStop(0.5, 'rgba(192, 132, 252, 0.35)');
-        beamGrad.addColorStop(1, 'rgba(126, 34, 206, 0.6)');
-        ctx.fillStyle = beamGrad;
-        ctx.fillRect(altarX - 28, altarY - 26, 56, 50);
-
-        // Infuser Block
-        drawTutorialBlock(ctx, IDS.ASTRAL_INFUSER, altarX - 18, altarY - 14, 36);
-
-        // Sparkling motes
-        const motes = [
-            [altarX - 24, altarY - 20, '#c084fc'],
-            [altarX + 22, altarY - 16, '#f472b6'],
-            [altarX - 14, altarY - 32, '#38bdf8'],
-            [altarX + 16, altarY - 28, '#fef08a']
-        ];
-        motes.forEach(([mx, my, col]) => {
-            ctx.fillStyle = col;
-            ctx.fillRect(mx, my, 3, 3);
-        });
-
-        // Infuser label
-        ctx.fillStyle = '#f5d0fe';
-        ctx.font = 'bold 16px "VT323", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("Astral Infuser", altarX, altarY + 36);
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '13px "VT323", monospace';
-        ctx.fillText("Celestial Station", altarX, altarY + 49);
-
-        // Left Side: Inputs (Diamond Chestplate + Astral Shards)
-        const leftStartX = 90;
-        const slotSize = 46;
-
-        // Slot 1: Diamond Chestplate
-        ctx.fillStyle = '#101418';
-        ctx.fillRect(leftStartX, 44, slotSize, slotSize);
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(leftStartX, 44, slotSize, slotSize);
-        drawTutorialBlock(ctx, IDS.CHESTPLATE_DIAMOND, leftStartX + 7, 51, 32);
-        ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 16px "VT323", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("Diamond Armor", leftStartX + slotSize / 2, 104);
-        ctx.fillStyle = '#64748b';
-        ctx.font = '13px "VT323", monospace';
-        ctx.fillText("+8 Defense", leftStartX + slotSize / 2, 118);
-
-        // Plus Sign
-        ctx.fillStyle = '#ffd34d';
-        ctx.font = 'bold 24px "VT323", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("+", leftStartX + slotSize + 22, 72);
-
-        // Slot 2: Astral Shards / Gems
-        const slot2X = leftStartX + slotSize + 44;
-        ctx.fillStyle = '#101418';
-        ctx.fillRect(slot2X, 44, slotSize, slotSize);
-        ctx.strokeStyle = '#c084fc';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(slot2X, 44, slotSize, slotSize);
-        drawTutorialBlock(ctx, IDS.ASTRAL_SHARD, slot2X + 7, 51, 32);
-        ctx.fillStyle = '#c084fc';
-        ctx.font = 'bold 16px "VT323", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("Astral Shards", slot2X + slotSize / 2, 104);
-        ctx.fillStyle = '#64748b';
-        ctx.font = '13px "VT323", monospace';
-        ctx.fillText("Cosmic Catalyst", slot2X + slotSize / 2, 118);
-
-        // Arrow pointing right to Infuser
-        ctx.fillStyle = '#c084fc';
-        ctx.font = 'bold 22px "VT323", monospace';
-        ctx.fillText("▶▶", slot2X + slotSize + 24, 71);
-
-        // Right Side: Ascended Output (Astral Chestplate)
-        const rightStartX = altarX + 90;
-        ctx.fillStyle = '#c084fc';
-        ctx.font = 'bold 22px "VT323", monospace';
-        ctx.fillText("▶▶", rightStartX - 24, 71);
-
-        // Slot 3: Astral Chestplate
-        ctx.fillStyle = '#1e1133';
-        ctx.fillRect(rightStartX, 44, slotSize, slotSize);
-        ctx.strokeStyle = '#e879f9';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(rightStartX, 44, slotSize, slotSize);
-        drawTutorialBlock(ctx, IDS.ASTRAL_CHESTPLATE, rightStartX + 7, 51, 32);
-        ctx.fillStyle = '#f0abfc';
-        ctx.font = 'bold 16px "VT323", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("Astral Chestplate", rightStartX + slotSize / 2, 104);
-        ctx.fillStyle = '#34d399';
-        ctx.font = 'bold 13px "VT323", monospace';
-        ctx.fillText("+9 DEF + KINETIC", rightStartX + slotSize / 2, 118);
-
-        // Far right: Astral Exchange Vault mini badge
-        const vaultX = rightStartX + slotSize + 40;
-        ctx.fillStyle = '#101418';
-        ctx.fillRect(vaultX, 44, 90, slotSize);
-        ctx.strokeStyle = '#34d399';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(vaultX, 44, 90, slotSize);
-        drawTutorialBlock(ctx, IDS.EMERALD_ORE, vaultX + 6, 52, 30);
-        ctx.fillStyle = '#ffd34d';
-        ctx.font = '14px "VT323", monospace';
-        ctx.fillText('->', vaultX + 46, 72);
-        drawTutorialBlock(ctx, IDS.ASTRAL_EMERALD, vaultX + 56, 52, 30);
-
-        ctx.fillStyle = '#34d399';
-        ctx.font = 'bold 15px "VT323", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("Exchange Vault", vaultX + 45, 104);
-        ctx.fillStyle = '#64748b';
-        ctx.font = '13px "VT323", monospace';
-        ctx.fillText("Currency Mint", vaultX + 45, 118);
-    }
-
-    export function drawTutorialMultiplayerScene() {
-        const c = typeof document !== 'undefined' ? document.getElementById('tutorial-preview-canvas') : null;
-        if (!c) return;
-        const ctx = c.getContext('2d');
-        if (!ctx) return;
-        const w = c.width, h = c.height;
-        ctx.imageSmoothingEnabled = false;
-
-        const groundY = 88;
-        const bSize = 24;
-
-        // Unified Sunset Backdrop
-        drawTutorialBackdrop(ctx, w, h, groundY, 'sunset');
-
-        // Ground terrain: 2 complete rows across entire canvas
-        for (let x = 0; x < w; x += bSize) {
-            drawTutorialBlock(ctx, IDS.GRASS, x, groundY, bSize);
-            drawTutorialBlock(ctx, IDS.DIRT, x, groundY + bSize, bSize);
-        }
-
-        // Subterranean Ore Vein cutaway under players
-        drawTutorialBlock(ctx, IDS.STONE, 216, groundY + bSize, bSize);
-        drawTutorialBlock(ctx, IDS.IRON_ORE, 240, groundY + bSize, bSize);
-        drawTutorialBlock(ctx, IDS.DIAMOND_ORE, 264, groundY + bSize, bSize);
-        drawTutorialBlock(ctx, IDS.STONE, 288, groundY + bSize, bSize);
-
-        // Flowers & Vegetation
-        drawTutorialBlock(ctx, IDS.FLOWER_RED, 55, groundY - 18, 20);
-        drawTutorialBlock(ctx, IDS.SHORT_GRASS, 320, groundY - 16, 18);
-
-        // Two Co-op Players (unified pixel-art player models)
-        drawTutorialPlayer(ctx, 115, groundY - 44, {
-            skin: 'steve',
-            heldItem: IDS.TORCH,
-            name: '<Steve>',
-            nameColor: '#4ade80'
-        });
-
-        drawTutorialPlayer(ctx, 185, groundY - 44, {
-            skin: 'alex',
-            heldItem: IDS.IRON_SWORD,
-            name: '<Alex>',
-            nameColor: '#38bdf8'
-        });
-
-        // Storage Chest
-        drawTutorialBlock(ctx, IDS.CHEST, 255, groundY - 26, 28);
-
-        // Speech Bubble
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.fillRect(115, 12, 220, 26);
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(115, 12, 220, 26);
-        ctx.fillStyle = '#4ade80';
-        ctx.font = 'bold 16px "VT323", monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText("<Alex>: Ready to mine diamond ore!", 122, 30);
-
-        // Right side: Multiplayer Room Status Banner
-        const bannerX = 420;
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-        ctx.fillRect(bannerX, 12, 315, 66);
-        ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(bannerX, 12, 315, 66);
-
-        ctx.fillStyle = '#22c55e';
-        ctx.font = 'bold 20px "VT323", monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText("● MULTIPLAYER WORLD", bannerX + 14, 32);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '16px "VT323", monospace';
-        ctx.fillText("Room: Co-Op Survival [2 / 8 Players]", bannerX + 14, 50);
-        ctx.fillStyle = '#38bdf8';
-        ctx.font = '15px "VT323", monospace';
-        ctx.fillText("Ping: 24ms | Seamless P2P Sync", bannerX + 14, 66);
-    }
-
-    export let isTutorialOnboardingMode = false;
-    export let tutorialOnboardingCallback = null;
-
-    export function renderTutorialStep(stepIndex) {
-        currentTutorialStep = Math.max(0, Math.min(TOTAL_TUTORIAL_STEPS - 1, stepIndex));
-        const step = TUTORIAL_STEPS[currentTutorialStep];
-        if (!step) return;
-
-        const titleEl = document.getElementById('tutorial-title');
-        if (titleEl) titleEl.innerText = step.title;
-
-        const indicatorEl = document.getElementById('tutorial-step-indicator');
-        if (indicatorEl) indicatorEl.innerText = `${currentTutorialStep + 1} / ${TOTAL_TUTORIAL_STEPS}`;
-
-        // Sync Top Navigation Tabs
-        const tabs = document.querySelectorAll('#tutorial-step-tabs button');
-        tabs.forEach((tab, idx) => {
-            tab.classList.toggle('active', idx === currentTutorialStep);
-        });
-
-        const contentEl = document.getElementById('tutorial-step-content');
-        if (contentEl) {
-            step.render(contentEl);
-        }
-
-        // Prev / Next button states
-        const prevBtn = document.getElementById('tutorial-prev-btn');
-        if (prevBtn) {
-            prevBtn.style.visibility = (currentTutorialStep === 0) ? 'hidden' : 'visible';
-            prevBtn.innerText = "< Previous";
-            prevBtn.className = "mc-btn tutorial-nav-btn prev-btn";
-        }
-
-        const nextBtn = document.getElementById('tutorial-next-btn');
-        if (nextBtn) {
-            if (currentTutorialStep === TOTAL_TUTORIAL_STEPS - 1) {
-                nextBtn.innerText = isTutorialOnboardingMode ? "Enter World" : "I Understand";
-                nextBtn.className = "mc-btn tutorial-nav-btn finish-btn";
-            } else {
-                nextBtn.innerText = "Next >";
-                nextBtn.className = "mc-btn tutorial-nav-btn next-btn";
-            }
-        }
-    }
-
-    export function openTutorialModal(step = 0, options = {}) {
-        const modal = document.getElementById('tutorial-modal');
-        if (!modal) return;
-        isTutorialOnboardingMode = !!(options && options.onboarding);
-        tutorialOnboardingCallback = (options && typeof options.onComplete === 'function') ? options.onComplete : null;
-        renderTutorialStep(step);
-        modal.classList.remove('hidden');
-    }
-
-    export function closeTutorialModal() {
-        const modal = document.getElementById('tutorial-modal');
-        if (modal) modal.classList.add('hidden');
-        try {
-            if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('webcraft_tutorial_seen', 'true');
-            }
-        } catch(e) {}
-
-        const cb = tutorialOnboardingCallback;
-        const wasOnboarding = isTutorialOnboardingMode;
-        tutorialOnboardingCallback = null;
-        isTutorialOnboardingMode = false;
-
-        if (wasOnboarding && typeof cb === 'function') {
-            cb();
-        }
-    }
-
-    export function nextTutorialStep() {
-        if (currentTutorialStep < TOTAL_TUTORIAL_STEPS - 1) {
-            renderTutorialStep(currentTutorialStep + 1);
-        } else {
-            closeTutorialModal();
-        }
-    }
-
-    export function prevTutorialStep() {
-        if (currentTutorialStep > 0) {
-            renderTutorialStep(currentTutorialStep - 1);
-        }
-    }
-
-    export function goToTutorialStep(step) {
-        renderTutorialStep(step);
-    }
-
-// Global Window Bridge for cross-module & HTML event compatibility
-try { if (typeof ACCENT_PRESETS !== "undefined") window.ACCENT_PRESETS = ACCENT_PRESETS; } catch(e) {}
-try { if (typeof ACHIEVEMENTS !== "undefined") window.ACHIEVEMENTS = ACHIEVEMENTS; } catch(e) {}
-try { if (typeof DEFAULT_ACCENT_COLOR !== "undefined") window.DEFAULT_ACCENT_COLOR = DEFAULT_ACCENT_COLOR; } catch(e) {}
-try { if (typeof DEFAULT_KEYBINDS !== "undefined") window.DEFAULT_KEYBINDS = DEFAULT_KEYBINDS; } catch(e) {}
-try { if (typeof DISPLAY_VERSION !== "undefined") window.DISPLAY_VERSION = DISPLAY_VERSION; } catch(e) {}
-try { if (typeof GAME_BUILD !== "undefined") window.GAME_BUILD = GAME_BUILD; } catch(e) {}
-try { if (typeof GAME_VERSION !== "undefined") window.GAME_VERSION = GAME_VERSION; } catch(e) {}
-try { if (typeof KEYBINDS !== "undefined") window.KEYBINDS = KEYBINDS; } catch(e) {}
-try { if (typeof MP_CHUNK_SIZE !== "undefined") window.MP_CHUNK_SIZE = MP_CHUNK_SIZE; } catch(e) {}
-try { if (typeof RECIPES !== "undefined") window.RECIPES = RECIPES; } catch(e) {}
-try { if (typeof SHOPKEEPER_DIALOGUES !== "undefined") window.SHOPKEEPER_DIALOGUES = SHOPKEEPER_DIALOGUES; } catch(e) {}
-try { if (typeof SPLASH_TEXTS !== "undefined") window.SPLASH_TEXTS = SPLASH_TEXTS; } catch(e) {}
-try { if (typeof addArmorDurabilityBar !== "undefined") window.addArmorDurabilityBar = addArmorDurabilityBar; } catch(e) {}
-try { if (typeof addCurrentColorToCustom !== "undefined") window.addCurrentColorToCustom = addCurrentColorToCustom; } catch(e) {}
-try { if (typeof addDurabilityBar !== "undefined") window.addDurabilityBar = addDurabilityBar; } catch(e) {}
-try { if (typeof addGallerySkinToLibrary !== "undefined") window.addGallerySkinToLibrary = addGallerySkinToLibrary; } catch(e) {}
-try { if (typeof addPlayerEmeralds !== "undefined") window.addPlayerEmeralds = addPlayerEmeralds; } catch(e) {}
-try { if (typeof adjustBrightness !== "undefined") window.adjustBrightness = adjustBrightness; } catch(e) {}
-try { if (typeof advanceIntro !== "undefined") window.advanceIntro = advanceIntro; } catch(e) {}
-try { if (typeof appendChatMessage !== "undefined") window.appendChatMessage = appendChatMessage; } catch(e) {}
-try { if (typeof applyAccentColor !== "undefined") window.applyAccentColor = applyAccentColor; } catch(e) {}
-try { if (typeof applyAccentPreset !== "undefined") window.applyAccentPreset = applyAccentPreset; } catch(e) {}
-try { if (typeof applyMinimapShape !== "undefined") window.applyMinimapShape = applyMinimapShape; } catch(e) {}
-try { if (typeof applySkinEdit !== "undefined") window.applySkinEdit = applySkinEdit; } catch(e) {}
-try { if (typeof autoSaveSkin !== "undefined") window.autoSaveSkin = autoSaveSkin; } catch(e) {}
-try { if (typeof buildMinimapCircleBezel !== "undefined") window.buildMinimapCircleBezel = buildMinimapCircleBezel; } catch(e) {}
-try { if (typeof buyAndEquipGallerySkin !== "undefined") window.buyAndEquipGallerySkin = buyAndEquipGallerySkin; } catch(e) {}
-try { if (typeof cachedMinimapCircleBezelCanvas !== "undefined") window.cachedMinimapCircleBezelCanvas = cachedMinimapCircleBezelCanvas; } catch(e) {}
-try { if (typeof canFitItem !== "undefined") window.canFitItem = canFitItem; } catch(e) {}
-try { if (typeof centerMapOnPlayer !== "undefined") window.centerMapOnPlayer = centerMapOnPlayer; } catch(e) {}
-try { if (typeof changeMapZoom !== "undefined") window.changeMapZoom = changeMapZoom; } catch(e) {}
-try { if (typeof chatSeenMessageIds !== "undefined") window.chatSeenMessageIds = chatSeenMessageIds; } catch(e) {}
-try { if (typeof checkAfkKick !== "undefined") window.checkAfkKick = checkAfkKick; } catch(e) {}
-try { if (typeof checkArmorAchievements !== "undefined") window.checkArmorAchievements = checkArmorAchievements; } catch(e) {}
-try { if (typeof checkAutosave !== "undefined") window.checkAutosave = checkAutosave; } catch(e) {}
-try { if (typeof checkNearCraftingTable !== "undefined") window.checkNearCraftingTable = checkNearCraftingTable; } catch(e) {}
-try { if (typeof checkNearFurnace !== "undefined") window.checkNearFurnace = checkNearFurnace; } catch(e) {}
-try { if (typeof findNearbyWorkstation !== "undefined") window.findNearbyWorkstation = findNearbyWorkstation; } catch(e) {}
-try { if (typeof clearCraftingSearch !== "undefined") window.clearCraftingSearch = clearCraftingSearch; } catch(e) {}
-try { if (typeof clearUnsupportedWorldStorage !== "undefined") window.clearUnsupportedWorldStorage = clearUnsupportedWorldStorage; } catch(e) {}
-try { if (typeof closeAccentColorPicker !== "undefined") window.closeAccentColorPicker = closeAccentColorPicker; } catch(e) {}
-try { if (typeof closeAchievements !== "undefined") window.closeAchievements = closeAchievements; } catch(e) {}
-try { if (typeof closeChat !== "undefined") window.closeChat = closeChat; } catch(e) {}
-try { if (typeof closeCredits !== "undefined") window.closeCredits = closeCredits; } catch(e) {}
-try { if (typeof closeNewWorldModal !== "undefined") window.closeNewWorldModal = closeNewWorldModal; } catch(e) {}
-try { if (typeof closeSettings !== "undefined") window.closeSettings = closeSettings; } catch(e) {}
-try { if (typeof closeSkinMaker !== "undefined") window.closeSkinMaker = closeSkinMaker; } catch(e) {}
-try { if (typeof closeSkinOwnedModal !== "undefined") window.closeSkinOwnedModal = closeSkinOwnedModal; } catch(e) {}
-try { if (typeof closeSkinUploadModal !== "undefined") window.closeSkinUploadModal = closeSkinUploadModal; } catch(e) {}
-try { if (typeof closeSkins !== "undefined") window.closeSkins = closeSkins; } catch(e) {}
-try { if (typeof closeWhatsNew !== "undefined") window.closeWhatsNew = closeWhatsNew; } catch(e) {}
-try { if (typeof closeWorldsMenu !== "undefined") window.closeWorldsMenu = closeWorldsMenu; } catch(e) {}
-try { if (typeof compileRemoteSkin !== "undefined") window.compileRemoteSkin = compileRemoteSkin; } catch(e) {}
-try { if (typeof compileSkinCanvas !== "undefined") window.compileSkinCanvas = compileSkinCanvas; } catch(e) {}
-try { if (typeof compressChunk !== "undefined") window.compressChunk = compressChunk; } catch(e) {}
-try { if (typeof compressWorld !== "undefined") window.compressWorld = compressWorld; } catch(e) {}
-try { if (typeof confirmCreateWorld !== "undefined") window.confirmCreateWorld = confirmCreateWorld; } catch(e) {}
-try { if (typeof confirmSkinUpload !== "undefined") window.confirmSkinUpload = confirmSkinUpload; } catch(e) {}
-try { if (typeof consumeItem !== "undefined") window.consumeItem = consumeItem; } catch(e) {}
-try { if (typeof craftRecipe !== "undefined") window.craftRecipe = craftRecipe; } catch(e) {}
-try { if (typeof craftedItemsCount !== "undefined") window.craftedItemsCount = craftedItemsCount; } catch(e) {}
-try { if (typeof craftingCategory !== "undefined") window.craftingCategory = craftingCategory; } catch(e) {}
-try { if (typeof craftingSearchQuery !== "undefined") window.craftingSearchQuery = craftingSearchQuery; } catch(e) {}
-try { if (typeof createGallerySkinCard !== "undefined") window.createGallerySkinCard = createGallerySkinCard; } catch(e) {}
-try { if (typeof createSkinCard !== "undefined") window.createSkinCard = createSkinCard; } catch(e) {}
-try { if (typeof currentAccentColor !== "undefined") window.currentAccentColor = currentAccentColor; } catch(e) {}
-try { if (typeof currentAccentName !== "undefined") window.currentAccentName = currentAccentName; } catch(e) {}
-try { if (typeof currentAchievementsTab !== "undefined") window.currentAchievementsTab = currentAchievementsTab; } catch(e) {}
-try { if (typeof currentColor !== "undefined") window.currentColor = currentColor; } catch(e) {}
-try { if (typeof currentShopkeeperDialogueIdx !== "undefined") window.currentShopkeeperDialogueIdx = currentShopkeeperDialogueIdx; } catch(e) {}
-try { if (typeof currentTool !== "undefined") window.currentTool = currentTool; } catch(e) {}
-try { if (typeof currentUploadPrice !== "undefined") window.currentUploadPrice = currentUploadPrice; } catch(e) {}
-try { if (typeof currentWorldAchievementsEnabled !== "undefined") window.currentWorldAchievementsEnabled = currentWorldAchievementsEnabled; } catch(e) {}
-try { if (typeof cycleFpsCap !== "undefined") window.cycleFpsCap = cycleFpsCap; } catch(e) {}
-try { if (typeof cycleShopkeeperDialogue !== "undefined") window.cycleShopkeeperDialogue = cycleShopkeeperDialogue; } catch(e) {}
-try { if (typeof cycleWorldDifficulty !== "undefined") window.cycleWorldDifficulty = cycleWorldDifficulty; } catch(e) {}
-try { if (typeof cycleAutosaveInterval !== "undefined") window.cycleAutosaveInterval = cycleAutosaveInterval; } catch(e) {}
-try { if (typeof autosaveInterval !== "undefined") window.autosaveInterval = autosaveInterval; } catch(e) {}
-try { if (typeof AUTOSAVE_INTERVALS !== "undefined") window.AUTOSAVE_INTERVALS = AUTOSAVE_INTERVALS; } catch(e) {}
-try { if (typeof damageSelectedTool !== "undefined") window.damageSelectedTool = damageSelectedTool; } catch(e) {}
-try { if (typeof decompressChunkInto !== "undefined") window.decompressChunkInto = decompressChunkInto; } catch(e) {}
-try { if (typeof decompressWorld !== "undefined") window.decompressWorld = decompressWorld; } catch(e) {}
-try { if (typeof deepBlocksMinedCount !== "undefined") window.deepBlocksMinedCount = deepBlocksMinedCount; } catch(e) {}
-try { if (typeof deleteSkin !== "undefined") window.deleteSkin = deleteSkin; } catch(e) {}
-try { if (typeof deleteWorld !== "undefined") window.deleteWorld = deleteWorld; } catch(e) {}
-try { if (typeof dismissKickModal !== "undefined") window.dismissKickModal = dismissKickModal; } catch(e) {}
-try { if (typeof drawShopkeeperAvatar !== "undefined") window.drawShopkeeperAvatar = drawShopkeeperAvatar; } catch(e) {}
-try { if (typeof eCtx !== "undefined") window.eCtx = eCtx; } catch(e) {}
-try { if (typeof editSkin !== "undefined") window.editSkin = editSkin; } catch(e) {}
-try { if (typeof editorCanvas !== "undefined") window.editorCanvas = editorCanvas; } catch(e) {}
-try { if (typeof ensureToolDurability !== "undefined") window.ensureToolDurability = ensureToolDurability; } catch(e) {}
-try { if (typeof exportSkin !== "undefined") window.exportSkin = exportSkin; } catch(e) {}
-try { if (typeof exportWorld !== "undefined") window.exportWorld = exportWorld; } catch(e) {}
-try { if (typeof fillSkin !== "undefined") window.fillSkin = fillSkin; } catch(e) {}
-try { if (typeof filterAchievementsByDiff !== "undefined") window.filterAchievementsByDiff = filterAchievementsByDiff; } catch(e) {}
-try { if (typeof finishIntro !== "undefined") window.finishIntro = finishIntro; } catch(e) {}
-try { if (typeof floodFillSkin !== "undefined") window.floodFillSkin = floodFillSkin; } catch(e) {}
-try { if (typeof formatAchievementDate !== "undefined") window.formatAchievementDate = formatAchievementDate; } catch(e) {}
-try { if (typeof formatKeyDisplay !== "undefined") window.formatKeyDisplay = formatKeyDisplay; } catch(e) {}
-try { if (typeof generateDefaultSkin !== "undefined") window.generateDefaultSkin = generateDefaultSkin; } catch(e) {}
-try { if (typeof getAccentPalette !== "undefined") window.getAccentPalette = getAccentPalette; } catch(e) {}
-try { if (typeof getAchievementEmeraldReward !== "undefined") window.getAchievementEmeraldReward = getAchievementEmeraldReward; } catch(e) {}
-try { if (typeof getAchievementsStorage !== "undefined") window.getAchievementsStorage = getAchievementsStorage; } catch(e) {}
-try { if (typeof getActiveSkinEditorData !== "undefined") window.getActiveSkinEditorData = getActiveSkinEditorData; } catch(e) {}
-try { if (typeof getActiveSkinId !== "undefined") window.getActiveSkinId = getActiveSkinId; } catch(e) {}
-try { if (typeof getClaimedAchievementRewards !== "undefined") window.getClaimedAchievementRewards = getClaimedAchievementRewards; } catch(e) {}
-try { if (typeof getClientUid !== "undefined") window.getClientUid = getClientUid; } catch(e) {}
-try { if (typeof getDefaultSkinData !== "undefined") window.getDefaultSkinData = getDefaultSkinData; } catch(e) {}
-try { if (typeof getEditorGridPos !== "undefined") window.getEditorGridPos = getEditorGridPos; } catch(e) {}
-try { if (typeof getFuelValue !== "undefined") window.getFuelValue = getFuelValue; } catch(e) {}
-try { if (typeof getMapBlockName !== "undefined") window.getMapBlockName = getMapBlockName; } catch(e) {}
-try { if (typeof getMemoryUsageText !== "undefined") window.getMemoryUsageText = getMemoryUsageText; } catch(e) {}
-try { if (typeof getPixelEmeraldSvg !== "undefined") window.getPixelEmeraldSvg = getPixelEmeraldSvg; } catch(e) {}
-try { if (typeof getPlayerEmeralds !== "undefined") window.getPlayerEmeralds = getPlayerEmeralds; } catch(e) {}
-try { if (typeof getPurchasedSkins !== "undefined") window.getPurchasedSkins = getPurchasedSkins; } catch(e) {}
-try { if (typeof getRecipeCategory !== "undefined") window.getRecipeCategory = getRecipeCategory; } catch(e) {}
-try { if (typeof getSavedSkins !== "undefined") window.getSavedSkins = getSavedSkins; } catch(e) {}
-try { if (typeof getSavedWorlds !== "undefined") window.getSavedWorlds = getSavedWorlds; } catch(e) {}
-try { if (typeof getSkinToneFromContext !== "undefined") window.getSkinToneFromContext = getSkinToneFromContext; } catch(e) {}
-try { if (typeof getSmeltResult !== "undefined") window.getSmeltResult = getSmeltResult; } catch(e) {}
-try { if (typeof getItemMaxStack !== "undefined") window.getItemMaxStack = getItemMaxStack; } catch(e) {}
-try { if (typeof giveItem !== "undefined") window.giveItem = giveItem; } catch(e) {}
-try { if (typeof goToMySkinsFromOwnedModal !== "undefined") window.goToMySkinsFromOwnedModal = goToMySkinsFromOwnedModal; } catch(e) {}
-try { if (typeof handleArmorSlotClick !== "undefined") window.handleArmorSlotClick = handleArmorSlotClick; } catch(e) {}
-try { if (typeof handleCraftingSearch !== "undefined") window.handleCraftingSearch = handleCraftingSearch; } catch(e) {}
-try { if (typeof handleEditorCanvasAction !== "undefined") window.handleEditorCanvasAction = handleEditorCanvasAction; } catch(e) {}
-try { if (typeof handleRebindKey !== "undefined") window.handleRebindKey = handleRebindKey; } catch(e) {}
-try { if (typeof handleSlotClick !== "undefined") window.handleSlotClick = handleSlotClick; } catch(e) {}
-try { if (typeof hasItem !== "undefined") window.hasItem = hasItem; } catch(e) {}
-try { if (typeof hexToRgb !== "undefined") window.hexToRgb = hexToRgb; } catch(e) {}
-try { if (typeof hotbarWrapAround !== "undefined") window.hotbarWrapAround = hotbarWrapAround; } catch(e) {}
-try { if (typeof importSkin !== "undefined") window.importSkin = importSkin; } catch(e) {}
-try { if (typeof importWorld !== "undefined") window.importWorld = importWorld; } catch(e) {}
-try { if (typeof initChatEvents !== "undefined") window.initChatEvents = initChatEvents; } catch(e) {}
-try { if (typeof initEmeraldSystem !== "undefined") window.initEmeraldSystem = initEmeraldSystem; } catch(e) {}
-try { if (typeof initSkinEditor !== "undefined") window.initSkinEditor = initSkinEditor; } catch(e) {}
-try { if (typeof initWorldMapEvents !== "undefined") window.initWorldMapEvents = initWorldMapEvents; } catch(e) {}
-try { if (typeof invertScrollWheel !== "undefined") window.invertScrollWheel = invertScrollWheel; } catch(e) {}
-try { if (typeof isActionActive !== "undefined") window.isActionActive = isActionActive; } catch(e) {}
-try { if (typeof isChatOpen !== "undefined") window.isChatOpen = isChatOpen; } catch(e) {}
-try { if (typeof isDrawing !== "undefined") window.isDrawing = isDrawing; } catch(e) {}
-try { if (typeof isErasing !== "undefined") window.isErasing = isErasing; } catch(e) {}
-try { if (typeof isMyGallerySkin !== "undefined") window.isMyGallerySkin = isMyGallerySkin; } catch(e) {}
-try { if (typeof isSkinInMySkins !== "undefined") window.isSkinInMySkins = isSkinInMySkins; } catch(e) {}
-try { if (typeof isSkinOwned !== "undefined") window.isSkinOwned = isSkinOwned; } catch(e) {}
-try { if (typeof isNonStackable !== "undefined") window.isNonStackable = isNonStackable; } catch(e) {}
-try { if (typeof isTool !== "undefined") window.isTool = isTool; } catch(e) {}
-try { if (typeof isVinyl !== "undefined") window.isVinyl = isVinyl; } catch(e) {}
-try { if (typeof lastAutosaveTimestamp !== "undefined") window.lastAutosaveTimestamp = lastAutosaveTimestamp; } catch(e) {}
-try { if (typeof lastSplashText !== "undefined") window.lastSplashText = lastSplashText; } catch(e) {}
-try { if (typeof lastUiClickSoundTime !== "undefined") window.lastUiClickSoundTime = lastUiClickSoundTime; } catch(e) {}
-try { if (typeof loadSavedSettings !== "undefined") window.loadSavedSettings = loadSavedSettings; } catch(e) {}
-try { if (typeof loadSkin !== "undefined") window.loadSkin = loadSkin; } catch(e) {}
-try { if (typeof loadSkinGallery !== "undefined") window.loadSkinGallery = loadSkinGallery; } catch(e) {}
-try { if (typeof loadWorld !== "undefined") window.loadWorld = loadWorld; } catch(e) {}
-try { if (typeof loadWorldData !== "undefined") window.loadWorldData = loadWorldData; } catch(e) {}
-try { if (typeof minimapShape !== "undefined") window.minimapShape = minimapShape; } catch(e) {}
-try { if (typeof monstersKilledCount !== "undefined") window.monstersKilledCount = monstersKilledCount; } catch(e) {}
-try { if (typeof moveItemToContainer !== "undefined") window.moveItemToContainer = moveItemToContainer; } catch(e) {}
-try { if (typeof openAchievements !== "undefined") window.openAchievements = openAchievements; } catch(e) {}
-try { if (typeof openAchievementsFromPause !== "undefined") window.openAchievementsFromPause = openAchievementsFromPause; } catch(e) {}
-try { if (typeof openChat !== "undefined") window.openChat = openChat; } catch(e) {}
-try { if (typeof openCredits !== "undefined") window.openCredits = openCredits; } catch(e) {}
-try { if (typeof openNewWorldModal !== "undefined") window.openNewWorldModal = openNewWorldModal; } catch(e) {}
-try { if (typeof openSettings !== "undefined") window.openSettings = openSettings; } catch(e) {}
-try { if (typeof openSettingsFromPause !== "undefined") window.openSettingsFromPause = openSettingsFromPause; } catch(e) {}
-try { if (typeof openSkinMaker !== "undefined") window.openSkinMaker = openSkinMaker; } catch(e) {}
-try { if (typeof openSkinOwnedModal !== "undefined") window.openSkinOwnedModal = openSkinOwnedModal; } catch(e) {}
-try { if (typeof openSkinUploadModal !== "undefined") window.openSkinUploadModal = openSkinUploadModal; } catch(e) {}
-try { if (typeof openSkins !== "undefined") window.openSkins = openSkins; } catch(e) {}
-try { if (typeof openWhatsNew !== "undefined") window.openWhatsNew = openWhatsNew; } catch(e) {}
-try { if (typeof openWhatsNewOnce !== "undefined") window.openWhatsNewOnce = openWhatsNewOnce; } catch(e) {}
-try { if (typeof openWorldsMenu !== "undefined") window.openWorldsMenu = openWorldsMenu; } catch(e) {}
-try { if (typeof openShop !== "undefined") window.openShop = openShop; } catch(e) {}
-try { if (typeof openedAchievementsFromPause !== "undefined") window.openedAchievementsFromPause = openedAchievementsFromPause; } catch(e) {}
-try { if (typeof pendingUploadSkinData !== "undefined") window.pendingUploadSkinData = pendingUploadSkinData; } catch(e) {}
-try { if (typeof pendingUploadSkinId !== "undefined") window.pendingUploadSkinId = pendingUploadSkinId; } catch(e) {}
-try { if (typeof performWorldAutosave !== "undefined") window.performWorldAutosave = performWorldAutosave; } catch(e) {}
-try { if (typeof persistSkin !== "undefined") window.persistSkin = persistSkin; } catch(e) {}
-try { if (typeof playChatChime !== "undefined") window.playChatChime = playChatChime; } catch(e) {}
-try { if (typeof playTestSound !== "undefined") window.playTestSound = playTestSound; } catch(e) {}
-try { if (typeof populateSlotItemDOM !== "undefined") window.populateSlotItemDOM = populateSlotItemDOM; } catch(e) {}
-try { if (typeof previewCanvasEl !== "undefined") window.previewCanvasEl = previewCanvasEl; } catch(e) {}
-try { if (typeof publishCurrentSkin !== "undefined") window.publishCurrentSkin = publishCurrentSkin; } catch(e) {}
-try { if (typeof quitToMenu !== "undefined") window.quitToMenu = quitToMenu; } catch(e) {}
-try { if (typeof rebindingAction !== "undefined") window.rebindingAction = rebindingAction; } catch(e) {}
-try { if (typeof rebindingBtnEl !== "undefined") window.rebindingBtnEl = rebindingBtnEl; } catch(e) {}
-try { if (typeof recentSkinColors !== "undefined") window.recentSkinColors = recentSkinColors; } catch(e) {}
-try { if (typeof recordPurchasedSkin !== "undefined") window.recordPurchasedSkin = recordPurchasedSkin; } catch(e) {}
-try { if (typeof redoSkinEdit !== "undefined") window.redoSkinEdit = redoSkinEdit; } catch(e) {}
-try { if (typeof renderAchievementsList !== "undefined") window.renderAchievementsList = renderAchievementsList; } catch(e) {}
-try { if (typeof updateMusicPlayerHUD !== "undefined") window.updateMusicPlayerHUD = updateMusicPlayerHUD; } catch(e) {}
-try { if (typeof ejectActiveJukebox !== "undefined") window.ejectActiveJukebox = ejectActiveJukebox; } catch(e) {}
-try { if (typeof initMusicPlayerHUD !== "undefined") window.initMusicPlayerHUD = initMusicPlayerHUD; } catch(e) {}
-try { if (typeof jukeboxes !== "undefined") window.jukeboxes = jukeboxes; } catch(e) {}
-try { if (typeof renderCraftingRecipes !== "undefined") window.renderCraftingRecipes = renderCraftingRecipes; } catch(e) {}
-try { if (typeof renderEditorCanvas !== "undefined") window.renderEditorCanvas = renderEditorCanvas; } catch(e) {}
-try { if (typeof renderPaletteMatrix !== "undefined") window.renderPaletteMatrix = renderPaletteMatrix; } catch(e) {}
-try { if (typeof renderPatchNoteList !== "undefined") window.renderPatchNoteList = renderPatchNoteList; } catch(e) {}
-try { if (typeof renderRecentSkinColors !== "undefined") window.renderRecentSkinColors = renderRecentSkinColors; } catch(e) {}
-try { if (typeof renderSkinLibrary !== "undefined") window.renderSkinLibrary = renderSkinLibrary; } catch(e) {}
-try { if (typeof renderWhatsNewHistory !== "undefined") window.renderWhatsNewHistory = renderWhatsNewHistory; } catch(e) {}
-try { if (typeof isWorldVersion015 !== "undefined") window.isWorldVersion015 = isWorldVersion015; } catch(e) {}
-try { if (typeof isWorldVersionCompatible !== "undefined") window.isWorldVersionCompatible = isWorldVersionCompatible; } catch(e) {}
-try { if (typeof promptConvertWorld015 !== "undefined") window.promptConvertWorld015 = promptConvertWorld015; } catch(e) {}
-try { if (typeof closeConvertWorldModal !== "undefined") window.closeConvertWorldModal = closeConvertWorldModal; } catch(e) {}
-try { if (typeof confirmConvertWorld015 !== "undefined") window.confirmConvertWorld015 = confirmConvertWorld015; } catch(e) {}
-try { if (typeof exportBackup015Only !== "undefined") window.exportBackup015Only = exportBackup015Only; } catch(e) {}
-try { if (typeof exportBackupAndConvert015 !== "undefined") window.exportBackupAndConvert015 = exportBackupAndConvert015; } catch(e) {}
-try { if (typeof renderWorldsList !== "undefined") window.renderWorldsList = renderWorldsList; } catch(e) {}
-try { if (typeof resetAccentColor !== "undefined") window.resetAccentColor = resetAccentColor; } catch(e) {}
-try { if (typeof resetAchievements !== "undefined") window.resetAchievements = resetAchievements; } catch(e) {}
-try { if (typeof resetKeybindsToDefault !== "undefined") window.resetKeybindsToDefault = resetKeybindsToDefault; } catch(e) {}
-try { if (typeof resetMapView !== "undefined") window.resetMapView = resetMapView; } catch(e) {}
-try { if (typeof resetSkinHistory !== "undefined") window.resetSkinHistory = resetSkinHistory; } catch(e) {}
-try { if (typeof resetSkinToDefault !== "undefined") window.resetSkinToDefault = resetSkinToDefault; } catch(e) {}
-try { if (typeof respawn !== "undefined") window.respawn = respawn; } catch(e) {}
-try { if (typeof rgbToHex !== "undefined") window.rgbToHex = rgbToHex; } catch(e) {}
-try { if (typeof saveAchievementsStorage !== "undefined") window.saveAchievementsStorage = saveAchievementsStorage; } catch(e) {}
-try { if (typeof saveCurrentSettings !== "undefined") window.saveCurrentSettings = saveCurrentSettings; } catch(e) {}
-try { if (typeof saveCurrentWorld !== "undefined") window.saveCurrentWorld = saveCurrentWorld; } catch(e) {}
-try { if (typeof saveSavedSkins !== "undefined") window.saveSavedSkins = saveSavedSkins; } catch(e) {}
-try { if (typeof saveSkin !== "undefined") window.saveSkin = saveSkin; } catch(e) {}
-try { if (typeof saveWorldsList !== "undefined") window.saveWorldsList = saveWorldsList; } catch(e) {}
-try { if (typeof scrollSensitivity !== "undefined") window.scrollSensitivity = scrollSensitivity; } catch(e) {}
-try { if (typeof selectDifficulty !== "undefined") window.selectDifficulty = selectDifficulty; } catch(e) {}
-try { if (typeof selectWorldSize !== "undefined") window.selectWorldSize = selectWorldSize; } catch(e) {}
-try { if (typeof selectedWorldSizeChoice !== "undefined") window.selectedWorldSizeChoice = selectedWorldSizeChoice; } catch(e) {}
-try { if (typeof currentWorldSize !== "undefined") window.currentWorldSize = currentWorldSize; } catch(e) {}
-try { if (typeof selectSkin !== "undefined") window.selectSkin = selectSkin; } catch(e) {}
-try { if (typeof selectSkinColor !== "undefined") window.selectSkinColor = selectSkinColor; } catch(e) {}
-try { if (typeof selectSkinTool !== "undefined") window.selectSkinTool = selectSkinTool; } catch(e) {}
-try { if (typeof selectedAchDifficultyFilter !== "undefined") window.selectedAchDifficultyFilter = selectedAchDifficultyFilter; } catch(e) {}
-try { if (typeof sendCurrentChatMessage !== "undefined") window.sendCurrentChatMessage = sendCurrentChatMessage; } catch(e) {}
-try { if (typeof setCraftingCategory !== "undefined") window.setCraftingCategory = setCraftingCategory; } catch(e) {}
-try { if (typeof setCustomAccentColor !== "undefined") window.setCustomAccentColor = setCustomAccentColor; } catch(e) {}
-try { if (typeof setPlayerEmeralds !== "undefined") window.setPlayerEmeralds = setPlayerEmeralds; } catch(e) {}
-try { if (typeof setRandomSplashText !== "undefined") window.setRandomSplashText = setRandomSplashText; } catch(e) {}
-try { if (typeof setSkinToolStatus !== "undefined") window.setSkinToolStatus = setSkinToolStatus; } catch(e) {}
-try { if (typeof setSkinUploadPrice !== "undefined") window.setSkinUploadPrice = setSkinUploadPrice; } catch(e) {}
-try { if (typeof setupFurnaceSlot !== "undefined") window.setupFurnaceSlot = setupFurnaceSlot; } catch(e) {}
-try { if (typeof showAchievementBanner !== "undefined") window.showAchievementBanner = showAchievementBanner; } catch(e) {}
-try { if (typeof showAutosaveToast !== "undefined") window.showAutosaveToast = showAutosaveToast; } catch(e) {}
-try { if (typeof showBiomeGrading !== "undefined") window.showBiomeGrading = showBiomeGrading; } catch(e) {}
-try { if (typeof showEditorGrid !== "undefined") window.showEditorGrid = showEditorGrid; } catch(e) {}
-try { if (typeof showEditorGuides !== "undefined") window.showEditorGuides = showEditorGuides; } catch(e) {}
-try { if (typeof showHeatShimmer !== "undefined") window.showHeatShimmer = showHeatShimmer; } catch(e) {}
-try { if (typeof showItemPopups !== "undefined") window.showItemPopups = showItemPopups; } catch(e) {}
-try { if (typeof showKickModal !== "undefined") window.showKickModal = showKickModal; } catch(e) {}
-try { if (typeof showMainMenu !== "undefined") window.showMainMenu = showMainMenu; } catch(e) {}
-try { if (typeof showScreenShake !== "undefined") window.showScreenShake = showScreenShake; } catch(e) {}
-try { if (typeof showToast !== "undefined") window.showToast = showToast; } catch(e) {}
-try { if (typeof showVignette !== "undefined") window.showVignette = showVignette; } catch(e) {}
-try { if (typeof skinAutoSaveTimer !== "undefined") window.skinAutoSaveTimer = skinAutoSaveTimer; } catch(e) {}
-try { if (typeof skinEditor32Palette !== "undefined") window.skinEditor32Palette = skinEditor32Palette; } catch(e) {}
-try { if (typeof skinEditorZoom !== "undefined") window.skinEditorZoom = skinEditorZoom; } catch(e) {}
-try { if (typeof skinRedoStack !== "undefined") window.skinRedoStack = skinRedoStack; } catch(e) {}
-try { if (typeof skinUndoStack !== "undefined") window.skinUndoStack = skinUndoStack; } catch(e) {}
-try { if (typeof startIntro !== "undefined") window.startIntro = startIntro; } catch(e) {}
-try { if (typeof startRebinding !== "undefined") window.startRebinding = startRebinding; } catch(e) {}
-try { if (typeof startSkinAutoSave !== "undefined") window.startSkinAutoSave = startSkinAutoSave; } catch(e) {}
-try { if (typeof switchAchievementTab !== "undefined") window.switchAchievementTab = switchAchievementTab; } catch(e) {}
-try { if (typeof switchSettingsTab !== "undefined") window.switchSettingsTab = switchSettingsTab; } catch(e) {}
-try { if (typeof switchSkinLibraryTab !== "undefined") window.switchSkinLibraryTab = switchSkinLibraryTab; } catch(e) {}
-try { if (typeof toggleAccentColorPicker !== "undefined") window.toggleAccentColorPicker = toggleAccentColorPicker; } catch(e) {}
-try { if (typeof toggleAutoJump !== "undefined") window.toggleAutoJump = toggleAutoJump; } catch(e) {}
-try { if (typeof toggleBackgroundBuildMode !== "undefined") window.toggleBackgroundBuildMode = toggleBackgroundBuildMode; } catch(e) {}
-try { if (typeof toggleClouds !== "undefined") window.toggleClouds = toggleClouds; } catch(e) {}
-try { if (typeof toggleDebug !== "undefined") window.toggleDebug = toggleDebug; } catch(e) {}
-try { if (typeof toggleFootsteps !== "undefined") window.toggleFootsteps = toggleFootsteps; } catch(e) {}
-try { if (typeof toggleGrading !== "undefined") window.toggleGrading = toggleGrading; } catch(e) {}
-try { if (typeof toggleGraphics !== "undefined") window.toggleGraphics = toggleGraphics; } catch(e) {}
-try { if (typeof toggleHotbarWrap !== "undefined") window.toggleHotbarWrap = toggleHotbarWrap; } catch(e) {}
-try { if (typeof toggleIntro !== "undefined") window.toggleIntro = toggleIntro; } catch(e) {}
-try { if (typeof toggleInventory !== "undefined") window.toggleInventory = toggleInventory; } catch(e) {}
-try { if (typeof toggleInvertWheel !== "undefined") window.toggleInvertWheel = toggleInvertWheel; } catch(e) {}
-try { if (typeof toggleItemPopups !== "undefined") window.toggleItemPopups = toggleItemPopups; } catch(e) {}
-try { if (typeof toggleMinimapShape !== "undefined") window.toggleMinimapShape = toggleMinimapShape; } catch(e) {}
-try { if (typeof toggleMuteAudio !== "undefined") window.toggleMuteAudio = toggleMuteAudio; } catch(e) {}
-try { if (typeof toggleNewWorldOption !== "undefined") window.toggleNewWorldOption = toggleNewWorldOption; } catch(e) {}
-try { if (typeof toggleScreenShake !== "undefined") window.toggleScreenShake = toggleScreenShake; } catch(e) {}
-try { if (typeof toggleShimmer !== "undefined") window.toggleShimmer = toggleShimmer; } catch(e) {}
-try { if (typeof toggleSkinEditorGrid !== "undefined") window.toggleSkinEditorGrid = toggleSkinEditorGrid; } catch(e) {}
-try { if (typeof toggleSkinEditorGuides !== "undefined") window.toggleSkinEditorGuides = toggleSkinEditorGuides; } catch(e) {}
-try { if (typeof toggleVignette !== "undefined") window.toggleVignette = toggleVignette; } catch(e) {}
-try { if (typeof toggleWhatsNewStartup !== "undefined") window.toggleWhatsNewStartup = toggleWhatsNewStartup; } catch(e) {}
-try { if (typeof toggleWorldMap !== "undefined") window.toggleWorldMap = toggleWorldMap; } catch(e) {}
-try { if (typeof triggerHotbarItemPopup !== "undefined") window.triggerHotbarItemPopup = triggerHotbarItemPopup; } catch(e) {}
-try { if (typeof undoSkinEdit !== "undefined") window.undoSkinEdit = undoSkinEdit; } catch(e) {}
-try { if (typeof unlockAchievement !== "undefined") window.unlockAchievement = unlockAchievement; } catch(e) {}
-try { if (typeof unlockAudioContextOnGesture !== "undefined") window.unlockAudioContextOnGesture = unlockAudioContextOnGesture; } catch(e) {}
-try { if (typeof updateArmorUI !== "undefined") window.updateArmorUI = updateArmorUI; } catch(e) {}
-try { if (typeof updateEmeraldsUI !== "undefined") window.updateEmeraldsUI = updateEmeraldsUI; } catch(e) {}
-try { if (typeof updateFurnaceVisual !== "undefined") window.updateFurnaceVisual = updateFurnaceVisual; } catch(e) {}
-try { if (typeof updateGraphicsButton !== "undefined") window.updateGraphicsButton = updateGraphicsButton; } catch(e) {}
-try { if (typeof updateHealthUI !== "undefined") window.updateHealthUI = updateHealthUI; } catch(e) {}
-try { if (typeof updateHudArmorBar !== "undefined") window.updateHudArmorBar = updateHudArmorBar; } catch(e) {}
-try { if (typeof updateHungerUI !== "undefined") window.updateHungerUI = updateHungerUI; } catch(e) {}
-try { if (typeof updateKeybindButtonsUI !== "undefined") window.updateKeybindButtonsUI = updateKeybindButtonsUI; } catch(e) {}
-try { if (typeof updateMapCoordinateReadout !== "undefined") window.updateMapCoordinateReadout = updateMapCoordinateReadout; } catch(e) {}
-try { if (typeof updateMapWorldBadge !== "undefined") window.updateMapWorldBadge = updateMapWorldBadge; } catch(e) {}
-try { if (typeof updateMapZoomBadge !== "undefined") window.updateMapZoomBadge = updateMapZoomBadge; } catch(e) {}
-try { if (typeof updateMasterVolume !== "undefined") window.updateMasterVolume = updateMasterVolume; } catch(e) {}
-try { if (typeof updateMpAchievementWarning !== "undefined") window.updateMpAchievementWarning = updateMpAchievementWarning; } catch(e) {}
-try { if (typeof updateNewWorldAchievementWarning !== "undefined") window.updateNewWorldAchievementWarning = updateNewWorldAchievementWarning; } catch(e) {}
-try { if (typeof updateOxygenUI !== "undefined") window.updateOxygenUI = updateOxygenUI; } catch(e) {}
-try { if (typeof updateScrollSens !== "undefined") window.updateScrollSens = updateScrollSens; } catch(e) {}
-try { if (typeof updateSettingsDifficultyUI !== "undefined") window.updateSettingsDifficultyUI = updateSettingsDifficultyUI; } catch(e) {}
-try { if (typeof updateSettingsUI !== "undefined") window.updateSettingsUI = updateSettingsUI; } catch(e) {}
-try { if (typeof updateSfxVolume !== "undefined") window.updateSfxVolume = updateSfxVolume; } catch(e) {}
-try { if (typeof updateSkinEditorTitle !== "undefined") window.updateSkinEditorTitle = updateSkinEditorTitle; } catch(e) {}
-try { if (typeof updateSkinEditorZoom !== "undefined") window.updateSkinEditorZoom = updateSkinEditorZoom; } catch(e) {}
-try { if (typeof updateSkinHistoryButtons !== "undefined") window.updateSkinHistoryButtons = updateSkinHistoryButtons; } catch(e) {}
-try { if (typeof updateSkinNameCharCount !== "undefined") window.updateSkinNameCharCount = updateSkinNameCharCount; } catch(e) {}
-try { if (typeof updateSkinUploadPriceDisplay !== "undefined") window.updateSkinUploadPriceDisplay = updateSkinUploadPriceDisplay; } catch(e) {}
-try { if (typeof updateTutorialUI !== "undefined") window.updateTutorialUI = updateTutorialUI; } catch(e) {}
-try { if (typeof updateUI !== "undefined") window.updateUI = updateUI; } catch(e) {}
-try { if (typeof updateUiVolume !== "undefined") window.updateUiVolume = updateUiVolume; } catch(e) {}
-try { if (typeof updateVersionLabels !== "undefined") window.updateVersionLabels = updateVersionLabels; } catch(e) {}
-try { if (typeof updateWhatsNewStartupToggle !== "undefined") window.updateWhatsNewStartupToggle = updateWhatsNewStartupToggle; } catch(e) {}
-try { if (typeof whatsNewModalBackdrop !== "undefined") window.whatsNewModalBackdrop = whatsNewModalBackdrop; } catch(e) {}
-try { if (typeof zoomInSkinEditor !== "undefined") window.zoomInSkinEditor = zoomInSkinEditor; } catch(e) {}
-try { if (typeof zoomOutSkinEditor !== "undefined") window.zoomOutSkinEditor = zoomOutSkinEditor; } catch(e) {}
-try { if (typeof zoomResetSkinEditor !== "undefined") window.zoomResetSkinEditor = zoomResetSkinEditor; } catch(e) {}
-try { if (typeof masterVolume !== "undefined") window.masterVolume = masterVolume; } catch(e) {}
-try { if (typeof sfxVolume !== "undefined") window.sfxVolume = sfxVolume; } catch(e) {}
-try { if (typeof uiVolume !== "undefined") window.uiVolume = uiVolume; } catch(e) {}
-try { if (typeof isAudioMuted !== "undefined") window.isAudioMuted = isAudioMuted; } catch(e) {}
-try { if (typeof footstepsEnabled !== "undefined") window.footstepsEnabled = footstepsEnabled; } catch(e) {}
-try { if (typeof openTutorialModal !== "undefined") window.openTutorialModal = openTutorialModal; } catch(e) {}
-try { if (typeof closeTutorialModal !== "undefined") window.closeTutorialModal = closeTutorialModal; } catch(e) {}
-try { if (typeof nextTutorialStep !== "undefined") window.nextTutorialStep = nextTutorialStep; } catch(e) {}
-try { if (typeof prevTutorialStep !== "undefined") window.prevTutorialStep = prevTutorialStep; } catch(e) {}
-try { if (typeof goToTutorialStep !== "undefined") window.goToTutorialStep = goToTutorialStep; } catch(e) {}
-try { if (typeof renderTutorialStep !== "undefined") window.renderTutorialStep = renderTutorialStep; } catch(e) {}
-try { if (typeof drawTutorialWorldScene !== "undefined") window.drawTutorialWorldScene = drawTutorialWorldScene; } catch(e) {}
-try { if (typeof drawTutorialCraftingScene !== "undefined") window.drawTutorialCraftingScene = drawTutorialCraftingScene; } catch(e) {}
-try { if (typeof drawTutorialFarmingScene !== "undefined") window.drawTutorialFarmingScene = drawTutorialFarmingScene; } catch(e) {}
-try { if (typeof drawTutorialMobsScene !== "undefined") window.drawTutorialMobsScene = drawTutorialMobsScene; } catch(e) {}
-try { if (typeof drawTutorialArmorScene !== "undefined") window.drawTutorialArmorScene = drawTutorialArmorScene; } catch(e) {}
-try { if (typeof drawTutorialKaelScene !== "undefined") window.drawTutorialKaelScene = drawTutorialKaelScene; } catch(e) {}
-try { if (typeof drawTutorialAstralScene !== "undefined") window.drawTutorialAstralScene = drawTutorialAstralScene; } catch(e) {}
-try { if (typeof drawTutorialMultiplayerScene !== "undefined") window.drawTutorialMultiplayerScene = drawTutorialMultiplayerScene; } catch(e) {}
-try { if (typeof getTutorialTextureSrc !== "undefined") window.getTutorialTextureSrc = getTutorialTextureSrc; } catch(e) {}
-try { if (typeof renderItemFrameHtml !== "undefined") window.renderItemFrameHtml = renderItemFrameHtml; } catch(e) {}
-try { if (typeof isTutorialOnboardingMode !== "undefined") window.isTutorialOnboardingMode = isTutorialOnboardingMode; } catch(e) {}
-try { if (typeof tutorialOnboardingCallback !== "undefined") window.tutorialOnboardingCallback = tutorialOnboardingCallback; } catch(e) {}
-try { if (typeof currentUserProfile !== "undefined") window.currentUserProfile = currentUserProfile; } catch(e) {}
-try { if (typeof currentAuthTab !== "undefined") window.currentAuthTab = currentAuthTab; } catch(e) {}
-try { if (typeof loadUserProfile !== "undefined") window.loadUserProfile = loadUserProfile; } catch(e) {}
-try { if (typeof checkProfileOnStartup !== "undefined") window.checkProfileOnStartup = checkProfileOnStartup; } catch(e) {}
-try { if (typeof updateMainMenuProfileBadge !== "undefined") window.updateMainMenuProfileBadge = updateMainMenuProfileBadge; } catch(e) {}
-try { if (typeof openAuthProfileModal !== "undefined") window.openAuthProfileModal = openAuthProfileModal; } catch(e) {}
-try { if (typeof closeAuthProfileModal !== "undefined") window.closeAuthProfileModal = closeAuthProfileModal; } catch(e) {}
-try { if (typeof switchAuthTab !== "undefined") window.switchAuthTab = switchAuthTab; } catch(e) {}
-try { if (typeof updateAuthAvatarPreview !== "undefined") window.updateAuthAvatarPreview = updateAuthAvatarPreview; } catch(e) {}
-try { if (typeof toggleAuthPasswordVisibility !== "undefined") window.toggleAuthPasswordVisibility = toggleAuthPasswordVisibility; } catch(e) {}
-try { if (typeof handleAuthSubmit !== "undefined") window.handleAuthSubmit = handleAuthSubmit; } catch(e) {}
-try { if (typeof handleAuthSkipToGuest !== "undefined") window.handleAuthSkipToGuest = handleAuthSkipToGuest; } catch(e) {}
-try { if (typeof handleAuthRecommend !== "undefined") window.handleAuthRecommend = handleAuthRecommend; } catch(e) {}
-try { if (typeof openProfileDetailsModal !== "undefined") window.openProfileDetailsModal = openProfileDetailsModal; } catch(e) {}
-try { if (typeof closeProfileDetailsModal !== "undefined") window.closeProfileDetailsModal = closeProfileDetailsModal; } catch(e) {}
-try { if (typeof handleProfileSignOut !== "undefined") window.handleProfileSignOut = handleProfileSignOut; } catch(e) {}
-try { if (typeof handleProfileAuthAction !== "undefined") window.handleProfileAuthAction = handleProfileAuthAction; } catch(e) {}
-try { if (typeof promptGuestOnAuthClose !== "undefined") window.promptGuestOnAuthClose = promptGuestOnAuthClose; } catch(e) {}
-try { if (typeof confirmContinueAsGuest !== "undefined") window.confirmContinueAsGuest = confirmContinueAsGuest; } catch(e) {}
-try { if (typeof cancelGuestPrompt !== "undefined") window.cancelGuestPrompt = cancelGuestPrompt; } catch(e) {}
-try { if (typeof handleUnderConstruction !== "undefined") window.handleUnderConstruction = handleUnderConstruction; } catch(e) {}
-try { if (typeof measureRealConnectionPing !== "undefined") window.measureRealConnectionPing = measureRealConnectionPing; } catch(e) {}
-try { if (typeof updateConnectionTelemetryUI !== "undefined") window.updateConnectionTelemetryUI = updateConnectionTelemetryUI; } catch(e) {}
-try { if (typeof pinRecipe !== "undefined") window.pinRecipe = pinRecipe; } catch(e) {}
-try { if (typeof unpinRecipe !== "undefined") window.unpinRecipe = unpinRecipe; } catch(e) {}
-try { if (typeof renderPinnedRecipeHUD !== "undefined") window.renderPinnedRecipeHUD = renderPinnedRecipeHUD; } catch(e) {}
-try { if (typeof loadPinnedRecipe !== "undefined") window.loadPinnedRecipe = loadPinnedRecipe; } catch(e) {}
-try { if (typeof getPinnedRecipeIndex !== "undefined") window.getPinnedRecipeIndex = getPinnedRecipeIndex; } catch(e) {}
-try { if (typeof handlePinnedRecipeClick !== "undefined") window.handlePinnedRecipeClick = handlePinnedRecipeClick; } catch(e) {}
-try { if (typeof switchControlsSubTab !== "undefined") window.switchControlsSubTab = switchControlsSubTab; } catch(e) {}
-try { if (typeof updateGamepadUI !== "undefined") window.updateGamepadUI = updateGamepadUI; } catch(e) {}
-try { if (typeof updateGamepadDeviceCard !== "undefined") window.updateGamepadDeviceCard = updateGamepadDeviceCard; } catch(e) {}
-try { if (typeof startGamepadRebindingUI !== "undefined") window.startGamepadRebindingUI = startGamepadRebindingUI; } catch(e) {}
-try { if (typeof resetGamepadBindingsToDefault !== "undefined") window.resetGamepadBindingsToDefault = resetGamepadBindingsToDefault; } catch(e) {}
-try { if (typeof updateGamepadDeadzoneUI !== "undefined") window.updateGamepadDeadzoneUI = updateGamepadDeadzoneUI; } catch(e) {}
-try { if (typeof updateGamepadAimSensUI !== "undefined") window.updateGamepadAimSensUI = updateGamepadAimSensUI; } catch(e) {}
-try { if (typeof toggleGamepadInvertYUI !== "undefined") window.toggleGamepadInvertYUI = toggleGamepadInvertYUI; } catch(e) {}
-try { if (typeof toggleGamepadAutoAimUI !== "undefined") window.toggleGamepadAutoAimUI = toggleGamepadAutoAimUI; } catch(e) {}
-try { if (typeof toggleGamepadVibrationUI !== "undefined") window.toggleGamepadVibrationUI = toggleGamepadVibrationUI; } catch(e) {}
-try { if (typeof testGamepadRumbleUI !== "undefined") window.testGamepadRumbleUI = testGamepadRumbleUI; } catch(e) {}
-try { if (typeof startGamepadUiMonitor !== "undefined") window.startGamepadUiMonitor = startGamepadUiMonitor; } catch(e) {}
-try { if (typeof stopGamepadUiMonitor !== "undefined") window.stopGamepadUiMonitor = stopGamepadUiMonitor; } catch(e) {}
-try { if (typeof switchProfileTab !== "undefined") window.switchProfileTab = switchProfileTab; } catch(e) {}
-try { if (typeof renderFriendsList !== "undefined") window.renderFriendsList = renderFriendsList; } catch(e) {}
-try { if (typeof handleAddFriendSubmit !== "undefined") window.handleAddFriendSubmit = handleAddFriendSubmit; } catch(e) {}
-try { if (typeof handleRemoveFriend !== "undefined") window.handleRemoveFriend = handleRemoveFriend; } catch(e) {}
-try { if (typeof handleAcceptFriendRequest !== "undefined") window.handleAcceptFriendRequest = handleAcceptFriendRequest; } catch(e) {}
-try { if (typeof handleDeclineFriendRequest !== "undefined") window.handleDeclineFriendRequest = handleDeclineFriendRequest; } catch(e) {}
-try { if (typeof copyPlayerTag !== "undefined") window.copyPlayerTag = copyPlayerTag; } catch(e) {}
-try { if (typeof setCurrentUserProfile !== "undefined") window.setCurrentUserProfile = setCurrentUserProfile; } catch(e) {}
-try { if (typeof getPixelWarningSvg !== "undefined") window.getPixelWarningSvg = getPixelWarningSvg; } catch(e) {}
-try { if (typeof cropGrowthQueue !== "undefined") window.cropGrowthQueue = cropGrowthQueue; } catch(e) {}
-
-    // Universal Click Handler for Author & Game GitHub links
-    export const AUTHOR_GITHUB_URL = 'https://github.com/raresh06';
-    export const GAME_GITHUB_URL = 'https://github.com/raresh06/webcraft2d-game';
-
-    if (typeof document !== 'undefined') {
-        document.addEventListener('click', (e) => {
-            const target = e.target;
-            if (!target) return;
-
-            // Do not intercept clicks on intro screen text
-            if (typeof target.closest === 'function' && target.closest('#intro-black-text')) {
-                return;
-            }
-
-            // 1. Author link click
-            const authorEl = typeof target.closest === 'function' && target.closest('.author-github-link, [data-author-link="true"]');
-            if (authorEl) {
-                if (authorEl.tagName !== 'A' || !authorEl.getAttribute('href')) {
-                    if (e.preventDefault) e.preventDefault();
-                    if (e.stopPropagation) e.stopPropagation();
-                    window.open(AUTHOR_GITHUB_URL, '_blank', 'noopener,noreferrer');
-                }
-                return;
-            }
-
-            // 2. Game repository link click
-            const gameEl = typeof target.closest === 'function' && target.closest('.game-github-link, .credits-game-title, .mc-title-link, [data-game-link="true"]');
-            if (gameEl) {
-                if (gameEl.tagName !== 'A' || !gameEl.getAttribute('href')) {
-                    if (e.preventDefault) e.preventDefault();
-                    if (e.stopPropagation) e.stopPropagation();
-                    window.open(GAME_GITHUB_URL, '_blank', 'noopener,noreferrer');
-                }
-                return;
-            }
-
-            // 3. Fallback: Main menu title click
-            if (target.classList && target.classList.contains('mc-title') && typeof target.closest === 'function' && target.closest('#main-menu')) {
-                if (e.preventDefault) e.preventDefault();
-                if (e.stopPropagation) e.stopPropagation();
-                window.open(GAME_GITHUB_URL, '_blank', 'noopener,noreferrer');
-                return;
-            }
-
-            // 4. Fallback: Match author's name or Webcraft directly clicked in text (excluding inputs)
-            if (typeof target.matches === 'function' && target.matches('span, p, div, b, strong, em, h1, h2, h3, h4, h5, h6') && !target.closest('input, textarea, select, button')) {
-                const text = (target.textContent || '').trim();
-                if (/^[-–—\s]*Gheorghes\s+Rares[-–—\s]*$/i.test(text) || text.toLowerCase() === 'raresh06') {
-                    if (e.preventDefault) e.preventDefault();
-                    if (e.stopPropagation) e.stopPropagation();
-                    window.open(AUTHOR_GITHUB_URL, '_blank', 'noopener,noreferrer');
-                    return;
-                }
-                if (/^Webcraft(2D)?(\s+Beta)?$/i.test(text)) {
-                    if (e.preventDefault) e.preventDefault();
-                    if (e.stopPropagation) e.stopPropagation();
-                    window.open(GAME_GITHUB_URL, '_blank', 'noopener,noreferrer');
-                    return;
-                }
-            }
-        }, true);
-    }
-
-// Atlas Merchant & Currency Hub Window Exports
-try { if (typeof getPixelEmeraldSvg !== "undefined") window.getPixelEmeraldSvg = getPixelEmeraldSvg; } catch(e) {}
-try { if (typeof getPixelAstralEmeraldSvg !== "undefined") window.getPixelAstralEmeraldSvg = getPixelAstralEmeraldSvg; } catch(e) {}
-try { if (typeof syncCurrencyTextureImages !== "undefined") window.syncCurrencyTextureImages = syncCurrencyTextureImages; } catch(e) {}
-try { if (typeof getPlayerAstralEmeralds !== "undefined") window.getPlayerAstralEmeralds = getPlayerAstralEmeralds; } catch(e) {}
-try { if (typeof setPlayerAstralEmeralds !== "undefined") window.setPlayerAstralEmeralds = setPlayerAstralEmeralds; } catch(e) {}
-try { if (typeof addPlayerAstralEmeralds !== "undefined") window.addPlayerAstralEmeralds = addPlayerAstralEmeralds; } catch(e) {}
-try { if (typeof getDailyMinedEmeralds !== "undefined") window.getDailyMinedEmeralds = getDailyMinedEmeralds; } catch(e) {}
-try { if (typeof recordDailyMinedEmerald !== "undefined") window.recordDailyMinedEmerald = recordDailyMinedEmerald; } catch(e) {}
-try { if (typeof renderMiningTrackerUI !== "undefined") window.renderMiningTrackerUI = renderMiningTrackerUI; } catch(e) {}
-try { if (typeof DAILY_QUEST_POOL !== "undefined") window.DAILY_QUEST_POOL = DAILY_QUEST_POOL; } catch(e) {}
-try { if (typeof getDailyQuestsState !== "undefined") window.getDailyQuestsState = getDailyQuestsState; } catch(e) {}
-try { if (typeof saveDailyQuestsState !== "undefined") window.saveDailyQuestsState = saveDailyQuestsState; } catch(e) {}
-try { if (typeof trackDailyQuestProgress !== "undefined") window.trackDailyQuestProgress = trackDailyQuestProgress; } catch(e) {}
-try { if (typeof claimDailyQuestReward !== "undefined") window.claimDailyQuestReward = claimDailyQuestReward; } catch(e) {}
-try { if (typeof renderDailyQuestsUI !== "undefined") window.renderDailyQuestsUI = renderDailyQuestsUI; } catch(e) {}
-try { if (typeof performAstralExchange !== "undefined") window.performAstralExchange = performAstralExchange; } catch(e) {}
-try { if (typeof openCurrencyHubModal !== "undefined") window.openCurrencyHubModal = openCurrencyHubModal; } catch(e) {}
-try { if (typeof closeCurrencyHubModal !== "undefined") window.closeCurrencyHubModal = closeCurrencyHubModal; } catch(e) {}
-try { if (typeof switchVaultTab !== "undefined") window.switchVaultTab = switchVaultTab; } catch(e) {}
-try { if (typeof openAchievementsFromVault !== "undefined") window.openAchievementsFromVault = openAchievementsFromVault; } catch(e) {}
-try { if (typeof KAEL_DIALOGUES !== "undefined") window.KAEL_DIALOGUES = KAEL_DIALOGUES; } catch(e) {}
-try { if (typeof drawKaelPortrait !== "undefined") window.drawKaelPortrait = drawKaelPortrait; } catch(e) {}
-try { if (typeof hasPlayerTalkedToKael !== "undefined") window.hasPlayerTalkedToKael = hasPlayerTalkedToKael; } catch(e) {}
-try { if (typeof setPlayerTalkedToKael !== "undefined") window.setPlayerTalkedToKael = setPlayerTalkedToKael; } catch(e) {}
-try { if (typeof openAtlasDialogue !== "undefined") window.openAtlasDialogue = openAtlasDialogue; } catch(e) {}
-try { if (typeof closeAtlasDialogue !== "undefined") window.closeAtlasDialogue = closeAtlasDialogue; } catch(e) {}
-try { if (typeof renderKaelNode !== "undefined") window.renderKaelNode = renderKaelNode; } catch(e) {}
-try { if (typeof handleAtlasDialogueChoice !== "undefined") window.handleAtlasDialogueChoice = handleAtlasDialogueChoice; } catch(e) {}
-try { if (typeof openAtlasMarket !== "undefined") window.openAtlasMarket = openAtlasMarket; } catch(e) {}
-try { if (typeof closeAtlasMarket !== "undefined") window.closeAtlasMarket = closeAtlasMarket; } catch(e) {}
-try { if (typeof renderAtlasMarketWares !== "undefined") window.renderAtlasMarketWares = renderAtlasMarketWares; } catch(e) {}
-try { if (typeof switchAtlasCategory !== "undefined") window.switchAtlasCategory = switchAtlasCategory; } catch(e) {}
-try { if (typeof currentAtlasCategory !== "undefined") window.currentAtlasCategory = currentAtlasCategory; } catch(e) {}
-try { if (typeof DIAMOND_TO_ASTRAL_MAP !== "undefined") window.DIAMOND_TO_ASTRAL_MAP = DIAMOND_TO_ASTRAL_MAP; } catch(e) {}
-try { if (typeof openAstralInfuser !== "undefined") window.openAstralInfuser = openAstralInfuser; } catch(e) {}
-try { if (typeof closeAstralInfuser !== "undefined") window.closeAstralInfuser = closeAstralInfuser; } catch(e) {}
-try { if (typeof renderInfuserUI !== "undefined") window.renderInfuserUI = renderInfuserUI; } catch(e) {}
-try { if (typeof handleEligibleItemClick !== "undefined") window.handleEligibleItemClick = handleEligibleItemClick; } catch(e) {}
-try { if (typeof handleInfuserSlotClick !== "undefined") window.handleInfuserSlotClick = handleInfuserSlotClick; } catch(e) {}
-try { if (typeof performAstralInfusion !== "undefined") window.performAstralInfusion = performAstralInfusion; } catch(e) {}
-try { if (typeof getQuestCategorySvg !== "undefined") window.getQuestCategorySvg = getQuestCategorySvg; } catch(e) {}
-try { if (typeof renderAstralExchangeUI !== "undefined") window.renderAstralExchangeUI = renderAstralExchangeUI; } catch(e) {}
-try { if (typeof updateVaultResetCountdown !== "undefined") window.updateVaultResetCountdown = updateVaultResetCountdown; } catch(e) {}
-try { if (typeof getPixelPadlockSvg !== "undefined") window.getPixelPadlockSvg = getPixelPadlockSvg; } catch(e) {}
-try { if (typeof getTier1AstralIllustration !== "undefined") window.getTier1AstralIllustration = getTier1AstralIllustration; } catch(e) {}
-try { if (typeof getTier2AstralIllustration !== "undefined") window.getTier2AstralIllustration = getTier2AstralIllustration; } catch(e) {}
-try { if (typeof getTier3AstralIllustration !== "undefined") window.getTier3AstralIllustration = getTier3AstralIllustration; } catch(e) {}
-try { if (typeof openSignEditor !== "undefined") window.openSignEditor = openSignEditor; } catch(e) {}
-try { if (typeof closeSignEditor !== "undefined") window.closeSignEditor = closeSignEditor; } catch(e) {}
-try { if (typeof isSignEditorOpen !== "undefined") window.isSignEditorOpen = isSignEditorOpen; } catch(e) {}
-try { if (typeof updateSignInlinePosition !== "undefined") window.updateSignInlinePosition = updateSignInlinePosition; } catch(e) {}
-try { if (typeof getActiveSignCoord !== "undefined") window.getActiveSignCoord = getActiveSignCoord; } catch(e) {}
-try { if (typeof getSignOpenedAt !== "undefined") window.getSignOpenedAt = getSignOpenedAt; } catch(e) {}
-try { if (typeof focusSignLine !== "undefined") window.focusSignLine = focusSignLine; } catch(e) {}
-try { if (typeof updateSignLineCounter !== "undefined") window.updateSignLineCounter = updateSignLineCounter; } catch(e) {}
-try { if (typeof setupDeathScreen !== "undefined") window.setupDeathScreen = setupDeathScreen; } catch(e) {}
-try { if (typeof respawnWithAstralProtection !== "undefined") window.respawnWithAstralProtection = respawnWithAstralProtection; } catch(e) {}
-try { if (typeof regenerateLostWorld !== "undefined") window.regenerateLostWorld = regenerateLostWorld; } catch(e) {}
-try { if (typeof showKaelArrivalBanner !== "undefined") window.showKaelArrivalBanner = showKaelArrivalBanner; } catch(e) {}
-try { if (typeof showKaelDepartureBanner !== "undefined") window.showKaelDepartureBanner = showKaelDepartureBanner; } catch(e) {}
-try { if (typeof openShop !== "undefined") window.openShop = openShop; } catch(e) {}
-try { if (typeof closeShop !== "undefined") window.closeShop = closeShop; } catch(e) {}
-try { if (typeof switchShopTab !== "undefined") window.switchShopTab = switchShopTab; } catch(e) {}
-try { if (typeof filterShopCosmetics !== "undefined") window.filterShopCosmetics = filterShopCosmetics; } catch(e) {}
-try { if (typeof renderShopCosmetics !== "undefined") window.renderShopCosmetics = renderShopCosmetics; } catch(e) {}
-try { if (typeof purchaseCosmeticItem !== "undefined") window.purchaseCosmeticItem = purchaseCosmeticItem; } catch(e) {}
-try { if (typeof equipCosmeticItem !== "undefined") window.equipCosmeticItem = equipCosmeticItem; } catch(e) {}
-try { if (typeof tryOnCosmeticItem !== "undefined") window.tryOnCosmeticItem = tryOnCosmeticItem; } catch(e) {}
-try { if (typeof performShopAstralExchange !== "undefined") window.performShopAstralExchange = performShopAstralExchange; } catch(e) {}
-try { if (typeof purchaseAtlasWareFromShop !== "undefined") window.purchaseAtlasWareFromShop = purchaseAtlasWareFromShop; } catch(e) {}
-try { if (typeof openProfileEditor !== "undefined") window.openProfileEditor = openProfileEditor; } catch(e) {}
-try { if (typeof closeProfileEditor !== "undefined") window.closeProfileEditor = closeProfileEditor; } catch(e) {}
-try { if (typeof setEditorNameColor !== "undefined") window.setEditorNameColor = setEditorNameColor; } catch(e) {}
-try { if (typeof setEditorBannerColor !== "undefined") window.setEditorBannerColor = setEditorBannerColor; } catch(e) {}
-try { if (typeof handleProfileEditorChange !== "undefined") window.handleProfileEditorChange = handleProfileEditorChange; } catch(e) {}
-try { if (typeof renderProfileEditorLivePreview !== "undefined") window.renderProfileEditorLivePreview = renderProfileEditorLivePreview; } catch(e) {}
-try { if (typeof resetProfileEditor !== "undefined") window.resetProfileEditor = resetProfileEditor; } catch(e) {}
-try { if (typeof saveProfileEditorChanges !== "undefined") window.saveProfileEditorChanges = saveProfileEditorChanges; } catch(e) {}
-try { if (typeof openFriendProfileModal !== "undefined") window.openFriendProfileModal = openFriendProfileModal; } catch(e) {}
-try { if (typeof closeFriendProfileModal !== "undefined") window.closeFriendProfileModal = closeFriendProfileModal; } catch(e) {}
-try { if (typeof renderFriendsListRows !== "undefined") window.renderFriendsListRows = renderFriendsListRows; } catch(e) {}
-try { if (typeof getPlayerCustomization !== "undefined") window.getPlayerCustomization = getPlayerCustomization; } catch(e) {}
-try { if (typeof openFabulousSettingsModal !== "undefined") window.openFabulousSettingsModal = openFabulousSettingsModal; } catch(e) {}
-try { if (typeof closeFabulousSettingsModal !== "undefined") window.closeFabulousSettingsModal = closeFabulousSettingsModal; } catch(e) {}
-try { if (typeof selectFabulousPreset !== "undefined") window.selectFabulousPreset = selectFabulousPreset; } catch(e) {}
-try { if (typeof toggleFabulousOption !== "undefined") window.toggleFabulousOption = toggleFabulousOption; } catch(e) {}
-try { if (typeof resetFabulousDefaults !== "undefined") window.resetFabulousDefaults = resetFabulousDefaults; } catch(e) {}
-try { if (typeof renderFabulousSettingsUI !== "undefined") window.renderFabulousSettingsUI = renderFabulousSettingsUI; } catch(e) {}
-try { if (typeof getPlayerUnlockedCosmetics !== "undefined") window.getPlayerUnlockedCosmetics = getPlayerUnlockedCosmetics; } catch(e) {}
-try { if (typeof playWorldById !== "undefined") window.playWorldById = playWorldById; } catch(e) {}
-try { if (typeof duplicateWorld !== "undefined") window.duplicateWorld = duplicateWorld; } catch(e) {}
-try { if (typeof renameWorld !== "undefined") window.renameWorld = renameWorld; } catch(e) {}
-try { if (typeof filterWorldsSearch !== "undefined") window.filterWorldsSearch = filterWorldsSearch; } catch(e) {}
-try { if (typeof setWorldViewMode !== "undefined") window.setWorldViewMode = setWorldViewMode; } catch(e) {}
-try { if (typeof switchCreateWorldTab !== "undefined") window.switchCreateWorldTab = switchCreateWorldTab; } catch(e) {}
-try { if (typeof selectGameMode !== "undefined") window.selectGameMode = selectGameMode; } catch(e) {}
-try { if (typeof selectStartingBiome !== "undefined") window.selectStartingBiome = selectStartingBiome; } catch(e) {}
-try { if (typeof randomizeWorldSeed !== "undefined") window.randomizeWorldSeed = randomizeWorldSeed; } catch(e) {}
-try { if (typeof updateCreateWorldPreview !== "undefined") window.updateCreateWorldPreview = updateCreateWorldPreview; } catch(e) {}
-try { if (typeof toggleNewWorldOption !== "undefined") window.toggleNewWorldOption = toggleNewWorldOption; } catch(e) {}
-try { if (typeof openNewWorldModal !== "undefined") window.openNewWorldModal = openNewWorldModal; } catch(e) {}
-try { if (typeof closeNewWorldModal !== "undefined") window.closeNewWorldModal = closeNewWorldModal; } catch(e) {}
-try { if (typeof confirmCreateWorld !== "undefined") window.confirmCreateWorld = confirmCreateWorld; } catch(e) {}
-try { if (typeof promptConvertWorld015 !== "undefined") window.promptConvertWorld015 = promptConvertWorld015; } catch(e) {}
-try { if (typeof closeConvertWorldModal !== "undefined") window.closeConvertWorldModal = closeConvertWorldModal; } catch(e) {}
-try { if (typeof confirmConvertWorld015 !== "undefined") window.confirmConvertWorld015 = confirmConvertWorld015; } catch(e) {}
-try { if (typeof exportBackup015Only !== "undefined") window.exportBackup015Only = exportBackup015Only; } catch(e) {}
-try { if (typeof exportBackupAndConvert015 !== "undefined") window.exportBackupAndConvert015 = exportBackupAndConvert015; } catch(e) {}
+                invBtn.innerText = Gamepad.gamepadSettings.invertAimY ? 'Invert
+... [truncated for diff preview]

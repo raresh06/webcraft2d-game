@@ -866,13 +866,25 @@ export function initJukeboxFileInput() {
     window.addEventListener('keydown', (e) => {
         let k = (e.key || '').toLowerCase();
         const isEscape = e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27;
+        const activeKeybinds = (typeof UI !== 'undefined' && UI.KEYBINDS) ? UI.KEYBINDS : ((typeof window !== 'undefined' && window.KEYBINDS) ? window.KEYBINDS : {});
+        const boundDevKey = (activeKeybinds['devconsole'] || 'f7').toLowerCase();
+        const isCustomDevKey = (k === boundDevKey || (e.code && e.code.toLowerCase() === boundDevKey)) &&
+                               !(document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA'));
         const isF7Standard = (e.key && e.key.toUpperCase() === 'F7') || e.code === 'F7' || e.keyCode === 118;
         const isF7Media = e.key === 'MediaTrackPrevious' || e.code === 'MediaTrackPrevious' || e.key === 'MediaRewind' || e.code === 'MediaRewind' || e.keyCode === 177;
         const isBackquote = (e.key === '`' || e.key === '~' || e.code === 'Backquote' || e.keyCode === 192) &&
                             !(document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA'));
         lastPlayerActivityAt = Date.now();
 
-        if (isF7Standard || isF7Media || isBackquote) {
+        if (isF7Standard || isF7Media || isBackquote || isCustomDevKey) {
+            const isConsoleOpen = (typeof DevConsole !== 'undefined' && DevConsole.isOpen) || (typeof window !== 'undefined' && window.DevConsole && window.DevConsole.isOpen);
+            const canOpenConsole = (typeof DevConsole !== 'undefined' && typeof DevConsole.canOpen === 'function')
+                ? DevConsole.canOpen()
+                : (typeof window !== 'undefined' && window.DevConsole && typeof window.DevConsole.canOpen === 'function' ? window.DevConsole.canOpen() : (STATE === 'PLAYING' || STATE === 'PAUSED'));
+
+            if (!isConsoleOpen && !canOpenConsole) {
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             if (typeof DevConsole !== 'undefined' && typeof DevConsole.toggle === 'function') {
@@ -984,6 +996,9 @@ export function initJukeboxFileInput() {
             const invKey = (activeKeybinds['inventory'] || 'e').toLowerCase();
             const dropKey = (activeKeybinds['drop'] || 'q').toLowerCase();
             const debugKey = (activeKeybinds['debug'] || 'f3').toLowerCase();
+            const astralKey = (activeKeybinds['astral'] || 'c').toLowerCase();
+            const bgBuildKey = (activeKeybinds['bg_build'] || 'b').toLowerCase();
+            const achKey = (activeKeybinds['achievements'] || 'l').toLowerCase();
 
             if (isMultiplayer && (k === chatKey || k === '/') && !isInventoryOpen && !isWorldMapOpen) {
                 e.preventDefault();
@@ -995,18 +1010,30 @@ export function initJukeboxFileInput() {
                 toggleWorldMap();
                 return;
             }
-            if (k === 'b' && !isInventoryOpen && !isWorldMapOpen) {
+            if ((k === bgBuildKey || k === 'b') && !isInventoryOpen && !isWorldMapOpen) {
                 e.preventDefault();
                 toggleBackgroundBuildMode();
                 return;
             }
             if (isWorldMapOpen) {
-                if (k === 'c') {
+                if (k === 'c' || k === astralKey) {
                     centerMapOnPlayer();
                 }
                 return;
             }
-            if (k === 'c' && !isInventoryOpen && !isWorldMapOpen) {
+            if ((k === achKey || k === 'l') && !isInventoryOpen && !isWorldMapOpen) {
+                e.preventDefault();
+                const achModal = document.getElementById('achievements-modal');
+                if (achModal && !achModal.classList.contains('hidden') && achModal.style.display !== 'none') {
+                    if (typeof UI !== 'undefined' && typeof UI.closeAchievements === 'function') UI.closeAchievements();
+                    else if (typeof window !== 'undefined' && typeof window.closeAchievements === 'function') window.closeAchievements();
+                } else {
+                    if (typeof UI !== 'undefined' && typeof UI.openAchievements === 'function') UI.openAchievements(isMultiplayer ? 'mp' : 'sp');
+                    else if (typeof window !== 'undefined' && typeof window.openAchievements === 'function') window.openAchievements(isMultiplayer ? 'mp' : 'sp');
+                }
+                return;
+            }
+            if ((k === astralKey || k === 'c') && !isInventoryOpen && !isWorldMapOpen) {
                 e.preventDefault();
                 const vaultModal = document.getElementById('emerald-vault-modal');
                 if (vaultModal && !vaultModal.classList.contains('hidden') && vaultModal.style.display !== 'none') {
@@ -1081,10 +1108,20 @@ export function initJukeboxFileInput() {
                 if (e.code) keys[e.code] = true;
                 if (typeof window !== 'undefined') window.keys = keys;
             }
-            if (k >= '1' && k <= '9' && !isInventoryOpen) { 
-                setSelectedHotbarIndex(parseInt(k) - 1); 
-                updateUI();
-                triggerHotbarItemPopup();
+            if (!isInventoryOpen) {
+                let selectedSlot = -1;
+                for (let i = 1; i <= 9; i++) {
+                    const boundSlot = (activeKeybinds['slot' + i] || String(i)).toLowerCase();
+                    if (k === boundSlot || k === String(i)) {
+                        selectedSlot = i - 1;
+                        break;
+                    }
+                }
+                if (selectedSlot >= 0) {
+                    setSelectedHotbarIndex(selectedSlot);
+                    updateUI();
+                    triggerHotbarItemPopup();
+                }
             }
         }
     }, true);
@@ -1754,6 +1791,7 @@ export function initJukeboxFileInput() {
                         const isKineticShears = heldTool && heldTool.id === IDS.KINETIC_SHEARS;
                         const woolAmount = isKineticShears ? 3 : 1;
                         giveItem(IDS.WOOL, woolAmount);
+                        unlockAchievement('shear_sheep');
                         if (isKineticShears) {
                             unlockAchievement('kinetic_shearing');
                         }
@@ -1769,11 +1807,13 @@ export function initJukeboxFileInput() {
                         else if (z instanceof Chicken) {
                             giveItem(IDS.RAW_CHICKEN, 1);
                             if (Math.random() < 0.5) giveItem(IDS.FEATHER, 1);
+                            unlockAchievement('feather_gatherer');
                         }
                         else if (z instanceof Cow) {
                             giveItem(IDS.RAW_BEEF, Math.floor(Math.random() * 2) + 1);
                             let leatherCount = Math.floor(Math.random() * 3);
                             if (leatherCount > 0) giveItem(IDS.LEATHER, leatherCount);
+                            unlockAchievement('moo_harvest');
                         }
                         else if (z instanceof Pigeon) {
                             // Innocent sweet bird drops nothing!
@@ -1788,6 +1828,8 @@ export function initJukeboxFileInput() {
                             unlockAchievement('monster_hunter');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
                             if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
+                            if (monstersKilledCount >= 50) unlockAchievement('monster_slayer_50');
+                            if (typeof renderPinnedAchievementHUD === 'function') renderPinnedAchievementHUD();
                         }
                         else if (z instanceof Creeper) {
                             giveItem(IDS.COAL, Math.floor(Math.random() * 2) + 1);
@@ -1796,8 +1838,11 @@ export function initJukeboxFileInput() {
                                 UI.trackDailyQuestProgress('slay_monster', { mobType: 'Creeper' });
                             }
                             unlockAchievement('monster_hunter');
+                            unlockAchievement('defuse_fuse');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
                             if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
+                            if (monstersKilledCount >= 50) unlockAchievement('monster_slayer_50');
+                            if (typeof renderPinnedAchievementHUD === 'function') renderPinnedAchievementHUD();
                         }
                         else if (z instanceof Scorpion) {
                             if (Math.random() < 0.6) giveItem(IDS.BONE, 1);
@@ -1806,8 +1851,11 @@ export function initJukeboxFileInput() {
                                 UI.trackDailyQuestProgress('slay_monster', { mobType: 'Scorpion' });
                             }
                             unlockAchievement('monster_hunter');
+                            unlockAchievement('desert_stinger');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
                             if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
+                            if (monstersKilledCount >= 50) unlockAchievement('monster_slayer_50');
+                            if (typeof renderPinnedAchievementHUD === 'function') renderPinnedAchievementHUD();
                         }
                         else if (z instanceof Gloomstalker) {
                             giveItem(IDS.GLOOM_SILK, 1 + Math.floor(Math.random() * 2));
@@ -1817,8 +1865,11 @@ export function initJukeboxFileInput() {
                                 UI.trackDailyQuestProgress('slay_monster', { mobType: 'Gloomstalker' });
                             }
                             unlockAchievement('monster_hunter');
+                            unlockAchievement('slay_gloomstalker');
                             if (monstersKilledCount >= 5) unlockAchievement('sniper_duel');
                             if (monstersKilledCount >= 15) unlockAchievement('apex_predator');
+                            if (monstersKilledCount >= 50) unlockAchievement('monster_slayer_50');
+                            if (typeof renderPinnedAchievementHUD === 'function') renderPinnedAchievementHUD();
                         }
                         entities.splice(i, 1);
                     }
@@ -2175,17 +2226,18 @@ export function initJukeboxFileInput() {
                         showToast('Login to earn Emerald currency from mining!');
                     } else {
                         const minedToday = (typeof UI !== 'undefined' && typeof UI.getDailyMinedEmeralds === 'function') ? UI.getDailyMinedEmeralds() : 0;
-                        if (minedToday < 100) {
+                        const maxMined = (typeof UI !== 'undefined' && UI.MAX_DAILY_EMERALD_MINES) ? UI.MAX_DAILY_EMERALD_MINES : 40;
+                        if (minedToday < maxMined) {
                             if (typeof UI !== 'undefined') {
                                 if (typeof UI.recordDailyMinedEmerald === 'function') UI.recordDailyMinedEmerald();
                                 if (typeof UI.addPlayerEmeralds === 'function') UI.addPlayerEmeralds(1);
                                 if (typeof UI.unlockAchievement === 'function') UI.unlockAchievement('gem_prospector');
                             }
                             dropId = null;
-                            showToast('+1 Emerald! (' + (minedToday + 1) + '/100 today)');
+                            showToast('+1 Emerald! (' + (minedToday + 1) + '/' + maxMined + ' today)');
                         } else {
                             dropId = IDS.EMERALD_ORE;
-                            showToast('Daily mining limit reached (100/100). Dropping block instead.');
+                            showToast('Daily mining limit reached (' + maxMined + '/' + maxMined + '). Dropping block instead.');
                         }
                     }
                 }
@@ -2199,6 +2251,7 @@ export function initJukeboxFileInput() {
                 dropId = null;
                 const slices = Math.floor(Math.random() * 5) + 3; // 3 to 7
                 giveItem(IDS.SUNBURST_MELON_SLICE, slices);
+                unlockAchievement('solar_harvest');
             }
             if (blockId === IDS.ASTRAL_INFUSER) dropId = IDS.ASTRAL_INFUSER;
             if (blockId === IDS.PRISM_GLASS) dropId = IDS.PRISM_GLASS;
@@ -2502,6 +2555,7 @@ export function initJukeboxFileInput() {
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
             playSound('door');
+            unlockAchievement('knock_knock');
             updateUI();
             return true;
         }
@@ -2534,6 +2588,7 @@ export function initJukeboxFileInput() {
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
             playSound('step', { material: 'wood' });
+            unlockAchievement('notice_board');
             updateUI();
             if (typeof UI !== 'undefined' && typeof UI.openSignEditor === 'function') {
                 UI.openSignEditor(gx, gy, true);
@@ -2740,6 +2795,12 @@ export function initJukeboxFileInput() {
             }
             if (sel.id === IDS.ASTRAL_INFUSER) {
                 unlockAchievement('astral_infusion');
+            }
+            if (sel.id === IDS.PRISM_GLASS) {
+                unlockAchievement('prism_glass_art');
+            }
+            if (sel.id === IDS.GLOOM_LANTERN) {
+                unlockAchievement('gloom_lantern_placed');
             }
             sel.count--;
             if (sel.count <= 0) inventory[selectedIndex] = null;
@@ -3255,6 +3316,28 @@ export function initJukeboxFileInput() {
             // Background build toggle (L3)
             if (Gamepad.isGamepadActionJustPressed('bg_build') && !isInventoryOpen) {
                 toggleBackgroundBuildMode();
+            }
+
+            // Astral Currency Hub toggle (D-Pad Down default)
+            if (Gamepad.isGamepadActionJustPressed('astral') && !isInventoryOpen && !isWorldMapOpen) {
+                const vaultModal = document.getElementById('emerald-vault-modal');
+                if (vaultModal && !vaultModal.classList.contains('hidden') && vaultModal.style.display !== 'none') {
+                    if (typeof UI !== 'undefined' && typeof UI.closeCurrencyHubModal === 'function') UI.closeCurrencyHubModal();
+                } else {
+                    if (typeof UI !== 'undefined' && typeof UI.openCurrencyHubModal === 'function') UI.openCurrencyHubModal();
+                }
+            }
+
+            // Drop Hotbar Item (D-Pad Left default)
+            if (Gamepad.isGamepadActionJustPressed('drop') && !isInventoryOpen) {
+                let item = inventory[selectedHotbarIndex];
+                if (item && item.id) {
+                    dropItemForWorld(item.id, player.x + player.width/2 + (player.facingRight ? 16 : -16), player.y + 10, 1);
+                    item.count--;
+                    if (item.count <= 0) inventory[selectedHotbarIndex] = null;
+                    playSound('pop');
+                    updateUI();
+                }
             }
 
             // Debug toggle (R3)

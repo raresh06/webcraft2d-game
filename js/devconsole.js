@@ -429,6 +429,27 @@ class DevConsoleManager {
         }
     }
 
+    canOpen() {
+        if (typeof document === 'undefined') return false;
+        const curState = (typeof window !== 'undefined' && window.STATE) ? window.STATE : 'MENU';
+        if (curState !== 'PLAYING' && curState !== 'PAUSED') {
+            return false;
+        }
+        const mainMenu = document.getElementById('main-menu');
+        if (mainMenu && !mainMenu.classList.contains('hidden') && mainMenu.style.display !== 'none') {
+            return false;
+        }
+        const sharedBg = document.getElementById('shared-menu-bg');
+        if (sharedBg && !sharedBg.classList.contains('hidden') && sharedBg.style.display !== 'none') {
+            return false;
+        }
+        const bootScreen = document.getElementById('boot-loading-screen');
+        if (bootScreen && !bootScreen.classList.contains('hidden') && bootScreen.style.display !== 'none') {
+            return false;
+        }
+        return true;
+    }
+
     // -------------------------------------------------------------------------
     // DYNAMIC ITEM DISCOVERY
     // Automatically scans IDS & ID_NAMES to index all game items dynamically
@@ -532,6 +553,7 @@ class DevConsoleManager {
                         <button type="button" class="dev-ctrl-btn" id="dev-dock-btn" title="Flip dock to Left/Right corner">Dock: Right</button>
                         <button type="button" class="dev-ctrl-btn" id="dev-min-btn" title="Minimize debug bar">_</button>
                         <button type="button" class="dev-ctrl-btn close" id="dev-console-close" title="Close (F7 or ~)">✕</button>
+                        <button type="button" class="dev-ctrl-btn close" id="dev-console-close" title="Close (F7 or ~)">${getPixelIconSvg('close', 10)}</button>
                     </div>
                 </div>
 
@@ -691,6 +713,7 @@ class DevConsoleManager {
                         </button>
                         <button type="button" class="dev-grid-btn" id="dev-btn-toggle-items" style="border-color: #38bdf8; color: #7dd3fc;">
                             <span style="display:inline-flex;align-items:center;gap:4px;">${getPixelIconSvg('chest', 15)} Item Drawer</span><span class="dev-badge-off">OPEN ▶</span>
+                            <span style="display:inline-flex;align-items:center;gap:4px;">${getPixelIconSvg('chest', 15)} Item Drawer</span><span class="dev-badge-off">OPEN</span>
                         </button>
                     </div>
 
@@ -718,6 +741,7 @@ class DevConsoleManager {
                         <span id="dev-items-count-label" class="dev-badge-off" style="color: #ffd34d;">Loading...</span>
                     </div>
                     <button type="button" class="dev-ctrl-btn close" id="dev-drawer-close" title="Close Item Drawer">✕</button>
+                    <button type="button" class="dev-ctrl-btn close" id="dev-drawer-close" title="Close Item Drawer">${getPixelIconSvg('close', 10)}</button>
                 </div>
 
                 <!-- Search Input & Count Selector -->
@@ -771,6 +795,8 @@ class DevConsoleManager {
         const dockBtn = document.getElementById('dev-dock-btn');
         if (!panel) return;
 
+        const drawerWidth = drawer ? (drawer.offsetWidth || 370) : 370;
+
         if (!this._customPos) {
             panel.style.transition = 'left 0.15s ease, right 0.15s ease, bottom 0.15s ease';
             if (this.dockSide === 'left') {
@@ -780,7 +806,11 @@ class DevConsoleManager {
                 panel.style.top = 'auto';
 
                 if (drawer) {
-                    drawer.style.left = '556px';
+                    let dLeft = 556;
+                    if (dLeft + drawerWidth + 14 > window.innerWidth) {
+                        dLeft = Math.max(14, window.innerWidth - drawerWidth - 14);
+                    }
+                    drawer.style.left = `${dLeft}px`;
                     drawer.style.right = 'auto';
                     drawer.style.bottom = '24px';
                     drawer.style.top = 'auto';
@@ -799,7 +829,11 @@ class DevConsoleManager {
                 panel.style.top = 'auto';
 
                 if (drawer) {
-                    drawer.style.right = '556px';
+                    let dRight = 556;
+                    if (dRight + drawerWidth + 14 > window.innerWidth) {
+                        dRight = Math.max(14, window.innerWidth - drawerWidth - 14);
+                    }
+                    drawer.style.right = `${dRight}px`;
                     drawer.style.left = 'auto';
                     drawer.style.bottom = '24px';
                     drawer.style.top = 'auto';
@@ -816,8 +850,8 @@ class DevConsoleManager {
             const rect = panel.getBoundingClientRect();
             drawer.style.top = `${rect.top}px`;
             drawer.style.bottom = 'auto';
-            if (rect.left + rect.width + 380 > window.innerWidth) {
-                drawer.style.left = `${Math.max(0, rect.left - 376)}px`;
+            if (rect.left + rect.width + drawerWidth + 10 > window.innerWidth) {
+                drawer.style.left = `${Math.max(14, rect.left - drawerWidth - 6)}px`;
                 drawer.style.right = 'auto';
             } else {
                 drawer.style.left = `${rect.left + rect.width + 6}px`;
@@ -873,20 +907,26 @@ class DevConsoleManager {
         if (!drawer) return;
 
         if (this.itemDrawerOpen) {
-            drawer.style.display = 'flex';
             drawer.classList.remove('hidden');
+            drawer.style.display = 'flex';
+            drawer.style.visibility = 'visible';
+            drawer.style.opacity = '1';
+            drawer.style.pointerEvents = 'auto';
             if (toggleBtn) {
                 toggleBtn.classList.add('active');
                 toggleBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;">' + getPixelIconSvg('chest', 15) + ' Item Drawer</span><span class="dev-badge-on">OPEN ◀</span>';
+                toggleBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;">' + getPixelIconSvg('chest', 15) + ' Item Drawer</span><span class="dev-badge-on">OPEN</span>';
             }
             this.renderItemsGrid();
             this.updatePanelPosition();
         } else {
-            drawer.style.display = 'none';
             drawer.classList.add('hidden');
+            drawer.style.display = 'none';
+            drawer.style.visibility = 'hidden';
             if (toggleBtn) {
                 toggleBtn.classList.remove('active');
                 toggleBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;">' + getPixelIconSvg('chest', 15) + ' Item Drawer</span><span class="dev-badge-off">CLOSED ▶</span>';
+                toggleBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;">' + getPixelIconSvg('chest', 15) + ' Item Drawer</span><span class="dev-badge-off">CLOSED</span>';
             }
         }
     }
@@ -1229,6 +1269,15 @@ class DevConsoleManager {
 
         const btnClearInv = document.getElementById('dev-btn-clear-inv');
         if (btnClearInv) btnClearInv.addEventListener('click', () => this.clearPlayerInventory());
+
+        const toggleItemsBtn = document.getElementById('dev-btn-toggle-items');
+        if (toggleItemsBtn) {
+            toggleItemsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleItemDrawer();
+            });
+        }
 
         // Item Drawer Filters & Search
         const searchInput = document.getElementById('dev-item-search');
@@ -1930,6 +1979,10 @@ class DevConsoleManager {
     // TOGGLE / OPEN / CLOSE
     // -------------------------------------------------------------------------
     open() {
+        if (!this.canOpen()) {
+            console.log('[DevConsole] Cannot open: Developer console is disabled on menus and outside gameplay.');
+            return;
+        }
         try {
             if (!this.initialized || !this.containerEl || !document.getElementById('dev-console-modal')) {
                 this.initialized = false;
@@ -1981,8 +2034,12 @@ class DevConsoleManager {
         const now = Date.now();
         if (this._lastToggle && (now - this._lastToggle < 180)) return;
         this._lastToggle = now;
-        if (this.isOpen) this.close();
-        else this.open();
+        if (this.isOpen) {
+            this.close();
+        } else {
+            if (!this.canOpen()) return;
+            this.open();
+        }
     }
 }
 
@@ -2003,6 +2060,9 @@ if (typeof window !== 'undefined') {
                             !(document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA'));
 
         if (isF7Standard || isF7Media || isBackquote) {
+            if (!DevConsole.isOpen && !DevConsole.canOpen()) {
+                return;
+            }
             console.log(`[DevConsole] Hotkey pressed: key="${e.key}", code="${e.code}" -> toggling developer console`);
             e.preventDefault();
             e.stopPropagation();
@@ -2028,16 +2088,6 @@ if (typeof window !== 'undefined') {
     if (typeof document !== 'undefined') {
         const setupDevConsole = () => {
             DevConsole.init();
-            const verEl = document.getElementById('game-version-label');
-            if (verEl) {
-                verEl.style.cursor = 'pointer';
-                verEl.title = 'Click to toggle Developer Console (or press F7 / ~)';
-                verEl.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    DevConsole.toggle();
-                });
-            }
         };
 
         if (document.readyState === 'loading') {

@@ -5753,7 +5753,13 @@ export const SKIN_H = 32;
             if (fullySubmerged) {
                 if (frameCount % 25 === 0) this.oxygen = Math.max(0, this.oxygen - 1);
                 if (this.oxygen <= 0 && frameCount % 15 === 0) this.takeDamage(2);
+                if (this.oxygen <= 3) this._hadCriticalOxygen = true;
             } else {
+                if (this._hadCriticalOxygen && this.oxygen >= this.maxOxygen - 0.5) {
+                    this._hadCriticalOxygen = false;
+                    if (typeof unlockAchievement === 'function') unlockAchievement('deep_diver_breath');
+                    else if (typeof window !== 'undefined' && typeof window.unlockAchievement === 'function') window.unlockAchievement('deep_diver_breath');
+                }
                 this.oxygen = Math.min(this.maxOxygen, this.oxygen + 0.18);
             }
             if (fullySubmerged || previousOxygen !== this.oxygen) updateOxygenUI(fullySubmerged);
@@ -5875,6 +5881,9 @@ export const SKIN_H = 32;
                         }
                         if (eatenId === IDS.VOID_BERRY) {
                             unlockAchievement('void_nourishment');
+                        }
+                        if (eatenId === IDS.SUNBURST_MELON_SLICE) {
+                            unlockAchievement('solar_nourishment');
                         }
                         let pColor = (eatenId === IDS.VOID_BERRY) ? '#c084fc' : ((eatenId === IDS.SUNBURST_MELON_SLICE) ? '#f59e0b' : ((eatenId === IDS.MELON_SLICE) ? '#ef4444' : ((eatenId === IDS.COOKED_PORKCHOP || eatenId === IDS.COOKED_MUTTON || eatenId === IDS.COOKED_BEEF) ? '#8B4513' : (eatenId === IDS.RAW_BEEF ? '#991b1b' : (eatenId === IDS.COOKED_CHICKEN ? '#d98c53' : (eatenId === IDS.BREAD ? '#d2b48c' : (eatenId === IDS.APPLE ? '#ff3333' : '#ff99cc')))))));
                         for(let i=0; i<10; i++) particles.push(new Particle(this.x+this.width/2, this.y, pColor));
@@ -16921,7 +16930,16 @@ try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay
     export function setEngineState(newState) { STATE = newState; if (typeof window !== 'undefined') window.STATE = newState; }
     export function setGameState(newState) { STATE = newState; if (typeof window !== 'undefined') window.STATE = newState; }
     export function setEngineTimeOfDay(newTime) { timeOfDay = newTime; if (typeof window !== 'undefined') window.timeOfDay = newTime; }
-    export function setEngineDayCount(newDay) { dayCount = newDay; if (typeof window !== 'undefined') window.dayCount = newDay; }
+    export function setEngineDayCount(newDay) {
+        dayCount = newDay;
+        if (typeof window !== 'undefined') window.dayCount = newDay;
+        if (dayCount >= 10) {
+            if (typeof unlockAchievement === 'function') unlockAchievement('immortal_legend');
+            else if (typeof window !== 'undefined' && typeof window.unlockAchievement === 'function') window.unlockAchievement('immortal_legend');
+        }
+        if (typeof renderPinnedAchievementHUD === 'function') renderPinnedAchievementHUD();
+        else if (typeof window !== 'undefined' && typeof window.renderPinnedAchievementHUD === 'function') window.renderPinnedAchievementHUD();
+    }
     export function setEngineFrameCount(newFrames) { frameCount = newFrames; if (typeof window !== 'undefined') window.frameCount = newFrames; }
     export function setEngineCurrentWorldId(newId) { currentWorldId = newId; if (typeof window !== 'undefined') window.currentWorldId = newId; }
     export function setEngineCurrentDifficulty(newDiff) { currentDifficulty = newDiff; if (typeof window !== 'undefined') window.currentDifficulty = newDiff; }

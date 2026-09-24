@@ -638,6 +638,191 @@ export const PIXEL_ICON_DEFS = {
             <rect x="11" y="6" width="2" height="4" fill="#86efac"/>
             <rect x="13" y="7" width="1" height="2" fill="#ffffff"/>
         </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Search (Magnifying Glass)
+    // -------------------------------------------------------------------------
+    search: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="1" width="6" height="2" fill="#cbd5e1"/>
+            <rect x="1" y="3" width="2" height="6" fill="#cbd5e1"/>
+            <rect x="9" y="3" width="2" height="6" fill="#cbd5e1"/>
+            <rect x="3" y="9" width="6" height="2" fill="#cbd5e1"/>
+            <rect x="3" y="3" width="6" height="6" fill="#0f172a" fill-opacity="0.6"/>
+            <rect x="8" y="8" width="3" height="3" fill="#64748b"/>
+            <rect x="10" y="10" width="3" height="3" fill="#94a3b8"/>
+            <rect x="12" y="12" width="3" height="3" fill="#cbd5e1"/>
+            <rect x="13" y="13" width="2" height="2" fill="#f8fafc"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Checkmark (Green Unlocked)
+    // -------------------------------------------------------------------------
+    check: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="7" width="2" height="3" fill="#22c55e"/>
+            <rect x="4" y="9" width="2" height="3" fill="#22c55e"/>
+            <rect x="6" y="11" width="3" height="3" fill="#4ade80"/>
+            <rect x="8" y="9" width="2" height="3" fill="#22c55e"/>
+            <rect x="10" y="7" width="2" height="3" fill="#22c55e"/>
+            <rect x="12" y="4" width="2" height="4" fill="#4ade80"/>
+            <rect x="13" y="2" width="2" height="3" fill="#86efac"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Pin / Thumbtack
+    // -------------------------------------------------------------------------
+    pin: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="7" y="1" width="2" height="3" fill="#fbbf24"/>
+            <rect x="5" y="4" width="6" height="3" fill="#f59e0b"/>
+            <rect x="4" y="7" width="8" height="2" fill="#d97706"/>
+            <rect x="7" y="9" width="2" height="5" fill="#e2e8f0"/>
+            <rect x="7" y="14" width="2" height="1" fill="#94a3b8"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Reset / Reload
+    // -------------------------------------------------------------------------
+    reset: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="2" width="5" height="2" fill="#ef4444"/>
+            <rect x="11" y="4" width="2" height="4" fill="#ef4444"/>
+            <rect x="10" y="8" width="2" height="3" fill="#ef4444"/>
+            <rect x="6" y="11" width="4" height="2" fill="#ef4444"/>
+            <rect x="3" y="8" width="2" height="3" fill="#ef4444"/>
+            <rect x="3" y="5" width="2" height="3" fill="#ef4444"/>
+            <polygon points="2,2 7,2 5,6" fill="#ef4444"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Trophy (Milestones / Achievements)
+    // -------------------------------------------------------------------------
+    trophy: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="12" height="2" fill="#fbbf24"/>
+            <rect x="1" y="4" width="14" height="4" fill="#f59e0b"/>
+            <rect x="3" y="8" width="10" height="3" fill="#d97706"/>
+            <rect x="5" y="11" width="6" height="2" fill="#b45309"/>
+            <rect x="7" y="13" width="2" height="1" fill="#78350f"/>
+            <rect x="4" y="14" width="8" height="2" fill="#92400e"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Sprout (Easy Tier)
+    // -------------------------------------------------------------------------
+    sprout: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="7" y="7" width="2" height="8" fill="#15803d"/>
+            <rect x="3" y="4" width="4" height="3" fill="#4ade80"/>
+            <rect x="2" y="3" width="5" height="2" fill="#86efac"/>
+            <rect x="9" y="3" width="5" height="3" fill="#22c55e"/>
+            <rect x="10" y="2" width="4" height="2" fill="#4ade80"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Ingot (Medium Tier)
+    // -------------------------------------------------------------------------
+    ingot: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="5" width="10" height="6" fill="#94a3b8"/>
+            <rect x="4" y="4" width="8" height="2" fill="#e2e8f0"/>
+            <rect x="3" y="11" width="10" height="1" fill="#475569"/>
+            <rect x="2" y="6" width="1" height="4" fill="#cbd5e1"/>
+            <rect x="13" y="6" width="1" height="4" fill="#475569"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Diamond (Hard Tier)
+    // -------------------------------------------------------------------------
+    diamond: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="8,1 14,6 8,15 2,6" fill="#06b6d4"/>
+            <polygon points="8,3 12,6 8,13 4,6" fill="#67e8f9"/>
+            <rect x="7" y="5" width="2" height="3" fill="#ecfeff"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Crown (Master Tier)
+    // -------------------------------------------------------------------------
+    crown: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="11" width="12" height="3" fill="#d97706"/>
+            <rect x="2" y="6" width="2" height="6" fill="#f59e0b"/>
+            <rect x="7" y="4" width="2" height="8" fill="#f59e0b"/>
+            <rect x="12" y="6" width="2" height="6" fill="#f59e0b"/>
+            <rect x="2" y="4" width="2" height="2" fill="#fef08a"/>
+            <rect x="7" y="2" width="2" height="2" fill="#fef08a"/>
+            <rect x="12" y="4" width="2" height="2" fill="#fef08a"/>
+            <rect x="5" y="8" width="2" height="4" fill="#b45309"/>
+            <rect x="9" y="8" width="2" height="4" fill="#b45309"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Close / X Mark
+    // -------------------------------------------------------------------------
+    close: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="2" height="2" fill="#cbd5e1"/>
+            <rect x="4" y="4" width="2" height="2" fill="#cbd5e1"/>
+            <rect x="6" y="6" width="4" height="4" fill="#cbd5e1"/>
+            <rect x="10" y="4" width="2" height="2" fill="#cbd5e1"/>
+            <rect x="12" y="2" width="2" height="2" fill="#cbd5e1"/>
+            <rect x="4" y="10" width="2" height="2" fill="#cbd5e1"/>
+            <rect x="2" y="12" width="2" height="2" fill="#cbd5e1"/>
+            <rect x="10" y="10" width="2" height="2" fill="#cbd5e1"/>
+            <rect x="12" y="12" width="2" height="2" fill="#cbd5e1"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Arrow Right (Replaces ➔)
+    // -------------------------------------------------------------------------
+    arrow_right: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="7" width="8" height="2" fill="currentColor"/>
+            <rect x="8" y="5" width="2" height="6" fill="currentColor"/>
+            <rect x="10" y="6" width="2" height="4" fill="currentColor"/>
+            <rect x="12" y="7" width="2" height="2" fill="currentColor"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Sparkle / Star (Replaces ✦ and ★)
+    // -------------------------------------------------------------------------
+    sparkle: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="7" y="1" width="2" height="14" fill="currentColor"/>
+            <rect x="1" y="7" width="14" height="2" fill="currentColor"/>
+            <rect x="6" y="4" width="4" height="8" fill="currentColor"/>
+            <rect x="4" y="6" width="8" height="4" fill="currentColor"/>
+            <rect x="7" y="7" width="2" height="2" fill="#ffffff"/>
+        </svg>
+    `,
+
+    // -------------------------------------------------------------------------
+    // Clipboard / Copy (Replaces 📋)
+    // -------------------------------------------------------------------------
+    clipboard: `
+        <svg viewBox="0 0 16 16" width="{SIZE}" height="{SIZE}" class="{CLASS}" style="{STYLE}image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="2" width="10" height="13" fill="#92400e"/>
+            <rect x="4" y="3" width="8" height="11" fill="#fed7aa"/>
+            <rect x="6" y="1" width="4" height="3" fill="#64748b"/>
+            <rect x="7" y="2" width="2" height="1" fill="#cbd5e1"/>
+            <rect x="5" y="6" width="6" height="1" fill="#78350f"/>
+            <rect x="5" y="8" width="6" height="1" fill="#78350f"/>
+            <rect x="5" y="10" width="4" height="1" fill="#78350f"/>
+        </svg>
     `
 };
 
@@ -666,6 +851,19 @@ export const getPixelEmeraldSvg = (size = 14, cls = '', style = '') => getPixelI
 export const getPixelAstralEmeraldSvg = (size = 14, cls = '', style = '') => getPixelIconSvg('astral_emerald', size, cls, style);
 export const getPixelPadlockSvg = (size = 12, cls = '', style = '') => getPixelIconSvg('padlock', size, cls, style);
 export const getPixelWarningSvg = (size = 18, cls = '', style = '') => getPixelIconSvg('warning', size, cls, style);
+export const getPixelSearchSvg = (size = 16, cls = '', style = '') => getPixelIconSvg('search', size, cls, style);
+export const getPixelCheckSvg = (size = 14, cls = '', style = '') => getPixelIconSvg('check', size, cls, style);
+export const getPixelPinSvg = (size = 14, cls = '', style = '') => getPixelIconSvg('pin', size, cls, style);
+export const getPixelResetSvg = (size = 14, cls = '', style = '') => getPixelIconSvg('reset', size, cls, style);
+export const getPixelTrophySvg = (size = 18, cls = '', style = '') => getPixelIconSvg('trophy', size, cls, style);
+export const getPixelCloseSvg = (size = 12, cls = '', style = '') => getPixelIconSvg('close', size, cls, style);
+export const getPixelSproutSvg = (size = 14, cls = '', style = '') => getPixelIconSvg('sprout', size, cls, style);
+export const getPixelIngotSvg = (size = 14, cls = '', style = '') => getPixelIconSvg('ingot', size, cls, style);
+export const getPixelDiamondSvg = (size = 14, cls = '', style = '') => getPixelIconSvg('diamond', size, cls, style);
+export const getPixelCrownSvg = (size = 14, cls = '', style = '') => getPixelIconSvg('crown', size, cls, style);
+export const getPixelArrowRightSvg = (size = 12, cls = '', style = '') => getPixelIconSvg('arrow_right', size, cls, style);
+export const getPixelSparkleSvg = (size = 12, cls = '', style = '') => getPixelIconSvg('sparkle', size, cls, style);
+export const getPixelClipboardSvg = (size = 14, cls = '', style = '') => getPixelIconSvg('clipboard', size, cls, style);
 
 // Attach globally for window scripts
 if (typeof window !== 'undefined') {
@@ -676,7 +874,33 @@ if (typeof window !== 'undefined') {
         getPixelEmeraldSvg,
         getPixelAstralEmeraldSvg,
         getPixelPadlockSvg,
-        getPixelWarningSvg
+        getPixelWarningSvg,
+        getPixelSearchSvg,
+        getPixelCheckSvg,
+        getPixelPinSvg,
+        getPixelResetSvg,
+        getPixelTrophySvg,
+        getPixelCloseSvg,
+        getPixelSproutSvg,
+        getPixelIngotSvg,
+        getPixelDiamondSvg,
+        getPixelCrownSvg,
+        getPixelArrowRightSvg,
+        getPixelSparkleSvg,
+        getPixelClipboardSvg
     };
     window.getPixelIconSvg = getPixelIconSvg;
+    window.getPixelSearchSvg = getPixelSearchSvg;
+    window.getPixelCheckSvg = getPixelCheckSvg;
+    window.getPixelPinSvg = getPixelPinSvg;
+    window.getPixelResetSvg = getPixelResetSvg;
+    window.getPixelTrophySvg = getPixelTrophySvg;
+    window.getPixelCloseSvg = getPixelCloseSvg;
+    window.getPixelSproutSvg = getPixelSproutSvg;
+    window.getPixelIngotSvg = getPixelIngotSvg;
+    window.getPixelDiamondSvg = getPixelDiamondSvg;
+    window.getPixelCrownSvg = getPixelCrownSvg;
+    window.getPixelArrowRightSvg = getPixelArrowRightSvg;
+    window.getPixelSparkleSvg = getPixelSparkleSvg;
+    window.getPixelClipboardSvg = getPixelClipboardSvg;
 }

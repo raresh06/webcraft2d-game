@@ -281,6 +281,7 @@ export const COSMETICS_CATALOG = [
         titleText: 'Astral Voyager',
         nameColor: '#c084fc',
         prefixTag: '[✦ Voyager]',
+        prefixTag: '[Voyager]',
         description: 'Mystical cosmic violet glowing nameplate reserved for planar wanderers.',
         iconSvg: `<svg viewBox="0 0 16 16" width="24" height="24" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="2" y="4" width="12" height="8" fill="#3b0764" stroke="#a855f7" stroke-width="1"/><rect x="4" y="7" width="8" height="2" fill="#c084fc"/></svg>`
     },
@@ -293,6 +294,7 @@ export const COSMETICS_CATALOG = [
         titleText: 'Master Architect',
         nameColor: '#ffd34d',
         prefixTag: '[★ Architect]',
+        prefixTag: '[Architect]',
         description: 'Brilliant gold nameplate with crown emblem awarded to world-class builders.',
         iconSvg: `<svg viewBox="0 0 16 16" width="24" height="24" style="image-rendering: pixelated; shape-rendering: crispEdges;"><rect x="2" y="4" width="12" height="8" fill="#451a03" stroke="#ffd34d" stroke-width="1"/><rect x="4" y="7" width="8" height="2" fill="#ffd34d"/></svg>`
     },

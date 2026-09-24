@@ -188,6 +188,7 @@ class AtlasTradeManagerClass {
         // Feedback
         playSound('astral_exchange');
         showToast(`✦ Acquired ${trade.name}! (-${trade.cost} Astral Emeralds)`);
+        showToast(`Acquired ${trade.name}! (-${trade.cost} Astral Emeralds)`);
         unlockAchievement('astral_pioneer');
         unlockAchievement('cosmic_merchant');
 
@@ -256,6 +257,7 @@ class AtlasTradeManagerClass {
             giveItem(trade.itemId, trade.amount);
             playSound('astral_exchange');
             showToast(`✦ Acquired ${trade.name}! (-${trade.cost} Astral Emeralds)`);
+            showToast(`Acquired ${trade.name}! (-${trade.cost} Astral Emeralds)`);
             unlockAchievement('astral_pioneer');
             if (typeof window !== 'undefined') {
                 if (typeof window.updateEmeraldsUI === 'function') window.updateEmeraldsUI();

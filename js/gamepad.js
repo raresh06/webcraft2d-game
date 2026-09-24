@@ -15,7 +15,9 @@ export const DEFAULT_GAMEPAD_BINDINGS = {
     map: 8,            // Back / Select / Share
     pause: 9,          // Start / Options / Menu
     bg_build: 10,      // Left Stick Click (L3)
-    debug: 11          // Right Stick Click (R3)
+    debug: 11,         // Right Stick Click (R3)
+    astral: 13,        // D-Pad Down
+    drop: 14           // D-Pad Left
 };
 
 export const GAMEPAD_BUTTON_NAMES = {
@@ -282,7 +284,7 @@ export function isGamepadActionActive(actionName) {
     if (actionName === 'down' || actionName === 'crouch') {
         const boundBtn = gamepadBindings.crouch;
         if (boundBtn !== undefined && isGamepadButtonDown(gp, boundBtn)) return true;
-        if (isGamepadButtonDown(gp, 13)) return true; // D-Pad Down
+        if (isGamepadButtonDown(gp, 13) && (gamepadBindings.crouch === 13 || gamepadBindings.astral !== 13)) return true; // D-Pad Down
         if (getGamepadVerticalAxis() > 0.55) return true; // Stick pushed down
         return false;
     }
@@ -314,7 +316,7 @@ export function isGamepadActionJustPressed(actionName) {
     if (actionName === 'jump' && justPressedButtons[12]) { // D-Pad Up
         return true;
     }
-    if (actionName === 'crouch' && justPressedButtons[13]) { // D-Pad Down
+    if (actionName === 'crouch' && justPressedButtons[13] && (gamepadBindings.crouch === 13 || gamepadBindings.astral !== 13)) { // D-Pad Down
         return true;
     }
 
