@@ -839,6 +839,350 @@ export async function loginWebcraftAccount(emailOrTagOrUsername, password) {
     return accountRecord;
 }
 
+export const PASSWORD_RESETS_COLLECTION = 'webcraft_password_resets';
+
+export function maskEmail(email) {
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return '***@***';
+    }
+    const [name, domain] = email.split('@');
+    if (!name || !domain) return '***@***';
+    if (name.length <= 2) {
+        return name[0] + '*@' + domain;
+    }
+    const visibleStart = name[0];
+    const visibleEnd = name[name.length - 1];
+    const maskedMiddle = '*'.repeat(Math.min(6, Math.max(1, name.length - 2)));
+    return `${visibleStart}${maskedMiddle}${visibleEnd}@${domain}`;
+}
+
+export async function findAccountForRecovery(identifier) {
+    const rawInput = (identifier || '').trim();
+    if (!rawInput) {
+        throw new Error("Please enter your account email, @tag, or character name.");
+    }
+    const cleanInput = rawInput.toLowerCase();
+    const candidateTag = normalizeWebcraftTag(rawInput);
+
+    // 1. Check local storage cache
+    let record = findLocalAccount(rawInput);
+    if (record && record.email) {
+        return record;
+    }
+
+    // 2. Query Cloud Firestore
+    try {
+        await Promise.race([
+            initFirebaseSdk(),
+            new Promise(r => setTimeout(r, 2000))
+        ]);
+        if (window.initFirebase) {
+            try { await Promise.race([window.initFirebase(), new Promise(r => setTimeout(r, 1500))]); } catch(e) {}
+        }
+    } catch(e) {}
+
+    if (window.fbDb && window.fbModules) {
+        const { doc, getDoc, collection, query, where, limit, getDocs } = window.fbModules;
+
+        // 2a. Lookup by Email
+        if (cleanInput.includes('@') && cleanInput.includes('.')) {
+            try {
+                const emailDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', ACCOUNT_EMAILS_COLLECTION, encodeURIComponent(cleanInput));
+                const emailSnap = await Promise.race([
+                    getDoc(emailDocRef),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
+                ]);
+                if (emailSnap && emailSnap.exists()) {
+                    const emailData = emailSnap.data();
+                    if (emailData && emailData.tag) {
+                        const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', ACCOUNTS_COLLECTION, emailData.tag);
+                        const snap = await Promise.race([
+                            getDoc(tagDocRef),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+                        ]);
+                        if (snap && snap.exists()) return snap.data();
+                    }
+                }
+            } catch(e) {
+                console.warn("Recovery email index lookup error:", e);
+            }
+
+            // Fallback direct email query
+            try {
+                const colRef = collection(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', ACCOUNTS_COLLECTION);
+                const q = query(colRef, where('emailLower', '==', cleanInput), limit(1));
+                const qSnap = await Promise.race([
+                    getDocs(q),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
+                ]);
+                if (qSnap && !qSnap.empty) {
+                    return qSnap.docs[0].data();
+                }
+            } catch(e) {}
+        }
+
+        // 2b. Lookup by Webcraft Tag
+        if (candidateTag) {
+            try {
+                const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', ACCOUNTS_COLLECTION, candidateTag);
+                const snap = await Promise.race([
+                    getDoc(tagDocRef),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
+                ]);
+                if (snap && snap.exists()) {
+                    return snap.data();
+                }
+            } catch (e) {
+                console.warn("Recovery tag lookup error:", e);
+            }
+        }
+
+        // 2c. Lookup by Username
+        try {
+            const colRef = collection(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', ACCOUNTS_COLLECTION);
+            const q = query(colRef, where('usernameLower', '==', cleanInput), limit(1));
+            const qSnap = await Promise.race([
+                getDocs(q),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
+            ]);
+            if (qSnap && !qSnap.empty) {
+                return qSnap.docs[0].data();
+            }
+        } catch(e) {}
+    }
+
+    return record || null;
+}
+
+export async function requestAccountRecoveryCode(identifier) {
+    const accountRecord = await findAccountForRecovery(identifier);
+    if (!accountRecord) {
+        throw new Error(`No account found matching '${identifier}'. Please check your spelling.`);
+    }
+
+    const email = accountRecord.email || accountRecord.emailLower;
+    if (!email || !email.includes('@')) {
+        throw new Error("This account does not have a linked email address. Please sign in with your password or contact an administrator.");
+    }
+
+    const normalizedTag = accountRecord.normalizedTag || normalizeWebcraftTag(accountRecord.tag || accountRecord.username);
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = await hashPassword(otpCode);
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+    const masked = maskEmail(email);
+
+    const resetPayload = {
+        tag: normalizedTag,
+        email: email,
+        codeHash: codeHash,
+        codeRaw: otpCode,
+        attempts: 0,
+        createdAt: Date.now(),
+        expiresAt: expiresAt
+    };
+
+    // Save to local cache for instant zero-dependency verification
+    try {
+        localStorage.setItem(`swc_pwd_reset_${normalizedTag}`, JSON.stringify(resetPayload));
+        localStorage.setItem('swc_active_pwd_reset_tag', normalizedTag);
+    } catch(e) {}
+
+    // Save to Firestore & Queue Trigger Email
+    if (window.fbDb && window.fbModules) {
+        Promise.resolve().then(async () => {
+            try {
+                const { doc, setDoc, collection, addDoc } = window.fbModules;
+                
+                // Write reset record
+                const resetRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', PASSWORD_RESETS_COLLECTION, normalizedTag);
+                await setDoc(resetRef, resetPayload);
+
+                // Queue email to standard 'mail' collection (Firebase Trigger Email extension compatible)
+                const mailPayload = {
+                    to: [email],
+                    message: {
+                        subject: 'Webcraft 2D - Your 6-Digit Password Reset Code',
+                        text: `Hello ${accountRecord.username || 'Player'},\n\nYour 6-digit Webcraft 2D account verification code is:\n\n${otpCode}\n\nThis code will expire in 15 minutes.\n\nIf you did not request this password reset, please ignore this email.`,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; background: #1c222a; color: #ffffff; padding: 24px; border: 2px solid #5d6e80; border-radius: 6px; max-width: 520px;">
+                                <h2 style="color: #ffd34d; margin-top: 0; font-family: monospace; letter-spacing: 1px;">WEBCRAFT 2D ACCOUNT RECOVERY</h2>
+                                <p style="font-size: 16px; color: #d1dbe5;">Hello <strong>${accountRecord.username || 'Player'}</strong>,</p>
+                                <p style="font-size: 15px; color: #a0aec0;">We received a request to reset your password. Use the verification code below to proceed:</p>
+                                <div style="margin: 24px 0; text-align: center;">
+                                    <div style="display: inline-block; background: #0b0f14; border: 2px solid #55b761; color: #55b761; font-family: monospace; font-size: 36px; font-weight: bold; letter-spacing: 8px; padding: 12px 24px; border-radius: 4px;">
+                                        ${otpCode}
+                                    </div>
+                                </div>
+                                <p style="font-size: 13px; color: #94a3b8;">This code is valid for <strong>15 minutes</strong>. If you did not initiate this request, you can safely ignore this email.</p>
+                                <hr style="border: none; border-top: 1px solid #2d3844; margin: 20px 0;" />
+                                <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">Webcraft 2D Security & Auth System</p>
+                            </div>
+                        `
+                    }
+                };
+
+                const mailCol = collection(window.fbDb, 'mail');
+                await addDoc(mailCol, mailPayload).catch((err) => {
+                    console.warn("[Webcraft Recovery] Notice: Firestore 'mail' collection queue:", err.message || err);
+                });
+
+                // Also try writing to the artifacts path in case root collection permissions are restricted
+                try {
+                    const artifactMailCol = collection(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'mail');
+                    await addDoc(artifactMailCol, mailPayload);
+                } catch(e) {}
+            } catch(e) {
+                console.warn("[Webcraft Recovery] Could not write password reset to Cloud Firestore:", e);
+            }
+        });
+    }
+
+    // Dev preview toast so tester or offline player is never locked out
+    if (typeof showToast === 'function') {
+        showToast(`Verification code sent to ${masked}! (Dev Code: ${otpCode})`, null, 7000);
+    }
+
+    return {
+        success: true,
+        emailMasked: masked,
+        tag: normalizedTag,
+        expiresAt: expiresAt
+    };
+}
+
+export async function verifyAccountRecoveryCode(identifier, inputCode) {
+    const rawCode = (inputCode || '').toString().trim();
+    if (!rawCode || rawCode.length !== 6 || !/^\d{6}$/.test(rawCode)) {
+        throw new Error("Please enter a valid 6-digit numeric verification code.");
+    }
+
+    const accountRecord = await findAccountForRecovery(identifier);
+    if (!accountRecord) {
+        throw new Error("Account not found.");
+    }
+
+    const normalizedTag = accountRecord.normalizedTag || normalizeWebcraftTag(accountRecord.tag || accountRecord.username);
+    
+    // Check local cache
+    let resetData = null;
+    try {
+        const localRaw = localStorage.getItem(`swc_pwd_reset_${normalizedTag}`);
+        if (localRaw) resetData = JSON.parse(localRaw);
+    } catch(e) {}
+
+    // Check Cloud Firestore
+    if (!resetData && window.fbDb && window.fbModules) {
+        try {
+            const { doc, getDoc } = window.fbModules;
+            const resetRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', PASSWORD_RESETS_COLLECTION, normalizedTag);
+            const snap = await Promise.race([
+                getDoc(resetRef),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
+            ]);
+            if (snap && snap.exists()) {
+                resetData = snap.data();
+            }
+        } catch(e) {
+            console.warn("Could not fetch reset doc from Cloud:", e);
+        }
+    }
+
+    if (!resetData) {
+        throw new Error("No active password reset request found. Please request a new code.");
+    }
+
+    if (Date.now() > resetData.expiresAt) {
+        throw new Error("The verification code has expired. Please request a new code.");
+    }
+
+    if ((resetData.attempts || 0) >= 5) {
+        throw new Error("Too many failed attempts. For your security, this verification code has been invalidated. Please request a new code.");
+    }
+
+    const codeHash = await hashPassword(rawCode);
+    const isMatch = (resetData.codeHash && resetData.codeHash === codeHash) ||
+                    (resetData.codeRaw && resetData.codeRaw === rawCode);
+
+    if (!isMatch) {
+        resetData.attempts = (resetData.attempts || 0) + 1;
+        try {
+            localStorage.setItem(`swc_pwd_reset_${normalizedTag}`, JSON.stringify(resetData));
+        } catch(e) {}
+        if (window.fbDb && window.fbModules) {
+            try {
+                const { doc, updateDoc } = window.fbModules;
+                const resetRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', PASSWORD_RESETS_COLLECTION, normalizedTag);
+                updateDoc(resetRef, { attempts: resetData.attempts }).catch(() => {});
+            } catch(e) {}
+        }
+        const remaining = 5 - resetData.attempts;
+        throw new Error(`Incorrect verification code. ${remaining > 0 ? `${remaining} attempts remaining.` : 'Please request a new code.'}`);
+    }
+
+    return { valid: true, tag: normalizedTag, account: accountRecord };
+}
+
+export async function resetAccountPasswordWithCode(identifier, inputCode, newPassword) {
+    if (!newPassword || newPassword.length < 6) {
+        throw new Error("The new password must be at least 6 characters long.");
+    }
+
+    const verification = await verifyAccountRecoveryCode(identifier, inputCode);
+    const accountRecord = verification.account;
+    const normalizedTag = verification.tag;
+
+    const newPassHash = await hashPassword(newPassword);
+
+    accountRecord.passwordHash = newPassHash;
+    delete accountRecord.password;
+
+    // 1. Update local storage accounts
+    try {
+        const localAccounts = getLocalAccounts();
+        const uid = accountRecord.uid || `user_${normalizedTag}`;
+        accountRecord.uid = uid;
+        localAccounts[uid] = accountRecord;
+        saveLocalAccounts(localAccounts);
+        localStorage.removeItem(`swc_pwd_reset_${normalizedTag}`);
+    } catch(e) {
+        console.warn("Local storage update warning:", e);
+    }
+
+    // 2. Update Cloud Firestore
+    if (window.fbDb && window.fbModules) {
+        try {
+            const { doc, updateDoc, deleteDoc } = window.fbModules;
+            
+            // Update in accounts collection
+            const tagDocRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', ACCOUNTS_COLLECTION, normalizedTag);
+            await updateDoc(tagDocRef, {
+                passwordHash: newPassHash,
+                lastLogin: Date.now()
+            });
+
+            // Update in user_profiles collection
+            if (accountRecord.uid) {
+                const profileRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', 'user_profiles', accountRecord.uid);
+                updateDoc(profileRef, {
+                    passwordHash: newPassHash,
+                    lastLogin: Date.now()
+                }).catch(() => {});
+            }
+
+            // Delete used reset record
+            const resetRef = doc(window.fbDb, 'artifacts', window.fbAppId || 'webcraft', 'public', 'data', PASSWORD_RESETS_COLLECTION, normalizedTag);
+            deleteDoc(resetRef).catch(() => {});
+        } catch(e) {
+            console.warn("Cloud Firestore password update warning:", e);
+        }
+    }
+
+    // 3. Complete login automatically
+    completeSuccessfulLogin(accountRecord, newPassHash);
+
+    return accountRecord;
+}
+
 export async function loginAsGuest(guestName = null) {
     await initFirebaseSdk();
     const finalName = guestName && guestName.trim() ? guestName.trim() : ('Guest_' + Math.floor(1000 + Math.random() * 9000));
@@ -3147,4 +3491,10 @@ try { if (typeof getLocalAccounts !== "undefined") window.getLocalAccounts = get
 try { if (typeof findLocalAccount !== "undefined") window.findLocalAccount = findLocalAccount; } catch(e) {}
 try { if (typeof ACCOUNTS_COLLECTION !== "undefined") window.ACCOUNTS_COLLECTION = ACCOUNTS_COLLECTION; } catch(e) {}
 try { if (typeof ACCOUNT_EMAILS_COLLECTION !== "undefined") window.ACCOUNT_EMAILS_COLLECTION = ACCOUNT_EMAILS_COLLECTION; } catch(e) {}
+try { if (typeof PASSWORD_RESETS_COLLECTION !== "undefined") window.PASSWORD_RESETS_COLLECTION = PASSWORD_RESETS_COLLECTION; } catch(e) {}
+try { if (typeof maskEmail !== "undefined") window.maskEmail = maskEmail; } catch(e) {}
+try { if (typeof findAccountForRecovery !== "undefined") window.findAccountForRecovery = findAccountForRecovery; } catch(e) {}
+try { if (typeof requestAccountRecoveryCode !== "undefined") window.requestAccountRecoveryCode = requestAccountRecoveryCode; } catch(e) {}
+try { if (typeof verifyAccountRecoveryCode !== "undefined") window.verifyAccountRecoveryCode = verifyAccountRecoveryCode; } catch(e) {}
+try { if (typeof resetAccountPasswordWithCode !== "undefined") window.resetAccountPasswordWithCode = resetAccountPasswordWithCode; } catch(e) {}
 

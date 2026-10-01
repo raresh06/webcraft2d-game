@@ -21,6 +21,7 @@ import {
     getBlockColor, getChestGroup, getChestKey, getDayDifficultyMultiplier, getDayHungerDrainMultiplier,
     getDoorBaseY, getMaxAnimals, getRequiredMiningTier, isBackgroundBuildingBlock, isDoorBlock, isJungleDoorBlock, isClimbableBlock,
     isFoodItem, isOpenDoorBlock, isSolidWorldBlock, isWorldMapOpen, notifyBlockedSaplings,
+    isPickaxe, isAxe, isShovel, isSword, isHoe, isShears, isPickaxeBlock, isAxeBlock, isShovelBlock, isShearsBlock,
     scheduleDirtToGrass, scheduleSnowRegrowth, scheduleTreeLeafDecay, setWorldDimensions,
     showClouds, showDebug, autoJumpEnabled, graphicsMode, advancedGraphics,
     fabulousGraphics, introEnabled, introPhase, introTimer, selectedDiffChoice, settingsPreviousState,
@@ -1767,13 +1768,13 @@ export function initJukeboxFileInput() {
                     let knockbackForce = 1.4; // Default bare hands: minimal knockback (cannot stunlock!)
                     if (heldTool && heldTool.id) {
                         const tid = heldTool.id;
-                        if (tid === IDS.WOOD_SWORD || tid === IDS.STONE_SWORD) knockbackForce = 3.6;
+                        if (tid === IDS.DIAMOND_SWORD || tid === IDS.ASTRAL_SWORD) knockbackForce = 5.6;
+                        else if (tid === IDS.SHADOWFANG) knockbackForce = 5.2;
                         else if (tid === IDS.IRON_SWORD || tid === IDS.GOLD_SWORD) knockbackForce = 4.6;
-                        else if (tid === IDS.DIAMOND_SWORD || tid === IDS.ASTRAL_SWORD) knockbackForce = 5.6;
-                        else if (tid === IDS.DIAMOND_SWORD || tid === IDS.ASTRAL_SWORD || tid === IDS.SHADOWFANG) knockbackForce = 5.2;
-                        else if (tid === IDS.WOOD_AXE || tid === IDS.STONE_AXE || tid === IDS.IRON_AXE || tid === IDS.DIAMOND_AXE || tid === IDS.ASTRAL_AXE) knockbackForce = 3.8;
-                        else if (tid === IDS.WOOD_PICKAXE || tid === IDS.STONE_PICKAXE || tid === IDS.IRON_PICKAXE || tid === IDS.DIAMOND_PICKAXE || tid === IDS.ASTRAL_PICKAXE) knockbackForce = 2.2;
-                        else if (tid === IDS.WOOD_SHOVEL || tid === IDS.STONE_SHOVEL || tid === IDS.IRON_SHOVEL || tid === IDS.DIAMOND_SHOVEL || tid === IDS.ASTRAL_SHOVEL) knockbackForce = 2.0;
+                        else if (tid === IDS.WOOD_SWORD || tid === IDS.STONE_SWORD) knockbackForce = 3.6;
+                        else if (isAxe(tid)) knockbackForce = 3.8;
+                        else if (isPickaxe(tid)) knockbackForce = 2.2;
+                        else if (isShovel(tid)) knockbackForce = 2.0;
                     }
                     z.takeDamage(wDmg, pCX < zCX ? 1 : -1, knockbackForce);
                     damageSelectedTool(1);
@@ -1948,7 +1949,7 @@ export function initJukeboxFileInput() {
         if (blockId === IDS.AIR) { miningTarget.progress = 0; return; }
 
         const heldTool = inventory[selectedHotbarIndex];
-        const isHoldingHoe = heldTool && [IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE].includes(heldTool.id);
+        const isHoldingHoe = heldTool && isHoe(heldTool.id);
         if (isHoldingHoe && (blockId === IDS.DIRT || blockId === IDS.GRASS)) {
             let aboveId = gridY > 0 ? world[gridX][gridY - 1] : IDS.AIR;
             if (gridY > 0 && (aboveId === IDS.AIR || [IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW].includes(aboveId))) {
@@ -2173,8 +2174,8 @@ export function initJukeboxFileInput() {
             if (blockId === IDS.STONE) dropId = IDS.COBBLESTONE;
             if (blockId === IDS.SNOW) {
                 const heldItem = inventory[selectedHotbarIndex];
-                const isShovel = heldItem && [IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL].includes(heldItem.id);
-                if (isShovel) giveItem(IDS.SNOWBALL, 4);
+                const isShovelItem = heldItem && isShovel(heldItem.id);
+                if (isShovelItem) giveItem(IDS.SNOWBALL, 4);
                 dropId = null;
             }
             if (blockId === IDS.COAL_ORE) dropId = IDS.COAL;

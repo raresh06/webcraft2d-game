@@ -3869,6 +3869,129 @@ input, textarea {
   align-items: center;
   text-align: center;
 }
+/* Account Recovery & Password Reset Wizard */
+.recovery-steps-tracker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: #141b22;
+  padding: 8px 12px;
+  border: 2px solid;
+  border-top-color: #0c1014;
+  border-left-color: #0c1014;
+  border-right-color: #384654;
+  border-bottom-color: #384654;
+}
+.recovery-step-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+.recovery-step-badge .step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #94a3b8;
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.05);
+}
+.recovery-step-badge.active {
+  color: #ffd34d;
+}
+.recovery-step-badge.active .step-num {
+  background: #855b14;
+  border-color: #ffd34d;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px #ffd34d, 0 0 6px rgba(255,211,77,0.4);
+}
+.recovery-step-badge.completed {
+  color: #55b761;
+}
+.recovery-step-badge.completed .step-num {
+  background: #1c4b24;
+  border-color: #55b761;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px #55b761;
+}
+.recovery-step-connector {
+  flex: 1;
+  height: 2px;
+  background: #2b3542;
+  margin: 0 4px;
+}
+.recovery-otp-container {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+.recovery-otp-digit {
+  width: 48px;
+  height: 52px;
+  text-align: center;
+  font-family: 'VT323', monospace;
+  font-size: 36px;
+  font-weight: bold;
+  color: #ffffff;
+  background: #0b0f14;
+  border: 2px solid;
+  border-top-color: #1a232c;
+  border-left-color: #1a232c;
+  border-right-color: #485869;
+  border-bottom-color: #485869;
+  box-shadow: inset 2px 2px 0 #000000;
+  outline: none;
+  caret-color: #ffd34d;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.recovery-otp-digit:focus {
+  border-color: #ffd34d;
+  background: #121820;
+  box-shadow: inset 2px 2px 0 #000000, 0 0 8px rgba(255, 211, 77, 0.4);
+}
+.recovery-otp-digit.filled {
+  border-color: #55b761;
+  color: #55b761;
+}
+.recovery-timer {
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+.recovery-resend-btn {
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  color: #ffd34d;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  padding: 0;
+  letter-spacing: 0.5px;
+}
+.recovery-resend-btn:hover:not(:disabled) {
+  color: #fef08a;
+}
+.recovery-resend-btn:disabled {
+  color: #64748b;
+  cursor: not-allowed;
+  text-decoration: none;
+}
 .disabled-construction-btn {
   opacity: 0.65 !important;
   filter: grayscale(40%) !important;

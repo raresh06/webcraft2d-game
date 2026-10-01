@@ -298,7 +298,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function updateVersionLabels() {
         if (typeof document === 'undefined') return;
         const versionLabel = document.getElementById('game-version-label');
-        if (versionLabel) versionLabel.innerHTML = `<a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v${DISPLAY_VERSION}`;
+        if (versionLabel) versionLabel.innerHTML = `<a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v${DISPLAY_VERSION} (Happy Halloween)`;
     }
 
     updateVersionLabels();
@@ -5768,12 +5768,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function isTool(id) {
+        if (typeof window !== 'undefined' && typeof window.isTool === 'function' && window.isTool !== isTool) return window.isTool(id);
         return [
-            IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE,
-            IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD,
-            IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE,
-            IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL,
-            IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE
+            IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE, IDS.ASTRAL_PICKAXE,
+            IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD, IDS.ASTRAL_SWORD,
+            IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE, IDS.ASTRAL_AXE,
+            IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL, IDS.ASTRAL_SHOVEL,
+            IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE,
+            IDS.KINETIC_SHEARS, IDS.SHADOWFANG
         ].includes(id);
     }
 
@@ -6534,6 +6536,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         if (feedback) feedback.classList.add('hidden');
 
+        const forgotRow = document.getElementById('auth-forgot-row');
+        if (forgotRow) {
+            forgotRow.classList.toggle('hidden', tab !== 'login');
+        }
+
         if (tab === 'signup') {
             if (grpUser) grpUser.classList.remove('hidden');
             if (grpTag) grpTag.classList.remove('hidden');
@@ -6672,6 +6679,504 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (typeof switchSkinTab === 'function') switchSkinTab('shop');
         }
         // If action === 'play', closeAuthProfileModal() unhides #main-menu-buttons and loads menu normally!
+    }
+
+    // =========================================================================
+    // ACCOUNT RECOVERY / FORGOT PASSWORD SYSTEM CONTROLLER
+    // =========================================================================
+
+    let recoveryCurrentIdentifier = '';
+    let recoveryVerifiedCode = '';
+    let recoveryExpiresAt = 0;
+    let recoveryTimerInterval = null;
+    let recoveryResendCooldown = 0;
+    let recoveryResendInterval = null;
+    let recoveryOtpInitialized = false;
+
+    export function openAccountRecoveryModal(prefillIdentifier = '') {
+        const modal = document.getElementById('account-recovery-modal');
+        if (!modal) return;
+
+        // Reset state
+        recoveryCurrentIdentifier = (prefillIdentifier || '').trim();
+        recoveryVerifiedCode = '';
+        recoveryExpiresAt = 0;
+        clearInterval(recoveryTimerInterval);
+        clearInterval(recoveryResendInterval);
+
+        // If prefill not specified, grab whatever is currently in the login email field
+        if (!recoveryCurrentIdentifier) {
+            const loginInput = document.getElementById('auth-input-email');
+            if (loginInput && loginInput.value && loginInput.value.trim()) {
+                recoveryCurrentIdentifier = loginInput.value.trim();
+            }
+        }
+
+        const idInput = document.getElementById('recovery-input-identifier');
+        if (idInput) {
+            idInput.value = recoveryCurrentIdentifier;
+        }
+
+        // Clear OTP inputs
+        clearOtpInputs();
+
+        // Clear password fields
+        const newPass = document.getElementById('recovery-new-password');
+        const confirmPass = document.getElementById('recovery-confirm-password');
+        if (newPass) newPass.value = '';
+        if (confirmPass) confirmPass.value = '';
+
+        const matchHint = document.getElementById('recovery-match-indicator');
+        if (matchHint) {
+            matchHint.innerText = '';
+            matchHint.classList.add('hidden');
+        }
+
+        hideRecoveryFeedback();
+        switchRecoveryStep(1);
+
+        // Hide auth profile modal so it does not blur or obstruct the recovery modal
+        const authModal = document.getElementById('auth-profile-modal');
+        if (authModal) authModal.classList.add('hidden');
+
+        modal.classList.remove('hidden');
+
+        if (!recoveryOtpInitialized) {
+            setupOtpInputListeners();
+            setupRecoveryPasswordMatchListener();
+            recoveryOtpInitialized = true;
+        }
+
+        setTimeout(() => {
+            if (idInput) idInput.focus();
+        }, 50);
+    }
+
+    export function closeAccountRecoveryModal(reopenAuth = true) {
+        const modal = document.getElementById('account-recovery-modal');
+        if (modal) modal.classList.add('hidden');
+        clearInterval(recoveryTimerInterval);
+        clearInterval(recoveryResendInterval);
+        hideRecoveryFeedback();
+
+        if (reopenAuth) {
+            const authModal = document.getElementById('auth-profile-modal');
+            if (authModal) {
+                authModal.classList.remove('hidden');
+                switchAuthTab('login');
+            }
+        }
+    }
+
+    export function switchRecoveryStep(stepNum) {
+        [1, 2, 3].forEach(s => {
+            const stepEl = document.getElementById(`recovery-step-${s}`);
+            const badgeEl = document.getElementById(`recovery-tracker-step-${s}`);
+            if (stepEl) {
+                if (s === stepNum) stepEl.classList.remove('hidden');
+                else stepEl.classList.add('hidden');
+            }
+            if (badgeEl) {
+                badgeEl.classList.remove('active', 'completed');
+                if (s < stepNum) {
+                    badgeEl.classList.add('completed');
+                } else if (s === stepNum) {
+                    badgeEl.classList.add('active');
+                }
+            }
+        });
+
+        hideRecoveryFeedback();
+
+        if (stepNum === 1) {
+            const idInput = document.getElementById('recovery-input-identifier');
+            if (idInput) setTimeout(() => idInput.focus(), 50);
+        } else if (stepNum === 2) {
+            const firstDigit = document.querySelector('.recovery-otp-digit[data-index="0"]');
+            if (firstDigit) setTimeout(() => firstDigit.focus(), 50);
+        } else if (stepNum === 3) {
+            const newPass = document.getElementById('recovery-new-password');
+            if (newPass) setTimeout(() => newPass.focus(), 50);
+        }
+    }
+
+    function showRecoveryFeedback(msg, isErr = true) {
+        const fb = document.getElementById('recovery-feedback-msg');
+        if (!fb) return;
+        fb.innerText = msg;
+        fb.className = `auth-feedback mb-3 ${isErr ? 'error' : 'success'}`;
+        fb.classList.remove('hidden');
+    }
+
+    function hideRecoveryFeedback() {
+        const fb = document.getElementById('recovery-feedback-msg');
+        if (fb) fb.classList.add('hidden');
+    }
+
+    function clearOtpInputs() {
+        const digits = document.querySelectorAll('.recovery-otp-digit');
+        digits.forEach(d => {
+            d.value = '';
+            d.classList.remove('filled');
+        });
+    }
+
+    function getOtpCodeFromInputs() {
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            const digitEl = document.querySelector(`.recovery-otp-digit[data-index="${i}"]`);
+            if (digitEl && digitEl.value) {
+                code += digitEl.value.trim();
+            }
+        }
+        return code;
+    }
+
+    function startRecoveryCountdown(expiresAt) {
+        recoveryExpiresAt = expiresAt;
+        clearInterval(recoveryTimerInterval);
+        const timerDisplay = document.getElementById('recovery-timer-display');
+
+        const updateTimer = () => {
+            const remainingMs = Math.max(0, recoveryExpiresAt - Date.now());
+            const totalSec = Math.floor(remainingMs / 1000);
+            const minutes = Math.floor(totalSec / 60);
+            const seconds = totalSec % 60;
+            const formatted = `Expires in ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            if (timerDisplay) {
+                timerDisplay.innerText = formatted;
+                if (totalSec <= 60) {
+                    timerDisplay.style.color = '#f87171';
+                } else {
+                    timerDisplay.style.color = '#94a3b8';
+                }
+            }
+
+            if (totalSec <= 0) {
+                clearInterval(recoveryTimerInterval);
+                if (timerDisplay) timerDisplay.innerText = "Code Expired";
+                showRecoveryFeedback("The verification code has expired. Please click 'Resend Code'.", true);
+            }
+        };
+
+        updateTimer();
+        recoveryTimerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function startResendCooldown(seconds = 45) {
+        recoveryResendCooldown = seconds;
+        clearInterval(recoveryResendInterval);
+        const resendBtn = document.getElementById('recovery-resend-btn');
+        if (!resendBtn) return;
+
+        resendBtn.disabled = true;
+        resendBtn.innerText = `Resend Code (${recoveryResendCooldown}s)`;
+
+        recoveryResendInterval = setInterval(() => {
+            recoveryResendCooldown--;
+            if (recoveryResendCooldown <= 0) {
+                clearInterval(recoveryResendInterval);
+                resendBtn.disabled = false;
+                resendBtn.innerText = "Resend Code";
+            } else {
+                resendBtn.innerText = `Resend Code (${recoveryResendCooldown}s)`;
+            }
+        }, 1000);
+    }
+
+    export function setupOtpInputListeners() {
+        const container = document.getElementById('recovery-otp-boxes');
+        if (!container) return;
+
+        const digits = container.querySelectorAll('.recovery-otp-digit');
+        digits.forEach((digit, idx) => {
+            digit.addEventListener('input', () => {
+                const val = digit.value.replace(/[^0-9]/g, '');
+                digit.value = val ? val[val.length - 1] : '';
+
+                if (digit.value) {
+                    digit.classList.add('filled');
+                    if (idx < 5) {
+                        const nextDigit = digits[idx + 1];
+                        if (nextDigit) nextDigit.focus();
+                    } else {
+                        const fullCode = getOtpCodeFromInputs();
+                        if (fullCode.length === 6) {
+                            handleRecoveryStep2Submit();
+                        }
+                    }
+                } else {
+                    digit.classList.remove('filled');
+                }
+            });
+
+            digit.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !digit.value && idx > 0) {
+                    const prevDigit = digits[idx - 1];
+                    if (prevDigit) {
+                        prevDigit.focus();
+                        prevDigit.value = '';
+                        prevDigit.classList.remove('filled');
+                    }
+                } else if (e.key === 'ArrowLeft' && idx > 0) {
+                    digits[idx - 1].focus();
+                } else if (e.key === 'ArrowRight' && idx < 5) {
+                    digits[idx + 1].focus();
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleRecoveryStep2Submit();
+                }
+            });
+
+            digit.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasteData = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+                const cleanDigits = pasteData.replace(/[^0-9]/g, '').slice(0, 6);
+                if (cleanDigits) {
+                    cleanDigits.split('').forEach((char, charIdx) => {
+                        if (charIdx < 6 && digits[charIdx]) {
+                            digits[charIdx].value = char;
+                            digits[charIdx].classList.add('filled');
+                        }
+                    });
+                    const targetIdx = Math.min(5, cleanDigits.length);
+                    if (digits[targetIdx]) digits[targetIdx].focus();
+                    if (cleanDigits.length === 6) {
+                        handleRecoveryStep2Submit();
+                    }
+                }
+            });
+        });
+    }
+
+    function setupRecoveryPasswordMatchListener() {
+        const newPass = document.getElementById('recovery-new-password');
+        const confirmPass = document.getElementById('recovery-confirm-password');
+        const matchHint = document.getElementById('recovery-match-indicator');
+
+        const checkMatch = () => {
+            if (!matchHint || !newPass || !confirmPass) return;
+            const p1 = newPass.value;
+            const p2 = confirmPass.value;
+
+            if (!p2) {
+                matchHint.classList.add('hidden');
+                return;
+            }
+
+            matchHint.classList.remove('hidden');
+            if (p1 === p2) {
+                matchHint.innerText = "✓ Passwords match";
+                matchHint.className = "font-['VT323'] text-lg mb-3 text-emerald-400";
+            } else {
+                matchHint.innerText = "✕ Passwords do not match";
+                matchHint.className = "font-['VT323'] text-lg mb-3 text-red-400";
+            }
+        };
+
+        if (newPass) newPass.addEventListener('input', checkMatch);
+        if (confirmPass) {
+            confirmPass.addEventListener('input', checkMatch);
+            confirmPass.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleRecoveryStep3Submit();
+                }
+            });
+        }
+    }
+
+    export function toggleRecoveryPasswordVisibility(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    export async function handleRecoveryStep1Submit() {
+        const idInput = document.getElementById('recovery-input-identifier');
+        const submitBtn = document.getElementById('recovery-btn-step1');
+        const identifier = idInput ? idInput.value.trim() : '';
+
+        if (!identifier) {
+            showRecoveryFeedback("Please enter your account email, @tag, or character name.", true);
+            if (idInput) idInput.focus();
+            return;
+        }
+
+        hideRecoveryFeedback();
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Searching Account...";
+        }
+
+        try {
+            const reqFn = (typeof requestAccountRecoveryCode === 'function') 
+                ? requestAccountRecoveryCode 
+                : window.requestAccountRecoveryCode;
+            
+            if (!reqFn) {
+                throw new Error("Account recovery system unavailable. Please check your connection.");
+            }
+
+            const result = await reqFn(identifier);
+            recoveryCurrentIdentifier = identifier;
+
+            // Update Step 2 masked email label
+            const emailLabel = document.getElementById('recovery-target-email');
+            if (emailLabel) emailLabel.innerText = result.emailMasked || identifier;
+
+            // Start countdown and cooldown
+            startRecoveryCountdown(result.expiresAt || (Date.now() + 15 * 60 * 1000));
+            startResendCooldown(45);
+
+            // Switch to Step 2
+            switchRecoveryStep(2);
+            clearOtpInputs();
+
+        } catch (err) {
+            let errorMsg = err.message || "Failed to find account.";
+            if (errorMsg.includes("does not have a linked email")) {
+                errorMsg = "This account does not have a linked recovery email. Please contact an administrator or sign in with your password.";
+            }
+            showRecoveryFeedback(errorMsg, true);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Send Verification Code";
+            }
+        }
+    }
+
+    export async function handleRecoveryStep2Submit() {
+        const code = getOtpCodeFromInputs();
+        const submitBtn = document.getElementById('recovery-btn-step2');
+
+        if (!code || code.length !== 6) {
+            showRecoveryFeedback("Please enter the complete 6-digit verification code.", true);
+            return;
+        }
+
+        hideRecoveryFeedback();
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Verifying Code...";
+        }
+
+        try {
+            const verifyFn = (typeof verifyAccountRecoveryCode === 'function') 
+                ? verifyAccountRecoveryCode 
+                : window.verifyAccountRecoveryCode;
+
+            if (!verifyFn) {
+                throw new Error("Verification service unavailable. Please check your connection.");
+            }
+
+            const result = await verifyFn(recoveryCurrentIdentifier, code);
+            recoveryVerifiedCode = code;
+
+            // Update Step 3 account badge
+            const accLabel = document.getElementById('recovery-target-account');
+            if (accLabel) accLabel.innerText = `@${result.tag || 'player'}`;
+
+            // Switch to Step 3
+            switchRecoveryStep(3);
+
+        } catch (err) {
+            showRecoveryFeedback(err.message || "Verification failed. Please check the code.", true);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Verify Code";
+            }
+        }
+    }
+
+    export async function handleRecoveryResendCode() {
+        if (!recoveryCurrentIdentifier) {
+            switchRecoveryStep(1);
+            return;
+        }
+
+        const resendBtn = document.getElementById('recovery-resend-btn');
+        if (resendBtn) resendBtn.disabled = true;
+
+        try {
+            const reqFn = (typeof requestAccountRecoveryCode === 'function') 
+                ? requestAccountRecoveryCode 
+                : window.requestAccountRecoveryCode;
+
+            const result = await reqFn(recoveryCurrentIdentifier);
+            startRecoveryCountdown(result.expiresAt || (Date.now() + 15 * 60 * 1000));
+            startResendCooldown(45);
+            clearOtpInputs();
+            showRecoveryFeedback(`A new code was sent to ${result.emailMasked}!`, false);
+            const firstDigit = document.querySelector('.recovery-otp-digit[data-index="0"]');
+            if (firstDigit) firstDigit.focus();
+        } catch (err) {
+            showRecoveryFeedback(err.message || "Failed to resend verification code.", true);
+            if (resendBtn) resendBtn.disabled = false;
+        }
+    }
+
+    export async function handleRecoveryStep3Submit() {
+        const newPassEl = document.getElementById('recovery-new-password');
+        const confirmPassEl = document.getElementById('recovery-confirm-password');
+        const submitBtn = document.getElementById('recovery-btn-step3');
+
+        const newPass = newPassEl ? newPassEl.value : '';
+        const confirmPass = confirmPassEl ? confirmPassEl.value : '';
+
+        if (!newPass || newPass.length < 6) {
+            showRecoveryFeedback("Password must be at least 6 characters long.", true);
+            if (newPassEl) newPassEl.focus();
+            return;
+        }
+
+        if (newPass !== confirmPass) {
+            showRecoveryFeedback("Passwords do not match. Please re-type your new password.", true);
+            if (confirmPassEl) confirmPassEl.focus();
+            return;
+        }
+
+        hideRecoveryFeedback();
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Saving New Password...";
+        }
+
+        try {
+            const resetFn = (typeof resetAccountPasswordWithCode === 'function') 
+                ? resetAccountPasswordWithCode 
+                : window.resetAccountPasswordWithCode;
+
+            if (!resetFn) {
+                throw new Error("Password reset service unavailable.");
+            }
+
+            const updatedAccount = await resetFn(recoveryCurrentIdentifier, recoveryVerifiedCode, newPass);
+
+            // Successfully reset password and logged in!
+            currentUserProfile = updatedAccount;
+            closeAccountRecoveryModal(false);
+            closeAuthProfileModal();
+
+            if (typeof showToast === 'function') {
+                showToast(`Password updated successfully! Welcome back, ${updatedAccount.username}!`, null, 5000);
+            }
+
+            updateMainMenuProfileBadge();
+            compileSkinCanvas();
+            if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
+
+        } catch (err) {
+            showRecoveryFeedback(err.message || "Failed to reset password. Please try again.", true);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Set New Password & Log In";
+            }
+        }
     }
 
     // =========================================================================
@@ -10996,7 +11501,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     'achievements-modal', 'emerald-vault-modal', 'atlas-market-modal',
                     'sign-edit-modal', 'astral-infuser-modal', 'world-map-modal',
                     'unified-shop-modal', 'skins-menu', 'tutorial-modal', 'bg-build-overlay',
-                    'publish-multiplayer-modal', 'guest-confirm-modal', 'profile-editor-modal'
+                    'publish-multiplayer-modal', 'guest-confirm-modal', 'profile-editor-modal',
+                    'account-recovery-modal'
                 ];
                 idsToHide.forEach(id => {
                     const el = document.getElementById(id);
@@ -15420,4 +15926,14 @@ try { if (typeof renderPinnedAchievementHUD !== "undefined") window.renderPinned
 try { if (typeof setAchievementSearchTerm !== "undefined") window.setAchievementSearchTerm = setAchievementSearchTerm; } catch(e) {}
 try { if (typeof setAchievementSort !== "undefined") window.setAchievementSort = setAchievementSort; } catch(e) {}
 try { if (typeof filterAchievementsByStatus !== "undefined") window.filterAchievementsByStatus = filterAchievementsByStatus; } catch(e) {}
+try { if (typeof openAccountRecoveryModal !== "undefined") window.openAccountRecoveryModal = openAccountRecoveryModal; } catch(e) {}
+try { if (typeof closeAccountRecoveryModal !== "undefined") window.closeAccountRecoveryModal = closeAccountRecoveryModal; } catch(e) {}
+try { if (typeof switchRecoveryStep !== "undefined") window.switchRecoveryStep = switchRecoveryStep; } catch(e) {}
+try { if (typeof setupOtpInputListeners !== "undefined") window.setupOtpInputListeners = setupOtpInputListeners; } catch(e) {}
+try { if (typeof toggleRecoveryPasswordVisibility !== "undefined") window.toggleRecoveryPasswordVisibility = toggleRecoveryPasswordVisibility; } catch(e) {}
+try { if (typeof handleRecoveryStep1Submit !== "undefined") window.handleRecoveryStep1Submit = handleRecoveryStep1Submit; } catch(e) {}
+try { if (typeof handleRecoveryStep2Submit !== "undefined") window.handleRecoveryStep2Submit = handleRecoveryStep2Submit; } catch(e) {}
+try { if (typeof handleRecoveryResendCode !== "undefined") window.handleRecoveryResendCode = handleRecoveryResendCode; } catch(e) {}
+try { if (typeof handleRecoveryStep3Submit !== "undefined") window.handleRecoveryStep3Submit = handleRecoveryStep3Submit; } catch(e) {}
+
 

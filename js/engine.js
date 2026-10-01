@@ -171,15 +171,7 @@ export function giveItem(id, amount = 1) { if (typeof window !== 'undefined' && 
 export function damageSelectedTool(amount = 1) { if (typeof window !== 'undefined' && typeof window.damageSelectedTool === 'function' && window.damageSelectedTool !== damageSelectedTool) return window.damageSelectedTool(amount); }
 export function ensureToolDurability(item) { if (typeof window !== 'undefined' && typeof window.ensureToolDurability === 'function' && window.ensureToolDurability !== ensureToolDurability) return window.ensureToolDurability(item); return item; }
 export function isTool(id) {
-    if (typeof window !== 'undefined' && typeof window.isTool === 'function' && window.isTool !== isTool) return window.isTool(id);
-    return [
-        IDS.WOOD_PICKAXE, IDS.STONE_PICKAXE, IDS.IRON_PICKAXE, IDS.GOLD_PICKAXE, IDS.DIAMOND_PICKAXE, IDS.ASTRAL_PICKAXE,
-        IDS.WOOD_SWORD, IDS.STONE_SWORD, IDS.IRON_SWORD, IDS.GOLD_SWORD, IDS.DIAMOND_SWORD, IDS.ASTRAL_SWORD,
-        IDS.WOOD_AXE, IDS.STONE_AXE, IDS.IRON_AXE, IDS.GOLD_AXE, IDS.DIAMOND_AXE, IDS.ASTRAL_AXE,
-        IDS.WOOD_SHOVEL, IDS.STONE_SHOVEL, IDS.IRON_SHOVEL, IDS.GOLD_SHOVEL, IDS.DIAMOND_SHOVEL, IDS.ASTRAL_SHOVEL,
-        IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE,
-        IDS.KINETIC_SHEARS, IDS.SHADOWFANG
-    ].includes(id);
+    return isPickaxe(id) || isAxe(id) || isShovel(id) || isSword(id) || isHoe(id) || isShears(id);
 }
 export function updateArmorUI() { if (typeof window !== 'undefined' && typeof window.updateArmorUI === 'function' && window.updateArmorUI !== updateArmorUI) return window.updateArmorUI(); }
 export function updateHealthUI() { if (typeof window !== 'undefined' && typeof window.updateHealthUI === 'function' && window.updateHealthUI !== updateHealthUI) return window.updateHealthUI(); }
@@ -1176,6 +1168,97 @@ export function getMaxAnimals() {
         if (blockId === IDS.IRON_ORE || blockId === IDS.VOID_STONE_BRICK) return 2;
         if (blockId === IDS.GOLD_ORE || blockId === IDS.DIAMOND_ORE || blockId === IDS.EMERALD_ORE || blockId === IDS.ASTRAL_INFUSER) return 3;
         return 0;
+    }
+
+    export function isPickaxe(id) {
+        return id === IDS.WOOD_PICKAXE || id === IDS.STONE_PICKAXE || id === IDS.IRON_PICKAXE ||
+               id === IDS.GOLD_PICKAXE || id === IDS.DIAMOND_PICKAXE || id === IDS.ASTRAL_PICKAXE;
+    }
+
+    export function isAxe(id) {
+        return id === IDS.WOOD_AXE || id === IDS.STONE_AXE || id === IDS.IRON_AXE ||
+               id === IDS.GOLD_AXE || id === IDS.DIAMOND_AXE || id === IDS.ASTRAL_AXE;
+    }
+
+    export function isShovel(id) {
+        return id === IDS.WOOD_SHOVEL || id === IDS.STONE_SHOVEL || id === IDS.IRON_SHOVEL ||
+               id === IDS.GOLD_SHOVEL || id === IDS.DIAMOND_SHOVEL || id === IDS.ASTRAL_SHOVEL;
+    }
+
+    export function isSword(id) {
+        return id === IDS.WOOD_SWORD || id === IDS.STONE_SWORD || id === IDS.IRON_SWORD ||
+               id === IDS.GOLD_SWORD || id === IDS.DIAMOND_SWORD || id === IDS.ASTRAL_SWORD ||
+               id === IDS.SHADOWFANG;
+    }
+
+    export function isHoe(id) {
+        return id === IDS.WOOD_HOE || id === IDS.STONE_HOE || id === IDS.IRON_HOE ||
+               id === IDS.GOLD_HOE || id === IDS.DIAMOND_HOE;
+    }
+
+    export function isShears(id) {
+        return id === IDS.KINETIC_SHEARS || (typeof IDS.SHEARS !== 'undefined' && id === IDS.SHEARS);
+    }
+
+    export function isPickaxeBlock(blockId) {
+        return blockId === IDS.STONE ||
+               blockId === IDS.COBBLESTONE ||
+               blockId === IDS.COAL_ORE ||
+               blockId === IDS.IRON_ORE ||
+               blockId === IDS.GOLD_ORE ||
+               blockId === IDS.DIAMOND_ORE ||
+               blockId === IDS.EMERALD_ORE ||
+               blockId === IDS.FURNACE ||
+               blockId === IDS.COBBLESTONE_STAIRS ||
+               blockId === IDS.COBBLESTONE_STAIRS_LEFT ||
+               blockId === IDS.COBBLESTONE_STAIRS_RIGHT ||
+               blockId === IDS.VOID_STONE_BRICK ||
+               blockId === IDS.ASTRAL_INFUSER;
+    }
+
+    export function isAxeBlock(blockId) {
+        return blockId === IDS.WOOD ||
+               blockId === IDS.PLANKS ||
+               blockId === IDS.JUNGLE_WOOD ||
+               blockId === IDS.JUNGLE_PLANKS ||
+               blockId === IDS.WOODEN_STAIRS ||
+               blockId === IDS.WOODEN_STAIRS_LEFT ||
+               blockId === IDS.WOODEN_STAIRS_RIGHT ||
+               blockId === IDS.CRAFTING_TABLE ||
+               blockId === IDS.CHEST ||
+               blockId === IDS.DOOR ||
+               blockId === IDS.DOOR_TOP ||
+               blockId === IDS.DOOR_OPEN ||
+               blockId === IDS.DOOR_OPEN_TOP ||
+               blockId === IDS.JUNGLE_DOOR ||
+               blockId === IDS.JUNGLE_DOOR_TOP ||
+               blockId === IDS.JUNGLE_DOOR_OPEN ||
+               blockId === IDS.JUNGLE_DOOR_OPEN_TOP ||
+               blockId === IDS.JUKEBOX ||
+               blockId === IDS.LADDER ||
+               blockId === IDS.BAMBOO ||
+               blockId === IDS.SIGN ||
+               blockId === IDS.MELON ||
+               blockId === IDS.SUNBURST_MELON;
+    }
+
+    export function isShovelBlock(blockId) {
+        return blockId === IDS.DIRT ||
+               blockId === IDS.GRASS ||
+               blockId === IDS.PLOWED_DIRT ||
+               blockId === IDS.FARMLAND ||
+               blockId === IDS.SAND ||
+               blockId === IDS.SNOW;
+    }
+
+    export function isShearsBlock(blockId) {
+        return blockId === IDS.LEAVES ||
+               blockId === IDS.JUNGLE_LEAVES ||
+               blockId === IDS.VINES ||
+               blockId === IDS.SHORT_GRASS ||
+               blockId === IDS.TALL_GRASS ||
+               blockId === IDS.FERN ||
+               blockId === IDS.VOID_BERRY_BUSH;
     }
 
     export const BLOCK_CRACK_STAGES = [
@@ -6100,16 +6183,113 @@ export const SKIN_H = 32;
             if (item) ensureToolDurability(item);
             if (item && isTool(item.id) && item.durability <= 0) return 0;
             let id = item ? item.id : null;
-            if (targetBlock === IDS.WOOD || targetBlock === IDS.PLANKS || targetBlock === IDS.LADDER || targetBlock === IDS.WOODEN_STAIRS || targetBlock === IDS.WOODEN_STAIRS_LEFT || targetBlock === IDS.WOODEN_STAIRS_RIGHT || targetBlock === IDS.JUNGLE_WOOD || targetBlock === IDS.JUNGLE_PLANKS || targetBlock === IDS.BAMBOO) {
-                if (id === IDS.DIAMOND_AXE || id === IDS.DIAMOND_SWORD) return 18; if (id === IDS.GOLD_AXE || id === IDS.GOLD_SWORD) return 12; if (id === IDS.IRON_AXE || id === IDS.IRON_SWORD) return 9; if (id === IDS.STONE_AXE || id === IDS.STONE_SWORD) return 8; if (id === IDS.WOOD_AXE || id === IDS.WOOD_SWORD) return 5;
-            } else if (targetBlock === IDS.DIRT || targetBlock === IDS.PLOWED_DIRT || targetBlock === IDS.GRASS || targetBlock === IDS.SAND || targetBlock === IDS.SNOW) {
-                if (id === IDS.DIAMOND_SHOVEL) return 18; if (id === IDS.GOLD_SHOVEL) return 12; if (id === IDS.IRON_SHOVEL) return 9; if (id === IDS.STONE_SHOVEL) return 6; if (id === IDS.WOOD_SHOVEL) return 4;
-            } else if (HARDNESS[targetBlock] >= 100) { 
+
+            // 1. Pickaxe blocks (Stone, Cobblestone, Ores, Furnace, Cobblestone stairs, Void stone brick, Astral infuser)
+            if (isPickaxeBlock(targetBlock) || (HARDNESS[targetBlock] >= 100 && !isAxeBlock(targetBlock) && !isShovelBlock(targetBlock))) {
                 const requiredTier = getRequiredMiningTier(targetBlock);
-                if (requiredTier > 0 && !canHarvestBlock(targetBlock)) return 0.1 * Math.pow(0.5, requiredTier - 1);
-                if (id === IDS.DIAMOND_PICKAXE) return 18; if (id === IDS.GOLD_PICKAXE) return 12; if (id === IDS.IRON_PICKAXE) return 9; if (id === IDS.STONE_PICKAXE) return 6; if (id === IDS.WOOD_PICKAXE) return 3;
+                if (requiredTier > 0 && !canHarvestBlock(targetBlock)) {
+                    // Penalty if not holding an adequate pickaxe: very slow and drops nothing
+                    return 0.1 * Math.pow(0.5, requiredTier - 1);
+                }
+                if (id === IDS.ASTRAL_PICKAXE) return 24;
+                if (id === IDS.DIAMOND_PICKAXE) return 18;
+                if (id === IDS.GOLD_PICKAXE) return 12;
+                if (id === IDS.IRON_PICKAXE) return 9;
+                if (id === IDS.STONE_PICKAXE) return 6;
+                if (id === IDS.WOOD_PICKAXE) return 3;
+                return 1.0;
             }
-            return id >= 100 ? 1.5 : 1;
+
+            // 2. Axe blocks (Wood, Planks, Wooden stairs, Doors, Chests, Crafting table, Jukebox, Bamboo, Melons, etc.)
+            if (isAxeBlock(targetBlock)) {
+                // Primary tool: Axe (super fast!)
+                if (id === IDS.ASTRAL_AXE) return 24;
+                if (id === IDS.DIAMOND_AXE) return 18;
+                if (id === IDS.GOLD_AXE) return 12;
+                if (id === IDS.IRON_AXE) return 9;
+                if (id === IDS.STONE_AXE) return 8;
+                if (id === IDS.WOOD_AXE) return 5;
+
+                // Bamboo / Melon: Swords are also effective
+                if (targetBlock === IDS.BAMBOO || targetBlock === IDS.MELON || targetBlock === IDS.SUNBURST_MELON) {
+                    if (id === IDS.ASTRAL_SWORD) return 18;
+                    if (id === IDS.DIAMOND_SWORD) return 14;
+                    if (id === IDS.GOLD_SWORD) return 10;
+                    if (id === IDS.IRON_SWORD || id === IDS.SHADOWFANG) return 8;
+                    if (id === IDS.STONE_SWORD) return 6;
+                    if (id === IDS.WOOD_SWORD) return 4;
+                }
+
+                // Off-category Pickaxes on wood:
+                // Astral pickaxe is faster than hands (~4.0), but NOT super fast (axes have 18-24!)
+                if (id === IDS.ASTRAL_PICKAXE) return 4.0;
+                if (id === IDS.DIAMOND_PICKAXE) return 2.8;
+                if (id === IDS.GOLD_PICKAXE) return 2.2;
+                if (id === IDS.IRON_PICKAXE) return 1.8;
+                if (id === IDS.STONE_PICKAXE) return 1.4;
+                if (id === IDS.WOOD_PICKAXE) return 1.2;
+
+                // Off-category Shovels on wood:
+                if (id === IDS.ASTRAL_SHOVEL) return 3.5;
+                if (id === IDS.DIAMOND_SHOVEL) return 2.5;
+                if (id === IDS.GOLD_SHOVEL) return 2.0;
+                if (id === IDS.IRON_SHOVEL) return 1.6;
+                if (id === IDS.STONE_SHOVEL) return 1.3;
+                if (id === IDS.WOOD_SHOVEL) return 1.1;
+
+                // Swords on standard wood:
+                if (id === IDS.ASTRAL_SWORD) return 2.5;
+                if (id === IDS.DIAMOND_SWORD) return 2.0;
+                if (id === IDS.GOLD_SWORD || id === IDS.IRON_SWORD || id === IDS.SHADOWFANG) return 1.5;
+                if (id === IDS.STONE_SWORD || id === IDS.WOOD_SWORD) return 1.2;
+
+                return (id && id >= 100) ? 1.2 : 1.0;
+            }
+
+            // 3. Shovel blocks (Dirt, Farmland, Grass, Sand, Snow)
+            if (isShovelBlock(targetBlock)) {
+                // Primary tool: Shovel (super fast!)
+                if (id === IDS.ASTRAL_SHOVEL) return 24;
+                if (id === IDS.DIAMOND_SHOVEL) return 18;
+                if (id === IDS.GOLD_SHOVEL) return 12;
+                if (id === IDS.IRON_SHOVEL) return 9;
+                if (id === IDS.STONE_SHOVEL) return 6;
+                if (id === IDS.WOOD_SHOVEL) return 4;
+
+                // Off-category Pickaxes on dirt/sand:
+                if (id === IDS.ASTRAL_PICKAXE) return 3.2;
+                if (id === IDS.DIAMOND_PICKAXE) return 2.4;
+                if (id === IDS.GOLD_PICKAXE) return 2.0;
+                if (id === IDS.IRON_PICKAXE) return 1.6;
+                if (id === IDS.STONE_PICKAXE) return 1.3;
+                if (id === IDS.WOOD_PICKAXE) return 1.1;
+
+                // Off-category Axes on dirt/sand:
+                if (id === IDS.ASTRAL_AXE) return 3.2;
+                if (id === IDS.DIAMOND_AXE) return 2.4;
+                if (id === IDS.GOLD_AXE) return 2.0;
+                if (id === IDS.IRON_AXE) return 1.6;
+                if (id === IDS.STONE_AXE) return 1.3;
+                if (id === IDS.WOOD_AXE) return 1.1;
+
+                return (id && id >= 100) ? 1.2 : 1.0;
+            }
+
+            // 4. Shears / Foliage blocks (Leaves, Vines, Tall grass, Fern, Berry bush)
+            if (isShearsBlock(targetBlock)) {
+                if (id === IDS.KINETIC_SHEARS || id === IDS.SHEARS) return 24;
+                if (id === IDS.ASTRAL_SWORD) return 15;
+                if (id === IDS.DIAMOND_SWORD || id === IDS.SHADOWFANG) return 12;
+                if (id === IDS.GOLD_SWORD || id === IDS.IRON_SWORD) return 8;
+                if (id === IDS.STONE_SWORD || id === IDS.WOOD_SWORD) return 5;
+                if (id === IDS.ASTRAL_AXE || id === IDS.ASTRAL_PICKAXE || id === IDS.ASTRAL_SHOVEL) return 4.0;
+                return (id && id >= 100) ? 2.0 : 1.0;
+            }
+
+            // 5. General / other blocks (Glass, Cactus, Bed, Torch, etc.)
+            if (id === IDS.ASTRAL_PICKAXE || id === IDS.ASTRAL_AXE || id === IDS.ASTRAL_SHOVEL) return 3.5;
+            if (id === IDS.DIAMOND_PICKAXE || id === IDS.DIAMOND_AXE || id === IDS.DIAMOND_SHOVEL) return 2.5;
+            return (id && id >= 100) ? 1.5 : 1.0;
         }
         
         getWeaponDamage() {
@@ -6117,9 +6297,9 @@ export const SKIN_H = 32;
             const dmgMap = {
                 [IDS.SHADOWFANG]: 8, [IDS.ASTRAL_SWORD]: 12,
                 [IDS.DIAMOND_SWORD]: 10, [IDS.IRON_SWORD]: 8, [IDS.GOLD_SWORD]: 8, [IDS.STONE_SWORD]: 6, [IDS.WOOD_SWORD]: 4,
-                [IDS.DIAMOND_AXE]: 8, [IDS.IRON_AXE]: 7, [IDS.GOLD_AXE]: 6, [IDS.STONE_AXE]: 5, [IDS.WOOD_AXE]: 3,
-                [IDS.DIAMOND_PICKAXE]: 4, [IDS.IRON_PICKAXE]: 3.5, [IDS.GOLD_PICKAXE]: 3, [IDS.STONE_PICKAXE]: 2.5, [IDS.WOOD_PICKAXE]: 2,
-                [IDS.DIAMOND_SHOVEL]: 4.5, [IDS.IRON_SHOVEL]: 3.5, [IDS.GOLD_SHOVEL]: 3, [IDS.STONE_SHOVEL]: 2.5, [IDS.WOOD_SHOVEL]: 1.5,
+                [IDS.ASTRAL_AXE]: 9.5, [IDS.DIAMOND_AXE]: 8, [IDS.IRON_AXE]: 7, [IDS.GOLD_AXE]: 6, [IDS.STONE_AXE]: 5, [IDS.WOOD_AXE]: 3,
+                [IDS.ASTRAL_PICKAXE]: 5, [IDS.DIAMOND_PICKAXE]: 4, [IDS.IRON_PICKAXE]: 3.5, [IDS.GOLD_PICKAXE]: 3, [IDS.STONE_PICKAXE]: 2.5, [IDS.WOOD_PICKAXE]: 2,
+                [IDS.ASTRAL_SHOVEL]: 5.5, [IDS.DIAMOND_SHOVEL]: 4.5, [IDS.IRON_SHOVEL]: 3.5, [IDS.GOLD_SHOVEL]: 3, [IDS.STONE_SHOVEL]: 2.5, [IDS.WOOD_SHOVEL]: 1.5,
                 [IDS.DIAMOND_HOE]: 3, [IDS.IRON_HOE]: 2.5, [IDS.GOLD_HOE]: 2, [IDS.STONE_HOE]: 1.5, [IDS.WOOD_HOE]: 1
             };
             return dmgMap[item.id] || 1;
@@ -16798,6 +16978,16 @@ try { if (typeof hotbarPopupTimeout !== "undefined") window.hotbarPopupTimeout =
 try { if (typeof hotbarWheelLockUntil !== "undefined") window.hotbarWheelLockUntil = hotbarWheelLockUntil; } catch(e) {}
 try { if (typeof initFabulousParticles !== "undefined") window.initFabulousParticles = initFabulousParticles; } catch(e) {}
 try { if (typeof isArmor !== "undefined") window.isArmor = isArmor; } catch(e) {}
+try { if (typeof isPickaxe !== "undefined") window.isPickaxe = isPickaxe; } catch(e) {}
+try { if (typeof isAxe !== "undefined") window.isAxe = isAxe; } catch(e) {}
+try { if (typeof isShovel !== "undefined") window.isShovel = isShovel; } catch(e) {}
+try { if (typeof isSword !== "undefined") window.isSword = isSword; } catch(e) {}
+try { if (typeof isHoe !== "undefined") window.isHoe = isHoe; } catch(e) {}
+try { if (typeof isShears !== "undefined") window.isShears = isShears; } catch(e) {}
+try { if (typeof isPickaxeBlock !== "undefined") window.isPickaxeBlock = isPickaxeBlock; } catch(e) {}
+try { if (typeof isAxeBlock !== "undefined") window.isAxeBlock = isAxeBlock; } catch(e) {}
+try { if (typeof isShovelBlock !== "undefined") window.isShovelBlock = isShovelBlock; } catch(e) {}
+try { if (typeof isShearsBlock !== "undefined") window.isShearsBlock = isShearsBlock; } catch(e) {}
 try { if (typeof isBackgroundBuildMode !== "undefined") window.isBackgroundBuildMode = isBackgroundBuildMode; } catch(e) {}
 try { if (typeof isBackgroundBuildingBlock !== "undefined") window.isBackgroundBuildingBlock = isBackgroundBuildingBlock; } catch(e) {}
 try { if (typeof isBedRenderStart !== "undefined") window.isBedRenderStart = isBedRenderStart; } catch(e) {}

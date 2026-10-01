@@ -1397,7 +1397,7 @@
                 </div>
             </div>
 
-            <p class="menu-version" id="game-version-label"><a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v0.1.6</p>
+            <p class="menu-version" id="game-version-label"><a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v0.1.6 (Happy Halloween)</p>
             <p class="menu-credit">A game totally not coded with AI by <a href="https://github.com/raresh06" target="_blank" rel="noopener noreferrer" class="author-github-link underline font-bold transition-colors" title="Visit Gheorghes Rares on GitHub">Gheorghes Rares</a></p>
         </div>
 
@@ -1563,6 +1563,12 @@
                         </div>
                     </div>
 
+                    <!-- Forgot Password Row (Shown only on Log In tab) -->
+                    <div id="auth-forgot-row" class="hidden flex justify-between items-center -mt-1 mb-3">
+                        <span class="text-[#8c9da8] font-['VT323'] text-lg">Trouble signing in?</span>
+                        <button type="button" class="text-amber-400 hover:text-amber-300 font-['VT323'] text-xl underline cursor-pointer bg-transparent border-0 p-0" onclick="openAccountRecoveryModal()">Forgot Password?</button>
+                    </div>
+
                     <!-- Feedback Alert -->
                     <div id="auth-feedback-msg" class="auth-feedback hidden"></div>
 
@@ -1707,6 +1713,143 @@
             <div class="auth-actions-group">
                 <button type="button" class="mc-btn auth-primary-btn !h-12 !text-2xl" onclick="confirmContinueAsGuest()">Yes, Continue as Guest</button>
                 <button type="button" class="mc-btn auth-secondary-btn !h-11 !text-2xl" onclick="cancelGuestPrompt()">Stay on Login Screen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Webcraft Account Recovery Modal (Forgot Password Wizard) -->
+    <div id="account-recovery-modal" class="menu-overlay hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style="position: fixed; inset: 0; z-index: 9999;" role="dialog" aria-modal="true" aria-labelledby="recovery-modal-title">
+        <div class="auth-profile-panel !max-w-[480px] w-full text-left relative">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <div class="auth-title-badge !bg-amber-900/90 !border-amber-500 mb-1">ACCOUNT SECURITY</div>
+                    <h2 id="recovery-modal-title" class="auth-main-title text-3xl text-white">Account Recovery</h2>
+                    <p class="auth-subtitle text-gray-300">Reset your password via 6-digit email code</p>
+                </div>
+                <button class="modal-close-red-btn" type="button" onclick="closeAccountRecoveryModal()" aria-label="Close recovery modal" title="Close">X</button>
+            </div>
+
+            <!-- Step Tracker -->
+            <div class="recovery-steps-tracker" aria-label="Recovery Steps">
+                <div id="recovery-tracker-step-1" class="recovery-step-badge active">
+                    <span class="step-num">1</span>
+                    <span class="step-text">Identify</span>
+                </div>
+                <div class="recovery-step-connector"></div>
+                <div id="recovery-tracker-step-2" class="recovery-step-badge">
+                    <span class="step-num">2</span>
+                    <span class="step-text">Verify</span>
+                </div>
+                <div class="recovery-step-connector"></div>
+                <div id="recovery-tracker-step-3" class="recovery-step-badge">
+                    <span class="step-num">3</span>
+                    <span class="step-text">Reset</span>
+                </div>
+            </div>
+
+            <!-- Shared Feedback Message Alert -->
+            <div id="recovery-feedback-msg" class="auth-feedback hidden mb-3"></div>
+
+            <!-- Step 1: Identifier Entry -->
+            <div id="recovery-step-1" class="recovery-step-content">
+                <p class="font-['VT323'] text-xl text-gray-300 mb-3 leading-tight">
+                    Enter the email address, @tag, or character name associated with your <a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-amber-300 hover:underline font-bold" title="Visit Webcraft2D on GitHub">Webcraft</a> account:
+                </p>
+                <div class="auth-input-group mb-4">
+                    <label for="recovery-input-identifier" class="auth-label">Account Identifier</label>
+                    <div class="auth-input-wrapper">
+                        <input id="recovery-input-identifier" type="text" class="auth-input" placeholder="player@example.com or @raresh06" autocomplete="username">
+                    </div>
+                </div>
+                <div class="auth-actions-group">
+                    <button type="button" id="recovery-btn-step1" class="mc-btn auth-primary-btn" onclick="handleRecoveryStep1Submit()">Send Verification Code</button>
+                    <button type="button" class="mc-btn auth-secondary-btn" onclick="closeAccountRecoveryModal()">Cancel & Back to Log In</button>
+                </div>
+            </div>
+
+            <!-- Step 2: 6-Digit Verification Code -->
+            <div id="recovery-step-2" class="recovery-step-content hidden">
+                <p class="font-['VT323'] text-xl text-gray-300 mb-2 leading-tight">
+                    We sent a 6-digit verification code to <span id="recovery-target-email" class="text-amber-400 font-bold">your email</span>.
+                </p>
+                <p class="font-['VT323'] text-lg text-gray-400 mb-2">
+                    Enter the 6-digit code below to verify ownership:
+                </p>
+                <div class="recovery-otp-container" id="recovery-otp-boxes">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="recovery-otp-digit" data-index="0" autocomplete="off" />
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="recovery-otp-digit" data-index="1" autocomplete="off" />
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="recovery-otp-digit" data-index="2" autocomplete="off" />
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="recovery-otp-digit" data-index="3" autocomplete="off" />
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="recovery-otp-digit" data-index="4" autocomplete="off" />
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="recovery-otp-digit" data-index="5" autocomplete="off" />
+                </div>
+                <div class="flex justify-between items-center mb-3 px-1">
+                    <span id="recovery-timer-display" class="recovery-timer">Expires in 15:00</span>
+                    <button type="button" id="recovery-resend-btn" class="recovery-resend-btn" onclick="handleRecoveryResendCode()">Resend Code</button>
+                </div>
+                <div class="auth-actions-group">
+                    <button type="button" id="recovery-btn-step2" class="mc-btn auth-primary-btn" onclick="handleRecoveryStep2Submit()">Verify Code</button>
+                    <button type="button" class="mc-btn auth-secondary-btn" onclick="switchRecoveryStep(1)">Back</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Set New Password -->
+            <div id="recovery-step-3" class="recovery-step-content hidden">
+                <p class="font-['VT323'] text-xl text-gray-300 mb-2 leading-tight">
+                    Code verified! Set a new password for <span id="recovery-target-account" class="text-amber-400 font-bold">@account</span>:
+                </p>
+                <div class="auth-input-group mb-3">
+                    <label for="recovery-new-password" class="auth-label">New Password</label>
+                    <div class="auth-input-wrapper">
+                        <input id="recovery-new-password" type="password" class="auth-input !pr-11" placeholder="At least 6 characters" minlength="6" autocomplete="new-password">
+                        <button type="button" class="auth-eye-btn" onclick="toggleRecoveryPasswordVisibility('recovery-new-password', 'recovery-eye-icon-1')" title="Toggle Password Visibility" aria-label="Toggle Password Visibility">
+                            <svg id="recovery-eye-icon-1" viewBox="0 0 16 10" width="16" height="10" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                <rect x="3" y="0" width="10" height="1" fill="#000000"/>
+                                <rect x="1" y="1" width="2" height="2" fill="#000000"/>
+                                <rect x="13" y="1" width="2" height="2" fill="#000000"/>
+                                <rect x="0" y="3" width="1" height="4" fill="#000000"/>
+                                <rect x="15" y="3" width="1" height="4" fill="#000000"/>
+                                <rect x="1" y="7" width="2" height="2" fill="#000000"/>
+                                <rect x="13" y="7" width="2" height="2" fill="#000000"/>
+                                <rect x="3" y="9" width="10" height="1" fill="#000000"/>
+                                <rect x="3" y="1" width="10" height="8" fill="#ffffff"/>
+                                <rect x="2" y="3" width="12" height="4" fill="#ffffff"/>
+                                <rect x="6" y="2" width="4" height="6" fill="#0284c7"/>
+                                <rect x="7" y="3" width="2" height="4" fill="#0f172a"/>
+                                <rect x="6" y="3" width="1" height="1" fill="#ffffff"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="auth-input-group mb-2">
+                    <label for="recovery-confirm-password" class="auth-label">Confirm New Password</label>
+                    <div class="auth-input-wrapper">
+                        <input id="recovery-confirm-password" type="password" class="auth-input !pr-11" placeholder="Re-type new password" minlength="6" autocomplete="new-password">
+                        <button type="button" class="auth-eye-btn" onclick="toggleRecoveryPasswordVisibility('recovery-confirm-password', 'recovery-eye-icon-2')" title="Toggle Password Visibility" aria-label="Toggle Password Visibility">
+                            <svg id="recovery-eye-icon-2" viewBox="0 0 16 10" width="16" height="10" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                <rect x="3" y="0" width="10" height="1" fill="#000000"/>
+                                <rect x="1" y="1" width="2" height="2" fill="#000000"/>
+                                <rect x="13" y="1" width="2" height="2" fill="#000000"/>
+                                <rect x="0" y="3" width="1" height="4" fill="#000000"/>
+                                <rect x="15" y="3" width="1" height="4" fill="#000000"/>
+                                <rect x="1" y="7" width="2" height="2" fill="#000000"/>
+                                <rect x="13" y="7" width="2" height="2" fill="#000000"/>
+                                <rect x="3" y="9" width="10" height="1" fill="#000000"/>
+                                <rect x="3" y="1" width="10" height="8" fill="#ffffff"/>
+                                <rect x="2" y="3" width="12" height="4" fill="#ffffff"/>
+                                <rect x="6" y="2" width="4" height="6" fill="#0284c7"/>
+                                <rect x="7" y="3" width="2" height="4" fill="#0f172a"/>
+                                <rect x="6" y="3" width="1" height="1" fill="#ffffff"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="recovery-match-indicator" class="font-['VT323'] text-lg mb-3 hidden"></div>
+                <div class="auth-actions-group">
+                    <button type="button" id="recovery-btn-step3" class="mc-btn auth-primary-btn" onclick="handleRecoveryStep3Submit()">Set New Password & Log In</button>
+                    <button type="button" class="mc-btn auth-secondary-btn" onclick="switchRecoveryStep(2)">Back</button>
+                </div>
             </div>
         </div>
     </div>
