@@ -1,6 +1,6 @@
 import {
     IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, currentWorldSize,
-    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot, AtlasExplorer,
+    Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot, AtlasExplorer, Gloomstalker,
     generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable, sanitizeTreeWoodCollision,
     setEngineNonCollidableTreeWood,
@@ -68,6 +68,11 @@ import {
     renderStandardModal
 } from './ui/standardcomponents.js';
 import { generateProceduralThumbnail, captureWorldThumbnail } from './ui/worldthumbnails.js';
+import {
+    getWorldData, setWorldData, removeWorldData, hasWorldData,
+    hasWorldDataSync, getThumbnail, setThumbnail, removeThumbnail,
+    migrateLocalStorageWorlds, thumbnailCache
+} from './storage.js';
 
 export const INVENTORY_SIZE = 28;
 export const SKIN_W = 16;
@@ -162,6 +167,13 @@ export function setOpenedChest(c) {
 try { if (typeof window !== 'undefined') window.setOpenedChest = setOpenedChest; } catch(e) {}
 
 export function setSelectedHotbarIndex(idx) {
+    if (selectedHotbarIndex !== idx) {
+        if (typeof window !== 'undefined' && window.miningTarget) {
+            window.miningTarget.progress = 0;
+            window.miningTarget.toolId = null;
+            window.miningTarget.slotIndex = idx;
+        }
+    }
     selectedHotbarIndex = idx;
     if (typeof setEngineSelectedHotbarIndex === 'function') setEngineSelectedHotbarIndex(idx);
     if (typeof window !== 'undefined') window.selectedHotbarIndex = idx;
@@ -6151,6 +6163,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function openWhatsNewOnce() {
         if (whatsNewShownThisLoad || !whatsNewStartupEnabled) return;
+        const authModal = document.getElementById('auth-profile-modal');
+        const isAuthOpen = authModal && !authModal.classList.contains('hidden') && authModal.style.display !== 'none';
+        if (isAuthOpen || (!currentUserProfile && !authModalHasBeenDismissedThisSession)) {
+            // Do not load or pop up the news UI while the login/signup screen is active or pending
+            return;
+        }
         whatsNewShownThisLoad = true;
         openWhatsNew();
     }
@@ -6260,7 +6278,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
     }
 
-    export function openWhatsNew() {
+    export function openWhatsNew(force = false) {
+        if (!force) {
+            const authModal = document.getElementById('auth-profile-modal');
+            const isAuthOpen = authModal && !authModal.classList.contains('hidden') && authModal.style.display !== 'none';
+            if (isAuthOpen || (!currentUserProfile && !authModalHasBeenDismissedThisSession)) {
+                // Do not load or pop up the news UI while the login/signup screen is active or pending
+                return;
+            }
+        }
         updateWhatsNewStartupToggle();
         renderWhatsNewHistory();
         const confetti = document.getElementById('whats-new-confetti');
@@ -6348,12 +6374,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             // First time or not connected: hide menu buttons and display the welcome auth modal
             if (menuButtons) menuButtons.classList.add('hidden');
             openAuthProfileModal('credentials');
+            return true;
         } else {
             if (menuButtons) menuButtons.classList.remove('hidden');
             updateMainMenuProfileBadge();
             if (currentUserProfile && !currentUserProfile.isGuest) {
                 startPresenceHeartbeat(currentUserProfile.normalizedTag || currentUserProfile.tag);
             }
+            return false;
         }
     }
 
@@ -6472,6 +6500,19 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         compileSkinCanvas();
         if (typeof drawPlayerPreview === 'function') drawPlayerPreview(true);
         updateMainMenuProfileBadge();
+
+        // Pop up the What's New changelog modal now that the login/signup screen is closed
+        if (!whatsNewShownThisLoad && whatsNewStartupEnabled) {
+            setTimeout(() => {
+                const skinEditor = document.getElementById('skin-editor-container');
+                const isSkinEditorOpen = skinEditor && !skinEditor.classList.contains('hidden') && skinEditor.style.display !== 'none';
+                const skinsModal = document.getElementById('skin-upload-modal') || document.getElementById('skin-owned-modal');
+                const isSkinsOpen = skinsModal && !skinsModal.classList.contains('hidden') && skinsModal.style.display !== 'none';
+                if (!isSkinEditorOpen && !isSkinsOpen && STATE === 'MENU') {
+                    openWhatsNewOnce();
+                }
+            }, 180);
+        }
     }
 
     export function promptGuestOnAuthClose() {
@@ -6864,7 +6905,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         recoveryTimerInterval = setInterval(updateTimer, 1000);
     }
 
-    function startResendCooldown(seconds = 45) {
+    function startResendCooldown(seconds = 60) {
         recoveryResendCooldown = seconds;
         clearInterval(recoveryResendInterval);
         const resendBtn = document.getElementById('recovery-resend-btn');
@@ -7028,7 +7069,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
             // Start countdown and cooldown
             startRecoveryCountdown(result.expiresAt || (Date.now() + 15 * 60 * 1000));
-            startResendCooldown(45);
+            startResendCooldown(result.cooldownSeconds || 60);
 
             // Switch to Step 2
             switchRecoveryStep(2);
@@ -7108,7 +7149,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
             const result = await reqFn(recoveryCurrentIdentifier);
             startRecoveryCountdown(result.expiresAt || (Date.now() + 15 * 60 * 1000));
-            startResendCooldown(45);
+            startResendCooldown(result.cooldownSeconds || 60);
             clearOtpInputs();
             showRecoveryFeedback(`A new code was sent to ${result.emailMasked}!`, false);
             const firstDigit = document.querySelector('.recovery-otp-digit[data-index="0"]');
@@ -9013,8 +9054,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         updateMainMenuProfileBadge();
         updateEmeraldsUI();
         syncCurrencyTextureImages();
-        checkProfileOnStartup();
-        openWhatsNewOnce();
+        const authOpened = checkProfileOnStartup();
+        if (!authOpened) {
+            openWhatsNewOnce();
+        }
     }
 
     export function finishIntro() {
@@ -9347,12 +9390,35 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
     }
 
-    export function duplicateWorld(id) {
+    export function sanitizeInventoryItem(item) {
+        if (!item || typeof item !== 'object') return null;
+        const validId = Number(item.id);
+        if (isNaN(validId) || validId <= 0 || !ID_NAMES[validId]) {
+            return null;
+        }
+        const sanitized = {
+            id: validId,
+            count: Math.max(1, Math.min(64, parseInt(item.count, 10) || 1))
+        };
+        if (item.durability !== undefined && item.durability !== null) {
+            sanitized.durability = Number(item.durability);
+        }
+        if (item.maxDurability !== undefined && item.maxDurability !== null) {
+            sanitized.maxDurability = Number(item.maxDurability);
+        }
+        if (item.isFist) sanitized.isFist = true;
+        try {
+            ensureToolDurability(sanitized);
+        } catch(e) {}
+        return sanitized;
+    }
+
+    export async function duplicateWorld(id) {
         const worlds = getSavedWorlds();
         const sourceWorld = worlds.find(w => w.id === id);
         if (!sourceWorld) return;
 
-        const rawData = localStorage.getItem('swc_data_' + id);
+        const rawData = await getWorldData(id);
         if (!rawData) {
             showToast('Cannot duplicate world: save data missing.');
             return;
@@ -9362,8 +9428,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const newName = `Copy of ${sourceWorld.name}`;
 
         try {
-            const clonedData = JSON.parse(rawData);
-            localStorage.setItem('swc_data_' + newId, JSON.stringify(clonedData));
+            const clonedData = typeof rawData === 'string' ? JSON.parse(rawData) : JSON.parse(JSON.stringify(rawData));
+            await setWorldData(newId, clonedData);
+
+            const sourceThumb = await getThumbnail(id);
+            if (sourceThumb) {
+                await setThumbnail(newId, sourceThumb);
+            }
 
             const clonedWorld = {
                 ...sourceWorld,
@@ -9455,7 +9526,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             gridEl.className = 'world-cards-grid';
 
             worlds.forEach(w => {
-                const hasSaveData = (typeof localStorage !== 'undefined') && !!localStorage.getItem('swc_data_' + w.id);
+                const hasSaveData = hasWorldDataSync(w.id);
                 const difficulty = (w.difficulty || 'normal').toLowerCase();
                 const diffName = difficulty.toUpperCase();
                 const sizeName = (w.worldSize || (w.worldWidth > 700 ? 'big' : 'small')).toUpperCase();
@@ -9538,7 +9609,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             rowsWrap.className = 'flex flex-col gap-2 w-full';
 
             worlds.forEach(w => {
-                const hasSaveData = (typeof localStorage !== 'undefined') && !!localStorage.getItem('swc_data_' + w.id);
+                const hasSaveData = hasWorldDataSync(w.id);
                 const difficulty = (w.difficulty || 'normal').toLowerCase();
                 const diffName = difficulty.toUpperCase();
                 const sizeName = (w.worldSize || (w.worldWidth > 700 ? 'big' : 'small')).toUpperCase();
@@ -9977,6 +10048,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     const snap = captureWorldThumbnail(cv);
                     if (snap) {
                         wInfo.thumbnail = snap;
+                        setThumbnail(currentWorldId, snap).catch(() => {});
                     }
                 } catch(e) {
                     console.warn('Failed to capture world thumbnail', e);
@@ -10075,21 +10147,16 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 } : {})
             }))
         };
-        const serializedSaveData = JSON.stringify(saveData);
         try {
             saveWorldsList(worlds);
-            localStorage.setItem('swc_data_' + currentWorldId, serializedSaveData);
+            setWorldData(currentWorldId, saveData).catch(e => {
+                console.error('[WebcraftStorage] Background setWorldData failed:', e);
+            });
             return true;
         } catch(e) {
-            try {
-                clearUnsupportedWorldStorage(currentWorldId);
-                localStorage.setItem('swc_data_' + currentWorldId, serializedSaveData);
-                return true;
-            } catch(retryError) {
-                console.error('World save failed', retryError);
-                showToast('World could not be saved. Browser storage is full or blocked.');
-                return false;
-            }
+            console.error('World save failed', e);
+            showToast('World could not be saved. Browser storage is full or blocked.');
+            return false;
         }
     }
 
@@ -10183,11 +10250,15 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
     }
 
-    export function exportWorld(id, name) {
-        let rawData = localStorage.getItem('swc_data_' + id);
-        if (!rawData) return;
+    export async function exportWorld(id, name) {
+        let rawData = await getWorldData(id);
+        if (!rawData) {
+            showToast('Save data missing or could not be retrieved.');
+            return;
+        }
         let worlds = getSavedWorlds(); let wInfo = worlds.find(w => w.id === id);
-        let exportData = { metadata: wInfo, gameData: JSON.parse(rawData) };
+        let parsedGameData = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+        let exportData = { metadata: wInfo, gameData: parsedGameData };
         let blob = new Blob([JSON.stringify(exportData)], {type: "application/json"});
         let url = URL.createObjectURL(blob);
         let a = document.createElement('a'); a.href = url;
@@ -10199,7 +10270,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         let file = event.target.files[0];
         if (!file) return;
         let reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             try {
                 let data = JSON.parse(e.target.result);
                 if (!data.metadata || !data.gameData) throw new Error("Invalid world format");
@@ -10214,7 +10285,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 let worlds = getSavedWorlds();
                 let newInfo = data.metadata; newInfo.id = newId; newInfo.name = newInfo.name + " (Imported)"; newInfo.lastPlayed = Date.now();
                 worlds.push(newInfo); saveWorldsList(worlds);
-                localStorage.setItem('swc_data_' + newId, JSON.stringify(data.gameData));
+                await setWorldData(newId, data.gameData);
+                if (newInfo.thumbnail) {
+                    await setThumbnail(newId, newInfo.thumbnail);
+                }
                 renderWorldsList();
                 showToast("World imported!");
             } catch(err) { console.error(err); showToast("Error importing corrupted world data!"); }
@@ -10304,19 +10378,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
         }
 
-        const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem('swc_data_' + id) : null;
-        if (!raw) {
-            const worldName = worldInfo?.name || 'Selected World';
-            const action = confirm(`Save data for "${worldName}" is missing from browser storage.\n\n• Click OK to regenerate this world from scratch and play\n• Click Cancel to remove this world from your list`);
-            if (action) {
-                if (worldInfo) {
-                    regenerateLostWorld(worldInfo);
+        const hasData = hasWorldDataSync(id);
+        if (!hasData) {
+            hasWorldData(id).then(exists => {
+                if (exists) {
+                    loadWorld(id, bypass015Prompt);
                 } else {
-                    showToast('Could not find world metadata to regenerate.');
+                    const worldName = worldInfo?.name || 'Selected World';
+                    const action = confirm(`Save data for "${worldName}" is missing from browser storage.\n\n• Click OK to regenerate this world from scratch and play\n• Click Cancel to remove this world from your list`);
+                    if (action) {
+                        if (worldInfo) regenerateLostWorld(worldInfo);
+                        else showToast('Could not find world metadata to regenerate.');
+                    } else {
+                        deleteWorld(id, false);
+                    }
                 }
-            } else {
-                deleteWorld(id, false);
-            }
+            });
             return;
         }
 
@@ -10390,9 +10467,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }
     }
 
-    export function loadWorldData(id) {
-        let raw = localStorage.getItem('swc_data_' + id);
-        if(!raw) {
+    export async function loadWorldData(id) {
+        let data = await getWorldData(id);
+        if(!data) {
             hideSingleplayerLoading();
             const worldInfo = getSavedWorlds().find(world => world.id === id);
             if (worldInfo) {
@@ -10411,7 +10488,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         currentWorldId = id; isMultiplayer = false;
         if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(currentWorldId);
         try {
-            let data = JSON.parse(raw);
+            if (typeof data === 'string') {
+                try { data = JSON.parse(data); } catch(e) {}
+            }
             if (!isWorldVersionCompatible(data.gameVersion, data.gameBuild)) {
                 currentWorldId = null;
                 if (typeof setEngineCurrentWorldId === 'function') setEngineCurrentWorldId(null);
@@ -10477,6 +10556,21 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
             if (typeof setEngineBgWorld === 'function') setEngineBgWorld(bgWorld);
             if (typeof toggleBackgroundBuildMode === 'function') toggleBackgroundBuildMode(false);
+
+            // Defensive tile grid ID bounds validation (fallback legacy/corrupt block IDs to AIR)
+            for (let x = 0; x < WORLD_WIDTH; x++) {
+                for (let y = 0; y < WORLD_HEIGHT; y++) {
+                    let b = world[x]?.[y];
+                    if (typeof b !== 'number' || !Number.isInteger(b) || b < 0 || (b !== IDS.AIR && !ID_NAMES[b])) {
+                        world[x][y] = IDS.AIR;
+                    }
+                    let bgB = bgWorld[x]?.[y];
+                    if (typeof bgB !== 'number' || !Number.isInteger(bgB) || bgB < 0 || (bgB !== IDS.AIR && !ID_NAMES[bgB])) {
+                        bgWorld[x][y] = IDS.AIR;
+                    }
+                }
+            }
+
             fluids = new Map(Object.entries(data.fluids || {}));
             if (typeof setEngineFluids === 'function') setEngineFluids(fluids);
             
@@ -10575,7 +10669,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
             inventory = Array.isArray(data.inventory) ? data.inventory : new Array(INVENTORY_SIZE).fill(null);
             while(inventory.length < INVENTORY_SIZE) inventory.push(null);
-            inventory = inventory.map(item => item ? ensureToolDurability(item) : null);
+            inventory = inventory.map(sanitizeInventoryItem);
             window.inventory = inventory;
             if (typeof setEngineInventory === 'function') setEngineInventory(inventory);
             
@@ -10585,13 +10679,21 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             } else {
                 equippedArmor = [null, null, null, null];
             }
-            equippedArmor = equippedArmor.map(item => item ? (ensureArmorDurability(item), item) : null);
+            equippedArmor = equippedArmor.map(item => item ? (ensureArmorDurability(item), sanitizeInventoryItem(item)) : null);
             window.equippedArmor = equippedArmor;
             if (typeof setEngineEquippedArmor === 'function') setEngineEquippedArmor(equippedArmor);
             updateArmorUI();
             updateHudArmorBar();
             
-            furnaces = data.furnaces || [];
+            furnaces = (data.furnaces || []).map(f => {
+                if (!f) return null;
+                return {
+                    ...f,
+                    input: sanitizeInventoryItem(f.input),
+                    fuel: sanitizeInventoryItem(f.fuel),
+                    output: sanitizeInventoryItem(f.output)
+                };
+            }).filter(Boolean);
             if (typeof setEngineFurnaces === 'function') setEngineFurnaces(furnaces);
             if (typeof window !== 'undefined') window.furnaces = furnaces;
             jukeboxes = data.jukeboxes || [];
@@ -10601,7 +10703,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             chests = new Map(Object.entries(data.chests || {}).map(([key, value]) => {
                 const rawItems = (value && Array.isArray(value.items)) ? value.items : (Array.isArray(value) ? value : []);
                 const targetSize = rawItems.length > 27 ? 54 : 27;
-                const items = [...rawItems];
+                const items = rawItems.map(sanitizeInventoryItem);
                 while (items.length < targetSize) items.push(null);
                 if (items.length > targetSize) items.length = targetSize;
                 return [key, { items }];
@@ -10665,9 +10767,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     inst.maxStayDuration = 999999999;
                     inst.isDeparted = false;
                 }
+                else if (e.type === 'Gloomstalker') {
+                    const GloomstalkerClass = (typeof Gloomstalker !== 'undefined') ? Gloomstalker : window.Gloomstalker;
+                    inst = GloomstalkerClass ? new GloomstalkerClass(e.x, e.y) : new Zombie(e.x, e.y);
+                }
                 else inst = new Zombie(e.x, e.y);
                 inst.health = e.health;
-                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon || inst instanceof Parrot || inst instanceof AtlasExplorer) inst.dir = e.dir || 1;
+                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon || inst instanceof Parrot || inst instanceof AtlasExplorer || (typeof Gloomstalker !== 'undefined' && inst instanceof Gloomstalker)) inst.dir = e.dir || 1;
                 return inst;
             });
             ensureDesertScorpions();
@@ -10728,7 +10834,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function deleteWorld(id, prompt = true) {
         if(prompt && !confirm("Delete this world forever?")) return;
         let worlds = getSavedWorlds(); worlds = worlds.filter(w => w.id !== id); saveWorldsList(worlds);
-        localStorage.removeItem('swc_data_' + id);
+        removeWorldData(id).catch(e => console.warn('Failed to remove world data:', e));
         try { localStorage.removeItem('webcraft_kael_talked_' + id); } catch(e) {}
         renderWorldsList();
     }

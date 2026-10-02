@@ -126,6 +126,18 @@ let pendingAnimalSpawns = 0;
 let dayJustRolled = false;
 
 export function setSelectedHotbarIndex(idx) {
+    if (selectedHotbarIndex !== idx) {
+        if (typeof miningTarget !== 'undefined' && miningTarget) {
+            miningTarget.progress = 0;
+            miningTarget.toolId = null;
+            miningTarget.slotIndex = idx;
+        }
+        if (typeof window !== 'undefined' && window.miningTarget) {
+            window.miningTarget.progress = 0;
+            window.miningTarget.toolId = null;
+            window.miningTarget.slotIndex = idx;
+        }
+    }
     selectedHotbarIndex = idx;
     if (typeof setEngineSelectedHotbarIndex === 'function') setEngineSelectedHotbarIndex(idx);
     if (typeof UI !== 'undefined' && typeof UI.setSelectedHotbarIndex === 'function') UI.setSelectedHotbarIndex(idx);
@@ -1909,7 +1921,15 @@ export function initJukeboxFileInput() {
             let bgBlockId = bgWorld[gridX]?.[gridY] || IDS.AIR;
             if (bgBlockId === IDS.AIR) { miningTarget.progress = 0; return; }
 
-            if (miningTarget.x !== gridX || miningTarget.y !== gridY) { miningTarget.x = gridX; miningTarget.y = gridY; miningTarget.progress = 0; }
+            const heldToolBg = inventory[selectedHotbarIndex];
+            const curToolIdBg = heldToolBg ? heldToolBg.id : null;
+            if (miningTarget.x !== gridX || miningTarget.y !== gridY || miningTarget.toolId !== curToolIdBg || miningTarget.slotIndex !== selectedHotbarIndex) {
+                miningTarget.x = gridX;
+                miningTarget.y = gridY;
+                miningTarget.toolId = curToolIdBg;
+                miningTarget.slotIndex = selectedHotbarIndex;
+                miningTarget.progress = 0;
+            }
 
             miningTarget.progress += player.getToolPower(bgBlockId);
             if (frameCount % 5 === 0) {
@@ -1976,7 +1996,14 @@ export function initJukeboxFileInput() {
             }
         }
 
-        if (miningTarget.x !== gridX || miningTarget.y !== gridY) { miningTarget.x = gridX; miningTarget.y = gridY; miningTarget.progress = 0; }
+        const curToolId = heldTool ? heldTool.id : null;
+        if (miningTarget.x !== gridX || miningTarget.y !== gridY || miningTarget.toolId !== curToolId || miningTarget.slotIndex !== selectedHotbarIndex) {
+            miningTarget.x = gridX;
+            miningTarget.y = gridY;
+            miningTarget.toolId = curToolId;
+            miningTarget.slotIndex = selectedHotbarIndex;
+            miningTarget.progress = 0;
+        }
 
         miningTarget.progress += player.getToolPower(blockId);
         

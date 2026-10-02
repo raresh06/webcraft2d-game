@@ -960,12 +960,41 @@ export async function requestAccountRecoveryCode(identifier) {
         throw new Error(`No account found matching '${identifier}'. Please check your spelling.`);
     }
 
-    const email = accountRecord.email || accountRecord.emailLower;
-    if (!email || !email.includes('@')) {
-        throw new Error("This account does not have a linked email address. Please sign in with your password or contact an administrator.");
+    const email = (accountRecord.email || accountRecord.emailLower || '').trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new Error("This account does not have a valid linked recovery email address. Please sign in with your password or contact an administrator.");
     }
 
     const normalizedTag = accountRecord.normalizedTag || normalizeWebcraftTag(accountRecord.tag || accountRecord.username);
+
+    // Rate Limiting: 60s cooldown timer
+    const COOLDOWN_SECONDS = 60;
+    const MAX_DAILY_RESETS = 5;
+    const now = Date.now();
+    const lastSentKey = `swc_reset_last_${normalizedTag}`;
+    const lastSent = Number(localStorage.getItem(lastSentKey)) || 0;
+    const elapsedSeconds = Math.floor((now - lastSent) / 1000);
+    if (elapsedSeconds < COOLDOWN_SECONDS) {
+        const remaining = COOLDOWN_SECONDS - elapsedSeconds;
+        throw new Error(`Please wait ${remaining}s before requesting another verification code.`);
+    }
+
+    // Rate Limiting: 5 requests per day ceiling
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const dailyKey = `swc_reset_daily_${normalizedTag}`;
+    let dailyData = null;
+    try {
+        dailyData = JSON.parse(localStorage.getItem(dailyKey));
+    } catch(e) {}
+
+    if (!dailyData || dailyData.date !== todayStr) {
+        dailyData = { date: todayStr, count: 0 };
+    }
+
+    if (dailyData.count >= MAX_DAILY_RESETS) {
+        throw new Error(`Daily limit reached (${MAX_DAILY_RESETS} password reset requests per day). Please try again tomorrow.`);
+    }
+
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const codeHash = await hashPassword(otpCode);
     const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
@@ -981,10 +1010,13 @@ export async function requestAccountRecoveryCode(identifier) {
         expiresAt: expiresAt
     };
 
-    // Save to local cache for instant zero-dependency verification
+    // Save to local cache for instant zero-dependency verification and record rate limit timestamps
     try {
         localStorage.setItem(`swc_pwd_reset_${normalizedTag}`, JSON.stringify(resetPayload));
         localStorage.setItem('swc_active_pwd_reset_tag', normalizedTag);
+        localStorage.setItem(lastSentKey, String(now));
+        dailyData.count += 1;
+        localStorage.setItem(dailyKey, JSON.stringify(dailyData));
     } catch(e) {}
 
     // Save to Firestore & Queue Trigger Email
@@ -1046,7 +1078,9 @@ export async function requestAccountRecoveryCode(identifier) {
         success: true,
         emailMasked: masked,
         tag: normalizedTag,
-        expiresAt: expiresAt
+        expiresAt: expiresAt,
+        cooldownSeconds: COOLDOWN_SECONDS,
+        remainingDaily: Math.max(0, MAX_DAILY_RESETS - dailyData.count)
     };
 }
 

@@ -238,7 +238,7 @@
                     <span id="achievements-progress-badge" class="ach-header-badge font-['VT323'] text-xl px-2.5 py-0.5 shadow-inner">0 / 75 (0%)</span>
                 </div>
                 <div class="flex items-center gap-2.5">
-                    <div id="ach-emeralds-earned-label" class="ach-emerald-counter flex items-center gap-1.5 bg-[#14181c] border border-[#2d3741] px-2.5 py-1 text-sm font-['VT323'] text-[#10b981]">
+                    <div id="ach-emeralds-earned-label" class="ach-emerald-counter flex items-center gap-1.5 px-2.5 py-1 text-sm font-['VT323']">
                         <!-- Emerald count populated via JS -->
                     </div>
                     <button class="modal-close-red-btn" type="button" onclick="closeAchievements()" title="Close [Esc or L]" aria-label="Close">
@@ -523,7 +523,6 @@
             <!-- Mode Description Bar -->
             <div class="ach-info-bar flex justify-between items-center mb-2 flex-shrink-0">
                 <span id="ach-mode-description">Achievements earned in Singleplayer worlds. Independent from Multiplayer milestones.</span>
-                <span class="text-xs text-gray-400 hidden sm:inline flex items-center gap-1">Press <kbd class="ach-kbd-key">L</kbd> to toggle</span>
             </div>
 
             <!-- Guest Session Notice Banner -->
@@ -554,9 +553,7 @@
             <!-- Standard Component Modal Footer -->
             <div class="mt-2.5 pt-2.5 border-t-2 border-[#46515a] flex justify-between items-center flex-shrink-0">
                 <button type="button" class="mc-btn btn-danger !w-auto !px-4 !py-1 !text-2xl !m-0" onclick="resetAchievements()">Reset Tab</button>
-                <div class="ach-footer-meta font-['VT323'] text-lg text-[#94a3b8] hidden sm:block">
-                    Showing <span id="ach-visible-count" class="text-white font-bold">0</span> milestones
-                </div>
+                <span id="ach-visible-count" class="hidden">0</span>
                 <button type="button" class="mc-btn btn-primary !w-auto !px-6 !py-1 !text-2xl !m-0" onclick="closeAchievements()">Done</button>
             </div>
         </section>
@@ -2875,7 +2872,7 @@
         </div>
     </div>
 
-    <div id="whats-new-modal" class="menu-overlay whats-new-modal hidden" role="dialog" aria-modal="true" aria-labelledby="whats-new-title">
+    <div id="whats-new-modal" class="menu-overlay whats-new-modal hidden z-[300]" role="dialog" aria-modal="true" aria-labelledby="whats-new-title">
         <div id="whats-new-confetti" aria-hidden="true"></div>
         <section class="whats-new-panel">
             <button id="whats-new-startup-toggle" class="mc-btn is-on whats-new-startup-toggle" type="button" onclick="toggleWhatsNewStartup()" aria-pressed="true">Startup: ON</button>
@@ -3084,7 +3081,19 @@
                     <button type="button" class="mc-btn btn-secondary !w-auto !py-1 !px-3 !text-lg !m-0" onclick="closeNewWorldModal()">← Back</button>
                     <h1 id="new-world-title" class="screen-title m-0 text-3xl sm:text-4xl text-[var(--mc-accent-color,#ffd34d)]">Create New World</h1>
                 </div>
-                <button type="button" class="modal-close-red-btn" onclick="closeNewWorldModal()" aria-label="Close">✕</button>
+                <button type="button" class="modal-close-red-btn" onclick="closeNewWorldModal()" title="Close [Esc]" aria-label="Close">
+                    <svg viewBox="0 0 16 16" width="12" height="12" style="image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="2" width="2" height="2" fill="#ffffff"/>
+                        <rect x="4" y="4" width="2" height="2" fill="#ffffff"/>
+                        <rect x="6" y="6" width="4" height="4" fill="#ffffff"/>
+                        <rect x="10" y="4" width="2" height="2" fill="#ffffff"/>
+                        <rect x="12" y="2" width="2" height="2" fill="#ffffff"/>
+                        <rect x="4" y="10" width="2" height="2" fill="#ffffff"/>
+                        <rect x="2" y="12" width="2" height="2" fill="#ffffff"/>
+                        <rect x="10" y="10" width="2" height="2" fill="#ffffff"/>
+                        <rect x="12" y="12" width="2" height="2" fill="#ffffff"/>
+                    </svg>
+                </button>
             </div>
 
             <!-- Two-Column Body -->
@@ -3101,7 +3110,7 @@
                     </div>
 
                     <!-- Prominent Green "CREATE WORLD" Button -->
-                    <button type="button" id="btn-confirm-create-world" class="mc-btn btn-primary !w-full !py-2.5 !text-2xl font-bold shadow-lg !m-0 shrink-0" onclick="confirmCreateWorld()">
+                    <button type="button" id="btn-confirm-create-world" class="mc-btn btn-primary !w-full !py-2.5 !text-2xl font-bold !m-0 shrink-0" onclick="confirmCreateWorld()">
                         Create World
                     </button>
 
@@ -3148,7 +3157,7 @@
                     <div id="create-world-tab-general" class="create-world-panel flex flex-col gap-3">
                         <!-- World Name -->
                         <div class="settings-row flex-col !items-start gap-1">
-                            <span class="settings-label">World Name</span>
+                            <span class="settings-label w-full text-left">World Name</span>
                             <input type="text" id="new-world-name" class="w-full text-2xl px-2.5 py-1.5 font-['VT323'] bg-[#12161b] text-white border-2 border-[#333a41] border-t-[#46515a] border-l-[#46515a] border-r-[#080a0c] border-b-[#080a0c] outline-none focus:border-amber-400 shadow-inner" value="My World" maxlength="28" oninput="updateCreateWorldPreview()">
                         </div>
 
@@ -3200,7 +3209,7 @@
                             </div>
                             <div class="flex items-center gap-2 w-full">
                                 <input type="text" id="new-world-seed" class="flex-1 text-2xl px-2.5 py-1.5 font-['VT323'] bg-[#12161b] text-white border-2 border-[#333a41] border-t-[#46515a] border-l-[#46515a] border-r-[#080a0c] border-b-[#080a0c] outline-none focus:border-amber-400 shadow-inner" placeholder="Random Seed" oninput="updateCreateWorldPreview()">
-                                <button type="button" class="mc-btn btn-secondary !w-auto !py-1.5 !px-3.5 !text-xl !m-0 flex items-center gap-2 cursor-pointer shadow" onclick="randomizeWorldSeed()" title="Roll Random Seed">
+                                <button type="button" class="mc-btn btn-secondary !w-auto !py-1.5 !px-3.5 !text-xl !m-0 flex items-center gap-2 cursor-pointer" onclick="randomizeWorldSeed()" title="Roll Random Seed">
                                     <svg viewBox="0 0 16 16" width="18" height="18" style="image-rendering:pixelated;shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
                                         <rect x="2" y="2" width="12" height="12" fill="#f8fafc"/>
                                         <rect x="2" y="13" width="12" height="1" fill="#cbd5e1"/>
@@ -5099,6 +5108,7 @@
 
     <input type="file" id="jukebox-file-input" class="hidden" accept=".mp3,audio/mpeg,audio/*">
     <script type="module" src="js/icons/pixelicons.js"></script>
+    <script type="module" src="js/storage.js"></script>
     <script type="module" src="js/ui/standardcomponents.js"></script>
     <script type="module" src="js/ui/worldthumbnails.js"></script>
     <script type="module" src="js/devconsole.js"></script>

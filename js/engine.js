@@ -1697,7 +1697,7 @@ export function getMaxAnimals() {
     export let heldItemIndex = -1; 
     export let heldItemObj = null; 
     export let heldItemDraggedOutside = false;
-    export let miningTarget = { x: -1, y: -1, progress: 0 };
+    export let miningTarget = { x: -1, y: -1, progress: 0, toolId: null, slotIndex: 0 };
     export let tooltipEl = typeof document !== 'undefined' ? document.getElementById('item-tooltip') : null;
 
     export const textures = {};
@@ -17145,7 +17145,22 @@ try { if (typeof updateTreeLeafDecay !== "undefined") window.updateTreeLeafDecay
     export function setEngineSaplingGrowthQueue(newQueue) { saplingGrowthQueue = newQueue; if (typeof window !== 'undefined') window.saplingGrowthQueue = newQueue; }
     export function setEngineDirtToGrassQueue(newQueue) { dirtToGrassQueue = newQueue; if (typeof window !== 'undefined') window.dirtToGrassQueue = newQueue; }
     export function setEngineSnowRegrowthQueue(newQueue) { snowRegrowthQueue = newQueue; if (typeof window !== 'undefined') window.snowRegrowthQueue = newQueue; }
-    export function setSelectedHotbarIndex(idx) { selectedHotbarIndex = idx; if (typeof window !== 'undefined') window.selectedHotbarIndex = idx; }
+    export function setSelectedHotbarIndex(idx) {
+        if (selectedHotbarIndex !== idx) {
+            if (miningTarget) {
+                miningTarget.progress = 0;
+                miningTarget.toolId = null;
+                miningTarget.slotIndex = idx;
+            }
+            if (typeof window !== 'undefined' && window.miningTarget) {
+                window.miningTarget.progress = 0;
+                window.miningTarget.toolId = null;
+                window.miningTarget.slotIndex = idx;
+            }
+        }
+        selectedHotbarIndex = idx;
+        if (typeof window !== 'undefined') window.selectedHotbarIndex = idx;
+    }
     export function setAttackAnimationTimer(t) { attackAnimationTimer = t; if (typeof window !== 'undefined') window.attackAnimationTimer = t; }
     export function setEngineWorldBiomes(newBiomes) { worldBiomes = newBiomes; if (typeof window !== 'undefined') window.worldBiomes = newBiomes; }
 

@@ -5678,6 +5678,26 @@ input, textarea {
   box-shadow: none !important;
   text-shadow: none !important;
 }
+.exchange-card-action-btn.guest-signin {
+  background: linear-gradient(180deg, #946800 0%, #785400 100%) !important;
+  border: 2px solid #ffd34d !important;
+  border-top-color: #ffe580 !important;
+  border-left-color: #ffe580 !important;
+  border-bottom-color: #4a3400 !important;
+  border-right-color: #4a3400 !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+  font-weight: bold !important;
+  text-shadow: 2px 2px 0 #080a0c !important;
+  box-shadow: 0 0 10px rgba(255, 211, 77, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+.exchange-card-action-btn.guest-signin:hover {
+  background: linear-gradient(180deg, #b47f00 0%, #946800 100%) !important;
+  border-top-color: #fff0a0 !important;
+  border-left-color: #fff0a0 !important;
+  box-shadow: 0 0 16px rgba(255, 211, 77, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-1px);
+}
 
 .vault-hub-hint {
   text-shadow: 1px 1px 0 #000;
@@ -7247,6 +7267,15 @@ input, textarea {
   border-bottom-color: #2b333a;
   border-right-color: #2b333a;
   box-shadow: inset 1px 1px 3px rgba(0,0,0,0.6);
+  color: #ffffff !important;
+}
+.ach-emerald-num,
+.text-\[\#22c55e\] {
+  color: #22c55e !important;
+  font-weight: bold;
+}
+.ach-emerald-total {
+  color: #ffffff !important;
 }
 .ach-xp-track-wrap {
   width: 100%;
@@ -7403,6 +7432,26 @@ input, textarea {
   font-weight: bold;
   box-shadow: inset 0 0 6px rgba(0,0,0,0.7) !important;
   transform: translateY(1px);
+}
+.ach-tier-tab[data-diff="all"].active {
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%) !important;
+  border: 2px solid #d97706 !important;
+  border-top-color: #fde68a !important;
+  border-left-color: #fde68a !important;
+  border-right-color: #b45309 !important;
+  border-bottom-color: #b45309 !important;
+  color: #1a1003 !important;
+  font-weight: bold !important;
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.5) !important;
+  transform: translateY(1px);
+}
+.ach-tier-tab[data-diff="all"].active .ach-tier-pill {
+  background: rgba(0, 0, 0, 0.25) !important;
+  color: #1a1003 !important;
+  font-weight: bold !important;
+}
+.ach-tier-tab[data-diff="all"].active svg rect {
+  fill: #1a1003 !important;
 }
 .ach-tier-tab.tier-easy.active {
   background: linear-gradient(180deg, #14532d 0%, #0d381e 100%) !important;
@@ -7584,14 +7633,11 @@ input, textarea {
   border-color: #556270;
 }
 .ach-sort-btn.active {
-  background: linear-gradient(180deg, #18281d 0%, #101c14 100%);
-  border-color: #10b981;
-  border-top-color: #34d399;
-  border-left-color: #34d399;
-  border-right-color: #047857;
-  border-bottom-color: #047857;
-  color: #34d399;
-  font-weight: bold;
+  background: #14281a !important;
+  border: 2px solid #22c55e !important;
+  color: #4ade80 !important;
+  font-weight: bold !important;
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.5) !important;
 }
 .ach-reset-btn {
   background: linear-gradient(180deg, #381a1a 0%, #261111 100%);
@@ -7638,53 +7684,49 @@ input, textarea {
 
 /* Achievement Cards & Slots */
 .achievement-card {
-  background: #1a1f25;
-  border: 2px solid;
-  border-top-color: #3a4550;
-  border-left-color: #3a4550;
-  border-right-color: #0a0d10;
-  border-bottom-color: #0a0d10;
-  box-shadow: inset 0 0 0 1px #252c34, 2px 2px 0 rgba(0,0,0,0.45);
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: all 0.12s ease;
-  position: relative;
+  background: #14181c !important;
+  border: 2px solid #28313a !important;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5) !important;
+  padding: 8px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  transition: all 0.12s ease !important;
+  position: relative !important;
 }
 .achievement-card.unlocked {
-  background: #16221a;
-  border-top-color: #22c55e;
-  border-left-color: #22c55e;
-  border-right-color: #052e16;
-  border-bottom-color: #052e16;
-  box-shadow: inset 0 0 0 1px #14532d, 0 0 10px rgba(34, 197, 94, 0.12), 2px 2px 0 rgba(0,0,0,0.5);
+  background: #151a1e !important;
+  border: 2px solid #22c55e !important;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5) !important;
+}
+.achievement-card.locked {
+  background: #13171b !important;
+  border: 2px solid #28313a !important;
 }
 .achievement-card.pinned {
-  border-top-color: #f59e0b !important;
-  border-left-color: #f59e0b !important;
-  box-shadow: inset 0 0 0 1px #78350f, 0 0 10px rgba(245, 158, 11, 0.2), 2px 2px 0 rgba(0,0,0,0.5) !important;
+  border: 2px solid #f59e0b !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25), 2px 2px 0 rgba(0,0,0,0.5) !important;
 }
 .achievement-icon-frame {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  background: #0c0f12;
-  border: 2px solid #06080a;
-  border-bottom-color: #2d3640;
-  border-right-color: #2d3640;
-  box-shadow: inset 1px 1px 3px rgba(0,0,0,0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  position: relative;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  background: #0c0f12 !important;
+  border: 2px solid #06080a !important;
+  border-bottom-color: #2d3640 !important;
+  border-right-color: #2d3640 !important;
+  box-shadow: inset 1px 1px 3px rgba(0,0,0,0.8) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
 }
 .achievement-card.unlocked .achievement-icon-frame {
-  background: #0f1c13;
-  border-color: #07150b;
-  border-bottom-color: #1e3a24;
-  border-right-color: #1e3a24;
+  background: #0f161a !important;
+  border-color: #070e12 !important;
+  border-bottom-color: #1e2830 !important;
+  border-right-color: #1e2830 !important;
 }
 .achievement-card.locked .achievement-icon-frame img {
   filter: grayscale(1) brightness(0.4);
@@ -7765,11 +7807,11 @@ input, textarea {
   color: #c084fc;
 }
 .ach-card-desc {
-  font-family: 'VT323', monospace;
-  font-size: 17px;
-  color: #94a3b8;
-  margin: 2px 0 0 0;
-  line-height: 1.15;
+  font-family: 'VT323', monospace !important;
+  font-size: 18px !important;
+  color: #ffffff !important;
+  margin: 2px 0 0 0 !important;
+  line-height: 1.2 !important;
 }
 .ach-card-progress {
   background: #0c0f12;
@@ -7790,30 +7832,35 @@ input, textarea {
   transition: width 0.2s ease;
 }
 .ach-card-status {
-  font-family: 'VT323', monospace;
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  font-family: 'VT323', monospace !important;
+  font-size: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+  margin-top: 3px !important;
 }
 .ach-status-unlocked-tag {
-  color: #4ade80;
-  font-weight: bold;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  color: #22c55e !important;
+  font-weight: bold !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+.ach-card-unlocked-date {
+  color: #ffffff !important;
+  font-weight: normal !important;
 }
 .ach-status-locked-tag {
-  color: #64748b;
-  font-weight: bold;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  color: #64748b !important;
+  font-weight: bold !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
 }
 .ach-claimed-badge {
-  color: #34d399;
-  font-weight: bold;
+  color: #22c55e !important;
+  font-weight: bold !important;
 }
 .ach-empty-state {
   display: flex;
@@ -9624,11 +9671,16 @@ input, textarea {
   border-bottom-color: #080a0c !important;
   color: #ffffff !important;
   text-shadow: 2px 2px 0 #080a0c !important;
+  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.35), 2px 2px 0 rgba(0, 0, 0, 0.3) !important;
 }
 .mc-btn.btn-secondary:hover {
   background-color: #4c5661 !important;
   border-top-color: #aebac2 !important;
   border-left-color: #aebac2 !important;
+}
+.mc-btn.btn-secondary:active {
+  transform: translateY(1px) !important;
+  box-shadow: inset 0 2px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
 .mc-btn.btn-primary {
   background-color: #16a34a !important;
@@ -10403,21 +10455,32 @@ input, textarea {
   font-weight: bold !important;
   cursor: pointer;
   text-align: left;
-  transition: background 0.1s ease, border-color 0.1s ease;
+  transition: all 0.08s ease;
+  text-shadow: 1px 1px 0 #000000 !important;
+  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.35), 2px 2px 0 rgba(0, 0, 0, 0.25) !important;
+  box-sizing: border-box !important;
 }
-.create-world-sidebar-tab:hover {
-  background: #38414a;
-  border-color: #718090;
+.create-world-sidebar-tab:hover:not(.active) {
+  background: #38424d !important;
+  border-top-color: #697887 !important;
+  border-left-color: #697887 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.35), 2px 2px 0 rgba(0, 0, 0, 0.35), 0 0 6px rgba(255, 255, 255, 0.1) !important;
+}
+.create-world-sidebar-tab:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 0 0 rgba(0, 0, 0, 0.4) !important;
 }
 .create-world-sidebar-tab.active {
-  background: #946800 !important;
+  background: linear-gradient(180deg, #946800 0%, #785400 100%) !important;
   border-color: #ffd34d !important;
   border-top-color: #ffe580 !important;
   border-left-color: #ffe580 !important;
-  border-right-color: #573a00 !important;
-  border-bottom-color: #573a00 !important;
-  color: #fff9db !important;
-  box-shadow: inset 0 0 8px rgba(255, 211, 77, 0.4) !important;
+  border-right-color: #3d2b00 !important;
+  border-bottom-color: #3d2b00 !important;
+  color: #ffffff !important;
+  text-shadow: 2px 2px 0 #2b1800, 1px 1px 0 #000000 !important;
+  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 10px rgba(255, 211, 77, 0.35) !important;
 }
 
 /* Bedrock Create World Modal & Split Layout */
@@ -10502,6 +10565,38 @@ input, textarea {
   font-family: 'Pixeloid Sans', monospace !important;
   font-size: 12px !important;
   letter-spacing: 0.5px !important;
+  text-shadow: 1px 1px 0 #000000 !important;
+}
+
+#btn-confirm-create-world {
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%) !important;
+  border: 2px solid #0b3d1c !important;
+  border-top-color: #4ade80 !important;
+  border-left-color: #4ade80 !important;
+  border-right-color: #0b3d1c !important;
+  border-bottom-color: #0b3d1c !important;
+  color: #ffffff !important;
+  font-family: 'Pixeloid Sans', monospace !important;
+  font-size: 20px !important;
+  font-weight: bold !important;
+  letter-spacing: 0.5px !important;
+  text-shadow: 2px 2px 0 #052e16 !important;
+  box-shadow: inset 0 -3px 0 0 rgba(0, 0, 0, 0.35), 2px 2px 0 rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.08s ease-in-out !important;
+}
+#btn-confirm-create-world:hover {
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%) !important;
+  border-top-color: #86efac !important;
+  border-left-color: #86efac !important;
+  box-shadow: inset 0 -3px 0 0 rgba(0, 0, 0, 0.25), 0 0 12px rgba(34, 197, 94, 0.45) !important;
+}
+#btn-confirm-create-world:active {
+  transform: translateY(2px) !important;
+  border-top-color: #0b3d1c !important;
+  border-left-color: #0b3d1c !important;
+  border-bottom-color: #4ade80 !important;
+  border-right-color: #4ade80 !important;
+  box-shadow: inset 0 3px 0 0 rgba(0, 0, 0, 0.4) !important;
 }
 
 .create-world-sidebar-tabs-list {
@@ -10545,28 +10640,34 @@ input, textarea {
   text-align: center !important;
   cursor: pointer !important;
   background: #2a313a !important;
-  color: #ffffff !important;
+  color: #cbd5e1 !important;
   border: none !important;
   border-right: 2px solid #111820 !important;
-  transition: background-color 0.12s ease, color 0.12s ease !important;
+  transition: all 0.1s ease !important;
   text-shadow: 1px 1px 0 #000000 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 rgba(0, 0, 0, 0.3) !important;
 }
 .bedrock-mode-btn:last-child {
   border-right: none !important;
 }
-.bedrock-mode-btn:hover {
-  background: #3b4550 !important;
+.bedrock-mode-btn:hover:not(.active) {
+  background: #38424e !important;
   color: #ffffff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+.bedrock-mode-btn:active {
+  transform: translateY(1px);
 }
 .bedrock-mode-btn.active {
-  background: #15803d !important;
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%) !important;
   color: #ffffff !important;
-  box-shadow: inset 0 -3px 0 #4ade80, 0 0 10px rgba(34, 197, 94, 0.4) !important;
-  text-shadow: 1px 1px 0 #000000 !important;
+  box-shadow: inset 0 -3px 0 #4ade80, inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 8px rgba(34, 197, 94, 0.35) !important;
+  text-shadow: 1px 1px 0 #052e16, 2px 2px 0 #000000 !important;
 }
 .bedrock-mode-btn.active.mode-creative {
-  background: #1d4ed8 !important;
-  box-shadow: inset 0 -3px 0 #60a5fa, 0 0 10px rgba(59, 130, 246, 0.4) !important;
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: inset 0 -3px 0 #60a5fa, inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 8px rgba(59, 130, 246, 0.35) !important;
+  text-shadow: 1px 1px 0 #0c2360, 2px 2px 0 #000000 !important;
 }
 
 .bedrock-diff-toggle {
@@ -10587,24 +10688,29 @@ input, textarea {
   text-align: center !important;
   cursor: pointer !important;
   background: #2a313a !important;
-  color: #ffffff !important;
+  color: #cbd5e1 !important;
   border: none !important;
   border-right: 2px solid #111820 !important;
-  transition: background-color 0.12s ease, color 0.12s ease !important;
+  transition: all 0.1s ease !important;
   text-shadow: 1px 1px 0 #000000 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 rgba(0, 0, 0, 0.3) !important;
 }
 .bedrock-diff-btn:last-child {
   border-right: none !important;
 }
-.bedrock-diff-btn:hover {
-  background: #3b4550 !important;
+.bedrock-diff-btn:hover:not(.active) {
+  background: #38424e !important;
   color: #ffffff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+.bedrock-diff-btn:active {
+  transform: translateY(1px);
 }
 .bedrock-diff-btn.active {
-  background: #15803d !important;
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%) !important;
   color: #ffffff !important;
-  box-shadow: inset 0 -3px 0 #4ade80, 0 0 10px rgba(34, 197, 94, 0.4) !important;
-  text-shadow: 1px 1px 0 #000000 !important;
+  box-shadow: inset 0 -3px 0 #4ade80, inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 8px rgba(34, 197, 94, 0.35) !important;
+  text-shadow: 1px 1px 0 #052e16, 2px 2px 0 #000000 !important;
 }
 
 /* Bedrock dynamic description boxes with crisp white text */
@@ -10623,7 +10729,7 @@ input, textarea {
   border-right-color: #080a0c !important;
   border-bottom-color: #080a0c !important;
   box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5) !important;
-  text-shadow: 1px 1px 0 #000000 !important;
+  text-shadow: 2px 2px 0 #080a0c !important;
   box-sizing: border-box !important;
   margin-top: 4px !important;
   margin-bottom: 2px !important;
@@ -10641,7 +10747,23 @@ input, textarea {
   align-items: center !important;
   justify-content: space-between !important;
   gap: 12px !important;
-  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3) !important;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.3), inset -1px -1px 0 rgba(255,255,255,0.04) !important;
+}
+.bedrock-info-card span:first-child {
+  text-shadow: 2px 2px 0 #080a0c !important;
+}
+.bedrock-info-card span:last-child {
+  text-shadow: 1px 1px 0 #080a0c !important;
+}
+
+#new-world-modal input[type="text"] {
+  text-shadow: 1px 1px 0 #000000 !important;
+}
+#new-world-achievement-warning {
+  text-shadow: 1px 1px 0 #000000 !important;
+}
+.settings-row.flex-col {
+  align-items: stretch !important;
 }
 
 /* Select World dashboard empty state & bottom footer */
@@ -11392,8 +11514,11 @@ input, textarea {
 #multiplayer-modal {
   z-index: 200 !important;
 }
-#new-world-modal, #create-room-modal, #join-room-modal, #publish-multiplayer-modal, #credits-modal, #whats-new-modal, #skin-upload-modal, #skin-owned-modal, #achievements-modal {
+#new-world-modal, #create-room-modal, #join-room-modal, #publish-multiplayer-modal, #credits-modal, #skin-upload-modal, #skin-owned-modal, #achievements-modal {
   z-index: 250 !important;
+}
+#whats-new-modal {
+  z-index: 300 !important;
 }
 #fabulous-settings-modal {
   z-index: 350 !important;
@@ -12897,6 +13022,120 @@ html.closed-beta-pending #main-menu, html.closed-beta-pending #game-intro, html.
 .rarity-rare { color: #38bdf8; background: rgba(56, 189, 248, 0.2); border: 1px solid #0284c7; }
 .rarity-epic { color: #c084fc; background: rgba(192, 132, 252, 0.2); border: 1px solid #9333ea; }
 .rarity-legendary { color: #ffd34d; background: rgba(251, 191, 36, 0.2); border: 1px solid #d97706; }
+
+/* Shop & Cosmetic Card Action Buttons - Webcraft Minecraft Design System */
+.mc-btn.shop-btn {
+  width: auto !important;
+  min-width: 76px !important;
+  height: 28px !important;
+  padding: 2px 10px !important;
+  font-family: 'VT323', monospace !important;
+  font-size: 19px !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  border: 2px solid !important;
+  user-select: none !important;
+  box-sizing: border-box !important;
+  transition: all 0.08s ease-in-out !important;
+  text-shadow: 2px 2px 0 #080a0c !important;
+  box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.25), 2px 2px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+.mc-btn.shop-btn:active:not(:disabled) {
+  transform: translateY(1px) !important;
+  box-shadow: inset 0 2px 0 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Sign In / Guest Action (Amber Gold Minecraft Bevel) */
+.mc-btn.shop-btn.btn-amber {
+  background: linear-gradient(180deg, #946800 0%, #785400 100%) !important;
+  border-color: #ffd34d !important;
+  border-top-color: #ffe580 !important;
+  border-left-color: #ffe580 !important;
+  border-right-color: #3d2b00 !important;
+  border-bottom-color: #3d2b00 !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+}
+.mc-btn.shop-btn.btn-amber:hover {
+  background: linear-gradient(180deg, #b47f00 0%, #946800 100%) !important;
+  border-top-color: #fff0a0 !important;
+  border-left-color: #fff0a0 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(255, 211, 77, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Buy (Astral Purple Minecraft Bevel) */
+.mc-btn.shop-btn.btn-purple {
+  background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%) !important;
+  border-color: #4c1d95 !important;
+  border-top-color: #c084fc !important;
+  border-left-color: #c084fc !important;
+  border-right-color: #2e1065 !important;
+  border-bottom-color: #2e1065 !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+}
+.mc-btn.shop-btn.btn-purple:hover {
+  background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%) !important;
+  border-top-color: #d8b4fe !important;
+  border-left-color: #d8b4fe !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Equip (Blue Minecraft Bevel) */
+.mc-btn.shop-btn.btn-blue {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%) !important;
+  border-color: #1e3a8a !important;
+  border-top-color: #60a5fa !important;
+  border-left-color: #60a5fa !important;
+  border-right-color: #0f1d44 !important;
+  border-bottom-color: #0f1d44 !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+}
+.mc-btn.shop-btn.btn-blue:hover {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%) !important;
+  border-top-color: #93c5fd !important;
+  border-left-color: #93c5fd !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Equipped (Golden Active Indicator) */
+.mc-btn.shop-btn.btn-equipped {
+  background: #ffd34d !important;
+  border-color: #b45309 !important;
+  border-top-color: #fde68a !important;
+  border-left-color: #fde68a !important;
+  border-right-color: #78350f !important;
+  border-bottom-color: #78350f !important;
+  color: #1c1917 !important;
+  font-weight: bold !important;
+  text-shadow: none !important;
+  cursor: default !important;
+  opacity: 0.95 !important;
+}
+
+/* Disabled / Can't Afford / Sold Out */
+.mc-btn.shop-btn.btn-disabled {
+  background: #1c2229 !important;
+  border-color: #14191f !important;
+  border-top-color: #333d47 !important;
+  border-left-color: #333d47 !important;
+  border-right-color: #0c0f13 !important;
+  border-bottom-color: #0c0f13 !important;
+  color: #718096 !important;
+  text-shadow: 1px 1px 0 #000 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
 
 /* Friend Card Row Enhanced */
 .friend-card-row {
