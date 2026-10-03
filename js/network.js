@@ -1705,8 +1705,8 @@ export async function saveProfileCustomizationToCloud(customization, unlockedCos
 // =============================================================================
 // PRESENCE HEARTBEAT & TEARDOWN SYSTEM
 // =============================================================================
-let presenceTimer = null;
-let isPresenceTrackingActive = false;
+var presenceTimer = null;
+var isPresenceTrackingActive = false;
 
 export function startPresenceHeartbeat(rawTag = null) {
     if (!rawTag) {

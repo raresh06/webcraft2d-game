@@ -9869,6 +9869,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         generateWorld(numericSeed);
         if (typeof window !== 'undefined' && window.world) world = window.world;
         if (typeof window !== 'undefined' && window.surfaceHeights) surfaceHeights = window.surfaceHeights;
+        if (typeof window !== 'undefined' && window.fluids) {
+            fluids = window.fluids;
+            if (typeof setEngineFluids === 'function') setEngineFluids(fluids);
+        }
         if (typeof setEngineWorld === 'function') setEngineWorld(world);
         if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights(surfaceHeights);
         if (typeof window !== 'undefined' && window.nonCollidableTreeWood) {
@@ -10143,7 +10147,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     warpProgress: 1.0,
                     stayTimer: 0,
                     maxStayDuration: 999999999,
-                    isDeparted: false
+                    isDeparted: false,
+                    tetherX: e.tetherX ?? e.x,
+                    stoppedTeleporting: e.stoppedTeleporting !== undefined ? e.stoppedTeleporting : true
                 } : {})
             }))
         };
@@ -10317,6 +10323,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             generateWorld();
             if (typeof window !== 'undefined' && window.world) world = window.world;
             if (typeof window !== 'undefined' && window.surfaceHeights) surfaceHeights = window.surfaceHeights;
+            if (typeof window !== 'undefined' && window.fluids) {
+                fluids = window.fluids;
+                if (typeof setEngineFluids === 'function') setEngineFluids(fluids);
+            }
             if (typeof setEngineWorld === 'function') setEngineWorld(world);
             if (typeof setEngineSurfaceHeights === 'function') setEngineSurfaceHeights(surfaceHeights);
 
@@ -10766,6 +10776,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     inst.stayTimer = 0;
                     inst.maxStayDuration = 999999999;
                     inst.isDeparted = false;
+                    inst.tetherX = (e.tetherX !== undefined) ? e.tetherX : e.x;
+                    inst.stoppedTeleporting = (e.stoppedTeleporting !== undefined) ? !!e.stoppedTeleporting : true;
                 }
                 else if (e.type === 'Gloomstalker') {
                     const GloomstalkerClass = (typeof Gloomstalker !== 'undefined') ? Gloomstalker : window.Gloomstalker;

@@ -537,6 +537,10 @@ export function initJukeboxFileInput() {
                 playTone(ctx, 'sine', 240 * pj, 160, 0.06 * effectiveVol, 0.065, null, now);
                 playNoise(ctx, nBuf, 'bandpass', 1200 * pj, 2.0, 0.045 * effectiveVol, 0.055, null, now);
                 break;
+            case 'lava':
+                playTone(ctx, 'sawtooth', 85 * pj, 45, 0.08 * effectiveVol, 0.065, null, now);
+                playNoise(ctx, nBuf, 'bandpass', 650 * pj, 1.8, 0.07 * effectiveVol, 0.06, null, now);
+                break;
             case 'dirt':
             default:
                 playTone(ctx, 'triangle', 125 * pj, 36, 0.075 * effectiveVol, 0.045, null, now);
@@ -667,6 +671,41 @@ export function initJukeboxFileInput() {
                     const nBuf = getAudioNoiseBuffer(ctx);
                     playTone(ctx, 'triangle', 420, 180, 0.18 * effectiveVol, 0.12, null, now);
                     playNoise(ctx, nBuf, 'highpass', 1800, 2.0, 0.15 * effectiveVol, 0.10, null, now);
+                    break;
+                }
+                case 'splash': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playTone(ctx, 'sine', 340, 110, 0.32 * effectiveVol, 0.18, null, now);
+                    playNoise(ctx, nBuf, 'bandpass', 950, 1.5, 0.38 * effectiveVol, 0.22, null, now);
+                    break;
+                }
+                case 'swim': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playTone(ctx, 'sine', 220, 130, 0.18 * effectiveVol, 0.12, null, now);
+                    playNoise(ctx, nBuf, 'lowpass', 600, 2.0, 0.22 * effectiveVol, 0.14, null, now);
+                    break;
+                }
+                case 'fizz':
+                case 'lava_sizzle': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playNoise(ctx, nBuf, 'highpass', 3400, 2.5, 0.32 * effectiveVol, 0.38, null, now);
+                    playTone(ctx, 'sawtooth', 520, 280, 0.10 * effectiveVol, 0.15, null, now);
+                    break;
+                }
+                case 'lava_pop': {
+                    playTone(ctx, 'sine', 160, 320, 0.22 * effectiveVol, 0.07, null, now);
+                    break;
+                }
+                case 'bucket_fill': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playTone(ctx, 'sine', 180, 440, 0.28 * effectiveVol, 0.22, null, now, false);
+                    playNoise(ctx, nBuf, 'bandpass', 1100, 1.8, 0.24 * effectiveVol, 0.16, null, now);
+                    break;
+                }
+                case 'bucket_empty': {
+                    const nBuf = getAudioNoiseBuffer(ctx);
+                    playTone(ctx, 'sine', 380, 160, 0.28 * effectiveVol, 0.20, null, now);
+                    playNoise(ctx, nBuf, 'bandpass', 850, 1.6, 0.30 * effectiveVol, 0.18, null, now);
                     break;
                 }
             }
@@ -2208,6 +2247,7 @@ export function initJukeboxFileInput() {
             if (blockId === IDS.COAL_ORE) dropId = IDS.COAL;
             if (blockId === IDS.IRON_ORE) dropId = IDS.IRON_ORE;
             if (blockId === IDS.DIAMOND_ORE) dropId = IDS.DIAMOND;
+            if (blockId === IDS.OBSIDIAN) dropId = IDS.OBSIDIAN;
             if (blockId === IDS.LADDER) dropId = IDS.LADDER;
             if (blockId === IDS.VINES) dropId = IDS.VINES;
             if (blockId === IDS.BAMBOO) dropId = IDS.BAMBOO;
@@ -2529,46 +2569,143 @@ export function initJukeboxFileInput() {
             if (!canPlace) return false; 
         }
 
-        const targetFluid = getFluid(gx, gy);
-        if (sel.id === IDS.BUCKET && targetFluid && (!isMultiplayer || isMultiplayerAuthority())) {
-            if (targetFluid.source || targetFluid.level === 0) {
-                removeFluid(gx, gy);
-                const filledBucketId = targetFluid.type === IDS.WATER ? IDS.WATER_BUCKET : IDS.LAVA_BUCKET;
+        const isFragilePlantBlock = id => [
+            IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW,
+            IDS.SAPLING, IDS.JUNGLE_SAPLING, IDS.FERN, IDS.MELON_STEM,
+            IDS.WHEAT_STAGE_1, IDS.WHEAT_STAGE_2, IDS.WHEAT_STAGE_3, IDS.WHEAT_STAGE_4, IDS.TORCH
+        ].includes(id);
+
+        // --- EMPTY BUCKET: SCOOP FLUID SOURCE ---
+        if (sel.id === IDS.BUCKET && (!isMultiplayer || isMultiplayerAuthority())) {
+            let scoopGx = gx;
+            let scoopGy = gy;
+            let scoopFluid = getFluid(gx, gy);
+
+            // If clicked block is solid, search neighboring adjacent faces for fluid source
+            if ((!scoopFluid || (!scoopFluid.source && scoopFluid.level !== 0)) && isSolidWorldBlock(gx, gy, world[gx]?.[gy])) {
+                const neighbors = [
+                    { x: gx, y: gy - 1 },
+                    { x: gx - 1, y: gy },
+                    { x: gx + 1, y: gy },
+                    { x: gx, y: gy + 1 }
+                ];
+                for (const n of neighbors) {
+                    if (n.x >= 0 && n.x < WORLD_WIDTH && n.y >= 0 && n.y < WORLD_HEIGHT) {
+                        const nf = getFluid(n.x, n.y);
+                        if (nf && (nf.source || nf.level === 0)) {
+                            scoopGx = n.x;
+                            scoopGy = n.y;
+                            scoopFluid = nf;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (scoopFluid && (scoopFluid.source || scoopFluid.level === 0)) {
+                removeFluid(scoopGx, scoopGy);
+                const filledBucketId = scoopFluid.type === IDS.WATER ? IDS.WATER_BUCKET : IDS.LAVA_BUCKET;
+                playSound('bucket_fill');
                 unlockAchievement('bucket_brigade');
                 if (sel.count === 1) sel.id = filledBucketId;
                 else {
                     sel.count--;
                     if (!giveItem(filledBucketId, 1)) {
                         sel.count++;
-                        setFluid(gx, gy, targetFluid);
+                        setFluid(scoopGx, scoopGy, scoopFluid);
                         return false;
                     }
                 }
-                wakeFluidsAround(gx, gy);
+                wakeFluidsAround(scoopGx, scoopGy);
                 if (isMultiplayer && isMultiplayerAuthority()) syncFluidState();
                 updateUI();
+                if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
                 return true;
             }
         }
+
+        // --- WATER / LAVA BUCKET: PLACE FLUID SOURCE ---
         if ((sel.id === IDS.WATER_BUCKET || sel.id === IDS.LAVA_BUCKET) && (!isMultiplayer || isMultiplayerAuthority())) {
-            if (world[gx][gy] === IDS.AIR && !intersectsEntity(gx, gy)) {
-                const placed = setFluid(gx, gy, { type: sel.id === IDS.WATER_BUCKET ? IDS.WATER : IDS.LAVA, level: 0, source: true, falling: false });
-                if (!placed) return false;
+            let placeGx = gx;
+            let placeGy = gy;
+
+            // If clicked block is solid, place against the adjacent open face closest to the cursor
+            if (isSolidWorldBlock(gx, gy, world[gx]?.[gy])) {
+                const candidates = [];
+                const checkFace = (fx, fy, dist) => {
+                    if (fx >= 0 && fx < WORLD_WIDTH && fy >= 0 && fy < WORLD_HEIGHT) {
+                        if (world[fx][fy] === IDS.AIR || isFragilePlantBlock(world[fx][fy])) {
+                            candidates.push({ x: fx, y: fy, dist });
+                        }
+                    }
+                };
+                checkFace(gx, gy - 1, Math.abs(mouse.worldY - gy * TILE_SIZE));
+                checkFace(gx - 1, gy, Math.abs(mouse.worldX - gx * TILE_SIZE));
+                checkFace(gx + 1, gy, Math.abs(mouse.worldX - (gx + 1) * TILE_SIZE));
+                checkFace(gx, gy + 1, Math.abs(mouse.worldY - (gy + 1) * TILE_SIZE));
+
+                if (candidates.length > 0) {
+                    candidates.sort((a, b) => a.dist - b.dist);
+                    placeGx = candidates[0].x;
+                    placeGy = candidates[0].y;
+                } else {
+                    return false;
+                }
+            }
+
+            const pDist = Math.hypot(pCX - (placeGx * TILE_SIZE + TILE_SIZE / 2), pCY - (placeGy * TILE_SIZE + TILE_SIZE / 2)) / TILE_SIZE;
+            if (pDist <= maxPlaceReach && !intersectsEntity(placeGx, placeGy)) {
+                const existingFluid = getFluid(placeGx, placeGy);
+                const isWaterPlacing = (sel.id === IDS.WATER_BUCKET);
+                let reactionHandled = false;
+
+                // Handle direct Water + Lava bucket reactions
+                if (isWaterPlacing && existingFluid && existingFluid.type === IDS.LAVA) {
+                    const resultBlock = (existingFluid.source || existingFluid.level === 0) ? IDS.OBSIDIAN : IDS.COBBLESTONE;
+                    removeFluid(placeGx, placeGy);
+                    world[placeGx][placeGy] = resultBlock;
+                    syncBlock(placeGx, placeGy, resultBlock);
+                    triggerSteamEffect(placeGx, placeGy);
+                    playSound('fizz');
+                    reactionHandled = true;
+                } else if (!isWaterPlacing && existingFluid && existingFluid.type === IDS.WATER) {
+                    removeFluid(placeGx, placeGy);
+                    world[placeGx][placeGy] = IDS.STONE;
+                    syncBlock(placeGx, placeGy, IDS.STONE);
+                    triggerSteamEffect(placeGx, placeGy);
+                    playSound('fizz');
+                    reactionHandled = true;
+                }
+
+                if (!reactionHandled) {
+                    const placed = setFluid(placeGx, placeGy, {
+                        type: isWaterPlacing ? IDS.WATER : IDS.LAVA,
+                        level: 0,
+                        source: true,
+                        falling: false
+                    });
+                    if (!placed) return false;
+                    playSound('bucket_empty');
+                }
+
                 if (sel.count === 1) sel.id = IDS.BUCKET;
                 else {
                     sel.count--;
                     if (!giveItem(IDS.BUCKET, 1)) {
                         sel.count++;
-                        removeFluid(gx, gy);
+                        if (!reactionHandled) removeFluid(placeGx, placeGy);
                         return false;
                     }
                 }
-                wakeFluidsAround(gx, gy);
+                wakeFluidsAround(placeGx, placeGy);
                 if (isMultiplayer && isMultiplayerAuthority()) syncFluidState();
                 updateUI();
+                if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
                 return true;
             }
         }
+
+        const targetFluid = getFluid(gx, gy);
 
         if (targetFluid && !HARDNESS[sel.id]) return false;
 
@@ -3015,8 +3152,18 @@ export function initJukeboxFileInput() {
             if (f.burnTime > 0) f.burnTime--;
             
             if (f.burnTime <= 0 && canSmelt && f.fuel && getFuelValue(f.fuel.id) > 0) {
-                f.maxBurnTime = getFuelValue(f.fuel.id); f.burnTime = f.maxBurnTime;
-                f.fuel.count--; if (f.fuel.count <= 0) f.fuel = null;
+                const consumedFuelId = f.fuel.id;
+                f.maxBurnTime = getFuelValue(consumedFuelId); f.burnTime = f.maxBurnTime;
+                f.fuel.count--;
+                if (f.fuel.count <= 0) {
+                    if (consumedFuelId === IDS.LAVA_BUCKET) {
+                        f.fuel = { id: IDS.BUCKET, count: 1 };
+                    } else {
+                        f.fuel = null;
+                    }
+                } else if (consumedFuelId === IDS.LAVA_BUCKET) {
+                    giveItem(IDS.BUCKET, 1);
+                }
                 if (curOpenedFurnace === f && isInventoryOpen) updateUI();
             }
             

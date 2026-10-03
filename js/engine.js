@@ -281,7 +281,7 @@ export const SNOW_REGROWTH_DAYS = 1.0;
 export const BED_LENGTH = 2;
 export const LEAF_DECAY_MIN_FRAMES = 180;
 export const LEAF_DECAY_RANDOM_FRAMES = 180;
-export const WATER_FLOW_MAX = 5;
+export const WATER_FLOW_MAX = 7;
 export const LAVA_FLOW_MAX = 3;
 export const WATER_FLOW_INTERVAL = 4;
 export const LAVA_FLOW_INTERVAL = 16;
@@ -874,6 +874,7 @@ export function getMaxAnimals() {
         VINES: 50, MELON: 51, FERN: 52, BAMBOO: 53, MELON_STEM: 54,
         EMERALD_ORE: 55, PRISM_GLASS: 56, VOID_STONE_BRICK: 57, ASTRAL_INFUSER: 58, VOID_BERRY_BUSH: 59, SUNBURST_MELON: 60,
         SIGN: 61,
+        OBSIDIAN: 62,
         STICK: 100, WOOD_PICKAXE: 101, STONE_PICKAXE: 102, 
         WOOD_SWORD: 103, STONE_SWORD: 104, WOOD_AXE: 105, 
         COAL: 106, GOLD_INGOT: 107,
@@ -965,6 +966,9 @@ export function getMaxAnimals() {
     MINIMAP_COLOR_32[IDS.VOID_BERRY_BUSH] = 0xFFB04090;
     MINIMAP_COLOR_32[IDS.SUNBURST_MELON] = 0xFF20A0F0;
     MINIMAP_COLOR_32[IDS.SIGN] = 0xFF3A5579;
+    MINIMAP_COLOR_32[IDS.OBSIDIAN] = 0xFF281420;
+    MINIMAP_COLOR_32[IDS.WATER] = 0xFFD4781C;
+    MINIMAP_COLOR_32[IDS.LAVA] = 0xFF1F4BD9;
 
     export const HARDNESS = {
         [IDS.DIRT]: 20, [IDS.PLOWED_DIRT]: 20, [IDS.GRASS]: 25, [IDS.STONE]: 150, [IDS.COBBLESTONE]: 150,
@@ -984,7 +988,8 @@ export function getMaxAnimals() {
         [IDS.VINES]: 5, [IDS.MELON]: 30, [IDS.FERN]: 1, [IDS.BAMBOO]: 15, [IDS.MELON_STEM]: 1,
         [IDS.EMERALD_ORE]: 240, [IDS.PRISM_GLASS]: 15, [IDS.VOID_STONE_BRICK]: 200,
         [IDS.ASTRAL_INFUSER]: 250, [IDS.VOID_BERRY_BUSH]: 10, [IDS.SUNBURST_MELON]: 30,
-        [IDS.SIGN]: 15
+        [IDS.SIGN]: 15,
+        [IDS.OBSIDIAN]: 500
     };
 
     export const ID_NAMES = Object.fromEntries(Object.entries(IDS).map(([k, v]) => [v, k.replace(/_/g, ' ')]));
@@ -1167,6 +1172,7 @@ export function getMaxAnimals() {
         if (blockId === IDS.STONE || blockId === IDS.COAL_ORE || blockId === IDS.COBBLESTONE || blockId === IDS.FURNACE || blockId === IDS.COBBLESTONE_STAIRS || blockId === IDS.COBBLESTONE_STAIRS_LEFT || blockId === IDS.COBBLESTONE_STAIRS_RIGHT) return 1;
         if (blockId === IDS.IRON_ORE || blockId === IDS.VOID_STONE_BRICK) return 2;
         if (blockId === IDS.GOLD_ORE || blockId === IDS.DIAMOND_ORE || blockId === IDS.EMERALD_ORE || blockId === IDS.ASTRAL_INFUSER) return 3;
+        if (blockId === IDS.OBSIDIAN) return 5;
         return 0;
     }
 
@@ -1505,7 +1511,7 @@ export function getMaxAnimals() {
         IDS.SAND, IDS.SNOW, IDS.WOOL, IDS.WOODEN_STAIRS, IDS.COBBLESTONE_STAIRS,
         IDS.WOODEN_STAIRS_RIGHT, IDS.COBBLESTONE_STAIRS_RIGHT,
         IDS.JUNGLE_WOOD, IDS.JUNGLE_PLANKS,
-        IDS.VOID_STONE_BRICK, IDS.PRISM_GLASS
+        IDS.VOID_STONE_BRICK, IDS.PRISM_GLASS, IDS.OBSIDIAN
     ]);
     export function isBackgroundBuildingBlock(id) {
         return BACKGROUND_BUILDING_BLOCKS.has(id);
@@ -2984,6 +2990,14 @@ export function getMaxAnimals() {
                     p(x, y, y < 5 ? '#ffcf33' : '#d94b1f');
                     if ((x * 3 + y) % 6 === 0) p(x, y, '#ff7b22');
                 }
+                else if (id === IDS.OBSIDIAN) {
+                    p(x, y, '#120c1f');
+                    if ((x * 7 + y * 13) % 5 === 0) p(x, y, '#1e1430');
+                    if ((x + y * 3) % 7 === 0) p(x, y, '#2c1b42');
+                    if ((x * 3 + y * 2) % 11 === 0) p(x, y, '#432669');
+                    if ((x === 5 && y === 4) || (x === 11 && y === 9) || (x === 3 && y === 12)) p(x, y, '#6b3ea3');
+                    if ((x === 6 && y === 4) || (x === 12 && y === 9)) p(x, y, '#a855f7');
+                }
                 else if (id === IDS.CACTUS) {
                     if (x===0 || x===15 || y===0 || y===15) p(x, y, '#1b5e20'); 
                     else if (x%4===0) p(x, y, '#2e7d32'); 
@@ -4424,7 +4438,50 @@ export const SKIN_H = 32;
 
     export function getFluid(x, y) {
         if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return null;
-        return fluids.get(getFluidKey(x, y)) || null;
+        const fl = fluids.get(getFluidKey(x, y));
+        if (fl) return fl;
+        if (typeof world !== 'undefined' && world && world[x]) {
+            const b = world[x][y];
+            if (b === IDS.WATER) return { type: IDS.WATER, level: 0, source: true, falling: false, x, y };
+            if (b === IDS.LAVA) return { type: IDS.LAVA, level: 0, source: true, falling: false, x, y };
+        }
+        return null;
+    }
+
+    export function getFluidFlowVector(gx, gy) {
+        if (gx < 0 || gx >= WORLD_WIDTH || gy < 0 || gy >= WORLD_HEIGHT) return { vx: 0, vy: 0 };
+        const fl = getFluid(gx, gy);
+        if (!fl) return { vx: 0, vy: 0 };
+        if (fl.falling) return { vx: 0, vy: 0.35 };
+        if (fl.source) return { vx: 0, vy: 0 };
+
+        let vx = 0;
+        const left = getFluid(gx - 1, gy);
+        const right = getFluid(gx + 1, gy);
+        const isWaterCell = fl.type === IDS.WATER;
+        const maxFlow = isWaterCell ? WATER_FLOW_MAX : LAVA_FLOW_MAX;
+
+        let leftStrength = 0;
+        if (left && left.type === fl.type) {
+            if (left.source) leftStrength = maxFlow + 1;
+            else if (!left.falling && left.level < fl.level) leftStrength = maxFlow - left.level;
+        }
+
+        let rightStrength = 0;
+        if (right && right.type === fl.type) {
+            if (right.source) rightStrength = maxFlow + 1;
+            else if (!right.falling && right.level < fl.level) rightStrength = maxFlow - right.level;
+        }
+
+        if (!left && gx > 0 && !isSolidWorldBlock(gx - 1, gy, world[gx - 1]?.[gy])) {
+            rightStrength += 1.5;
+        }
+        if (!right && gx < WORLD_WIDTH - 1 && !isSolidWorldBlock(gx + 1, gy, world[gx + 1]?.[gy])) {
+            leftStrength += 1.5;
+        }
+
+        vx = (leftStrength - rightStrength) * (isWaterCell ? 0.08 : 0.03);
+        return { vx, vy: 0 };
     }
 
     export function getActivePhysicsWorld(entity = null) {
@@ -4465,22 +4522,29 @@ export const SKIN_H = 32;
         
         let curBlock = world[x]?.[y];
         if (curBlock !== IDS.AIR && !isSolidWorldBlock(x, y, curBlock)) {
-            if (fluid.type === IDS.WATER && [IDS.TORCH, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.SAPLING].includes(curBlock)) {
-                if (curBlock === IDS.SAPLING) {
+            const fragileBlocks = [
+                IDS.TORCH, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.SHORT_GRASS, IDS.TALL_GRASS,
+                IDS.SAPLING, IDS.JUNGLE_SAPLING, IDS.FERN, IDS.WHEAT_STAGE_1, IDS.WHEAT_STAGE_2,
+                IDS.WHEAT_STAGE_3, IDS.WHEAT_STAGE_4, IDS.MELON_STEM
+            ];
+            if (fragileBlocks.includes(curBlock)) {
+                if (curBlock === IDS.SAPLING || curBlock === IDS.JUNGLE_SAPLING) {
                     saplingGrowthQueue.delete(`${x}_${y}`);
                     saplingBlockedWarnings.delete(`${x}_${y}`);
                 }
-                dropItemForWorld(curBlock, x * TILE_SIZE + 10, y * TILE_SIZE + 10, 1);
-                world[x][y] = IDS.AIR;
-                syncBlock(x, y, IDS.AIR);
-                checkSandFallAbove(x, y);
-            } else if (fluid.type === IDS.LAVA) {
-                if (curBlock === IDS.SAPLING) {
-                    saplingGrowthQueue.delete(`${x}_${y}`);
-                    saplingBlockedWarnings.delete(`${x}_${y}`);
-                }
-                for (let i = 0; i < 4; i++) {
-                    particles.push(new Particle(x * TILE_SIZE + 20, y * TILE_SIZE + 20, '#ff4500'));
+                if (fluid.type === IDS.WATER) {
+                    let dropId = curBlock;
+                    if (curBlock === IDS.WHEAT_STAGE_1 || curBlock === IDS.WHEAT_STAGE_2) dropId = IDS.SEEDS;
+                    else if (curBlock === IDS.WHEAT_STAGE_3 || curBlock === IDS.WHEAT_STAGE_4) dropId = IDS.WHEAT;
+                    else if (curBlock === IDS.MELON_STEM) dropId = IDS.MELON_SEEDS;
+                    else if (curBlock === IDS.SHORT_GRASS || curBlock === IDS.TALL_GRASS || curBlock === IDS.FERN) {
+                        dropId = Math.random() < 0.2 ? IDS.SEEDS : null;
+                    }
+                    if (dropId) dropItemForWorld(dropId, x * TILE_SIZE + 10, y * TILE_SIZE + 10, 1);
+                } else if (fluid.type === IDS.LAVA) {
+                    for (let i = 0; i < 4; i++) {
+                        particles.push(new Particle(x * TILE_SIZE + 20, y * TILE_SIZE + 20, '#ff4500'));
+                    }
                 }
                 world[x][y] = IDS.AIR;
                 syncBlock(x, y, IDS.AIR);
@@ -4518,14 +4582,22 @@ export const SKIN_H = 32;
         }
     }
 
+    export function wakeAllFluids() {
+        if (!fluids || !fluidWakeQueue) return;
+        for (const key of fluids.keys()) {
+            fluidWakeQueue.add(key);
+        }
+    }
+
     export function triggerSteamEffect(x, y) {
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 7; i++) {
             let p = new Particle(x * TILE_SIZE + 20 + (Math.random() - 0.5) * 16, y * TILE_SIZE + 10, '#d0e8f2');
             p.vy = -1.5 - Math.random() * 2.0;
             p.vx = (Math.random() - 0.5) * 1.5;
             p.life = 25;
             particles.push(p);
         }
+        if (typeof playSound === 'function') playSound('fizz');
     }
 
     export function updateFluids() {
@@ -4554,6 +4626,7 @@ export const SKIN_H = 32;
         if (!waterTick && !lavaTick && fluidWakeQueue.size === 0) return;
 
         let entries;
+        const wakeSet = new Set(fluidWakeQueue);
         if (!waterTick && !lavaTick) {
             // Wake-only tick: only process explicitly awake nearby cells!
             entries = [];
@@ -4563,12 +4636,12 @@ export const SKIN_H = 32;
                 if (fl) {
                     entries.push([key, fl]);
                     count++;
-                    if (count >= 128) break; // Rate limit wake bursts per physics step
+                    if (count >= 160) break; // Rate limit wake bursts per physics step
                 }
             }
             fluidWakeQueue.clear();
         } else {
-            // Periodic tick: only snapshot fluids within 80 tiles horizontally of player
+            // Periodic tick: snapshot fluids within 80 tiles horizontally of player
             entries = [];
             for (const [key, fl] of fluids) {
                 let fx = fl.x;
@@ -4584,6 +4657,7 @@ export const SKIN_H = 32;
                 }
                 entries.push([key, fl]);
             }
+            fluidWakeQueue.clear();
         }
 
         for (let i = 0; i < entries.length; i++) {
@@ -4593,16 +4667,14 @@ export const SKIN_H = 32;
 
             // Proximity culling: Only simulate active fluid flow within 80 tiles horizontally of player
             if (player && Math.abs(x - pTileX) > 80) {
-                fluidWakeQueue.delete(key);
                 continue;
             }
             const isWaterCell = fluid.type === IDS.WATER;
             const isLavaCell = fluid.type === IDS.LAVA;
-            const isAwake = fluidWakeQueue.has(key);
+            const isAwake = wakeSet.has(key);
 
             if (isWaterCell && !waterTick && !isAwake) continue;
             if (isLavaCell && !lavaTick && !isAwake) continue;
-            fluidWakeQueue.delete(key);
 
             const maxFlow = isWaterCell ? WATER_FLOW_MAX : LAVA_FLOW_MAX;
 
@@ -4614,11 +4686,11 @@ export const SKIN_H = 32;
                     hasFeeder = true;
                 } else {
                     const left = getFluid(x - 1, y);
-                    if (left && left.type === fluid.type && (left.source || (!left.falling && left.level < fluid.level))) {
+                    if (left && left.type === fluid.type && (left.source || (!left.falling && (left.level < fluid.level || fluid.falling)))) {
                         hasFeeder = true;
                     }
                     const right = getFluid(x + 1, y);
-                    if (right && right.type === fluid.type && (right.source || (!right.falling && right.level < fluid.level))) {
+                    if (right && right.type === fluid.type && (right.source || (!right.falling && (right.level < fluid.level || fluid.falling)))) {
                         hasFeeder = true;
                     }
                 }
@@ -4629,68 +4701,130 @@ export const SKIN_H = 32;
                 }
             }
 
-            // 2. Downward Flow (Gravity) & Resting State Transitions
+            // 2. Downward Flow (Gravity) & Resting / Falling State Transitions
             const belowY = y + 1;
             const isBelowSolid = belowY >= WORLD_HEIGHT || isSolidWorldBlock(x, belowY, world[x]?.[belowY]);
             const belowFluid = getFluid(x, belowY);
-            const isResting = isBelowSolid || (belowFluid && belowFluid.type === fluid.type && !belowFluid.falling);
 
-            // If previously marked as falling but now resting on solid ground or resting fluid, clear falling flag
-            if (isResting && fluid.falling) {
-                toSet.push([x, y, { ...fluid, falling: false }]);
-                fluid.falling = false;
-            }
+            // A landing surface is solid ground directly beneath, or a resting fluid layer supported by solid ground
+            const isLandingSurface = isBelowSolid || (belowFluid && belowFluid.type === fluid.type && !belowFluid.falling && isSolidWorldBlock(x, belowY + 1, world[x]?.[belowY + 1]));
 
             if (!isBelowSolid) {
                 if (!belowFluid) {
-                    // Flow straight down
-                    toSet.push([x, belowY, { type: fluid.type, source: false, level: 0, falling: true }]);
-                    continue; // When falling straight down, horizontal spread from this cell is deferred
+                    // Open space directly below: cascade vertically downward as falling stream column
+                    toSet.push([x, belowY, { type: fluid.type, source: false, level: 0, falling: true, x, y: belowY }]);
+                    // Mid-air falling columns MUST NOT spray horizontally into thin air!
+                    continue;
                 } else if (belowFluid.type !== fluid.type) {
                     // Vertical contact between Water and Lava
                     if (isWaterCell && belowFluid.type === IDS.LAVA) {
-                        // Water above Lava -> Cobblestone or Stone
-                        toSolidify.push([x, belowY, IDS.COBBLESTONE]);
+                        // Water above Lava -> Obsidian if lava is source, else Cobblestone
+                        const solidId = (belowFluid.source || belowFluid.level === 0) ? IDS.OBSIDIAN : IDS.COBBLESTONE;
+                        toSolidify.push([x, belowY, solidId]);
                     } else if (isLavaCell && belowFluid.type === IDS.WATER) {
                         // Lava above Water -> Stone
                         toSolidify.push([x, belowY, IDS.STONE]);
                     }
                     continue;
-                } else if (!belowFluid.falling && !belowFluid.source && !isSolidWorldBlock(x, belowY + 1, world[x]?.[belowY + 1])) {
-                    toSet.push([x, belowY, { type: fluid.type, source: false, level: 0, falling: true }]);
+                } else if (belowFluid.falling) {
+                    // Fluid below is still falling downward through open air: continue falling column!
+                    continue;
                 }
             }
 
-            // 3. Horizontal Spread (Only when resting on a solid block or fluid beneath)
-            if (isResting && fluid.level < maxFlow) {
-                const nextLevel = fluid.source ? 1 : fluid.level + 1;
-                for (const dir of [-1, 1]) {
+            // When a falling fluid stream strikes solid ground or a resting pool surface, it lands!
+            if (fluid.falling && isLandingSurface) {
+                toSet.push([x, y, { ...fluid, falling: false }]);
+                fluid.falling = false;
+            }
+
+            // 3. Horizontal Spread (Forms pools, lakes, and rivers across surfaces)
+            // A fluid cell only spreads horizontally if supported from below (not in free fall) and within max reach
+            const canSpreadHorizontally = (fluid.source || (isLandingSurface && !fluid.falling)) && fluid.level < maxFlow;
+
+            if (canSpreadHorizontally) {
+                // If this cell was fed from above (waterfall landing on ground/lake), reset flow distance (acts as full level 0 flow center)!
+                const isFedFromAbove = (getFluid(x, y - 1)?.type === fluid.type);
+                const effectiveLevel = fluid.source ? 0 : (isFedFromAbove ? 0 : fluid.level);
+                const nextLevel = effectiveLevel + 1;
+
+                // --- MINECRAFT SLOPE / DROP-OFF PATHFINDING ---
+                // Search up to 5 blocks (or 3 for lava) for the nearest open ledge / drop-off
+                const searchDist = isWaterCell ? 5 : 3;
+                const getDropDist = (dir) => {
+                    for (let step = 1; step <= searchDist; step++) {
+                        const cx = x + dir * step;
+                        if (cx < 0 || cx >= WORLD_WIDTH) return 999;
+                        if (isSolidWorldBlock(cx, y, world[cx]?.[y])) return 999; // Solid wall blocks path
+                        // Found an open ledge or drop-off!
+                        if (y + 1 < WORLD_HEIGHT && !isSolidWorldBlock(cx, y + 1, world[cx]?.[y + 1])) {
+                            return step;
+                        }
+                    }
+                    return 999;
+                };
+
+                const distLeft = getDropDist(-1);
+                const distRight = getDropDist(1);
+
+                let allowedDirs;
+                if (distLeft < distRight) {
+                    allowedDirs = [-1]; // Nearest drop is to the left: flow ONLY left!
+                } else if (distRight < distLeft) {
+                    allowedDirs = [1];  // Nearest drop is to the right: flow ONLY right!
+                } else {
+                    allowedDirs = [-1, 1]; // Flat ground, basin, or equal distance: spread both ways!
+                }
+
+                for (const dir of allowedDirs) {
                     const nx = x + dir;
                     if (nx < 0 || nx >= WORLD_WIDTH) continue;
                     if (isSolidWorldBlock(nx, y, world[nx]?.[y])) continue;
 
                     const nbrFluid = getFluid(nx, y);
                     const willDropBelow = (y + 1 < WORLD_HEIGHT && !isSolidWorldBlock(nx, y + 1, world[nx]?.[y + 1]));
+
                     if (!nbrFluid) {
-                        toSet.push([nx, y, { type: fluid.type, source: false, level: nextLevel, falling: willDropBelow }]);
+                        toSet.push([nx, y, {
+                            type: fluid.type,
+                            source: false,
+                            level: willDropBelow ? 0 : nextLevel,
+                            falling: willDropBelow,
+                            x: nx,
+                            y: y
+                        }]);
                     } else if (nbrFluid.type !== fluid.type) {
-                        // Horizontal meeting of Water and Lava -> Cobblestone
-                        toSolidify.push([nx, y, IDS.COBBLESTONE]);
+                        // Horizontal Water + Lava Reaction
+                        if (isWaterCell) {
+                            const solidId = (nbrFluid.source || nbrFluid.level === 0) ? IDS.OBSIDIAN : IDS.COBBLESTONE;
+                            toSolidify.push([nx, y, solidId]);
+                        } else {
+                            toSolidify.push([nx, y, IDS.COBBLESTONE]);
+                        }
                     } else if (!nbrFluid.source && nbrFluid.level > nextLevel) {
-                        toSet.push([nx, y, { type: fluid.type, source: false, level: nextLevel, falling: willDropBelow }]);
+                        toSet.push([nx, y, {
+                            type: fluid.type,
+                            source: false,
+                            level: willDropBelow ? 0 : nextLevel,
+                            falling: willDropBelow,
+                            x: nx,
+                            y: y
+                        }]);
                     }
                 }
             }
 
-            // 4. Classic 2-Source Infinite Water Spring
-            if (isWaterCell && !fluid.source && isResting) {
+            // 4. Classic 2-Source Infinite Water Spring (forms serene lakes in basins)
+            if (isWaterCell && !fluid.source && isLandingSurface && !fluid.falling) {
                 let adjacentSources = 0;
                 const left = getFluid(x - 1, y);
                 const right = getFluid(x + 1, y);
-                if (left && left.type === IDS.WATER && left.source) adjacentSources++;
-                if (right && right.type === IDS.WATER && right.source) adjacentSources++;
+                const above = getFluid(x, y - 1);
+                if (left && left.type === IDS.WATER && (left.source || left.level <= 1)) adjacentSources++;
+                if (right && right.type === IDS.WATER && (right.source || right.level <= 1)) adjacentSources++;
+                if (above && above.type === IDS.WATER && (above.source || above.level <= 1)) adjacentSources++;
                 if (adjacentSources >= 2) {
-                    toSet.push([x, y, { type: IDS.WATER, source: true, level: 0, falling: false }]);
+                    toSet.push([x, y, { type: IDS.WATER, source: true, level: 0, falling: false, x, y }]);
                 }
             }
         }
@@ -4707,6 +4841,7 @@ export const SKIN_H = 32;
             removeFluid(sx, sy);
             world[sx][sy] = blockId;
             syncBlock(sx, sy, blockId);
+            wakeFluidsAround(sx, sy);
             triggerSteamEffect(sx, sy);
         }
 
@@ -4903,6 +5038,45 @@ export const SKIN_H = 32;
                 this.fallStartY = this.y;
             } else if (this.vy <= 0) {
                 this.fallStartY = Math.min(this.fallStartY ?? this.y, this.y);
+            }
+
+            // Fluid physics for non-player entities (Mobs, Animals, Dropped Items)
+            if (!(this instanceof Player) && !(typeof player !== 'undefined' && this === player)) {
+                const entGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+                const entFootGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
+                const entBodyGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+                const footFl = getFluid(entGx, entFootGy);
+                const bodyFl = getFluid(entGx, entBodyGy);
+
+                const inWater = (footFl?.type === IDS.WATER) || (bodyFl?.type === IDS.WATER);
+                const inLava = (footFl?.type === IDS.LAVA) || (bodyFl?.type === IDS.LAVA);
+
+                if (inWater) {
+                    this.fallStartY = this.y;
+                    this.vx *= 0.86;
+                    if (this.vy > 2.0) this.vy = 2.0;
+                    const isChicken = (this instanceof Chicken) || this.constructor.name === 'Chicken';
+                    const buoyancyFactor = isChicken ? 1.5 : 0.95;
+                    this.vy -= GRAVITY * buoyancyFactor;
+                    const flow = getFluidFlowVector(entGx, entFootGy);
+                    this.vx += flow.vx * 0.7;
+                } else if (inLava) {
+                    this.fallStartY = this.y;
+                    this.vx *= 0.50;
+                    this.vy *= 0.55;
+                    if (this.vy > 1.2) this.vy = 1.2;
+                    this.vy -= GRAVITY * 0.5;
+                    if (this.health !== undefined && frameCount % 16 === 0) {
+                        if (typeof this.takeDamage === 'function') {
+                            this.takeDamage(4, 0);
+                        } else if (typeof this.applyMobDamage === 'function') {
+                            this.applyMobDamage(4, 0, '#ff4500');
+                        }
+                        for (let i = 0; i < 3; i++) {
+                            particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ff4500'));
+                        }
+                    }
+                }
             }
 
             this.vy += GRAVITY;
@@ -5175,6 +5349,46 @@ export const SKIN_H = 32;
 
         update() {
             if (!this.alive) return;
+            const itemGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const itemGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+            const fl = getFluid(itemGx, itemGy);
+
+            if (fl && fl.type === IDS.LAVA) {
+                // Incinerate in lava with sizzle and fire particles!
+                for (let i = 0; i < 5; i++) {
+                    let p = new Particle(this.x + this.width / 2, this.y + this.height / 2, i % 2 === 0 ? '#ff4500' : '#333333');
+                    p.vy = -1.5 - Math.random() * 1.5;
+                    p.vx = (Math.random() - 0.5) * 2;
+                    p.life = 20;
+                    particles.push(p);
+                }
+                const pDist = player ? Math.hypot(player.x - this.x, player.y - this.y) : 999;
+                if (pDist < 16 * TILE_SIZE && typeof playSound === 'function') playSound('fizz');
+                this.alive = false;
+                return;
+            }
+
+            if (fl && fl.type === IDS.WATER) {
+                // Buoyancy in water: float to surface and get carried by current
+                this.fallStartY = this.y;
+                this.vx *= 0.86;
+                this.vy *= 0.84;
+                this.vy -= GRAVITY * 1.35;
+                if (this.vy < -2.0) this.vy = -2.0;
+
+                const flow = getFluidFlowVector(itemGx, itemGy);
+                this.vx += flow.vx * 1.2;
+
+                const fluidAbove = getFluid(itemGx, itemGy - 1);
+                if (!fluidAbove || fluidAbove.type !== IDS.WATER) {
+                    const surfaceY = itemGy * TILE_SIZE;
+                    if (this.y < surfaceY + 2) {
+                        this.y = surfaceY + 2 + Math.sin(frameCount * 0.08 + this.x) * 1.5;
+                        if (this.vy < 0) this.vy = 0;
+                    }
+                }
+            }
+
             this.applyPhysics();
             if (this.isGrounded) this.vx *= 0.8;
             this.life--;
@@ -5666,14 +5880,36 @@ export const SKIN_H = 32;
                     this.exhaustion = 0;
                 }
                 if (window.devCheats.noclip) {
+                    let mx = 0;
+                    let my = 0;
                     let flySpeed = (MOVE_SPEED * 2.5) * (window.devCheats.speedMultiplier || 1.0);
                     const activeKeys = (typeof window !== 'undefined' && window.keys) ? window.keys : (typeof keys !== 'undefined' ? keys : {});
-                    if (isActionActive('left') || activeKeys['KeyA'] || activeKeys['ArrowLeft'] || activeKeys['a']) mx -= 1;
-                    if (isActionActive('right') || activeKeys['KeyD'] || activeKeys['ArrowRight'] || activeKeys['d']) mx += 1;
-                    if (isActionActive('jump') || activeKeys['KeyW'] || activeKeys['ArrowUp'] || activeKeys['Space'] || activeKeys['w'] || activeKeys[' ']) my -= 1;
-                    if (isActionActive('down') || activeKeys['KeyS'] || activeKeys['ArrowDown'] || activeKeys['ShiftLeft'] || activeKeys['s']) my += 1;
-                    if (mx < 0) this.facingRight = false;
-                    else if (mx > 0) this.facingRight = true;
+                    if (isActionActive('left') || activeKeys['KeyA'] || activeKeys['ArrowLeft'] || activeKeys['a'] || activeKeys['A']) mx -= 1;
+                    if (isActionActive('right') || activeKeys['KeyD'] || activeKeys['ArrowRight'] || activeKeys['d'] || activeKeys['D']) mx += 1;
+                    if (isActionActive('jump') || activeKeys['KeyW'] || activeKeys['ArrowUp'] || activeKeys['Space'] || activeKeys['w'] || activeKeys['W'] || activeKeys[' ']) my -= 1;
+                    if (isActionActive('down') || isActionActive('sneak') || activeKeys['KeyS'] || activeKeys['ArrowDown'] || activeKeys['ShiftLeft'] || activeKeys['ShiftRight'] || activeKeys['s'] || activeKeys['S']) my += 1;
+
+                    const gpMoveAxis = (typeof window !== 'undefined' && window.GamepadManager && typeof window.GamepadManager.getGamepadMoveAxis === 'function') ? window.GamepadManager.getGamepadMoveAxis() : 0;
+                    if (Math.abs(gpMoveAxis) > 0.05) {
+                        mx = Math.max(-1.0, Math.min(1.0, gpMoveAxis));
+                    }
+
+                    if (isActionActive('sprint') || activeKeys['ControlLeft'] || activeKeys['ControlRight']) {
+                        flySpeed *= 1.8;
+                    }
+
+                    if (mx < -0.05) this.facingRight = false;
+                    else if (mx > 0.05) this.facingRight = true;
+
+                    if (mx !== 0 || my !== 0) {
+                        this.walkAnimTime += 0.2;
+                        this.walkBlend = Math.min(1.0, this.walkBlend + 0.15);
+                    } else {
+                        this.walkBlend = Math.max(0, this.walkBlend - 0.1);
+                    }
+
+                    if (this.damageCooldown > 0) this.damageCooldown--;
+                    this.airborneTicks = 0;
                     this.x += mx * flySpeed;
                     this.y += my * flySpeed;
                     this.vx = 0;
@@ -5791,59 +6027,134 @@ export const SKIN_H = 32;
             
             const pGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
             const pFootGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
-            const pBodyGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+            const pWaistGy = Math.floor((this.y + this.height * 0.6) / TILE_SIZE);
+            const pChestGy = Math.floor((this.y + this.height * 0.3) / TILE_SIZE);
             const pHeadGy = Math.floor((this.y + 4) / TILE_SIZE);
             const onLadder = isClimbableBlock(world[pGx]?.[pFootGy]) || 
-                             isClimbableBlock(world[pGx]?.[pBodyGy]) || 
+                             isClimbableBlock(world[pGx]?.[pWaistGy]) || 
+                             isClimbableBlock(world[pGx]?.[pChestGy]) || 
                              isClimbableBlock(world[pGx]?.[pHeadGy]);
 
             const footFluid = getFluid(pGx, pFootGy);
-            const bodyFluid = getFluid(pGx, pBodyGy);
+            const waistFluid = getFluid(pGx, pWaistGy);
+            const chestFluid = getFluid(pGx, pChestGy);
             const headFluid = getFluid(pGx, pHeadGy);
-            const inWater = (footFluid?.type === IDS.WATER) || (bodyFluid?.type === IDS.WATER) || (headFluid?.type === IDS.WATER);
-            const inLava = (footFluid?.type === IDS.LAVA) || (bodyFluid?.type === IDS.LAVA) || (headFluid?.type === IDS.LAVA);
+            const inWater = (footFluid?.type === IDS.WATER) || (waistFluid?.type === IDS.WATER) || (chestFluid?.type === IDS.WATER) || (headFluid?.type === IDS.WATER);
+            const inLava = (footFluid?.type === IDS.LAVA) || (waistFluid?.type === IDS.LAVA) || (chestFluid?.type === IDS.LAVA) || (headFluid?.type === IDS.LAVA);
+
+            // Water Entry Splash & Fire Extinguishing
+            if (!this._wasInWater && inWater) {
+                if (this.vy > 2.5) {
+                    if (typeof playSound === 'function') playSound('splash', { vol: Math.min(1.0, this.vy / 6) });
+                    for (let i = 0; i < 8; i++) {
+                        let p = new Particle(this.x + this.width / 2 + (Math.random() - 0.5) * 12, pFootGy * TILE_SIZE + 2, i % 2 === 0 ? '#38bdf8' : '#ffffff');
+                        p.vy = -2.0 - Math.random() * 3.5;
+                        p.vx = (Math.random() - 0.5) * 4.5;
+                        p.size = 2 + Math.random() * 2;
+                        p.life = 18;
+                        particles.push(p);
+                    }
+                    this.vy = Math.min(2.0, this.vy * 0.35);
+                }
+                if (this.burnTimer > 0) {
+                    this.burnTimer = 0;
+                    if (typeof playSound === 'function') playSound('fizz');
+                    triggerSteamEffect(pGx, pFootGy);
+                }
+            }
+            this._wasInWater = inWater;
 
             if (inWater) {
                 this.fallStartY = this.y;
-                this.vx *= 0.82;
+                this.vx *= 0.84;
+                const submergedCount = (footFluid?.type === IDS.WATER ? 1 : 0) + (waistFluid?.type === IDS.WATER ? 1 : 0) + (chestFluid?.type === IDS.WATER ? 1 : 0) + (headFluid?.type === IDS.WATER ? 1 : 0);
+                const buoyancyFactor = submergedCount >= 3 ? 1.10 : (submergedCount === 2 ? 0.78 : 0.40);
+                this.vy -= GRAVITY * buoyancyFactor;
                 if (this.vy > 2.2) this.vy = 2.2;
-                this.vy -= GRAVITY * 0.72; // Counter gravity buoyancy
+
+                // Flow current pushing player
+                const flow = getFluidFlowVector(pGx, waistFluid ? pWaistGy : pFootGy);
+                this.vx += flow.vx;
+                if (flow.vy) this.vy += flow.vy;
+
                 if (isActionActive('jump')) {
-                    this.vy = Math.max(-3.0, this.vy - 0.75);
+                    if (submergedCount <= 2) {
+                        // Surface breach jump: hop cleanly onto land or over 1-block banks
+                        this.vy = Math.max(JUMP_FORCE * 0.85, this.vy - 1.2);
+                        if (frameCount % 20 === 0 && typeof playSound === 'function') playSound('swim');
+                    } else {
+                        // Submerged swimming stroke upward
+                        this.vy = Math.max(-3.5, this.vy - 0.75);
+                        if (frameCount % 20 === 0 && typeof playSound === 'function') playSound('swim');
+                    }
                 }
-                if (advancedGraphics && Math.abs(this.vx) > 0.5 && frameCount % 6 === 0) {
-                    particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, 'rgba(160, 230, 255, 0.7)'));
+                if (isActionActive('down')) {
+                    // Diving downwards
+                    this.vy = Math.min(2.8, this.vy + 0.65);
+                }
+
+                if (advancedGraphics && (Math.abs(this.vx) > 0.4 || Math.abs(this.vy) > 0.4) && frameCount % 6 === 0) {
+                    particles.push(new Particle(this.x + this.width / 2 + (Math.random() - 0.5) * 8, this.y + this.height * 0.6, 'rgba(160, 230, 255, 0.75)'));
                 }
             } else if (inLava) {
                 this.fallStartY = this.y;
+                this.burnTimer = 240; // 4 seconds of fire
                 this.vx *= 0.45;
                 this.vy *= 0.55;
                 if (this.vy > 1.2) this.vy = 1.2;
-                this.vy -= GRAVITY * 0.5;
+                this.vy -= GRAVITY * 0.55;
+
+                const flow = getFluidFlowVector(pGx, waistFluid ? pWaistGy : pFootGy);
+                this.vx += flow.vx * 0.7;
+
                 if (isActionActive('jump')) {
                     this.vy = Math.max(-1.8, this.vy - 0.45);
                 }
-                if (frameCount % 20 === 0) {
-                    this.takeDamage(3);
-                    for (let i = 0; i < 3; i++) {
+                if (isActionActive('down')) {
+                    this.vy = Math.min(1.4, this.vy + 0.35);
+                }
+                if (frameCount % 16 === 0) {
+                    this.takeDamage(4);
+                    if (typeof playSound === 'function') playSound('fizz');
+                    for (let i = 0; i < 4; i++) {
                         particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#ff4500'));
                     }
                 }
             }
 
-            const fullySubmerged = headFluid?.type === IDS.WATER && bodyFluid?.type === IDS.WATER;
+            // Burn damage tick when outside lava
+            if (this.burnTimer > 0 && !inWater) {
+                this.burnTimer--;
+                if (frameCount % 30 === 0 && !this.isDead) {
+                    this.takeDamage(1);
+                    if (typeof playSound === 'function') playSound('fizz');
+                }
+                if (frameCount % 4 === 0) {
+                    particles.push(new Particle(this.x + Math.random() * this.width, this.y + Math.random() * this.height, Math.random() < 0.6 ? '#ff4500' : '#ffaa00'));
+                }
+            }
+
+            const fullySubmerged = headFluid?.type === IDS.WATER && chestFluid?.type === IDS.WATER;
             const previousOxygen = this.oxygen;
             if (fullySubmerged) {
                 if (frameCount % 25 === 0) this.oxygen = Math.max(0, this.oxygen - 1);
                 if (this.oxygen <= 0 && frameCount % 15 === 0) this.takeDamage(2);
                 if (this.oxygen <= 3) this._hadCriticalOxygen = true;
+                if (frameCount % 20 === 0) {
+                    let bP = new Particle(this.x + this.width / 2 + (Math.random() - 0.5) * 6, this.y + 2, 'rgba(255, 255, 255, 0.85)');
+                    bP.vy = -1.2;
+                    bP.vx = (Math.random() - 0.5) * 0.4;
+                    bP.size = 2;
+                    bP.life = 25;
+                    particles.push(bP);
+                }
             } else {
                 if (this._hadCriticalOxygen && this.oxygen >= this.maxOxygen - 0.5) {
                     this._hadCriticalOxygen = false;
                     if (typeof unlockAchievement === 'function') unlockAchievement('deep_diver_breath');
                     else if (typeof window !== 'undefined' && typeof window.unlockAchievement === 'function') window.unlockAchievement('deep_diver_breath');
                 }
-                this.oxygen = Math.min(this.maxOxygen, this.oxygen + 0.18);
+                this.oxygen = Math.min(this.maxOxygen, this.oxygen + 0.22);
             }
             if (fullySubmerged || previousOxygen !== this.oxygen) updateOxygenUI(fullySubmerged);
 
@@ -6952,6 +7263,14 @@ export const SKIN_H = 32;
             const curFootY = Math.floor((this.y + this.height - 2) / TILE_SIZE);
             const curBodyY = Math.floor((this.y + this.height / 2) / TILE_SIZE);
             const currentlyInWater = isWater(curX, curFootY, this) || isWater(curX, curBodyY, this);
+            const currentlyInLava = isLava(curX, curFootY, this) || isLava(curX, curBodyY, this);
+
+            if (currentlyInLava) {
+                this.panic = true;
+                this.panicTimer = 180;
+                this.vy = -3.2;
+                this.vx = (Math.random() > 0.5 ? 1 : -1) * 3.5;
+            }
 
             if (currentlyInWater) {
                 this.vy = Math.min(this.vy, -2.4);
@@ -10551,7 +10870,7 @@ export const SKIN_H = 32;
         return kaelSkinCanvas;
     }
 
-    export function findSafeKaelPositionNear(playerRef, minDist = 2, maxDist = 5) {
+    export function findSafeKaelPositionNear(playerRef, minDist = 18, maxDist = 28) {
         const curWorld = (typeof world !== 'undefined' && world) ? world : ((typeof window !== 'undefined' && window.world) ? window.world : null);
         if (!curWorld || !playerRef) return null;
 
@@ -10560,8 +10879,38 @@ export const SKIN_H = 32;
         const pFootGy = Math.floor((playerRef.y + (playerRef.height || 48) - 2) / TILE_SIZE);
         const pFacingDir = (playerRef.facingRight !== false) ? 1 : -1;
 
-        // Distances prioritizing a few blocks away, and sometimes close (2 to 4 blocks)
-        const distances = [2, 3, 4, 3, 2, 5, 1, 6];
+        // Viewport bounds detection to ensure Kael spawns close, but not visible on-screen
+        const curCanvas = (typeof canvas !== 'undefined' && canvas) ? canvas : (typeof window !== 'undefined' && window.canvas ? window.canvas : null);
+        const curCamera = (typeof camera !== 'undefined' && camera) ? camera : (typeof window !== 'undefined' && window.camera ? window.camera : null);
+
+        let effectiveMin = minDist;
+        let effectiveMax = maxDist;
+
+        if (minDist >= 12 && curCanvas) {
+            const halfScreenTiles = Math.ceil((curCanvas.width / 2) / TILE_SIZE);
+            effectiveMin = Math.max(minDist, halfScreenTiles + 3);
+            effectiveMax = Math.max(maxDist, effectiveMin + 10);
+        }
+
+        const isVisibleOnCamera = (pxX, pxY) => {
+            if (!curCanvas || !curCamera) return false;
+            const pad = 16;
+            return (
+                pxX + (TILE_SIZE * 0.75) >= curCamera.x - pad &&
+                pxX <= curCamera.x + curCanvas.width + pad &&
+                pxY + (TILE_SIZE * 1.8) >= curCamera.y - pad &&
+                pxY <= curCamera.y + curCanvas.height + pad
+            );
+        };
+
+        const kaelW = TILE_SIZE * 0.75;
+        const kaelH = TILE_SIZE * 1.8;
+
+        // Candidate distances shuffled from effectiveMin to effectiveMax
+        const distances = [];
+        for (let d = effectiveMin; d <= effectiveMax; d++) {
+            distances.push(d);
+        }
         for (let i = distances.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             const tmp = distances[i];
@@ -10569,15 +10918,13 @@ export const SKIN_H = 32;
             distances[j] = tmp;
         }
 
-        const dirs = [pFacingDir, -pFacingDir];
-        const verticalOffsets = [0, -1, 1, -2, 2, -3, 3, -4, 4, 5, -5];
+        const dirs = (Math.random() > 0.5) ? [pFacingDir, -pFacingDir] : [-pFacingDir, pFacingDir];
+        const verticalOffsets = [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -6, 6, -7, 7, -8, 8, -9, 9, -10, 10, -12, 12, -15, 15];
 
-        const kaelW = TILE_SIZE * 0.75;
-        const kaelH = TILE_SIZE * 1.8;
+        const visibleFallbackCandidates = [];
 
-        // 1. Primary pass: close distance (2-6 blocks) around player's current elevation
+        // 1. Primary pass: find a safe surface at candidate distance that is NOT visible on-screen
         for (const dist of distances) {
-            if (dist < minDist && dist !== 1) continue;
             for (const dir of dirs) {
                 const candGx = pGx + (dist * dir);
                 if (candGx < 3 || candGx >= curWorldW - 3) continue;
@@ -10604,9 +10951,17 @@ export const SKIN_H = 32;
                         const rightSolid = isSolidWorldBlock(candGx + 1, candGy, rightB);
                         if (leftSolid && rightSolid) continue;
 
+                        const candX = candGx * TILE_SIZE + (TILE_SIZE - kaelW) / 2;
+                        const candY = (candGy + 1) * TILE_SIZE - kaelH;
+
+                        if (minDist >= 12 && isVisibleOnCamera(candX, candY)) {
+                            visibleFallbackCandidates.push({ x: candX, y: candY, gx: candGx, gy: candGy });
+                            continue;
+                        }
+
                         return {
-                            x: candGx * TILE_SIZE + (TILE_SIZE - kaelW) / 2,
-                            y: (candGy + 1) * TILE_SIZE - kaelH,
+                            x: candX,
+                            y: candY,
                             gx: candGx,
                             gy: candGy
                         };
@@ -10615,13 +10970,20 @@ export const SKIN_H = 32;
             }
         }
 
-        // 2. Fallback pass: slightly wider search (up to 8 blocks, +/- 8 vertical)
-        for (let dist = 2; dist <= 8; dist++) {
+        // 2. Secondary fallback pass: if all spots in primary were visible on camera, pick the furthest visible one
+        if (visibleFallbackCandidates.length > 0) {
+            return visibleFallbackCandidates[visibleFallbackCandidates.length - 1];
+        }
+
+        // 3. Fallback pass: slightly wider search
+        const fallbackMin = Math.max(4, effectiveMin - 6);
+        const fallbackMax = effectiveMax + 12;
+        for (let dist = fallbackMin; dist <= fallbackMax; dist += 2) {
             for (const dir of dirs) {
                 const candGx = pGx + (dist * dir);
                 if (candGx < 3 || candGx >= curWorldW - 3) continue;
 
-                for (let dy = -8; dy <= 8; dy++) {
+                for (let dy = -16; dy <= 16; dy += 2) {
                     const candGy = pFootGy + dy;
                     if (candGy < 3 || candGy >= WORLD_HEIGHT - 3) continue;
 
@@ -10645,11 +11007,11 @@ export const SKIN_H = 32;
             }
         }
 
-        // 3. Ultimate safe fallback: right next to player
+        // 4. Safe fallback: off-screen distance from player
         return {
-            x: playerRef.x + (pFacingDir * (TILE_SIZE * 2.2)),
+            x: playerRef.x + (pFacingDir * (effectiveMin * TILE_SIZE)),
             y: playerRef.y,
-            gx: pGx + (pFacingDir * 2),
+            gx: pGx + (pFacingDir * effectiveMin),
             gy: pFootGy
         };
     }
@@ -10677,11 +11039,23 @@ export const SKIN_H = 32;
             this.tooFarTimer = 0;
             this.teleportCooldown = 0;
             this.teleportVfxTimer = 0;
+            this.stoppedTeleporting = true; // Stays in that place and roams around by default
         }
 
         teleportNearPlayer(curPlayer) {
-            if (!curPlayer || curPlayer.isDead) return false;
-            const targetPos = findSafeKaelPositionNear(curPlayer, 2, 5);
+            if (!curPlayer || curPlayer.isDead || this.stoppedTeleporting) return false;
+            const dx = (curPlayer.x + curPlayer.width / 2) - (this.x + this.width / 2);
+            const dy = (curPlayer.y + curPlayer.height / 2) - (this.y + this.height / 2);
+            const isWayTooFar = (Math.abs(dx) > TILE_SIZE * 26) || (Math.hypot(dx, dy) > TILE_SIZE * 30);
+            const isPlayerInMine = (dy > TILE_SIZE * 7) || (Math.abs(dy) > TILE_SIZE * 9);
+            if (isWayTooFar || isPlayerInMine) {
+                this.stoppedTeleporting = true;
+                this.tooFarTimer = 0;
+                this.tetherX = this.x;
+                return false;
+            }
+
+            const targetPos = findSafeKaelPositionNear(curPlayer, 5, 8);
             if (!targetPos) return false;
 
             // 1. Departure VFX at current position
@@ -10750,6 +11124,7 @@ export const SKIN_H = 32;
         }
 
         interact(interactor) {
+            this.tetherX = this.x;
             if (typeof window !== 'undefined') {
                 if (typeof window.hasPlayerTalkedToKael === 'function' && window.hasPlayerTalkedToKael()) {
                     if (typeof window.openAtlasMarket === 'function') {
@@ -10863,19 +11238,36 @@ export const SKIN_H = 32;
                 const dy = (curPlayer.y + curPlayer.height / 2) - (this.y + this.height / 2);
                 const dist = Math.hypot(dx, dy);
 
-                // Auto-teleport if too far from the player:
-                // Horizontal threshold ~16 blocks, vertical threshold ~8 blocks (cavern elevation/shaft)
-                const isFarHorizontally = Math.abs(dx) > TILE_SIZE * 16;
-                const isFarVertically = Math.abs(dy) > TILE_SIZE * 8;
-                const isTooFar = dist > TILE_SIZE * 18 || isFarHorizontally || isFarVertically;
-                const isExtremeFar = dist > TILE_SIZE * 32 || Math.abs(dy) > TILE_SIZE * 16;
+                // Detection: player going way too far in the world OR into the mine
+                const isWayTooFar = (Math.abs(dx) > TILE_SIZE * 26) || (dist > TILE_SIZE * 30);
+                const isPlayerInMine = (dy > TILE_SIZE * 7) || (Math.abs(dy) > TILE_SIZE * 9) || 
+                    (typeof getWorldSurfaceY === 'function' && 
+                     (curPlayer.y / TILE_SIZE) > (getWorldSurfaceY(Math.floor(curPlayer.x / TILE_SIZE)) + 4) && 
+                     (this.y / TILE_SIZE) <= (getWorldSurfaceY(Math.floor(this.x / TILE_SIZE)) + 2));
 
-                if (isTooFar && this.warpState === 'active') {
-                    this.tooFarTimer = (this.tooFarTimer || 0) + (isExtremeFar ? 4 : 1);
-                    if (this.tooFarTimer >= 75 && this.teleportCooldown <= 0) {
-                        this.teleportNearPlayer(curPlayer);
+                if (isWayTooFar || isPlayerInMine) {
+                    // Stop teleporting to the player, stay in place, and roam around last location
+                    this.stoppedTeleporting = true;
+                    this.tooFarTimer = 0;
+                    this.tetherX = this.x;
+                }
+
+                // If stopped teleporting or player has not talked to Kael, Kael NEVER teleports;
+                // he stays in that place and roams around his spot.
+                if (this.stoppedTeleporting) {
+                    this.tooFarTimer = 0;
+                } else if (typeof window !== 'undefined' && typeof window.hasPlayerTalkedToKael === 'function' && window.hasPlayerTalkedToKael()) {
+                    const isFarHorizontally = Math.abs(dx) > TILE_SIZE * 16;
+                    const isFarVertically = Math.abs(dy) > TILE_SIZE * 5;
+                    if ((isFarHorizontally || isFarVertically) && this.warpState === 'active') {
+                        this.tooFarTimer = (this.tooFarTimer || 0) + 1;
+                        if (this.tooFarTimer >= 100 && this.teleportCooldown <= 0) {
+                            this.teleportNearPlayer(curPlayer);
+                        }
+                    } else {
+                        this.tooFarTimer = 0;
                     }
-                } else if (dist < TILE_SIZE * 12 && !isFarVertically) {
+                } else {
                     this.tooFarTimer = 0;
                 }
 
@@ -11326,6 +11718,7 @@ export const SKIN_H = 32;
         if (typeof window !== 'undefined') { window.world = world; window.bgWorld = bgWorld; }
         if (typeof toggleBackgroundBuildMode === 'function') toggleBackgroundBuildMode(false);
         fluids = new Map();
+        if (typeof window !== 'undefined') window.fluids = fluids;
         fluidTick = 0;
         fluidWakeQueue = new Set();
         leafDecayQueue = new Map();
@@ -11687,26 +12080,64 @@ export const SKIN_H = 32;
             return placed > 0;
         };
 
-        let poolsPlaced = 0;
-        for (let x = 12; x < WORLD_WIDTH - 12 && poolsPlaced < 7; x += 6) {
+        // 1. Surface Lakes, Ponds, Rivers & Desert Oases distributed across the entire world
+        let lastLakeX = -999;
+        for (let x = 12; x < WORLD_WIDTH - 12; x += 4) {
+            const biome = biomes[x];
+            let minSpacing = 24;
+            let lakeWidth = 5 + Math.floor(seededRandom() * 6);
+            let lakeDepth = 2 + Math.floor(seededRandom() * 2);
+            let chance = 0.65;
+
+            if (biome === 'jungle') {
+                minSpacing = 20;
+                lakeWidth = 6 + Math.floor(seededRandom() * 7);
+                lakeDepth = 2 + Math.floor(seededRandom() * 3);
+                chance = 0.75;
+            } else if (biome === 'forest') {
+                minSpacing = 22;
+                lakeWidth = 6 + Math.floor(seededRandom() * 6);
+                lakeDepth = 2 + Math.floor(seededRandom() * 2);
+                chance = 0.70;
+            } else if (biome === 'plains') {
+                minSpacing = 26;
+                lakeWidth = 7 + Math.floor(seededRandom() * 7);
+                lakeDepth = 2 + Math.floor(seededRandom() * 2);
+                chance = 0.65;
+            } else if (biome === 'desert') {
+                minSpacing = 55;
+                lakeWidth = 5 + Math.floor(seededRandom() * 4);
+                lakeDepth = 2;
+                chance = 0.40;
+            } else if (biome === 'snow') {
+                minSpacing = 32;
+                lakeWidth = 5 + Math.floor(seededRandom() * 5);
+                lakeDepth = 2;
+                chance = 0.50;
+            } else {
+                continue; // Skip mountains for surface lake basins (handled by cliff springs)
+            }
+
+            if (x - lastLakeX < minSpacing) continue;
+
             const localFloor = surfaceHeights[x];
             const leftRim = Math.min(surfaceHeights[x - 4], surfaceHeights[x - 2]);
             const rightRim = Math.min(surfaceHeights[x + 2], surfaceHeights[x + 4]);
-            const isValley = localFloor >= leftRim + 2 && localFloor >= rightRim + 2;
-            const biomeAllowsWater = biomes[x] !== 'desert' && biomes[x] !== 'snow';
-            if (isValley && biomeAllowsWater && seededRandom() < 0.70) {
-                const width = 5 + Math.floor(seededRandom() * 6);
-                const depth = 2 + Math.floor(seededRandom() * 3);
-                if (fillPool(x, width, depth)) poolsPlaced++;
+            const isValley = (localFloor >= leftRim + 1 && localFloor >= rightRim + 1);
+
+            if (isValley && seededRandom() < chance) {
+                if (fillPool(x, lakeWidth, lakeDepth)) {
+                    lastLakeX = x + Math.floor(lakeWidth / 2);
+                }
             }
         }
 
-        // Mountain waterfall springs with open downhill cascade outlet
-        let springsPlaced = 0;
-        for (let x = 12; x < WORLD_WIDTH - 12 && springsPlaced < 4; x += 8) {
-            if (biomes[x] === 'mountains' && seededRandom() < 0.45) {
+        // Mountain waterfall springs with open downhill cascade outlet across mountain cliffs
+        let lastSpringX = -999;
+        for (let x = 12; x < WORLD_WIDTH - 12; x += 6) {
+            if (biomes[x] === 'mountains' && (x - lastSpringX >= 18) && seededRandom() < 0.50) {
                 const peakY = surfaceHeights[x];
-                if (peakY > 10 && peakY < WORLD_HEIGHT - 20) {
+                if (peakY > 12 && peakY < WORLD_HEIGHT - 25) {
                     const leftSlopeY = surfaceHeights[x - 1] ?? peakY;
                     const rightSlopeY = surfaceHeights[x + 1] ?? peakY;
                     const flowRight = rightSlopeY >= leftSlopeY;
@@ -11720,21 +12151,49 @@ export const SKIN_H = 32;
                         world[x - 1][peakY] = IDS.AIR; // Downhill open outlet
                     }
                     setFluid(x, peakY, { type: IDS.WATER, level: 0, source: true, falling: false });
-                    springsPlaced++;
+                    lastSpringX = x;
                 }
             }
         }
 
-        // Underground Lava Pools in deep caverns
-        for (let x = 8; x < WORLD_WIDTH - 8; x += 12) {
+        // Subterranean Water Aquifers (Underground Lakes in mid-depth caverns)
+        let lastAquiferX = -999;
+        for (let x = 10; x < WORLD_WIDTH - 10; x += 8) {
+            if (x - lastAquiferX < 16) continue;
             const surfaceY = surfaceHeights[x];
-            for (let y = WORLD_HEIGHT - 6; y > surfaceY + 35; y -= 4) {
+            for (let y = surfaceY + 18; y < WORLD_HEIGHT - 45; y += 3) {
                 if (world[x][y] === IDS.AIR && isSolidWorldBlock(x, y + 1, world[x][y + 1])) {
                     if (seededRandom() < 0.35) {
-                        const poolW = 3 + Math.floor(seededRandom() * 4);
-                        for (let lx = x; lx < Math.min(WORLD_WIDTH - 4, x + poolW); lx++) {
+                        const aquiferW = 4 + Math.floor(seededRandom() * 6);
+                        const startAx = Math.max(4, x - Math.floor(aquiferW / 2));
+                        const endAx = Math.min(WORLD_WIDTH - 5, startAx + aquiferW);
+                        for (let ax = startAx; ax <= endAx; ax++) {
+                            if (world[ax][y] === IDS.AIR && isSolidWorldBlock(ax, y + 1, world[ax][y + 1])) {
+                                setFluid(ax, y, { type: IDS.WATER, level: 0, source: true, falling: false });
+                            }
+                        }
+                        lastAquiferX = endAx;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Deep Mantle Magma Chambers in lower underworld (flooded cavern floors)
+        for (let x = 8; x < WORLD_WIDTH - 8; x += 8) {
+            const surfaceY = surfaceHeights[x];
+            for (let y = WORLD_HEIGHT - 8; y > Math.max(surfaceY + 30, WORLD_HEIGHT - 45); y -= 3) {
+                if (world[x][y] === IDS.AIR && isSolidWorldBlock(x, y + 1, world[x][y + 1])) {
+                    if (seededRandom() < 0.45) {
+                        const poolW = 4 + Math.floor(seededRandom() * 6);
+                        const startLx = Math.max(4, x - Math.floor(poolW / 2));
+                        const endLx = Math.min(WORLD_WIDTH - 5, startLx + poolW);
+                        for (let lx = startLx; lx <= endLx; lx++) {
                             if (world[lx][y] === IDS.AIR && isSolidWorldBlock(lx, y + 1, world[lx][y + 1])) {
                                 setFluid(lx, y, { type: IDS.LAVA, level: 0, source: true, falling: false });
+                                if (seededRandom() < 0.55 && y + 1 < WORLD_HEIGHT) {
+                                    world[lx][y + 1] = IDS.OBSIDIAN;
+                                }
                             }
                         }
                         break;
@@ -11742,6 +12201,34 @@ export const SKIN_H = 32;
                 }
             }
         }
+
+        // Deep Mantle Lava Sea in abyssal bottom cavern voids
+        for (let x = 4; x < WORLD_WIDTH - 4; x++) {
+            for (let y = WORLD_HEIGHT - 14; y < WORLD_HEIGHT - 3; y++) {
+                if (world[x][y] === IDS.AIR) {
+                    setFluid(x, y, { type: IDS.LAVA, level: 0, source: true, falling: false });
+                    if (y + 1 < WORLD_HEIGHT && isSolidWorldBlock(x, y + 1, world[x][y + 1]) && seededRandom() < 0.40) {
+                        world[x][y + 1] = IDS.OBSIDIAN;
+                    }
+                }
+            }
+        }
+
+        // Cavern Ceiling Lava Springs (Animated waterfalls of magma)
+        let lastCeilingLavaX = -999;
+        for (let x = 12; x < WORLD_WIDTH - 12; x += 10) {
+            if (x - lastCeilingLavaX < 24) continue;
+            for (let y = WORLD_HEIGHT - 48; y < WORLD_HEIGHT - 22; y++) {
+                if (world[x][y] === IDS.AIR && isSolidWorldBlock(x, y - 1, world[x][y - 1]) && world[x][y + 1] === IDS.AIR && world[x][y + 2] === IDS.AIR) {
+                    if (seededRandom() < 0.30) {
+                        setFluid(x, y, { type: IDS.LAVA, level: 0, source: true, falling: false });
+                        lastCeilingLavaX = x;
+                        break;
+                    }
+                }
+            }
+        }
+
 
         // 2. Add Trees and Vegetation on dry, solid terrain (strictly AFTER water generation)
         const isNearWater = (checkX) => {
@@ -11872,7 +12359,8 @@ export const SKIN_H = 32;
         if (typeof window !== 'undefined') window.nonCollidableTreeWood = nonCollidableTreeWood;
         setEngineNonCollidableTreeWood(nonCollidableTreeWood);
         ensureDesertScorpions();
-        if (fluidWakeQueue) fluidWakeQueue.clear();
+        if (typeof window !== 'undefined') window.fluids = fluids;
+        wakeAllFluids();
     }
 
     export function buildJungleTree(tx, sy, treeType = 'giant') {
@@ -15634,54 +16122,93 @@ export const SKIN_H = 32;
             ctx.restore();
         }
 
-        // 2. RENDER LAVA (Molten glowing base, core heat currents, basalt crust, bubbling surface)
+        // 2. RENDER LAVA (Molten glowing base, core heat currents, basalt crust, falling cascades & bubbling surface)
         if (visibleLava.length > 0) {
             ctx.save();
             for (let i = 0; i < visibleLava.length; i++) {
                 const { fluid, fluidX, fluidY, drawX, drawY } = visibleLava[i];
                 const fluidAbove = getFluid(fluidX, fluidY - 1);
                 const hasFluidAbove = (fluidAbove && fluidAbove.type === IDS.LAVA);
+                const isSolidBelow = isSolidWorldBlock(fluidX, fluidY + 1, world[fluidX]?.[fluidY + 1]);
 
-                let hRatio = 1.0;
-                if (!hasFluidAbove && !fluid.source && !fluid.falling) {
-                    hRatio = Math.max(0.35, 1.0 - (fluid.level / (LAVA_FLOW_MAX + 1)) * 0.62);
-                }
-                const cellHeight = Math.floor(TILE_SIZE * hRatio);
-                const cellTopY = drawY + (TILE_SIZE - cellHeight);
+                if (fluid.falling) {
+                    // Falling lava cascade stream
+                    ctx.fillStyle = '#b72209';
+                    ctx.fillRect(drawX + 3, drawY, TILE_SIZE - 6, TILE_SIZE);
 
-                // Deep molten magma base
-                ctx.fillStyle = '#d33215';
-                ctx.fillRect(drawX, cellTopY, TILE_SIZE, cellHeight);
+                    ctx.fillStyle = '#ff6b08';
+                    ctx.fillRect(drawX + 6, drawY, TILE_SIZE - 12, TILE_SIZE);
 
-                // Hot golden-orange swirling core veins
-                ctx.fillStyle = '#ff7a18';
-                const pulse = Math.sin(fluidX * 0.8 + fluidY * 0.4 + animTick * 0.04) * 4;
-                ctx.fillRect(drawX + 4, cellTopY + Math.max(2, Math.floor(cellHeight * 0.35 + pulse)), TILE_SIZE - 8, Math.max(3, Math.floor(cellHeight * 0.3)));
+                    // Downward streaming fiery molten heat veins
+                    ctx.fillStyle = '#ffd236';
+                    const streakOffset = (animTick * 2.5 + fluidX * 9) % TILE_SIZE;
+                    ctx.fillRect(drawX + 8, drawY + streakOffset, 4, 12);
+                    ctx.fillRect(drawX + 16, drawY + ((streakOffset + 14) % TILE_SIZE), 3, 10);
 
-                // Bright yellow heat veins
-                ctx.fillStyle = '#ffd236';
-                if ((fluidX + fluidY + Math.floor(animTick / 10)) % 4 < 2) {
-                    ctx.fillRect(drawX + 8, cellTopY + Math.max(2, Math.floor(cellHeight * 0.45)), 14, 3);
-                }
+                    // Dark cooled crust streaks on edges of cascade
+                    ctx.fillStyle = '#4a0e05';
+                    ctx.fillRect(drawX + 3, drawY + ((streakOffset + 6) % TILE_SIZE), 2, 8);
+                    ctx.fillRect(drawX + TILE_SIZE - 5, drawY + ((streakOffset + 18) % TILE_SIZE), 2, 8);
 
-                // Dark basalt floating crust specks
-                ctx.fillStyle = '#5c160a';
-                if ((fluidX * 2 + fluidY) % 3 === 0) {
-                    const speckOffset = Math.floor(Math.sin(animTick * 0.02 + fluidX) * 3);
-                    ctx.fillRect(drawX + 6 + speckOffset, cellTopY + Math.max(2, Math.floor(cellHeight * 0.2)), 8, 4);
-                }
+                    // Molten splash flare and embers when hitting solid ground or lava pool
+                    const belowF = getFluid(fluidX, fluidY + 1);
+                    if (isSolidBelow || (belowF && !belowF.falling)) {
+                        ctx.fillStyle = '#ffd236';
+                        const splashW = 8 + Math.sin(animTick * 0.15 + fluidX) * 4;
+                        ctx.fillRect(drawX + 4, drawY + TILE_SIZE - 3, splashW, 3);
+                        ctx.fillRect(drawX + 14, drawY + TILE_SIZE - 4, splashW * 0.8, 4);
 
-                // Glowing bubbling top surface edge
-                if (!hasFluidAbove) {
-                    ctx.fillStyle = '#ffec66';
-                    const wave = Math.sin(fluidX * 0.5 + animTick * 0.06) * 1.2;
-                    ctx.fillRect(drawX, Math.floor(cellTopY + wave), TILE_SIZE, 3);
-                    
-                    // Rising spark/smoke particles and embers
-                    if (fabulousGraphics && fabulousConfig.lavaGlow && Math.random() < 0.035) {
-                        spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 4, Math.random() < 0.5 ? '#ff4500' : '#ffaa00');
-                    } else if (advancedGraphics && Math.random() < 0.015) {
-                        spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 4, '#ff4500');
+                        if (advancedGraphics && Math.random() < 0.08) {
+                            let p = spawnParticle(fluidX * TILE_SIZE + 6 + Math.random() * 20, (fluidY + 1) * TILE_SIZE - 2, Math.random() < 0.5 ? '#ff4500' : '#ffaa00');
+                            if (p) {
+                                p.vy = -1.2 - Math.random() * 1.5;
+                                p.vx = (Math.random() - 0.5) * 1.4;
+                                p.life = 20;
+                            }
+                        }
+                    }
+                } else {
+                    let hRatio = 1.0;
+                    if (!hasFluidAbove && !fluid.source) {
+                        hRatio = Math.max(0.35, 1.0 - (fluid.level / (LAVA_FLOW_MAX + 1)) * 0.62);
+                    }
+                    const cellHeight = Math.floor(TILE_SIZE * hRatio);
+                    const cellTopY = drawY + (TILE_SIZE - cellHeight);
+
+                    // Deep molten magma base
+                    ctx.fillStyle = '#d33215';
+                    ctx.fillRect(drawX, cellTopY, TILE_SIZE, cellHeight);
+
+                    // Hot golden-orange swirling core veins
+                    ctx.fillStyle = '#ff7a18';
+                    const pulse = Math.sin(fluidX * 0.8 + fluidY * 0.4 + animTick * 0.04) * 4;
+                    ctx.fillRect(drawX + 4, cellTopY + Math.max(2, Math.floor(cellHeight * 0.35 + pulse)), TILE_SIZE - 8, Math.max(3, Math.floor(cellHeight * 0.3)));
+
+                    // Bright yellow heat veins
+                    ctx.fillStyle = '#ffd236';
+                    if ((fluidX + fluidY + Math.floor(animTick / 10)) % 4 < 2) {
+                        ctx.fillRect(drawX + 8, cellTopY + Math.max(2, Math.floor(cellHeight * 0.45)), 14, 3);
+                    }
+
+                    // Dark basalt floating crust specks
+                    ctx.fillStyle = '#5c160a';
+                    if ((fluidX * 2 + fluidY) % 3 === 0) {
+                        const speckOffset = Math.floor(Math.sin(animTick * 0.02 + fluidX) * 3);
+                        ctx.fillRect(drawX + 6 + speckOffset, cellTopY + Math.max(2, Math.floor(cellHeight * 0.2)), 8, 4);
+                    }
+
+                    // Glowing bubbling top surface edge
+                    if (!hasFluidAbove) {
+                        ctx.fillStyle = '#ffec66';
+                        const wave = Math.sin(fluidX * 0.5 + animTick * 0.06) * 1.2;
+                        ctx.fillRect(drawX, Math.floor(cellTopY + wave), TILE_SIZE, 3);
+                        
+                        // Rising spark/smoke particles and embers
+                        if (fabulousGraphics && fabulousConfig.lavaGlow && Math.random() < 0.035) {
+                            spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 4, Math.random() < 0.5 ? '#ff4500' : '#ffaa00');
+                        } else if (advancedGraphics && Math.random() < 0.015) {
+                            spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 4, '#ff4500');
+                        }
                     }
                 }
             }
@@ -16090,7 +16617,7 @@ export const SKIN_H = 32;
             }
         }
 
-        if (fabulousGraphics && fabulousConfig.lavaGlow) {
+        if (!fabulousGraphics || fabulousConfig.lavaGlow) {
             for (let i = 0; i < visibleFluids.length; i++) {
                 const vf = visibleFluids[i];
                 if (vf.fluid && vf.fluid.type === IDS.LAVA && i % 2 === 0) {
@@ -17101,6 +17628,7 @@ try { if (typeof updateAndDrawFabulousParticles !== "undefined") window.updateAn
 try { if (typeof updateBiomeAtmosphere !== "undefined") window.updateBiomeAtmosphere = updateBiomeAtmosphere; } catch(e) {}
 try { if (typeof updateCamera !== "undefined") window.updateCamera = updateCamera; } catch(e) {}
 try { if (typeof updateFluids !== "undefined") window.updateFluids = updateFluids; } catch(e) {}
+try { if (typeof wakeAllFluids !== "undefined") window.wakeAllFluids = wakeAllFluids; } catch(e) {}
 try { if (typeof updateNaturalRegrowth !== "undefined") window.updateNaturalRegrowth = updateNaturalRegrowth; } catch(e) {}
 try { if (typeof updateSaplingGrowth !== "undefined") window.updateSaplingGrowth = updateSaplingGrowth; } catch(e) {}
 try { if (typeof updateTimeUI !== "undefined") window.updateTimeUI = updateTimeUI; } catch(e) {}

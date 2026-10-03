@@ -109,15 +109,16 @@ class RiftExplorerSpawnerManager {
 
     findSafeArrivalLocation(playerRef) {
         if (!playerRef) return null;
-        // Always spawn right near the player (2 to 5 blocks away, prioritizing close 2-3 blocks)
+        // Spawn near the player, but close and off-screen / not visible (18 to 28 tiles away)
         if (typeof findSafeKaelPositionNear === 'function') {
-            return findSafeKaelPositionNear(playerRef, 2, 5);
+            return findSafeKaelPositionNear(playerRef, 18, 28);
         }
 
         const curWorld = (typeof window !== 'undefined' && window.world) ? window.world : null;
         if (!curWorld) {
+            const offscreenDir = (playerRef.facingRight !== false) ? 1 : -1;
             return {
-                x: playerRef.x + (playerRef.facingRight ? 80 : -80),
+                x: playerRef.x + (offscreenDir * 640),
                 y: playerRef.y
             };
         }
@@ -129,7 +130,7 @@ class RiftExplorerSpawnerManager {
         const settlementBlocks = [IDS.BED, IDS.FURNACE, IDS.CRAFTING_TABLE, IDS.CHEST];
         let candidateAnchors = [];
 
-        for (let dx = -30; dx <= 30; dx++) {
+        for (let dx = -35; dx <= 35; dx++) {
             const gx = pGx + dx;
             if (gx < 4 || gx >= WORLD_WIDTH - 4) continue;
             for (let dy = -15; dy <= 15; dy++) {
@@ -142,19 +143,20 @@ class RiftExplorerSpawnerManager {
             }
         }
 
-        // If settlement anchors exist near player, pick a surface position near one
+        // If settlement anchors exist near player, pick a surface position near one but off-screen (18-28 blocks)
         if (candidateAnchors.length > 0) {
             const anchor = candidateAnchors[Math.floor(Math.random() * candidateAnchors.length)];
-            const safePos = this.findSurfaceNear(curWorld, anchor.gx, 3, 10);
+            const safePos = this.findSurfaceNear(curWorld, anchor.gx, 18, 28);
             if (safePos) return safePos;
         }
 
-        // 2. Otherwise, find safe natural surface 10 to 20 blocks horizontally from player
-        const surfacePos = this.findSurfaceNear(curWorld, pGx, 10, 20);
+        // 2. Otherwise, find safe natural surface 18 to 28 blocks horizontally from player
+        const surfacePos = this.findSurfaceNear(curWorld, pGx, 18, 28);
         if (surfacePos) return surfacePos;
 
+        const offscreenDir = (playerRef.facingRight !== false) ? 1 : -1;
         return {
-            x: playerRef.x + (playerRef.facingRight ? 80 : -80),
+            x: playerRef.x + (offscreenDir * 640),
             y: playerRef.y
         };
     }
@@ -200,6 +202,8 @@ class RiftExplorerSpawnerManager {
         if (!loc) return null;
 
         const explorer = new AtlasExplorer(loc.x, loc.y);
+        explorer.tetherX = loc.x;
+        explorer.stoppedTeleporting = true;
         entities.push(explorer);
         this.activeExplorer = explorer;
 

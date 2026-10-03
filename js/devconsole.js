@@ -1874,6 +1874,7 @@ class DevConsoleManager {
                 break;
             }
 
+            case '/noclip':
             case '/fly': {
                 window.devCheats.noclip = !window.devCheats.noclip;
                 this.updateCheatsButtons();
