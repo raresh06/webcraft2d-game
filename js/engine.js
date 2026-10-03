@@ -1,4 +1,4 @@
-// =============================================================================
+// ===========                                                                ==================================================================
 // WEBCRAFT 2D - ENGINE MODULE (engine.js)
 // Canvas Rendering Loop, Player Physics, Block Textures, Collision Math & World Gen
 // =============================================================================
@@ -1732,6 +1732,33 @@ export function getMaxAnimals() {
             return base;
         }
 
+        const COBBLESTONE_MAP = [
+            [1, 2, 5, 6, 5, 2, 1, 0, 1, 2, 6, 7, 6, 2, 1, 0],
+            [2, 6, 7, 6, 4, 3, 1, 0, 2, 5, 7, 7, 5, 3, 2, 1],
+            [5, 7, 6, 4, 3, 2, 0, 1, 3, 5, 6, 5, 4, 2, 1, 2],
+            [3, 4, 3, 2, 1, 0, 1, 2, 4, 4, 3, 2, 1, 0, 1, 4],
+            [1, 2, 1, 0, 1, 2, 5, 6, 4, 2, 1, 0, 1, 2, 4, 5],
+            [0, 1, 1, 2, 6, 7, 6, 5, 3, 1, 0, 1, 3, 5, 6, 4],
+            [1, 2, 5, 7, 7, 6, 4, 2, 1, 0, 2, 5, 6, 6, 4, 2],
+            [2, 6, 7, 6, 5, 3, 1, 0, 1, 3, 6, 7, 5, 3, 2, 1],
+            [3, 5, 4, 3, 2, 1, 0, 1, 3, 6, 7, 6, 4, 2, 1, 0],
+            [1, 2, 1, 0, 0, 1, 2, 5, 6, 5, 4, 3, 1, 0, 1, 2],
+            [0, 1, 2, 4, 2, 1, 3, 7, 7, 5, 3, 2, 0, 1, 3, 6],
+            [1, 3, 6, 7, 5, 2, 4, 6, 5, 3, 1, 0, 1, 3, 6, 7],
+            [2, 5, 7, 6, 4, 2, 1, 2, 1, 0, 1, 2, 4, 6, 7, 5],
+            [4, 6, 5, 3, 2, 1, 0, 1, 2, 5, 6, 5, 3, 4, 5, 3],
+            [3, 4, 2, 1, 0, 1, 3, 5, 7, 7, 5, 3, 2, 1, 2, 1],
+            [1, 2, 1, 0, 1, 3, 6, 7, 6, 4, 2, 1, 0, 1, 2, 1]
+        ];
+
+        function getCobblestonePixel(px, py) {
+            const x = (px % 16 + 16) % 16;
+            const y = (py % 16 + 16) % 16;
+            const idx = COBBLESTONE_MAP[y][x];
+            const palette = ['#242424', '#363636', '#484848', '#585858', '#686868', '#787878', '#8c8c8c', '#9e9e9e'];
+            return palette[idx];
+        }
+
         const ORE_VEIN_MAP = [
             [2, 2, 1], [3, 2, 2], [4, 2, 1],
             [2, 3, 2], [3, 3, 2], [4, 3, 3],
@@ -2216,8 +2243,7 @@ export function getMaxAnimals() {
                     p(x, y, getStonePixel(x, y));
                 }
                 else if (id === IDS.COBBLESTONE) {
-                    let c = stoneColors[(Math.floor(x/3) + Math.floor(y/3)) % stoneColors.length];
-                    if (x%4===0 || y%4===0) c = '#4a4a4a'; p(x, y, c);
+                    p(x, y, getCobblestonePixel(x, y));
                 }
                 else if (id === IDS.WOOD) {
                     p(x, y, getOakWoodPixel(x, y));
@@ -2587,11 +2613,11 @@ export function getMaxAnimals() {
                     const isKeystone = (y === 3 && (x === 7 || x === 8));
 
                     if (isBorder) {
-                        p(x, y, (x + y) % 3 === 0 ? '#3f3f46' : '#52525b');
+                        p(x, y, (x + y) % 3 === 0 ? '#242424' : '#363636');
                     } else if (isKeystone) {
-                        p(x, y, '#a1a1aa');
+                        p(x, y, '#9e9e9e');
                     } else if (isArchTop) {
-                        p(x, y, (x === 7 || x === 8) ? '#71717a' : '#52525b');
+                        p(x, y, (x === 7 || x === 8) ? '#787878' : '#484848');
                     } else if (isMouth) {
                         if (y <= 7) {
                             p(x, y, y === 5 ? '#09090b' : '#141416');
@@ -2604,9 +2630,7 @@ export function getMaxAnimals() {
                             }
                         }
                     } else {
-                        const n = ((Math.floor(x / 3) * 7 + Math.floor(y / 3) * 13) % 4);
-                        const c = n === 0 ? '#71717a' : (n === 1 ? '#52525b' : (n === 2 ? '#64748b' : '#78716c'));
-                        p(x, y, (x % 4 === 0 || y % 4 === 0) ? '#3f3f46' : c);
+                        p(x, y, getCobblestonePixel(x, y));
                     }
                 }
                 else if (id === IDS.RAW_PORKCHOP) {
@@ -2983,12 +3007,11 @@ export function getMaxAnimals() {
                     if (x === 5 && y === 6) p(x, y, '#ffffff');
                 }
                 else if (id === IDS.WATER) {
-                    p(x, y, y < 4 ? '#65d9ef' : '#258dcc');
-                    if ((x + y) % 5 === 0) p(x, y, '#8ce8f5');
+                    p(x, y, y < 3 ? '#e0f4ff' : (y < 6 ? '#50b8ff' : ((x + y) % 4 === 0 ? '#38a4f8' : '#1c74d4')));
                 }
                 else if (id === IDS.LAVA) {
-                    p(x, y, y < 5 ? '#ffcf33' : '#d94b1f');
-                    if ((x * 3 + y) % 6 === 0) p(x, y, '#ff7b22');
+                    const isVein = ((x * 3 + y * 5) % 7 < 2);
+                    p(x, y, y < 3 ? '#ffec66' : (isVein ? '#ffd236' : ((x + y) % 3 === 0 ? '#ff7a18' : '#d33215')));
                 }
                 else if (id === IDS.OBSIDIAN) {
                     p(x, y, '#120c1f');
@@ -3063,18 +3086,16 @@ export function getMaxAnimals() {
                 else if (id === IDS.COBBLESTONE_STAIRS_RIGHT) {
                     const isSolidPart = (y >= 8) || (x >= 8);
                     if (isSolidPart) {
-                        let c = stoneColors[(Math.floor(x/3) + Math.floor(y/3)) % stoneColors.length];
-                        if (x % 4 === 0 || y % 4 === 0) c = '#4a4a4a';
-                        if ((x === 8 && y < 8) || (y === 8 && x < 8)) c = '#333333';
+                        let c = getCobblestonePixel(x, y);
+                        if ((x === 8 && y < 8) || (y === 8 && x < 8)) c = '#242424';
                         p(x, y, c);
                     }
                 }
                 else if (id === IDS.COBBLESTONE_STAIRS || id === IDS.COBBLESTONE_STAIRS_LEFT) {
                     const isSolidPart = (y >= 8) || (x < 8);
                     if (isSolidPart) {
-                        let c = stoneColors[(Math.floor(x/3) + Math.floor(y/3)) % stoneColors.length];
-                        if (x % 4 === 0 || y % 4 === 0) c = '#4a4a4a';
-                        if ((x === 7 && y < 8) || (y === 8 && x >= 8)) c = '#333333';
+                        let c = getCobblestonePixel(x, y);
+                        if ((x === 7 && y < 8) || (y === 8 && x >= 8)) c = '#242424';
                         p(x, y, c);
                     }
                 }
@@ -3690,11 +3711,11 @@ export function getMaxAnimals() {
                 const isKeystone = (y === 3 && (x === 7 || x === 8));
 
                 if (isBorder) {
-                    pLit(x, y, (x + y) % 3 === 0 ? '#3f3f46' : '#52525b');
+                    pLit(x, y, (x + y) % 3 === 0 ? '#242424' : '#363636');
                 } else if (isKeystone) {
-                    pLit(x, y, '#a1a1aa');
+                    pLit(x, y, '#9e9e9e');
                 } else if (isArchTop) {
-                    pLit(x, y, (x === 7 || x === 8) ? '#71717a' : '#52525b');
+                    pLit(x, y, (x === 7 || x === 8) ? '#787878' : '#484848');
                 } else if (isMouth) {
                     if (y <= 7) {
                         pLit(x, y, y === 5 ? '#09090b' : '#18181b');
@@ -3712,9 +3733,7 @@ export function getMaxAnimals() {
                         }
                     }
                 } else {
-                    const n = ((Math.floor(x / 3) * 7 + Math.floor(y / 3) * 13) % 4);
-                    const c = n === 0 ? '#71717a' : (n === 1 ? '#52525b' : (n === 2 ? '#64748b' : '#78716c'));
-                    pLit(x, y, (x % 4 === 0 || y % 4 === 0) ? '#3f3f46' : c);
+                    pLit(x, y, getCobblestonePixel(x, y));
                 }
             }
         }
@@ -4706,8 +4725,8 @@ export const SKIN_H = 32;
             const isBelowSolid = belowY >= WORLD_HEIGHT || isSolidWorldBlock(x, belowY, world[x]?.[belowY]);
             const belowFluid = getFluid(x, belowY);
 
-            // A landing surface is solid ground directly beneath, or a resting fluid layer supported by solid ground
-            const isLandingSurface = isBelowSolid || (belowFluid && belowFluid.type === fluid.type && !belowFluid.falling && isSolidWorldBlock(x, belowY + 1, world[x]?.[belowY + 1]));
+            // A landing surface is solid ground directly beneath, or a resting fluid layer of the same type
+            const isLandingSurface = isBelowSolid || (belowFluid && belowFluid.type === fluid.type && !belowFluid.falling);
 
             if (!isBelowSolid) {
                 if (!belowFluid) {
@@ -11681,7 +11700,8 @@ export const SKIN_H = 32;
                         const blockTorso = world[sx]?.[sy - 1];
                         if (
                             blockHead !== undefined && nonSolid.has(blockHead) &&
-                            blockTorso !== undefined && nonSolid.has(blockTorso)
+                            blockTorso !== undefined && nonSolid.has(blockTorso) &&
+                            !getFluid(sx, sy) && !getFluid(sx, sy - 1) && !getFluid(sx, sy - 2)
                         ) {
                             return {
                                 x: sx * TILE_SIZE + (TILE_SIZE - (TILE_SIZE * 0.75)) / 2,
@@ -12021,19 +12041,29 @@ export const SKIN_H = 32;
             }
         }
 
-        // 1. Surface Lakes in Plains & Valleys (Natural sealed concave basins with level waterlines)
-        const fillPool = (centerX, width, depth) => {
+        // 1. Guaranteed Surface Water Bodies: Lakes, Ponds, Rivers & Desert Oases distributed across the world
+        const generateSurfaceWaterBody = (centerX, width, depth, biome) => {
             const halfW = Math.floor(width / 2);
-            const startX = Math.max(5, centerX - halfW);
-            const endX = Math.min(WORLD_WIDTH - 6, startX + width - 1);
+            const startX = Math.max(6, centerX - halfW);
+            const endX = Math.min(WORLD_WIDTH - 7, startX + width - 1);
             if (endX <= startX + 2) return false;
 
-            const yLeftRim = surfaceHeights[startX - 1];
-            const yRightRim = surfaceHeights[endX + 1];
-            if (yLeftRim === undefined || yRightRim === undefined) return false;
+            // Find surrounding surface elevation range
+            let minSurf = 999;
+            let maxSurf = -999;
+            for (let cx = startX - 1; cx <= endX + 1; cx++) {
+                const sy = surfaceHeights[cx];
+                if (sy !== undefined) {
+                    if (sy < minSurf) minSurf = sy;
+                    if (sy > maxSurf) maxSurf = sy;
+                }
+            }
+            if (minSurf === 999 || maxSurf === -999) return false;
+            // Avoid overly steep cliffs where a lake would look unnatural or overflow
+            if (maxSurf - minSurf > 4) return false;
 
-            // Waterline is set strictly below (larger Y) the lower rim so water is naturally contained
-            const waterline = Math.max(yLeftRim, yRightRim) + 1;
+            // Waterline is established at ground level flush with surrounding banks
+            const waterline = maxSurf + 1;
             let placed = 0;
 
             for (let x = startX; x <= endX; x++) {
@@ -12044,8 +12074,9 @@ export const SKIN_H = 32;
 
                 // 1. Clear open sky above the waterline
                 const originalSurface = surfaceHeights[x] || waterline;
-                for (let y = Math.min(originalSurface, waterline - 1); y < waterline; y++) {
+                for (let y = Math.min(originalSurface - 4, waterline - 1); y < waterline; y++) {
                     world[x][y] = IDS.AIR;
+                    removeFluid(x, y);
                 }
 
                 // 2. Fill concave basin with water source blocks
@@ -12055,79 +12086,157 @@ export const SKIN_H = 32;
                     placed++;
                 }
 
-                // 3. Line the lake bed with sand or clay and reinforce watertight base
-                const bedBlock = seededRandom() < 0.25 ? IDS.CLAY : IDS.SAND;
-                for (let by = bedY; by <= Math.min(WORLD_HEIGHT - 1, bedY + 2); by++) {
-                    if (!isSolidWorldBlock(x, by, world[x]?.[by])) {
-                        world[x][by] = (by === bedY) ? bedBlock : IDS.DIRT;
-                    }
+                // 3. Line the lake bed with authentic bed materials
+                let bedBlock = IDS.SAND;
+                if (biome === 'desert') {
+                    bedBlock = IDS.SAND;
+                } else if (biome === 'jungle') {
+                    bedBlock = seededRandom() < 0.40 ? IDS.CLAY : (seededRandom() < 0.70 ? IDS.DIRT : IDS.SAND);
+                } else if (biome === 'plains' || biome === 'forest') {
+                    bedBlock = seededRandom() < 0.35 ? IDS.CLAY : (seededRandom() < 0.75 ? IDS.SAND : IDS.DIRT);
+                } else if (biome === 'snow') {
+                    bedBlock = seededRandom() < 0.30 ? IDS.CLAY : IDS.DIRT;
+                }
+
+                world[x][bedY] = bedBlock;
+                if (bedY + 1 < WORLD_HEIGHT) {
+                    world[x][bedY + 1] = (biome === 'desert') ? IDS.SANDSTONE : IDS.DIRT;
+                }
+                if (bedY + 2 < WORLD_HEIGHT) {
+                    world[x][bedY + 2] = IDS.STONE;
                 }
 
                 // 4. Update surface height to waterline so vegetation and mobs don't generate inside water
                 surfaceHeights[x] = waterline;
             }
 
-            // 5. Seal containment banks on left and right borders
-            for (let by = Math.min(yLeftRim, waterline); by <= waterline + depth + 1; by++) {
-                if (startX - 1 >= 0 && !isSolidWorldBlock(startX - 1, by, world[startX - 1]?.[by])) {
-                    world[startX - 1][by] = IDS.SAND;
+            // 5. Seal containment banks on left and right borders so water never spills out horizontally
+            const sealBank = (bx) => {
+                if (bx < 0 || bx >= WORLD_WIDTH) return;
+                const rimBlock = (biome === 'desert') ? IDS.SAND : (biome === 'snow' ? IDS.SNOW : (seededRandom() < 0.4 ? IDS.SAND : IDS.GRASS));
+                const subBlock = (biome === 'desert') ? IDS.SANDSTONE : IDS.DIRT;
+                
+                // Clear sky above bank rim
+                for (let y = 0; y < waterline - 1; y++) {
+                    if (world[bx][y] === IDS.WATER) world[bx][y] = IDS.AIR;
+                    removeFluid(bx, y);
                 }
-                if (endX + 1 < WORLD_WIDTH && !isSolidWorldBlock(endX + 1, by, world[endX + 1]?.[by])) {
-                    world[endX + 1][by] = IDS.SAND;
+                // Rim block at water level
+                world[bx][waterline - 1] = rimBlock;
+                surfaceHeights[bx] = Math.min(surfaceHeights[bx] || waterline, waterline - 1);
+                
+                for (let by = waterline; by <= waterline + depth + 1; by++) {
+                    if (by < WORLD_HEIGHT && !isSolidWorldBlock(bx, by, world[bx]?.[by])) {
+                        world[bx][by] = subBlock;
+                    }
+                }
+            };
+
+            sealBank(startX - 1);
+            sealBank(endX + 1);
+
+            // 6. Shoreline vegetation and aesthetic decorations
+            if (biome === 'desert') {
+                // Lush green oasis shoreline contrasting with surrounding dunes!
+                for (let ox of [startX - 2, startX - 1, endX + 1, endX + 2]) {
+                    if (ox >= 0 && ox < WORLD_WIDTH) {
+                        const sy = surfaceHeights[ox];
+                        if (sy && world[ox][sy] === IDS.SAND) {
+                            world[ox][sy] = IDS.GRASS;
+                            if (world[ox][sy - 1] === IDS.AIR && seededRandom() < 0.65) {
+                                world[ox][sy - 1] = seededRandom() < 0.5 ? IDS.BAMBOO : IDS.SHORT_GRASS;
+                            }
+                        }
+                    }
+                }
+            } else if (biome === 'plains' || biome === 'forest' || biome === 'jungle') {
+                // Shoreline reeds / bamboo at water edge
+                for (let ox of [startX - 1, endX + 1]) {
+                    if (ox >= 0 && ox < WORLD_WIDTH) {
+                        const sy = surfaceHeights[ox];
+                        if (sy && world[ox][sy - 1] === IDS.AIR && seededRandom() < 0.55) {
+                            world[ox][sy - 1] = (biome === 'jungle' || seededRandom() < 0.45) ? IDS.BAMBOO : IDS.TALL_GRASS;
+                        }
+                    }
                 }
             }
 
             return placed > 0;
         };
 
-        // 1. Surface Lakes, Ponds, Rivers & Desert Oases distributed across the entire world
+        // Guarantee 1: Place a picturesque surface lake near the player spawn area (WORLD_WIDTH / 2)
+        const spawnCenter = Math.floor(WORLD_WIDTH / 2);
+        let spawnLakePlaced = false;
+        for (let offset of [18, -18, 26, -26, 34, -34]) {
+            const testX = spawnCenter + offset;
+            if (testX >= 10 && testX < WORLD_WIDTH - 10 && biomes[testX] !== 'mountains') {
+                const sBiome = biomes[testX];
+                if (generateSurfaceWaterBody(testX, 8, 2, sBiome)) {
+                    spawnLakePlaced = true;
+                    break;
+                }
+            }
+        }
+
+        // Guarantee 2: Distributed Surface Lakes across the entire world
         let lastLakeX = -999;
-        for (let x = 12; x < WORLD_WIDTH - 12; x += 4) {
+        let placedLakeCount = spawnLakePlaced ? 1 : 0;
+
+        for (let x = 16; x < WORLD_WIDTH - 16; x += 4) {
             const biome = biomes[x];
-            let minSpacing = 24;
-            let lakeWidth = 5 + Math.floor(seededRandom() * 6);
+            if (biome === 'mountains') continue;
+
+            let minSpacing = 28;
+            let lakeWidth = 6 + Math.floor(seededRandom() * 6);
             let lakeDepth = 2 + Math.floor(seededRandom() * 2);
             let chance = 0.65;
 
             if (biome === 'jungle') {
-                minSpacing = 20;
-                lakeWidth = 6 + Math.floor(seededRandom() * 7);
+                minSpacing = 22;
+                lakeWidth = 6 + Math.floor(seededRandom() * 6);
                 lakeDepth = 2 + Math.floor(seededRandom() * 3);
                 chance = 0.75;
             } else if (biome === 'forest') {
-                minSpacing = 22;
-                lakeWidth = 6 + Math.floor(seededRandom() * 6);
+                minSpacing = 24;
+                lakeWidth = 6 + Math.floor(seededRandom() * 5);
                 lakeDepth = 2 + Math.floor(seededRandom() * 2);
                 chance = 0.70;
             } else if (biome === 'plains') {
                 minSpacing = 26;
-                lakeWidth = 7 + Math.floor(seededRandom() * 7);
+                lakeWidth = 7 + Math.floor(seededRandom() * 6);
                 lakeDepth = 2 + Math.floor(seededRandom() * 2);
                 chance = 0.65;
             } else if (biome === 'desert') {
-                minSpacing = 55;
+                minSpacing = 45;
                 lakeWidth = 5 + Math.floor(seededRandom() * 4);
                 lakeDepth = 2;
-                chance = 0.40;
+                chance = 0.50;
             } else if (biome === 'snow') {
                 minSpacing = 32;
                 lakeWidth = 5 + Math.floor(seededRandom() * 5);
                 lakeDepth = 2;
                 chance = 0.50;
-            } else {
-                continue; // Skip mountains for surface lake basins (handled by cliff springs)
             }
 
             if (x - lastLakeX < minSpacing) continue;
 
-            const localFloor = surfaceHeights[x];
-            const leftRim = Math.min(surfaceHeights[x - 4], surfaceHeights[x - 2]);
-            const rightRim = Math.min(surfaceHeights[x + 2], surfaceHeights[x + 4]);
-            const isValley = (localFloor >= leftRim + 1 && localFloor >= rightRim + 1);
-
-            if (isValley && seededRandom() < chance) {
-                if (fillPool(x, lakeWidth, lakeDepth)) {
+            if (seededRandom() < chance) {
+                if (generateSurfaceWaterBody(x, lakeWidth, lakeDepth, biome)) {
                     lastLakeX = x + Math.floor(lakeWidth / 2);
+                    placedLakeCount++;
+                }
+            }
+        }
+
+        // Guarantee 3: Fallback pass if terrain was rugged, ensuring at least 8 surface water bodies per world
+        if (placedLakeCount < 8) {
+            for (let x = 20; x < WORLD_WIDTH - 20; x += 12) {
+                if (placedLakeCount >= 10) break;
+                if (biomes[x] === 'mountains') continue;
+                if (x - lastLakeX < 18) continue;
+                if (generateSurfaceWaterBody(x, 6, 2, biomes[x])) {
+                    lastLakeX = x + 3;
+                    placedLakeCount++;
                 }
             }
         }
@@ -12505,10 +12614,12 @@ export const SKIN_H = 32;
             let groundBlock = world[gx]?.[gy];
             let headBlock = world[gx]?.[gy - 2];
             let torsoBlock = world[gx]?.[gy - 1];
-
             if (groundBlock !== undefined && validGround.has(groundBlock) && 
                 headBlock !== undefined && nonSolid.has(headBlock) && 
-                torsoBlock !== undefined && nonSolid.has(torsoBlock)) {
+                torsoBlock !== undefined && nonSolid.has(torsoBlock) &&
+                !isWater(gx, gy) && !isWater(gx, gy - 1) && !isWater(gx, gy - 2) &&
+                !isLava(gx, gy) && !isLava(gx, gy - 1) && !isLava(gx, gy - 2) &&
+                !getFluid(gx, gy) && !getFluid(gx, gy - 1) && !getFluid(gx, gy - 2)) {
                 
                 const isJungle = typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(gx) === 'jungle';
                 let currentPigeons = entities.filter(e => e instanceof Pigeon).length;
@@ -12565,7 +12676,10 @@ export const SKIN_H = 32;
                     let hgx = gx + herdOffset;
                     if (hgx >= 2 && hgx < WORLD_WIDTH - 2) {
                         let hgy = surfaceHeights[hgx] || gy;
-                        if (hgy >= 2 && hgy < WORLD_HEIGHT - 2 && validGround.has(world[hgx]?.[hgy])) {
+                        if (hgy >= 2 && hgy < WORLD_HEIGHT - 2 && validGround.has(world[hgx]?.[hgy]) &&
+                            !isWater(hgx, hgy) && !isWater(hgx, hgy - 1) && !isWater(hgx, hgy - 2) &&
+                            !isLava(hgx, hgy) && !isLava(hgx, hgy - 1) && !isLava(hgx, hgy - 2) &&
+                            !getFluid(hgx, hgy) && !getFluid(hgx, hgy - 1) && !getFluid(hgx, hgy - 2)) {
                             let hSpawnX = hgx * TILE_SIZE;
                             let hSpawnY = (hgy - 2) * TILE_SIZE;
                             if (animalType === 'Sheep') entities.push(new Sheep(hSpawnX, hSpawnY));
@@ -12766,6 +12880,33 @@ export const SKIN_H = 32;
         let tryCave = isPlayerInCave || isDay || Math.random() < 0.50;
         let spawnSide = Math.random() > 0.5 ? 1 : -1;
 
+        const isFluidAt = (gx, gy) => {
+            if (gx < 0 || gx >= WORLD_WIDTH || gy < 0 || gy >= WORLD_HEIGHT) return false;
+            const b = world[gx]?.[gy];
+            if (b === IDS.WATER || b === IDS.LAVA) return true;
+            const fl = getFluid(gx, gy);
+            if (fl && (fl.type === IDS.WATER || fl.type === IDS.LAVA)) return true;
+            if (typeof isWater === 'function' && isWater(gx, gy)) return true;
+            if (typeof isLava === 'function' && isLava(gx, gy)) return true;
+            return false;
+        };
+
+        const cW = (typeof canvas !== 'undefined' && canvas?.width) ? canvas.width : 1280;
+        const cH = (typeof canvas !== 'undefined' && canvas?.height) ? canvas.height : 720;
+        const camLeftTile = Math.floor(camera.x / TILE_SIZE);
+        const camRightTile = Math.ceil((camera.x + cW) / TILE_SIZE);
+        const camTopTile = Math.floor(camera.y / TILE_SIZE);
+        const camBottomTile = Math.ceil((camera.y + cH) / TILE_SIZE);
+
+        const isPointOnScreen = (gx, gy, marginTiles = 3) => {
+            return (gx >= camLeftTile - marginTiles && gx <= camRightTile + marginTiles &&
+                    gy >= camTopTile - marginTiles && gy <= camBottomTile + marginTiles);
+        };
+
+        const screenHalfTilesX = Math.max(20, Math.ceil(cW / (2 * TILE_SIZE)));
+        const minSpawnDist = screenHalfTilesX + 4; // Strictly off-screen by at least 4 tiles!
+        const maxSpawnDist = minSpawnDist + 14;   // 4 to 18 tiles off-screen (nearby so they approach to attack)
+
         const creeperChance = currentDifficulty === 'easy' ? 0.18 : 0.28;
         const isNearKael = (gx, gy, distTiles = 14) => {
             const entList = (typeof entities !== 'undefined' && Array.isArray(entities)) ? entities : (typeof window !== 'undefined' && Array.isArray(window.entities) ? window.entities : []);
@@ -12783,9 +12924,9 @@ export const SKIN_H = 32;
             let foundX = -1;
             let foundY = -1;
             let spawnClinging = false;
-            let maxAttempts = isPlayerInCave ? 65 : 35;
+            let maxAttempts = isPlayerInCave ? 65 : 45;
             for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                let dist = (isPlayerInCave ? 6 : 8) + Math.floor(Math.random() * (isPlayerInCave ? 18 : 22));
+                let dist = minSpawnDist + Math.floor(Math.random() * (maxSpawnDist - minSpawnDist));
                 let candX = pGx + spawnSide * dist;
                 if (candX < 2 || candX >= WORLD_WIDTH - 2) {
                     spawnSide = -spawnSide;
@@ -12793,18 +12934,24 @@ export const SKIN_H = 32;
                 }
                 let surfY = getWorldSurfaceY(candX);
                 // During daytime, hostiles MUST ONLY spawn deep subterranean (at least 6 blocks below surface)
-                let minY = isDay ? (surfY + 6) : (isPlayerInCave ? Math.max(surfY + 2, pGy - 10) : surfY + 3);
-                let maxY = isPlayerInCave ? Math.min(WORLD_HEIGHT - 3, pGy + 12) : WORLD_HEIGHT - 4;
+                let minY = isDay ? (surfY + 6) : (isPlayerInCave ? Math.max(surfY + 2, pGy - 14) : surfY + 3);
+                let maxY = isPlayerInCave ? Math.min(WORLD_HEIGHT - 3, pGy + 16) : WORLD_HEIGHT - 4;
                 if (minY >= maxY) continue;
 
                 let candY = minY + Math.floor(Math.random() * (maxY - minY));
                 if (isDay && candY < surfY + 6) continue;
 
+                // STRICT OFF-SCREEN CHECK: Mobs MUST NOT spawn on-screen in front of player
+                if (isPointOnScreen(candX, candY, 3)) continue;
+
                 let floorBlock = world[candX]?.[candY + 1];
                 let feetBlock = world[candX]?.[candY];
                 let headBlock = world[candX]?.[candY - 1];
 
-                if (feetBlock === IDS.AIR && headBlock === IDS.AIR && floorBlock !== undefined && floorBlock !== IDS.AIR && floorBlock !== IDS.WATER && floorBlock !== IDS.LAVA) {
+                // STRICT WATER/LAVA CHECK: NEVER in or on water or lava
+                if (isFluidAt(candX, candY) || isFluidAt(candX, candY - 1) || isFluidAt(candX, candY + 1)) continue;
+
+                if (feetBlock === IDS.AIR && headBlock === IDS.AIR && floorBlock !== undefined && isSolidWorldBlock(candX, candY + 1, floorBlock) && floorBlock !== IDS.WATER && floorBlock !== IDS.LAVA && !isFluidAt(candX, candY + 1)) {
                     // MUST be sheltered deep underground with a solid roof overhead during daytime or in caves
                     if (isDay && hasDirectSkyAccess(candX, candY, true)) {
                         continue;
@@ -12817,7 +12964,7 @@ export const SKIN_H = 32;
                     foundX = candX;
                     foundY = candY;
                     let ceilBlock = world[candX]?.[candY - 2];
-                    if (ceilBlock !== undefined && ceilBlock !== IDS.AIR && ceilBlock !== IDS.WATER && ceilBlock !== IDS.LAVA) {
+                    if (ceilBlock !== undefined && ceilBlock !== IDS.AIR && ceilBlock !== IDS.WATER && ceilBlock !== IDS.LAVA && !isFluidAt(candX, candY - 2)) {
                         if (Math.random() < 0.35) {
                             spawnClinging = true;
                         }
@@ -12837,7 +12984,10 @@ export const SKIN_H = 32;
                     if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker).length >= maxHostiles) break;
                     let mobX = foundX * TILE_SIZE + (k * 16 * (Math.random() > 0.5 ? 1 : -1));
                     let mobGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(mobX / TILE_SIZE)));
+                    let mobGy = Math.floor(mobY / TILE_SIZE);
                     let mobY = (foundY - 1) * TILE_SIZE;
+
+                    if (isFluidAt(mobGx, foundY) || isFluidAt(mobGx, foundY - 1) || isFluidAt(mobGx, foundY + 1)) continue;
 
                     // Normal torches block standard hostiles, but Gloomstalker can still spawn deep underground
                     const mobNearTorch = isNearTorch(mobGx, foundY, 7);
@@ -12880,58 +13030,79 @@ export const SKIN_H = 32;
             }
         }
 
-        // Surface spawning ONLY during the night
+        // Surface spawning ONLY during the night (strictly off-screen and never in water/lava)
         if (isNight) {
-            let dist = 10 + Math.floor(Math.random() * 22);
-            let candX = pGx + spawnSide * dist;
-            if (candX > 1 && candX < WORLD_WIDTH - 1) {
+            let foundX = -1;
+            let foundY = -1;
+            for (let attempt = 0; attempt < 35; attempt++) {
+                let dist = minSpawnDist + Math.floor(Math.random() * (maxSpawnDist - minSpawnDist));
+                let candX = pGx + spawnSide * dist;
+                if (candX < 2 || candX >= WORLD_WIDTH - 2) {
+                    spawnSide = -spawnSide;
+                    continue;
+                }
                 let surfY = getWorldSurfaceY(candX);
-                if (surfY > 0 && surfY < WORLD_HEIGHT - 2) {
-                    let floorBlock = world[candX]?.[surfY];
-                    let feetBlock = world[candX]?.[surfY - 1];
-                    let headBlock = world[candX]?.[surfY - 2];
-                    if (feetBlock === IDS.AIR && headBlock === IDS.AIR && floorBlock !== IDS.AIR && floorBlock !== IDS.WATER && floorBlock !== IDS.LAVA) {
-                        if (!isNearGloomLantern(candX, surfY - 1, 7) && !isNearKael(candX, surfY - 1, 14)) {
-                            const isDesert = (typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(candX) === 'desert');
-                            const maxGloomstalkers = (currentDifficulty === 'hard' || currentDifficulty === 'hardcore') ? 2 : 1;
-                            const activeGloomstalkers = entities.filter(e => e instanceof Gloomstalker).length;
+                if (surfY <= 0 || surfY >= WORLD_HEIGHT - 3) continue;
 
-                            for (let k = 0; k < packSize; k++) {
-                                if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker).length >= maxHostiles) break;
-                                let mobX = candX * TILE_SIZE + (k * 16 * (Math.random() > 0.5 ? 1 : -1));
-                                let mobGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(mobX / TILE_SIZE)));
-                                let mobY = (surfY - 2) * TILE_SIZE;
+                // STRICT OFF-SCREEN CHECK: Mobs MUST NOT spawn on-screen in front of player
+                if (isPointOnScreen(candX, surfY - 1, 3)) continue;
 
-                                const mobNearTorch = isNearTorch(mobGx, surfY - 1, 7);
-                                if (mobNearTorch) {
-                                    if (activeGloomstalkers < maxGloomstalkers && Math.random() < 0.015) {
-                                        entities.push(new Gloomstalker(mobX, mobY));
-                                    }
-                                    continue;
-                                }
+                let floorBlock = world[candX]?.[surfY];
+                let feetBlock = world[candX]?.[surfY - 1];
+                let headBlock = world[candX]?.[surfY - 2];
 
-                                let roll = Math.random();
-                                if (isDesert) {
-                                    if (roll < 0.45) {
-                                        entities.push(new Scorpion(mobX, mobY));
-                                    } else if (roll < 0.47 && activeGloomstalkers < maxGloomstalkers) {
-                                        entities.push(new Gloomstalker(mobX, mobY));
-                                    } else if (roll < 0.72) {
-                                        entities.push(new Creeper(mobX, mobY));
-                                    } else {
-                                        entities.push(new Zombie(mobX, mobY));
-                                    }
-                                } else {
-                                    // Surface Gloomstalker is exceptionally rare (~1.5% chance)
-                                    if (roll < 0.015 && activeGloomstalkers < maxGloomstalkers) {
-                                        entities.push(new Gloomstalker(mobX, mobY));
-                                    } else if (roll < 0.36) {
-                                        entities.push(new Creeper(mobX, mobY));
-                                    } else {
-                                        entities.push(new Zombie(mobX, mobY));
-                                    }
-                                }
-                            }
+                // STRICT WATER/LAVA CHECK: NEVER in or on water or lava
+                if (isFluidAt(candX, surfY) || isFluidAt(candX, surfY - 1) || isFluidAt(candX, surfY - 2)) continue;
+
+                if (feetBlock === IDS.AIR && headBlock === IDS.AIR && floorBlock !== undefined && isSolidWorldBlock(candX, surfY, floorBlock) && !isFluidAt(candX, surfY)) {
+                    if (!isNearGloomLantern(candX, surfY - 1, 7) && !isNearKael(candX, surfY - 1, 14)) {
+                        foundX = candX;
+                        foundY = surfY;
+                        break;
+                    }
+                }
+            }
+
+            if (foundX > 0 && foundY > 0) {
+                const isDesert = (typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(foundX) === 'desert');
+                const maxGloomstalkers = (currentDifficulty === 'hard' || currentDifficulty === 'hardcore') ? 2 : 1;
+                const activeGloomstalkers = entities.filter(e => e instanceof Gloomstalker).length;
+
+                for (let k = 0; k < packSize; k++) {
+                    if (entities.filter(e => e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker).length >= maxHostiles) break;
+                    let mobX = foundX * TILE_SIZE + (k * 16 * (Math.random() > 0.5 ? 1 : -1));
+                    let mobGx = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(mobX / TILE_SIZE)));
+                    let mobY = (foundY - 2) * TILE_SIZE;
+
+                    if (isFluidAt(mobGx, foundY) || isFluidAt(mobGx, foundY - 1) || isFluidAt(mobGx, foundY - 2)) continue;
+
+                    const mobNearTorch = isNearTorch(mobGx, foundY - 1, 7);
+                    if (mobNearTorch) {
+                        if (activeGloomstalkers < maxGloomstalkers && Math.random() < 0.015) {
+                            entities.push(new Gloomstalker(mobX, mobY));
+                        }
+                        continue;
+                    }
+
+                    let roll = Math.random();
+                    if (isDesert) {
+                        if (roll < 0.45) {
+                            entities.push(new Scorpion(mobX, mobY));
+                        } else if (roll < 0.47 && activeGloomstalkers < maxGloomstalkers) {
+                            entities.push(new Gloomstalker(mobX, mobY));
+                        } else if (roll < 0.72) {
+                            entities.push(new Creeper(mobX, mobY));
+                        } else {
+                            entities.push(new Zombie(mobX, mobY));
+                        }
+                    } else {
+                        // Surface Gloomstalker is exceptionally rare (~1.5% chance)
+                        if (roll < 0.015 && activeGloomstalkers < maxGloomstalkers) {
+                            entities.push(new Gloomstalker(mobX, mobY));
+                        } else if (roll < 0.36) {
+                            entities.push(new Creeper(mobX, mobY));
+                        } else {
+                            entities.push(new Zombie(mobX, mobY));
                         }
                     }
                 }
@@ -12955,7 +13126,7 @@ export const SKIN_H = 32;
                     const DREAD_THRESHOLD = 3200; // Guaranteed manifestation after prolonged darkness
                     if (gloomDreadTimer >= DREAD_THRESHOLD) {
                         const spawnDir = player.vx > 0.5 ? -1 : (player.vx < -0.5 ? 1 : (Math.random() > 0.5 ? 1 : -1));
-                        const distTiles = 15 + Math.floor(Math.random() * 4);
+                        const distTiles = minSpawnDist + Math.floor(Math.random() * 4);
                         const spawnGx = Math.max(3, Math.min(WORLD_WIDTH - 4, plGx + spawnDir * distTiles));
 
                         for (let testGy = Math.max(4, plGy - 4); testGy <= Math.min(WORLD_HEIGHT - 4, plGy + 4); testGy++) {
@@ -12963,7 +13134,9 @@ export const SKIN_H = 32;
                             const footB = world[spawnGx]?.[testGy];
                             const headB = world[spawnGx]?.[testGy - 1];
 
-                            if (floorB !== undefined && isSolidWorldBlock(spawnGx, testGy + 1, floorB) && floorB !== IDS.LAVA && floorB !== IDS.WATER) {
+                            if (isFluidAt(spawnGx, testGy) || isFluidAt(spawnGx, testGy - 1) || isFluidAt(spawnGx, testGy + 1)) continue;
+
+                            if (floorB !== undefined && isSolidWorldBlock(spawnGx, testGy + 1, floorB) && !isFluidAt(spawnGx, testGy + 1) && floorB !== IDS.LAVA && floorB !== IDS.WATER) {
                                 if (footB === IDS.AIR && headB === IDS.AIR) {
                                     const gs = new Gloomstalker(spawnGx * TILE_SIZE, (testGy - 1) * TILE_SIZE);
                                     entities.push(gs);
@@ -13010,7 +13183,9 @@ export const SKIN_H = 32;
         for (let gx = 10; gx < WORLD_WIDTH - 10; gx += 12) {
             if (getActiveBiomeAt(gx) === 'desert') {
                 let gy = 0; while (gy < WORLD_HEIGHT && world[gx]?.[gy] === IDS.AIR) gy++;
-                if (gy > 0 && gy < WORLD_HEIGHT && world[gx]?.[gy] === IDS.SAND && !isNearKael(gx, gy)) {
+                if (gy > 0 && gy < WORLD_HEIGHT && world[gx]?.[gy] === IDS.SAND && !isNearKael(gx, gy) &&
+                    !isWater(gx, gy) && !isWater(gx, gy - 1) && !isLava(gx, gy) && !isLava(gx, gy - 1) &&
+                    !getFluid(gx, gy) && !getFluid(gx, gy - 1)) {
                     entities.push(new Scorpion(gx * TILE_SIZE, (gy - 1) * TILE_SIZE));
                     if (entities.filter(e => e instanceof Scorpion).length >= 4) break;
                 }
@@ -15983,9 +16158,20 @@ export const SKIN_H = 32;
             }
         }
 
-        // 1. RENDER WATER (Translucent, wavy connected surface, sloping quads, caustics & waterfalls)
+        // 1. RENDER WATER (Translucent multi-depth sapphire body, seamless dual-harmonic connected surface, caustics, rising bubbles, shoreline foam, waterfalls)
         if (visibleWater.length > 0) {
             ctx.save();
+            const getWaterNominalHeight = (gx, gy) => {
+                if (gx < 0 || gx >= WORLD_WIDTH || gy < 0 || gy >= WORLD_HEIGHT) return 0;
+                const f = getFluid(gx, gy);
+                if (!f || f.type !== IDS.WATER) return 0;
+                const fAbove = getFluid(gx, gy - 1);
+                if (fAbove && fAbove.type === IDS.WATER) return 1.0;
+                if (f.falling) return 1.0;
+                if (f.source) return 0.94;
+                return Math.max(0.24, 0.90 - (f.level / (WATER_FLOW_MAX + 1)) * 0.66);
+            };
+
             for (let i = 0; i < visibleWater.length; i++) {
                 const { fluid, fluidX, fluidY, drawX, drawY } = visibleWater[i];
                 const fluidAbove = getFluid(fluidX, fluidY - 1);
@@ -15995,86 +16181,238 @@ export const SKIN_H = 32;
                 const isSolidLeft = isSolidWorldBlock(fluidX - 1, fluidY, world[fluidX - 1]?.[fluidY]);
                 const isSolidRight = isSolidWorldBlock(fluidX + 1, fluidY, world[fluidX + 1]?.[fluidY]);
 
+                const leftFluid = getFluid(fluidX - 1, fluidY);
+                const isLeftWater = (leftFluid && leftFluid.type === IDS.WATER);
+                const rightFluid = getFluid(fluidX + 1, fluidY);
+                const isRightWater = (rightFluid && rightFluid.type === IDS.WATER);
+
+                const leftDownFluid = getFluid(fluidX - 1, fluidY + 1);
+                const isLeftDownWater = (leftDownFluid && leftDownFluid.type === IDS.WATER);
+                const rightDownFluid = getFluid(fluidX + 1, fluidY + 1);
+                const isRightDownWater = (rightDownFluid && rightDownFluid.type === IDS.WATER);
+
+                const leftUpFluid = getFluid(fluidX - 1, fluidY - 1);
+                const isLeftUpWater = (leftUpFluid && leftUpFluid.type === IDS.WATER);
+                const rightUpFluid = getFluid(fluidX + 1, fluidY - 1);
+                const isRightUpWater = (rightUpFluid && rightUpFluid.type === IDS.WATER);
+
                 if (hasFluidAbove) {
-                    // Submerged Water Block: Full height, underwater caustics, and boundary shading
-                    ctx.fillStyle = 'rgba(28, 120, 218, 0.76)';
+                    // Submerged Water Block: Multi-depth translucent sapphire body with animated caustics, rising micro-bubbles, and contact shading
+                    const isDeep = (fluidY > 50 || (fluidAbove && getFluid(fluidX, fluidY - 2)?.type === IDS.WATER));
+                    ctx.fillStyle = isDeep ? 'rgba(16, 88, 196, 0.80)' : 'rgba(26, 118, 222, 0.74)';
                     ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
 
-                    // Gentle animated caustics (light refraction ribbons)
+                    // Organic animated undulating caustics (dual traveling refraction ribbons across world space)
                     if (!fabulousGraphics || fabulousConfig.waterEffects) {
-                        const causticsOffset = Math.sin(fluidX * 0.7 + fluidY * 0.9 + animTick * 0.05) * 4;
-                        ctx.fillStyle = 'rgba(110, 195, 255, 0.20)';
-                        ctx.fillRect(drawX + 4 + causticsOffset, drawY + 8, 14, 2);
-                        ctx.fillRect(drawX + 14 - causticsOffset, drawY + 22, 12, 2);
+                        const worldPx = fluidX * TILE_SIZE;
+                        const worldPy = fluidY * TILE_SIZE;
+                        const cPhase1 = (worldPx * 0.06 + worldPy * 0.04 + animTick * 0.05);
+                        const cPhase2 = (worldPx * 0.05 - worldPy * 0.05 - animTick * 0.035);
+                        const caustVal = Math.sin(cPhase1) + Math.cos(cPhase2);
+
+                        if (caustVal > 0.4) {
+                            const cAlpha = Math.min(0.35, (caustVal - 0.4) * 0.22);
+                            ctx.fillStyle = `rgba(160, 230, 255, ${cAlpha.toFixed(3)})`;
+                            const caustY = drawY + 8 + Math.sin(cPhase1) * 4;
+                            ctx.fillRect(drawX, Math.floor(caustY), TILE_SIZE, 3);
+                        }
+
+                        // Occasional rising underwater micro-bubble using world coordinates
+                        const bubbleSeed = (fluidX * 73 + fluidY * 37) % 97;
+                        const bubbleCycle = (animTick * 1.4 + bubbleSeed * 7) % 110;
+                        if (bubbleCycle < TILE_SIZE + 6) {
+                            const bx = drawX + 4 + (bubbleSeed % (TILE_SIZE - 8)) + Math.sin(animTick * 0.08 + fluidY) * 2;
+                            const by = drawY + TILE_SIZE - bubbleCycle;
+                            if (by >= drawY && by < drawY + TILE_SIZE) {
+                                ctx.fillStyle = 'rgba(225, 248, 255, 0.60)';
+                                ctx.fillRect(Math.floor(bx), Math.floor(by), 2, 2);
+                            }
+                        }
                     }
 
-                    // Solid contact shading (connected border against floor / walls)
+                    // Contact edge shading against solid terrain banks & floor only (never between fluid cells!)
                     if (isSolidBelow) {
-                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillStyle = 'rgba(10, 50, 115, 0.40)';
                         ctx.fillRect(drawX, drawY + TILE_SIZE - 2, TILE_SIZE, 2);
                     }
                     if (isSolidLeft) {
-                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillStyle = 'rgba(10, 50, 115, 0.40)';
                         ctx.fillRect(drawX, drawY, 2, TILE_SIZE);
                     }
                     if (isSolidRight) {
-                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillStyle = 'rgba(10, 50, 115, 0.40)';
                         ctx.fillRect(drawX + TILE_SIZE - 2, drawY, 2, TILE_SIZE);
                     }
                 } else if (fluid.falling) {
-                    // Falling waterfall stream column
-                    ctx.fillStyle = 'rgba(28, 120, 218, 0.68)';
-                    ctx.fillRect(drawX + 2, drawY, TILE_SIZE - 4, TILE_SIZE);
+                    // Falling waterfall stream column with seamless connected bounds and continuous vertical streamlines
+                    let x0 = drawX;
+                    if (!isSolidLeft && !isLeftWater) {
+                        x0 = drawX + 2; // Natural edge inset only against open air
+                    }
 
-                    ctx.fillStyle = 'rgba(190, 242, 255, 0.70)';
-                    const streakOffset = (animTick * 3 + fluidX * 11) % TILE_SIZE;
-                    ctx.fillRect(drawX + 6, drawY + streakOffset, 3, 14);
-                    ctx.fillRect(drawX + 18, drawY + ((streakOffset + 12) % TILE_SIZE), 3, 12);
+                    let x1 = drawX + TILE_SIZE;
+                    if (!isSolidRight && !isRightWater) {
+                        x1 = drawX + TILE_SIZE - 2; // Natural edge inset only against open air
+                    }
+                    const streamWidth = x1 - x0;
 
-                    // Falling waterfall splash & mist when hitting ground or pool
+                    // Waterfall top origination height
+                    let y0 = drawY;
+                    if (!hasFluidAbove) {
+                        if (isLeftWater && !leftFluid.falling) {
+                            const hLeftPour = getWaterNominalHeight(fluidX - 1, fluidY) * 0.72;
+                            y0 = Math.floor(drawY + TILE_SIZE * (1.0 - hLeftPour));
+                        } else if (isRightWater && !rightFluid.falling) {
+                            const hRightPour = getWaterNominalHeight(fluidX + 1, fluidY) * 0.72;
+                            y0 = Math.floor(drawY + TILE_SIZE * (1.0 - hRightPour));
+                        }
+                    }
+
+                    // Smooth crest connection from adjacent surface stream over the cliff ledge
+                    if (!hasFluidAbove && isLeftWater && !leftFluid.falling) {
+                        ctx.fillStyle = 'rgba(28, 122, 224, 0.74)';
+                        ctx.beginPath();
+                        ctx.moveTo(drawX - 2, y0);
+                        ctx.lineTo(x0 + 4, y0);
+                        ctx.lineTo(x0 + 4, drawY + TILE_SIZE);
+                        ctx.lineTo(drawX - 2, drawY + TILE_SIZE);
+                        ctx.closePath();
+                        ctx.fill();
+                    } else if (!hasFluidAbove && isRightWater && !rightFluid.falling) {
+                        ctx.fillStyle = 'rgba(28, 122, 224, 0.74)';
+                        ctx.beginPath();
+                        ctx.moveTo(x1 - 4, y0);
+                        ctx.lineTo(drawX + TILE_SIZE + 2, y0);
+                        ctx.lineTo(drawX + TILE_SIZE + 2, drawY + TILE_SIZE);
+                        ctx.lineTo(x1 - 4, drawY + TILE_SIZE);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    // Main waterfall column fill
+                    ctx.fillStyle = 'rgba(28, 122, 224, 0.74)';
+                    ctx.fillRect(x0, y0, streamWidth, drawY + TILE_SIZE - y0);
+
+                    // Continuous world-Y flow ribbons (seamless across all tiles from top to bottom of waterfall)
+                    const worldY = fluidY * TILE_SIZE;
+                    const speed = 4.0;
+                    const flowCycle = 64;
+
+                    ctx.fillStyle = 'rgba(215, 245, 255, 0.75)'; // White-water foam streaks
+                    // Streamline 1
+                    const streakY1 = ((worldY + animTick * speed) % flowCycle);
+                    const sy1 = drawY + streakY1 - (streakY1 > 32 ? flowCycle : 0);
+                    if (sy1 + 22 >= y0 && sy1 < drawY + TILE_SIZE) {
+                        const drawSY1 = Math.max(y0, sy1);
+                        const drawSH1 = Math.min(drawY + TILE_SIZE, sy1 + 22) - drawSY1;
+                        if (drawSH1 > 0) ctx.fillRect(x0 + Math.floor(streamWidth * 0.18), drawSY1, 2.5, drawSH1);
+                    }
+
+                    // Streamline 2 (center surge)
+                    const streakY2 = ((worldY + animTick * speed * 1.15 + 24) % flowCycle);
+                    const sy2 = drawY + streakY2 - (streakY2 > 32 ? flowCycle : 0);
+                    if (sy2 + 28 >= y0 && sy2 < drawY + TILE_SIZE) {
+                        const drawSY2 = Math.max(y0, sy2);
+                        const drawSH2 = Math.min(drawY + TILE_SIZE, sy2 + 28) - drawSY2;
+                        if (drawSH2 > 0) ctx.fillRect(x0 + Math.floor(streamWidth * 0.48), drawSY2, 3, drawSH2);
+                    }
+
+                    // Streamline 3
+                    const streakY3 = ((worldY + animTick * speed * 0.95 + 44) % flowCycle);
+                    const sy3 = drawY + streakY3 - (streakY3 > 32 ? flowCycle : 0);
+                    if (sy3 + 20 >= y0 && sy3 < drawY + TILE_SIZE) {
+                        const drawSY3 = Math.max(y0, sy3);
+                        const drawSH3 = Math.min(drawY + TILE_SIZE, sy3 + 20) - drawSY3;
+                        if (drawSH3 > 0) ctx.fillRect(x0 + Math.floor(streamWidth * 0.74), drawSY3, 2, drawSH3);
+                    }
+
+                    // Downward waterfall impact & splash
                     const belowF = getFluid(fluidX, fluidY + 1);
-                    if (isSolidBelow || (belowF && !belowF.falling)) {
+                    const isWaterBelow = (belowF && belowF.type === IDS.WATER);
+
+                    if (isSolidBelow) {
+                        // Striking solid ground (rock/dirt floor)
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                        const splashW = Math.min(streamWidth + 6, TILE_SIZE);
+                        const splashX = Math.max(drawX, x0 - 2);
+                        ctx.fillRect(splashX, drawY + TILE_SIZE - 4, splashW, 4);
+
+                        // Bouncing spray puffs
+                        const sprayH = Math.abs(Math.sin(animTick * 0.20 + fluidX * 4)) * 5;
+                        ctx.fillStyle = 'rgba(225, 248, 255, 0.80)';
+                        ctx.fillRect(x0 - 1, drawY + TILE_SIZE - 6 - sprayH, 3, 3);
+                        ctx.fillRect(x1 - 2, drawY + TILE_SIZE - 5 - sprayH * 0.8, 3, 3);
+
+                        if (advancedGraphics && Math.random() < 0.08) {
+                            spawnParticle(fluidX * TILE_SIZE + 4 + Math.random() * (TILE_SIZE - 8), (fluidY + 1) * TILE_SIZE - 2, '#e0f4ff');
+                        }
+                    } else if (isWaterBelow && !belowF.falling) {
+                        // Waterfall plunging into a pool or river: plunging aerated foam ripple at the surface
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
-                        const mistW = 6 + Math.sin(animTick * 0.2 + fluidX) * 3;
-                        ctx.fillRect(drawX + 6, drawY + TILE_SIZE - 3, mistW, 3);
-                        ctx.fillRect(drawX + 18, drawY + TILE_SIZE - 4, mistW * 0.8, 3);
-                        if (advancedGraphics && Math.random() < 0.06) {
-                            spawnParticle(fluidX * TILE_SIZE + 8 + Math.random() * 16, (fluidY + 1) * TILE_SIZE - 2, '#d7f0ff');
+                        const plumeW = streamWidth + 4;
+                        const plumeX = Math.max(drawX - 2, x0 - 2);
+                        ctx.fillRect(plumeX, drawY + TILE_SIZE - 3, plumeW, 3);
+
+                        ctx.fillStyle = 'rgba(210, 245, 255, 0.70)';
+                        const rippleBob = Math.sin(animTick * 0.16 + fluidX * 2) * 2;
+                        ctx.fillRect(plumeX - 3, drawY + TILE_SIZE - 4 + rippleBob, plumeW + 6, 2);
+
+                        if (advancedGraphics && Math.random() < 0.08) {
+                            spawnParticle(fluidX * TILE_SIZE + (streamWidth * 0.5) + (Math.random() - 0.5) * 12, (fluidY + 1) * TILE_SIZE, '#d0f0ff');
                         }
                     }
                 } else {
-                    // Surface Water Block: Connected sloping surface quad with seamless wave highlights
-                    const hSelf = fluid.source ? 1.0 : Math.max(0.25, 1.0 - (fluid.level / (WATER_FLOW_MAX + 1)) * 0.72);
+                    // Surface Water Block: Connected sloping surface quad with dual-harmonic continuous wave highlights & shoreline foam
+                    const hSelf = getWaterNominalHeight(fluidX, fluidY);
 
-                    const leftFluid = getFluid(fluidX - 1, fluidY);
-                    const rightFluid = getFluid(fluidX + 1, fluidY);
+                    // Compute shared vertex height at left boundary (fluidX)
+                    let hLeft;
+                    if (isLeftWater) {
+                        if (leftFluid.falling) {
+                            hLeft = Math.max(0.32, hSelf * 0.72); // Spilling over edge
+                        } else {
+                            hLeft = (hSelf + getWaterNominalHeight(fluidX - 1, fluidY)) * 0.5;
+                        }
+                    } else if (isSolidLeft) {
+                        hLeft = hSelf;
+                    } else if (isLeftUpWater) {
+                        hLeft = 1.0;
+                    } else if (isLeftDownWater) {
+                        hLeft = Math.max(0.30, hSelf * 0.70);
+                    } else {
+                        hLeft = hSelf * 0.5;
+                    }
 
-                    const getNeighborHeight = (nbr, isSolid) => {
-                        if (isSolid) return hSelf;
-                        if (!nbr || nbr.type !== IDS.WATER) return hSelf * 0.65;
-                        if (nbr.falling) return 1.0;
-                        if (nbr.source) return 1.0;
-                        return Math.max(0.25, 1.0 - (nbr.level / (WATER_FLOW_MAX + 1)) * 0.72);
-                    };
+                    // Compute shared vertex height at right boundary (fluidX + 1)
+                    let hRight;
+                    if (isRightWater) {
+                        if (rightFluid.falling) {
+                            hRight = Math.max(0.32, hSelf * 0.72); // Spilling over edge
+                        } else {
+                            hRight = (hSelf + getWaterNominalHeight(fluidX + 1, fluidY)) * 0.5;
+                        }
+                    } else if (isSolidRight) {
+                        hRight = hSelf;
+                    } else if (isRightUpWater) {
+                        hRight = 1.0;
+                    } else if (isRightDownWater) {
+                        hRight = Math.max(0.30, hSelf * 0.70);
+                    } else {
+                        hRight = hSelf * 0.5;
+                    }
 
-                    const hLeftN = getNeighborHeight(leftFluid, isSolidLeft);
-                    const hRightN = getNeighborHeight(rightFluid, isSolidRight);
-
-                    const hLeft = (hLeftN + hSelf) * 0.5;
-                    const hRight = (hRightN + hSelf) * 0.5;
-
-                    // Continuous wave offsets based on world pixel coordinates (guarantees zero boundary seams)
+                    // Dual-harmonic continuous wave equation (mathematically identical at world tile borders, guaranteeing 0 seams)
                     const worldPixelL = fluidX * TILE_SIZE;
                     const worldPixelR = (fluidX + 1) * TILE_SIZE;
-                    const waveL = Math.sin(worldPixelL * 0.06 + animTick * 0.08) * 1.5;
-                    const waveR = Math.sin(worldPixelR * 0.06 + animTick * 0.08) * 1.5;
+                    const waveL = Math.sin(worldPixelL * 0.05 + animTick * 0.07) * 1.8 + Math.sin(worldPixelL * 0.12 - animTick * 0.04) * 0.7;
+                    const waveR = Math.sin(worldPixelR * 0.05 + animTick * 0.07) * 1.8 + Math.sin(worldPixelR * 0.12 - animTick * 0.04) * 0.7;
 
                     const topYL = Math.floor(drawY + TILE_SIZE * (1.0 - hLeft) + waveL);
                     const topYR = Math.floor(drawY + TILE_SIZE * (1.0 - hRight) + waveR);
                     const botY = drawY + TILE_SIZE;
 
-                    // Render smooth trapezoid fluid quad
-                    ctx.fillStyle = 'rgba(28, 120, 218, 0.72)';
+                    // 1. Water body fill (translucent azure quad)
+                    ctx.fillStyle = 'rgba(28, 122, 224, 0.74)';
                     ctx.beginPath();
                     ctx.moveTo(drawX, topYL);
                     ctx.lineTo(drawX + TILE_SIZE, topYR);
@@ -16083,38 +16421,85 @@ export const SKIN_H = 32;
                     ctx.closePath();
                     ctx.fill();
 
-                    // Wave surface highlight strip
+                    // 2. Step-down spillover cascade connection
+                    if (isLeftDownWater && !isLeftWater && !isSolidLeft) {
+                        ctx.fillStyle = 'rgba(28, 122, 224, 0.74)';
+                        ctx.beginPath();
+                        ctx.moveTo(drawX, topYL);
+                        ctx.lineTo(drawX + 4, topYL);
+                        ctx.lineTo(drawX + 4, botY + 8);
+                        ctx.lineTo(drawX - 2, botY + 8);
+                        ctx.lineTo(drawX - 2, botY);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    if (isRightDownWater && !isRightWater && !isSolidRight) {
+                        ctx.fillStyle = 'rgba(28, 122, 224, 0.74)';
+                        ctx.beginPath();
+                        ctx.moveTo(drawX + TILE_SIZE - 4, topYR);
+                        ctx.lineTo(drawX + TILE_SIZE, topYR);
+                        ctx.lineTo(drawX + TILE_SIZE + 2, botY);
+                        ctx.lineTo(drawX + TILE_SIZE + 2, botY + 8);
+                        ctx.lineTo(drawX + TILE_SIZE - 4, botY + 8);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    // 3. Sub-surface sunlit refraction ribbon
                     if (!fabulousGraphics || fabulousConfig.waterEffects) {
-                        ctx.strokeStyle = 'rgba(215, 245, 255, 0.88)';
-                        ctx.lineWidth = 2.5;
+                        ctx.fillStyle = 'rgba(130, 220, 255, 0.35)';
+                        ctx.beginPath();
+                        ctx.moveTo(drawX, topYL + 1);
+                        ctx.lineTo(drawX + TILE_SIZE, topYR + 1);
+                        ctx.lineTo(drawX + TILE_SIZE, topYR + 3);
+                        ctx.lineTo(drawX, topYL + 3);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    // 4. Multi-pass surface wave crest highlights
+                    if (!fabulousGraphics || fabulousConfig.waterEffects) {
+                        ctx.strokeStyle = 'rgba(195, 240, 255, 0.88)';
+                        ctx.lineWidth = 2.0;
                         ctx.beginPath();
                         ctx.moveTo(drawX, topYL);
                         ctx.lineTo(drawX + TILE_SIZE, topYR);
                         ctx.stroke();
+
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+                        ctx.lineWidth = 1.0;
+                        ctx.beginPath();
+                        ctx.moveTo(drawX + 4, (topYL * 0.8 + topYR * 0.2));
+                        ctx.lineTo(drawX + TILE_SIZE - 4, (topYL * 0.2 + topYR * 0.8));
+                        ctx.stroke();
                     }
 
-                    // Shoreline foam / meniscus where water touches solid terrain banks
+                    // 5. Shoreline foam / meniscus where water touches solid terrain banks
                     if (isSolidLeft) {
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
                         const foamBob = Math.sin(animTick * 0.12 + fluidX) * 1.0;
-                        ctx.fillRect(drawX, Math.floor(topYL + foamBob - 1), 5, 3);
+                        ctx.fillRect(drawX, Math.floor(topYL + foamBob - 2), 6, 4);
+                        ctx.fillStyle = 'rgba(220, 245, 255, 0.70)';
+                        ctx.fillRect(drawX + 6, Math.floor(topYL + foamBob - 1), 3, 2);
                     }
                     if (isSolidRight) {
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
                         const foamBob = Math.sin(animTick * 0.12 + fluidX + 1) * 1.0;
-                        ctx.fillRect(drawX + TILE_SIZE - 5, Math.floor(topYR + foamBob - 1), 5, 3);
+                        ctx.fillRect(drawX + TILE_SIZE - 6, Math.floor(topYR + foamBob - 2), 6, 4);
+                        ctx.fillStyle = 'rgba(220, 245, 255, 0.70)';
+                        ctx.fillRect(drawX + TILE_SIZE - 9, Math.floor(topYR + foamBob - 1), 3, 2);
                     }
 
-                    // Foam crest specks in wave centers
-                    if ((fluidX + Math.floor(animTick / 8)) % 3 === 0) {
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                    // 6. Foam crest specks in mid-water
+                    if ((fluidX + Math.floor(animTick / 8)) % 4 === 0) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.90)';
                         const midTopY = (topYL + topYR) * 0.5;
-                        ctx.fillRect(drawX + 10, Math.floor(midTopY - 1), 6, 2);
+                        ctx.fillRect(drawX + 9, Math.floor(midTopY - 1), 7, 2);
                     }
 
-                    // Bottom and side boundary shading
+                    // 7. Solid contact shading
                     if (isSolidBelow) {
-                        ctx.fillStyle = 'rgba(12, 60, 130, 0.35)';
+                        ctx.fillStyle = 'rgba(10, 50, 115, 0.40)';
                         ctx.fillRect(drawX, botY - 2, TILE_SIZE, 2);
                     }
                 }
@@ -16122,93 +16507,338 @@ export const SKIN_H = 32;
             ctx.restore();
         }
 
-        // 2. RENDER LAVA (Molten glowing base, core heat currents, basalt crust, falling cascades & bubbling surface)
+        // 2. RENDER LAVA (Molten incandescent convection body, seamless connected viscous quads, floating basalt crust, bubbling magma & embers)
         if (visibleLava.length > 0) {
             ctx.save();
+            const getLavaNominalHeight = (gx, gy) => {
+                if (gx < 0 || gx >= WORLD_WIDTH || gy < 0 || gy >= WORLD_HEIGHT) return 0;
+                const f = getFluid(gx, gy);
+                if (!f || f.type !== IDS.LAVA) return 0;
+                const fAbove = getFluid(gx, gy - 1);
+                if (fAbove && fAbove.type === IDS.LAVA) return 1.0;
+                if (f.falling) return 1.0;
+                if (f.source) return 0.94;
+                return Math.max(0.30, 0.90 - (f.level / (LAVA_FLOW_MAX + 1)) * 0.60);
+            };
+
             for (let i = 0; i < visibleLava.length; i++) {
                 const { fluid, fluidX, fluidY, drawX, drawY } = visibleLava[i];
                 const fluidAbove = getFluid(fluidX, fluidY - 1);
                 const hasFluidAbove = (fluidAbove && fluidAbove.type === IDS.LAVA);
                 const isSolidBelow = isSolidWorldBlock(fluidX, fluidY + 1, world[fluidX]?.[fluidY + 1]);
+                const isSolidLeft = isSolidWorldBlock(fluidX - 1, fluidY, world[fluidX - 1]?.[fluidY]);
+                const isSolidRight = isSolidWorldBlock(fluidX + 1, fluidY, world[fluidX + 1]?.[fluidY]);
+
+                const leftFluid = getFluid(fluidX - 1, fluidY);
+                const isLeftLava = (leftFluid && leftFluid.type === IDS.LAVA);
+                const rightFluid = getFluid(fluidX + 1, fluidY);
+                const isRightLava = (rightFluid && rightFluid.type === IDS.LAVA);
+
+                const leftDownFluid = getFluid(fluidX - 1, fluidY + 1);
+                const isLeftDownLava = (leftDownFluid && leftDownFluid.type === IDS.LAVA);
+                const rightDownFluid = getFluid(fluidX + 1, fluidY + 1);
+                const isRightDownLava = (rightDownFluid && rightDownFluid.type === IDS.LAVA);
+
+                const leftUpFluid = getFluid(fluidX - 1, fluidY - 1);
+                const isLeftUpLava = (leftUpFluid && leftUpFluid.type === IDS.LAVA);
+                const rightUpFluid = getFluid(fluidX + 1, fluidY - 1);
+                const isRightUpLava = (rightUpFluid && rightUpFluid.type === IDS.LAVA);
 
                 if (fluid.falling) {
-                    // Falling lava cascade stream
-                    ctx.fillStyle = '#b72209';
-                    ctx.fillRect(drawX + 3, drawY, TILE_SIZE - 6, TILE_SIZE);
+                    // Falling lava cascade with seamless connected bounds and continuous vertical heat streams
+                    let x0 = drawX;
+                    if (!isSolidLeft && !isLeftLava) x0 = drawX + 2;
+                    let x1 = drawX + TILE_SIZE;
+                    if (!isSolidRight && !isRightLava) x1 = drawX + TILE_SIZE - 2;
+                    const streamWidth = x1 - x0;
 
-                    ctx.fillStyle = '#ff6b08';
-                    ctx.fillRect(drawX + 6, drawY, TILE_SIZE - 12, TILE_SIZE);
+                    let y0 = drawY;
+                    if (!hasFluidAbove) {
+                        if (isLeftLava && !leftFluid.falling) {
+                            const hLeftPour = getLavaNominalHeight(fluidX - 1, fluidY) * 0.72;
+                            y0 = Math.floor(drawY + TILE_SIZE * (1.0 - hLeftPour));
+                        } else if (isRightLava && !rightFluid.falling) {
+                            const hRightPour = getLavaNominalHeight(fluidX + 1, fluidY) * 0.72;
+                            y0 = Math.floor(drawY + TILE_SIZE * (1.0 - hRightPour));
+                        }
+                    }
 
-                    // Downward streaming fiery molten heat veins
-                    ctx.fillStyle = '#ffd236';
-                    const streakOffset = (animTick * 2.5 + fluidX * 9) % TILE_SIZE;
-                    ctx.fillRect(drawX + 8, drawY + streakOffset, 4, 12);
-                    ctx.fillRect(drawX + 16, drawY + ((streakOffset + 14) % TILE_SIZE), 3, 10);
+                    // Chilled basalt outer flanks and molten incandescent interior
+                    ctx.fillStyle = '#3a0c05'; // Chilled dark crust base
+                    ctx.fillRect(x0, y0, streamWidth, drawY + TILE_SIZE - y0);
 
-                    // Dark cooled crust streaks on edges of cascade
-                    ctx.fillStyle = '#4a0e05';
-                    ctx.fillRect(drawX + 3, drawY + ((streakOffset + 6) % TILE_SIZE), 2, 8);
-                    ctx.fillRect(drawX + TILE_SIZE - 5, drawY + ((streakOffset + 18) % TILE_SIZE), 2, 8);
+                    ctx.fillStyle = '#b72209'; // Red-orange mantle
+                    const mantleInset = Math.min(2, Math.floor(streamWidth * 0.15));
+                    ctx.fillRect(x0 + mantleInset, y0, streamWidth - mantleInset * 2, drawY + TILE_SIZE - y0);
 
-                    // Molten splash flare and embers when hitting solid ground or lava pool
+                    ctx.fillStyle = '#ff6b08'; // Glowing orange core
+                    const coreInset = Math.min(4, Math.floor(streamWidth * 0.28));
+                    ctx.fillRect(x0 + coreInset, y0, streamWidth - coreInset * 2, drawY + TILE_SIZE - y0);
+
+                    // Continuous flowing fiery molten veins in world Y space (zero seams across tiles!)
+                    const worldY = fluidY * TILE_SIZE;
+                    const speed = 2.4;
+                    const flowCycle = 64;
+
+                    ctx.fillStyle = '#ffd63b'; // Streaming molten heat veins
+                    const streakY1 = ((worldY + animTick * speed) % flowCycle);
+                    const sy1 = drawY + streakY1 - (streakY1 > 32 ? flowCycle : 0);
+                    if (sy1 + 24 >= y0 && sy1 < drawY + TILE_SIZE) {
+                        const drawSY1 = Math.max(y0, sy1);
+                        const drawSH1 = Math.min(drawY + TILE_SIZE, sy1 + 24) - drawSY1;
+                        if (drawSH1 > 0) ctx.fillRect(x0 + Math.floor(streamWidth * 0.35), drawSY1, 3.5, drawSH1);
+                    }
+
+                    // White-hot core flash
+                    ctx.fillStyle = '#fff4a3';
+                    const streakY2 = ((worldY + animTick * speed * 1.1 + 20) % flowCycle);
+                    const sy2 = drawY + streakY2 - (streakY2 > 32 ? flowCycle : 0);
+                    if (sy2 + 16 >= y0 && sy2 < drawY + TILE_SIZE) {
+                        const drawSY2 = Math.max(y0, sy2);
+                        const drawSH2 = Math.min(drawY + TILE_SIZE, sy2 + 16) - drawSY2;
+                        if (drawSH2 > 0) ctx.fillRect(x0 + Math.floor(streamWidth * 0.42), drawSY2, 2, drawSH2);
+                    }
+
+                    // Downward impact flare
                     const belowF = getFluid(fluidX, fluidY + 1);
-                    if (isSolidBelow || (belowF && !belowF.falling)) {
+                    const isLavaBelow = (belowF && belowF.type === IDS.LAVA);
+
+                    if (isSolidBelow) {
                         ctx.fillStyle = '#ffd236';
-                        const splashW = 8 + Math.sin(animTick * 0.15 + fluidX) * 4;
-                        ctx.fillRect(drawX + 4, drawY + TILE_SIZE - 3, splashW, 3);
-                        ctx.fillRect(drawX + 14, drawY + TILE_SIZE - 4, splashW * 0.8, 4);
+                        const splashW = Math.min(streamWidth + 6, TILE_SIZE);
+                        const splashX = Math.max(drawX, x0 - 2);
+                        ctx.fillRect(splashX, drawY + TILE_SIZE - 4, splashW, 4);
+
+                        ctx.fillStyle = '#fff4a3';
+                        ctx.fillRect(splashX + 3, drawY + TILE_SIZE - 4, Math.max(4, splashW - 6), 3);
+
+                        if (advancedGraphics && Math.random() < 0.10) {
+                            let p = spawnParticle(fluidX * TILE_SIZE + 4 + Math.random() * (TILE_SIZE - 8), (fluidY + 1) * TILE_SIZE - 3, Math.random() < 0.4 ? '#ffd700' : (Math.random() < 0.7 ? '#ff6600' : '#ff2200'));
+                            if (p) {
+                                p.vy = -1.4 - Math.random() * 1.8;
+                                p.vx = (Math.random() - 0.5) * 1.6;
+                                p.life = 25;
+                            }
+                        }
+                    } else if (isLavaBelow && !belowF.falling) {
+                        // Plunging into lava pool: molten incandescent flare at surface
+                        ctx.fillStyle = '#ffd236';
+                        const flareW = streamWidth + 4;
+                        const flareX = Math.max(drawX - 2, x0 - 2);
+                        ctx.fillRect(flareX, drawY + TILE_SIZE - 3, flareW, 3);
+                        ctx.fillStyle = '#fff4a3';
+                        ctx.fillRect(flareX + 2, drawY + TILE_SIZE - 2, flareW - 4, 2);
 
                         if (advancedGraphics && Math.random() < 0.08) {
-                            let p = spawnParticle(fluidX * TILE_SIZE + 6 + Math.random() * 20, (fluidY + 1) * TILE_SIZE - 2, Math.random() < 0.5 ? '#ff4500' : '#ffaa00');
+                            let p = spawnParticle(fluidX * TILE_SIZE + (streamWidth * 0.5) + (Math.random() - 0.5) * 8, (fluidY + 1) * TILE_SIZE - 1, '#ffd700');
                             if (p) {
-                                p.vy = -1.2 - Math.random() * 1.5;
-                                p.vx = (Math.random() - 0.5) * 1.4;
+                                p.vy = -1.0 - Math.random() * 1.2;
+                                p.vx = (Math.random() - 0.5) * 1.2;
                                 p.life = 20;
                             }
                         }
                     }
-                } else {
-                    let hRatio = 1.0;
-                    if (!hasFluidAbove && !fluid.source) {
-                        hRatio = Math.max(0.35, 1.0 - (fluid.level / (LAVA_FLOW_MAX + 1)) * 0.62);
-                    }
-                    const cellHeight = Math.floor(TILE_SIZE * hRatio);
-                    const cellTopY = drawY + (TILE_SIZE - cellHeight);
+                } else if (hasFluidAbove) {
+                    // Submerged Lava: Deep molten magma base with continuous world-coordinate heat convection currents
+                    ctx.fillStyle = '#a81c06';
+                    ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
 
-                    // Deep molten magma base
-                    ctx.fillStyle = '#d33215';
-                    ctx.fillRect(drawX, cellTopY, TILE_SIZE, cellHeight);
+                    // Glowing convection currents in world coordinates
+                    ctx.fillStyle = '#eb4c0c';
+                    const worldPx = fluidX * TILE_SIZE;
+                    const worldPy = fluidY * TILE_SIZE;
+                    const convPhase = (worldPx * 0.05 + worldPy * 0.04 + animTick * 0.03);
+                    const convOffset = Math.sin(convPhase) * 4;
+                    ctx.fillRect(drawX, Math.floor(drawY + 6 + convOffset), TILE_SIZE, 7);
+                    ctx.fillRect(drawX, Math.floor(drawY + 18 - convOffset), TILE_SIZE, 6);
 
-                    // Hot golden-orange swirling core veins
-                    ctx.fillStyle = '#ff7a18';
-                    const pulse = Math.sin(fluidX * 0.8 + fluidY * 0.4 + animTick * 0.04) * 4;
-                    ctx.fillRect(drawX + 4, cellTopY + Math.max(2, Math.floor(cellHeight * 0.35 + pulse)), TILE_SIZE - 8, Math.max(3, Math.floor(cellHeight * 0.3)));
-
-                    // Bright yellow heat veins
+                    // Molten golden fissures
                     ctx.fillStyle = '#ffd236';
-                    if ((fluidX + fluidY + Math.floor(animTick / 10)) % 4 < 2) {
-                        ctx.fillRect(drawX + 8, cellTopY + Math.max(2, Math.floor(cellHeight * 0.45)), 14, 3);
+                    if (Math.sin(worldPx * 0.08 + worldPy * 0.07 + animTick * 0.02) > 0.45) {
+                        ctx.fillRect(drawX, Math.floor(drawY + 10 + convOffset * 0.5), TILE_SIZE, 2.5);
                     }
 
-                    // Dark basalt floating crust specks
-                    ctx.fillStyle = '#5c160a';
-                    if ((fluidX * 2 + fluidY) % 3 === 0) {
-                        const speckOffset = Math.floor(Math.sin(animTick * 0.02 + fluidX) * 3);
-                        ctx.fillRect(drawX + 6 + speckOffset, cellTopY + Math.max(2, Math.floor(cellHeight * 0.2)), 8, 4);
+                    // Chilled basalt crust patches against rock walls only
+                    if (isSolidBelow) {
+                        ctx.fillStyle = '#280703';
+                        ctx.fillRect(drawX, drawY + TILE_SIZE - 2, TILE_SIZE, 2);
                     }
+                    if (isSolidLeft) {
+                        ctx.fillStyle = '#280703';
+                        ctx.fillRect(drawX, drawY, 2, TILE_SIZE);
+                    }
+                    if (isSolidRight) {
+                        ctx.fillStyle = '#280703';
+                        ctx.fillRect(drawX + TILE_SIZE - 2, drawY, 2, TILE_SIZE);
+                    }
+                } else {
+                    // Surface Lava: Seamless connected viscous sloping quad with slow waves, floating basalt crust plates, thermal fissures and bubbles
+                    const hSelf = getLavaNominalHeight(fluidX, fluidY);
 
-                    // Glowing bubbling top surface edge
-                    if (!hasFluidAbove) {
-                        ctx.fillStyle = '#ffec66';
-                        const wave = Math.sin(fluidX * 0.5 + animTick * 0.06) * 1.2;
-                        ctx.fillRect(drawX, Math.floor(cellTopY + wave), TILE_SIZE, 3);
-                        
-                        // Rising spark/smoke particles and embers
-                        if (fabulousGraphics && fabulousConfig.lavaGlow && Math.random() < 0.035) {
-                            spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 4, Math.random() < 0.5 ? '#ff4500' : '#ffaa00');
-                        } else if (advancedGraphics && Math.random() < 0.015) {
-                            spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 4, '#ff4500');
+                    // Shared vertex height at left boundary (fluidX)
+                    let hLeft;
+                    if (isLeftLava) {
+                        if (leftFluid.falling) {
+                            hLeft = Math.max(0.35, hSelf * 0.74);
+                        } else {
+                            hLeft = (hSelf + getLavaNominalHeight(fluidX - 1, fluidY)) * 0.5;
                         }
+                    } else if (isSolidLeft) {
+                        hLeft = hSelf;
+                    } else if (isLeftUpLava) {
+                        hLeft = 1.0;
+                    } else if (isLeftDownLava) {
+                        hLeft = Math.max(0.34, hSelf * 0.72);
+                    } else {
+                        hLeft = hSelf * 0.5;
+                    }
+
+                    // Shared vertex height at right boundary (fluidX + 1)
+                    let hRight;
+                    if (isRightLava) {
+                        if (rightFluid.falling) {
+                            hRight = Math.max(0.35, hSelf * 0.74);
+                        } else {
+                            hRight = (hSelf + getLavaNominalHeight(fluidX + 1, fluidY)) * 0.5;
+                        }
+                    } else if (isSolidRight) {
+                        hRight = hSelf;
+                    } else if (isRightUpLava) {
+                        hRight = 1.0;
+                    } else if (isRightDownLava) {
+                        hRight = Math.max(0.34, hSelf * 0.72);
+                    } else {
+                        hRight = hSelf * 0.5;
+                    }
+
+                    // Viscous slow wave physics in continuous world space
+                    const worldPixelL = fluidX * TILE_SIZE;
+                    const worldPixelR = (fluidX + 1) * TILE_SIZE;
+                    const waveL = Math.sin(worldPixelL * 0.04 + animTick * 0.03) * 1.2 + Math.sin(worldPixelL * 0.09 - animTick * 0.015) * 0.5;
+                    const waveR = Math.sin(worldPixelR * 0.04 + animTick * 0.03) * 1.2 + Math.sin(worldPixelR * 0.09 - animTick * 0.015) * 0.5;
+
+                    const topYL = Math.floor(drawY + TILE_SIZE * (1.0 - hLeft) + waveL);
+                    const topYR = Math.floor(drawY + TILE_SIZE * (1.0 - hRight) + waveR);
+                    const botY = drawY + TILE_SIZE;
+                    const midTopY = (topYL + topYR) * 0.5;
+                    const quadHeight = Math.max(4, botY - midTopY);
+
+                    // 1. Deep molten magma body quad
+                    ctx.fillStyle = '#c92a08';
+                    ctx.beginPath();
+                    ctx.moveTo(drawX, topYL);
+                    ctx.lineTo(drawX + TILE_SIZE, topYR);
+                    ctx.lineTo(drawX + TILE_SIZE, botY);
+                    ctx.lineTo(drawX, botY);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // 2. Step-down spillover cascade connection
+                    if (isLeftDownLava && !isLeftLava && !isSolidLeft) {
+                        ctx.fillStyle = '#c92a08';
+                        ctx.beginPath();
+                        ctx.moveTo(drawX, topYL);
+                        ctx.lineTo(drawX + 4, topYL);
+                        ctx.lineTo(drawX + 4, botY + 8);
+                        ctx.lineTo(drawX - 2, botY + 8);
+                        ctx.lineTo(drawX - 2, botY);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    if (isRightDownLava && !isRightLava && !isSolidRight) {
+                        ctx.fillStyle = '#c92a08';
+                        ctx.beginPath();
+                        ctx.moveTo(drawX + TILE_SIZE - 4, topYR);
+                        ctx.lineTo(drawX + TILE_SIZE, topYR);
+                        ctx.lineTo(drawX + TILE_SIZE + 2, botY);
+                        ctx.lineTo(drawX + TILE_SIZE + 2, botY + 8);
+                        ctx.lineTo(drawX + TILE_SIZE - 4, botY + 8);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    // 3. Swirling glowing orange convective layer
+                    ctx.fillStyle = '#ff6b08';
+                    const convY = midTopY + quadHeight * 0.32;
+                    const convH = Math.max(3, quadHeight * 0.38);
+                    ctx.fillRect(drawX, Math.floor(convY), TILE_SIZE, Math.floor(convH));
+
+                    // 4. Floating dark basalt crust plates & thermal fissure veins in world coordinates
+                    ctx.fillStyle = '#3a0c05';
+                    const crustVal = Math.sin(worldPixelL * 0.06 + animTick * 0.02);
+                    if (crustVal > -0.2) {
+                        const crustH = Math.max(2, Math.floor(quadHeight * 0.25));
+                        ctx.fillRect(drawX, Math.floor(midTopY + 2), TILE_SIZE, crustH);
+
+                        // Glowing fissures cutting through the crust
+                        ctx.fillStyle = '#ffd438';
+                        const fissurePhase = (worldPixelL * 0.08 + animTick * 0.03);
+                        if (Math.sin(fissurePhase) > 0.4) {
+                            ctx.fillRect(drawX + 8, Math.floor(midTopY + 2), 8, Math.max(2, crustH - 1));
+                        }
+                    }
+
+                    // 5. Glowing incandescent crest highlight line
+                    ctx.strokeStyle = '#ffe552';
+                    ctx.lineWidth = 2.0;
+                    ctx.beginPath();
+                    ctx.moveTo(drawX, topYL);
+                    ctx.lineTo(drawX + TILE_SIZE, topYR);
+                    ctx.stroke();
+
+                    // Top white-hot thermal glint
+                    ctx.strokeStyle = '#fff8bd';
+                    ctx.lineWidth = 1.0;
+                    ctx.beginPath();
+                    ctx.moveTo(drawX + 4, topYL * 0.7 + topYR * 0.3);
+                    ctx.lineTo(drawX + TILE_SIZE - 4, topYL * 0.3 + topYR * 0.7);
+                    ctx.stroke();
+
+                    // 6. Dynamic swelling & bursting magma bubbles
+                    const bubblePhase = (animTick * 0.04 + fluidX * 23) % (Math.PI * 2);
+                    const bubbleSin = Math.sin(bubblePhase);
+                    if (bubbleSin > 0.3) {
+                        const bProgress = (bubbleSin - 0.3) / 0.7;
+                        const bubbleRadius = 2 + bProgress * 3;
+                        const bx = drawX + 14 + Math.sin(fluidX * 5) * 6;
+                        const by = midTopY - bubbleRadius * 0.5;
+
+                        // Dark basalt bubble rim
+                        ctx.fillStyle = '#420f07';
+                        ctx.beginPath();
+                        ctx.arc(bx, by, bubbleRadius + 1, Math.PI, 0);
+                        ctx.fill();
+
+                        // Glowing magma bubble body
+                        ctx.fillStyle = '#ff6b08';
+                        ctx.beginPath();
+                        ctx.arc(bx, by, bubbleRadius, Math.PI, 0);
+                        ctx.fill();
+
+                        // White-hot highlight specular
+                        ctx.fillStyle = '#fff4a3';
+                        ctx.fillRect(Math.floor(bx - 1), Math.floor(by - bubbleRadius + 1), 2, 2);
+
+                        // Bursting phase: expanding hot fissure and ember ejection
+                        if (bProgress > 0.95) {
+                            ctx.fillStyle = '#ffe24a';
+                            ctx.fillRect(Math.floor(bx - 3), Math.floor(by - 2), 6, 2);
+                            if (advancedGraphics && Math.random() < 0.15) {
+                                let p = spawnParticle(fluidX * TILE_SIZE + (bx - drawX), fluidY * TILE_SIZE + (by - drawY), '#ffd700');
+                                if (p) {
+                                    p.vy = -1.2 - Math.random() * 1.5;
+                                    p.vx = (Math.random() - 0.5) * 1.2;
+                                    p.life = 20;
+                                }
+                            }
+                        }
+                    }
+
+                    // 7. Ambient sparks / embers floating up into atmosphere
+                    if (fabulousGraphics && fabulousConfig.lavaGlow && Math.random() < 0.04) {
+                        spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 2, Math.random() < 0.5 ? '#ff4500' : '#ffaa00');
+                    } else if (advancedGraphics && Math.random() < 0.02) {
+                        spawnParticle(fluidX * TILE_SIZE + Math.random() * TILE_SIZE, fluidY * TILE_SIZE + 2, '#ff4500');
                     }
                 }
             }
@@ -16424,11 +17054,7 @@ export const SKIN_H = 32;
                             ctx.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
                         }
 
-                        // 2. Crisp integer pixel micro-shake on mining impact (integer snap keeps pixel-art sharp)
-                        const shakeIntensity = (ratio > 0.05) ? Math.min(1.5, ratio * 1.5) : 0;
-                        const shakeX = (shakeIntensity > 0) ? Math.round(Math.sin(frameCount * 3.0) * shakeIntensity) : 0;
-                        const shakeY = (shakeIntensity > 0) ? Math.round(Math.cos(frameCount * 3.6) * (shakeIntensity * 0.6)) : 0;
-
+                        // 2. Stable pixel-art cracks without screen/crack jitter
                         if (crackPixels.length > 0) {
                             // 3. Pixel-Art 3D Relief Highlight (+1px physical offset)
                             ctx.fillStyle = curBgMode ? 'rgba(255, 235, 175, 0.40)' : 'rgba(255, 255, 255, 0.35)';
@@ -16438,7 +17064,7 @@ export const SKIN_H = 32;
                                 const x1 = Math.floor((tx + 1) * TILE_SIZE / 16);
                                 const y0 = Math.floor(ty * TILE_SIZE / 16);
                                 const y1 = Math.floor((ty + 1) * TILE_SIZE / 16);
-                                ctx.fillRect(drawX + x0 + shakeX + 1, drawY + y0 + shakeY + 1, x1 - x0, y1 - y0);
+                                ctx.fillRect(drawX + x0 + 1, drawY + y0 + 1, x1 - x0, y1 - y0);
                             }
 
                             // 4. Pixel-Art Dark Core Fracture Fissure (Snap-to-grid 16x16 texels)
@@ -16449,7 +17075,7 @@ export const SKIN_H = 32;
                                 const x1 = Math.floor((tx + 1) * TILE_SIZE / 16);
                                 const y0 = Math.floor(ty * TILE_SIZE / 16);
                                 const y1 = Math.floor((ty + 1) * TILE_SIZE / 16);
-                                ctx.fillRect(drawX + x0 + shakeX, drawY + y0 + shakeY, x1 - x0, y1 - y0);
+                                ctx.fillRect(drawX + x0, drawY + y0, x1 - x0, y1 - y0);
                             }
                         }
 

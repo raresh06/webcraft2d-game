@@ -9936,6 +9936,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             let ry = curSurfaces[rx] !== undefined ? curSurfaces[rx] : Math.floor(WORLD_HEIGHT / 2);
             if (ry < WORLD_HEIGHT && curWorld[rx] && (curWorld[rx][ry] === IDS.GRASS || curWorld[rx][ry] === IDS.SNOW || curWorld[rx][ry] === IDS.DIRT)) {
                 if (curWorld[rx][ry - 1] !== IDS.AIR || curWorld[rx][ry - 2] !== IDS.AIR) continue;
+                if (typeof isWater === 'function' && (isWater(rx, ry) || isWater(rx, ry - 1) || isWater(rx, ry - 2))) continue;
+                if (typeof isLava === 'function' && (isLava(rx, ry) || isLava(rx, ry - 1) || isLava(rx, ry - 2))) continue;
+                if (typeof getFluid === 'function' && (getFluid(rx, ry) || getFluid(rx, ry - 1) || getFluid(rx, ry - 2))) continue;
 
                 const isJungle = typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(rx) === 'jungle';
                 if (isJungle && Math.random() < 0.70) {
