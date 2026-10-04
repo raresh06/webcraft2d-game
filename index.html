@@ -3538,9 +3538,13 @@
                     </div>
                     <div class="settings-row">
                         <span class="settings-label">Minimap Shape</span>
-                        <button class="mc-btn" id="btn-toggle-minimap-shape" onclick="toggleMinimapShape()">SQUARE</button>
+                        <button class="mc-btn" id="btn-toggle-minimap-shape" onclick="toggleMinimapShape()">CIRCLE</button>
                     </div>
-                    <div class="settings-row relative md:col-span-2 !overflow-visible" id="settings-row-accent">
+                    <div class="settings-row" id="settings-row-corner-tutorial">
+                        <span class="settings-label">Key Hints Tutorial</span>
+                        <button class="mc-btn is-on" id="btn-toggle-corner-tutorial" onclick="toggleCornerTutorial()">ON</button>
+                    </div>
+                    <div class="settings-row relative !overflow-visible" id="settings-row-accent">
                         <span class="settings-label">UI Accent Color</span>
                         <div class="relative overflow-visible">
                             <button class="mc-btn flex items-center justify-center gap-2 !m-0" id="btn-open-accent-picker" onclick="toggleAccentColorPicker(event)">
@@ -3743,6 +3747,10 @@
                         <div class="settings-row">
                             <span class="settings-label" title="Achievements (Advancements)">Achievements</span>
                             <button class="keybind-btn" data-action="achievements" onclick="startRebinding('achievements', this)">L</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label" title="Swap Offhand Item">Swap Offhand</span>
+                            <button class="keybind-btn" data-action="offhand" onclick="startRebinding('offhand', this)">F</button>
                         </div>
                         <div class="settings-row">
                             <span class="settings-label" title="Debug Screen (F3)">Debug Screen (F3)</span>
@@ -4829,8 +4837,8 @@
                 <p id="room-indicator" class="hidden text-xl text-yellow-300 font-bold text-shadow-sm bg-black/80 px-3 py-1 border-2 border-yellow-600 inline-block shadow-lg rounded text-right backdrop-blur-sm mb-1">
                     Room: <span id="mp-room-display">Global</span>
                 </p>
-                <div class="hud-minimap-wrap pointer-events-auto cursor-pointer" onclick="toggleWorldMap(true)" title="Click to Open Full World Map [M]">
-                    <canvas id="minimap" width="160" height="160" class="hud-minimap opacity-90"></canvas>
+                <div class="hud-minimap-wrap pointer-events-auto cursor-pointer shape-circle" onclick="toggleWorldMap(true)" title="Click to Open Full World Map [M]">
+                    <canvas id="minimap" width="160" height="160" class="hud-minimap opacity-90 shape-circle"></canvas>
                 </div>
                 <div class="hud-day-readout">
                     Day <span id="day-counter">1</span><br><span id="time-display">Morning</span>
@@ -5095,14 +5103,35 @@
         <div class="absolute bottom-4 left-0 w-full flex flex-col items-center pointer-events-none">
             <div id="hotbar-item-name" class="text-2xl text-white font-bold font-['VT323'] mb-1 bg-black/60 px-3 py-0.5 rounded border border-gray-600 transition-opacity duration-300 opacity-0"></div>
             <div class="flex gap-3 items-end scale-95 md:scale-100">
-                <div class="interactive-ui hud-item-frame hud-offhand-frame" id="hud-offhand-slot"></div>
+                <div class="interactive-ui hud-item-frame hud-offhand-frame pointer-events-auto cursor-pointer" id="hud-offhand-slot" onclick="swapHotbarWithOffhand()" title="Offhand Slot (Click or press [F] to swap with held item)"></div>
                 <div class="interactive-ui hud-item-frame hud-hotbar-frame" id="hotbar"></div>
             </div>
         </div>
 
+        <!-- Bottom-Left Key Hints Tutorial -->
+        <div id="hud-corner-tutorial" class="hud-corner-tutorial pointer-events-auto" role="region" aria-label="Key Hints Tutorial">
+            <button type="button" class="hud-tutorial-row" onclick="openCurrencyHubModal()" title="Open Emerald Vault [C]">
+                <span class="mc-keycap-mini" id="hint-key-vault">C</span>
+                <span class="hud-tutorial-text">Open Emerald Vault</span>
+            </button>
+            <button type="button" class="hud-tutorial-row" onclick="openAchievements(isMultiplayer ? 'mp' : 'sp')" title="Open Achievements [L]">
+                <span class="mc-keycap-mini" id="hint-key-ach">L</span>
+                <span class="hud-tutorial-text">Open Achievements</span>
+            </button>
+            <button type="button" class="hud-tutorial-row" onclick="toggleWorldMap(true)" title="Open Map [M]">
+                <span class="mc-keycap-mini" id="hint-key-map">M</span>
+                <span class="hud-tutorial-text">Open Map</span>
+            </button>
+            <button type="button" class="hud-tutorial-row" onclick="toggleBackgroundBuildMode()" title="Background Build Mode [B]">
+                <span class="mc-keycap-mini" id="hint-key-bg">B</span>
+                <span class="hud-tutorial-text">Background Build</span>
+            </button>
+            <button type="button" class="hud-tutorial-close-btn" onclick="toggleCornerTutorial(false)" title="Hide tutorial hints (can be re-enabled in Settings)">✕</button>
+        </div>
+
         <!-- Standalone Big Celestial Clock (Bottom Right) -->
-        <div id="hud-bottom-clock" class="hud-corner-clock pointer-events-none">
-            <canvas id="time-clock" class="hud-clock-canvas pointer-events-none" width="76" height="76" aria-label="Time of day"></canvas>
+        <div id="hud-bottom-clock" class="hud-corner-clock pointer-events-auto cursor-pointer" onclick="showClockTimeToast()" title="Celestial Clock (Click to view time)">
+            <canvas id="time-clock" class="hud-clock-canvas pointer-events-auto cursor-pointer" width="76" height="76" aria-label="Time of day"></canvas>
         </div>
     </div>
 

@@ -529,6 +529,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         bg_build: 'b',
         devconsole: 'f7',
         achievements: 'l',
+        offhand: 'f',
         slot1: '1',
         slot2: '2',
         slot3: '3',
@@ -558,7 +559,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export let showVignette = true;
     export let showHeatShimmer = true;
     export let showBiomeGrading = true;
-    export let minimapShape = 'square'; // 'square' | 'circle'
+    export let minimapShape = 'circle'; // 'square' | 'circle'
+    export let showControlHints = true;
 
     export const DEFAULT_ACCENT_COLOR = '#ffd34d';
     export let currentAccentColor = DEFAULT_ACCENT_COLOR;
@@ -775,6 +777,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     if (typeof window !== 'undefined') { window.showBiomeGrading = s.showBiomeGrading; if (typeof window.setEngineSetting === 'function') window.setEngineSetting('showBiomeGrading', s.showBiomeGrading); }
                 }
                 if (s.minimapShape !== undefined) { minimapShape = s.minimapShape; if (typeof window !== 'undefined') window.minimapShape = s.minimapShape; }
+                if (s.showControlHints !== undefined) { showControlHints = s.showControlHints; if (typeof window !== 'undefined') window.showControlHints = s.showControlHints; }
                 if (s.accentColor !== undefined) { currentAccentColor = s.accentColor; if (typeof window !== 'undefined') window.currentAccentColor = s.accentColor; }
                 if (s.accentName !== undefined) { currentAccentName = s.accentName; if (typeof window !== 'undefined') window.currentAccentName = s.accentName; }
                 if (s.autosaveInterval !== undefined) {
@@ -816,6 +819,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     if (typeof window !== 'undefined') window.currentDifficulty = savedDiff;
                 }
             }
+            applyControlHintsVisibility();
         } catch (e) {
             console.error('Failed to load settings', e);
         }
@@ -839,6 +843,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 showHeatShimmer,
                 showBiomeGrading,
                 minimapShape,
+                showControlHints,
                 accentColor: currentAccentColor,
                 accentName: currentAccentName,
                 autosaveInterval: autosaveInterval
@@ -846,6 +851,89 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             localStorage.setItem('swc_autosave_interval', String(autosaveInterval));
         } catch (e) {
             console.error('Failed to save settings', e);
+        }
+    }
+
+    export function toggleCornerTutorial(forceState) {
+        showControlHints = typeof forceState === 'boolean' ? forceState : !showControlHints;
+        if (typeof window !== 'undefined') window.showControlHints = showControlHints;
+        applyControlHintsVisibility();
+        saveCurrentSettings();
+    }
+
+    export function applyControlHintsVisibility() {
+        if (typeof document === 'undefined') return;
+        const el = document.getElementById('hud-corner-tutorial');
+        if (el) el.classList.toggle('hidden', !showControlHints);
+        const autosaveContainer = document.getElementById('autosave-toast-container');
+        if (autosaveContainer) {
+            autosaveContainer.style.bottom = showControlHints ? '165px' : '22px';
+        }
+        updateToggleBtnState('btn-toggle-corner-tutorial', showControlHints);
+        updateTutorialKeycaps();
+    }
+
+    export function updateTutorialKeycaps() {
+        if (typeof document === 'undefined') return;
+        const activeKeybinds = KEYBINDS || (typeof window !== 'undefined' ? window.KEYBINDS : {}) || {};
+        const vaultKey = (activeKeybinds['astral'] || 'c').toUpperCase();
+        const achKey = (activeKeybinds['achievements'] || 'l').toUpperCase();
+        const mapKey = (activeKeybinds['map'] || 'm').toUpperCase();
+        const bgKey = (activeKeybinds['bg_build'] || 'b').toUpperCase();
+
+        const vaultEl = document.getElementById('hint-key-vault');
+        if (vaultEl && vaultEl.innerText !== vaultKey) vaultEl.innerText = vaultKey;
+        const achEl = document.getElementById('hint-key-ach');
+        if (achEl && achEl.innerText !== achKey) achEl.innerText = achKey;
+        const mapEl = document.getElementById('hint-key-map');
+        if (mapEl && mapEl.innerText !== mapKey) mapEl.innerText = mapKey;
+        const bgEl = document.getElementById('hint-key-bg');
+        if (bgEl && bgEl.innerText !== bgKey) bgEl.innerText = bgKey;
+    }
+
+    export function swapHotbarWithOffhand() {
+        const liveInv = (typeof inventory !== 'undefined') ? inventory : ((typeof window !== 'undefined' && window.inventory) ? window.inventory : null);
+        if (!liveInv) return;
+
+        const selIdx = (typeof selectedHotbarIndex !== 'undefined') ? selectedHotbarIndex : ((typeof window !== 'undefined' && window.selectedHotbarIndex !== undefined) ? window.selectedHotbarIndex : 0);
+        const mainItem = liveInv[selIdx];
+        const offItem = liveInv[27];
+
+        liveInv[selIdx] = offItem || null;
+        liveInv[27] = mainItem || null;
+
+        if (typeof playSound === 'function') playSound('pop');
+        else if (typeof window !== 'undefined' && typeof window.playSound === 'function') window.playSound('pop');
+
+        if (typeof updateUI === 'function') updateUI();
+        else if (typeof window !== 'undefined' && typeof window.updateUI === 'function') window.updateUI();
+
+        if (typeof triggerHotbarItemPopup === 'function') triggerHotbarItemPopup();
+        else if (typeof window !== 'undefined' && typeof window.triggerHotbarItemPopup === 'function') window.triggerHotbarItemPopup();
+    }
+
+    export function showClockTimeToast() {
+        const tVal = (typeof timeOfDay !== 'undefined') ? timeOfDay : ((typeof window !== 'undefined' && window.timeOfDay !== undefined) ? window.timeOfDay : 0.1);
+        const day = (typeof dayCount !== 'undefined') ? dayCount : ((typeof window !== 'undefined' && window.dayCount !== undefined) ? window.dayCount : 1);
+
+        const totalHours = (tVal * 24 + 6) % 24;
+        const hours = Math.floor(totalHours);
+        const minutes = Math.floor((totalHours % 1) * 60);
+        const hh = String(hours).padStart(2, '0');
+        const mm = String(minutes).padStart(2, '0');
+
+        let phase = 'Morning';
+        if (tVal >= 0.92 || tVal < 0.04) phase = 'Sunrise';
+        else if (tVal < 0.25) phase = 'Morning';
+        else if (tVal < 0.60) phase = 'Afternoon';
+        else if (tVal < 0.70) phase = 'Sunset';
+        else phase = 'Night';
+
+        if (typeof playSound === 'function') playSound('click');
+        else if (typeof window !== 'undefined' && typeof window.playSound === 'function') window.playSound('click');
+
+        if (typeof showToast === 'function') {
+            showToast(`Day ${day} • ${hh}:${mm} (${phase})`);
         }
     }
 
@@ -10176,51 +10264,62 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (!container) return;
 
         const toast = document.createElement('div');
-        toast.className = 'autosave-toast';
+        toast.className = 'autosave-toast-unboxed';
 
-        // Pixel art cassette tape badge
-        const badge = document.createElement('div');
-        badge.className = 'autosave-icon-badge';
-        badge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="16" viewBox="0 0 22 16" shape-rendering="crispEdges">
-            <path fill="#0f172a" d="M1 0h20v1H1zM0 1h22v14H0zM1 15h20v1H1z"/>
-            <path fill="#334155" d="M1 1h20v1H1zM1 1h1v14H1z"/>
-            <path fill="#e2e8f0" d="M3 3h16v8H3z"/>
-            <path fill="#22c55e" d="M3 4h16v2H3z"/>
-            <path fill="#0f172a" d="M6 7h10v3H6z"/>
-            <path fill="#ffffff" d="M7 8h2v1H7zM13 8h2v1H13z"/>
-            <path fill="#0f172a" d="M5 12h12v2H5z"/>
-            <path fill="#475569" d="M6 13h10v1H6z"/>
-            <path fill="#94a3b8" d="M1 1h1v1H1zM20 1h1v1H20zM1 14h1v1H1zM20 14h1v1H20z"/>
-        </svg>`;
-        toast.appendChild(badge);
+        // Unboxed large pixel-art cassette tape with animated reels + clean SAVED text
+        toast.innerHTML = `
+            <div class="autosave-cassette-wrap">
+                <svg class="autosave-cassette-svg" width="52" height="34" viewBox="0 0 52 34" shape-rendering="crispEdges">
+                    <!-- Cassette Outer Shell -->
+                    <rect x="2" y="0" width="48" height="34" fill="#181c22"/>
+                    <rect x="0" y="2" width="52" height="30" fill="#181c22"/>
+                    <rect x="2" y="2" width="48" height="30" fill="#242b35"/>
+                    <rect x="3" y="3" width="46" height="1" fill="#384350"/>
+                    <rect x="3" y="3" width="1" height="28" fill="#384350"/>
+                    <!-- Corner Screws -->
+                    <rect x="3" y="3" width="2" height="2" fill="#64748b"/>
+                    <rect x="47" y="3" width="2" height="2" fill="#64748b"/>
+                    <rect x="3" y="29" width="2" height="2" fill="#64748b"/>
+                    <rect x="47" y="29" width="2" height="2" fill="#64748b"/>
+                    <!-- Label Sticker with Retro Green Accent -->
+                    <rect x="6" y="6" width="40" height="18" fill="#f1f5f9"/>
+                    <rect x="6" y="8" width="40" height="4" fill="#22c55e"/>
+                    <rect x="6" y="13" width="40" height="2" fill="#15803d"/>
+                    <!-- Center Window -->
+                    <rect x="14" y="11" width="24" height="12" fill="#0f172a"/>
+                    <rect x="18" y="13" width="16" height="8" fill="#451a03"/>
+                    <!-- Left Reel (Spinning) -->
+                    <g class="cassette-reel reel-left">
+                        <circle cx="19" cy="17" r="4.5" fill="#f8fafc"/>
+                        <circle cx="19" cy="17" r="2" fill="#0f172a"/>
+                        <rect x="18" y="13.5" width="2" height="7" fill="#64748b"/>
+                        <rect x="15.5" y="16" width="7" height="2" fill="#64748b"/>
+                    </g>
+                    <!-- Right Reel (Spinning) -->
+                    <g class="cassette-reel reel-right">
+                        <circle cx="33" cy="17" r="4.5" fill="#f8fafc"/>
+                        <circle cx="33" cy="17" r="2" fill="#0f172a"/>
+                        <rect x="32" y="13.5" width="2" height="7" fill="#64748b"/>
+                        <rect x="29.5" y="16" width="7" height="2" fill="#64748b"/>
+                    </g>
+                    <!-- Bottom Tape Head Reading Area -->
+                    <polygon points="12,27 40,27 45,34 7,34" fill="#181c22"/>
+                    <rect x="20" y="29" width="12" height="4" fill="#475569"/>
+                    <circle cx="14" cy="30.5" r="1.5" fill="#94a3b8"/>
+                    <circle cx="38" cy="30.5" r="1.5" fill="#94a3b8"/>
+                </svg>
+            </div>
+            <span class="autosave-label">${isMp ? 'SAVED' : 'SAVED'}</span>
+        `;
 
-        const textWrap = document.createElement('div');
-        textWrap.className = 'flex flex-col min-w-0';
-
-        const titleRow = document.createElement('div');
-        titleRow.className = 'flex items-center leading-none';
-
-        const title = document.createElement('span');
-        title.className = 'text-xl font-bold text-[#4ade80] tracking-wide';
-        title.innerText = isMp ? 'MULTIPLAYER SAVED' : 'WORLD AUTOSAVED';
-        titleRow.appendChild(title);
-
-        textWrap.appendChild(titleRow);
-
-        const sub = document.createElement('span');
-        sub.className = 'text-base text-gray-300 leading-tight truncate';
-        sub.innerText = isMp ? 'Synced & saved progress' : 'Progress saved safely';
-        textWrap.appendChild(sub);
-
-        toast.appendChild(textWrap);
         container.appendChild(toast);
 
         setTimeout(() => {
             toast.classList.add('dismissing');
             setTimeout(() => {
                 if (toast.parentElement) toast.remove();
-            }, 350);
-        }, 2800);
+            }, 300);
+        }, 2200);
     }
 
     export function performWorldAutosave() {
@@ -13096,6 +13195,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         updateHudArmorBar();
         renderPinnedRecipeHUD();
+        updateTutorialKeycaps();
 
         if (!isInventoryOpen) return;
 
@@ -15746,6 +15846,12 @@ try { if (typeof toggleIntro !== "undefined") window.toggleIntro = toggleIntro; 
 try { if (typeof toggleInventory !== "undefined") window.toggleInventory = toggleInventory; } catch(e) {}
 try { if (typeof toggleInvertWheel !== "undefined") window.toggleInvertWheel = toggleInvertWheel; } catch(e) {}
 try { if (typeof toggleItemPopups !== "undefined") window.toggleItemPopups = toggleItemPopups; } catch(e) {}
+try { if (typeof toggleCornerTutorial !== "undefined") window.toggleCornerTutorial = toggleCornerTutorial; } catch(e) {}
+try { if (typeof applyControlHintsVisibility !== "undefined") window.applyControlHintsVisibility = applyControlHintsVisibility; } catch(e) {}
+try { if (typeof updateTutorialKeycaps !== "undefined") window.updateTutorialKeycaps = updateTutorialKeycaps; } catch(e) {}
+try { if (typeof swapHotbarWithOffhand !== "undefined") window.swapHotbarWithOffhand = swapHotbarWithOffhand; } catch(e) {}
+try { if (typeof showClockTimeToast !== "undefined") window.showClockTimeToast = showClockTimeToast; } catch(e) {}
+try { if (typeof showControlHints !== "undefined") window.showControlHints = showControlHints; } catch(e) {}
 try { if (typeof toggleMinimapShape !== "undefined") window.toggleMinimapShape = toggleMinimapShape; } catch(e) {}
 try { if (typeof toggleMuteAudio !== "undefined") window.toggleMuteAudio = toggleMuteAudio; } catch(e) {}
 try { if (typeof toggleNewWorldOption !== "undefined") window.toggleNewWorldOption = toggleNewWorldOption; } catch(e) {}

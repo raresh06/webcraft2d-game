@@ -553,7 +553,6 @@ class DevConsoleManager {
                         <button type="button" class="dev-ctrl-btn" id="dev-dock-btn" title="Flip dock to Left/Right corner">Dock: Right</button>
                         <button type="button" class="dev-ctrl-btn" id="dev-min-btn" title="Minimize debug bar">_</button>
                         <button type="button" class="dev-ctrl-btn close" id="dev-console-close" title="Close (F7 or ~)">✕</button>
-                        <button type="button" class="dev-ctrl-btn close" id="dev-console-close" title="Close (F7 or ~)">${getPixelIconSvg('close', 10)}</button>
                     </div>
                 </div>
 
@@ -713,7 +712,6 @@ class DevConsoleManager {
                         </button>
                         <button type="button" class="dev-grid-btn" id="dev-btn-toggle-items" style="border-color: #38bdf8; color: #7dd3fc;">
                             <span style="display:inline-flex;align-items:center;gap:4px;">${getPixelIconSvg('chest', 15)} Item Drawer</span><span class="dev-badge-off">OPEN ▶</span>
-                            <span style="display:inline-flex;align-items:center;gap:4px;">${getPixelIconSvg('chest', 15)} Item Drawer</span><span class="dev-badge-off">OPEN</span>
                         </button>
                     </div>
 
@@ -741,7 +739,6 @@ class DevConsoleManager {
                         <span id="dev-items-count-label" class="dev-badge-off" style="color: #ffd34d;">Loading...</span>
                     </div>
                     <button type="button" class="dev-ctrl-btn close" id="dev-drawer-close" title="Close Item Drawer">✕</button>
-                    <button type="button" class="dev-ctrl-btn close" id="dev-drawer-close" title="Close Item Drawer">${getPixelIconSvg('close', 10)}</button>
                 </div>
 
                 <!-- Search Input & Count Selector -->
@@ -915,7 +912,6 @@ class DevConsoleManager {
             if (toggleBtn) {
                 toggleBtn.classList.add('active');
                 toggleBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;">' + getPixelIconSvg('chest', 15) + ' Item Drawer</span><span class="dev-badge-on">OPEN ◀</span>';
-                toggleBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;">' + getPixelIconSvg('chest', 15) + ' Item Drawer</span><span class="dev-badge-on">OPEN</span>';
             }
             this.renderItemsGrid();
             this.updatePanelPosition();
@@ -926,7 +922,6 @@ class DevConsoleManager {
             if (toggleBtn) {
                 toggleBtn.classList.remove('active');
                 toggleBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;">' + getPixelIconSvg('chest', 15) + ' Item Drawer</span><span class="dev-badge-off">CLOSED ▶</span>';
-                toggleBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;">' + getPixelIconSvg('chest', 15) + ' Item Drawer</span><span class="dev-badge-off">CLOSED</span>';
             }
         }
     }

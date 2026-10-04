@@ -1051,6 +1051,7 @@ export function initJukeboxFileInput() {
             const astralKey = (activeKeybinds['astral'] || 'c').toLowerCase();
             const bgBuildKey = (activeKeybinds['bg_build'] || 'b').toLowerCase();
             const achKey = (activeKeybinds['achievements'] || 'l').toLowerCase();
+            const offhandKey = (activeKeybinds['offhand'] || 'f').toLowerCase();
 
             if (isMultiplayer && (k === chatKey || k === '/') && !isInventoryOpen && !isWorldMapOpen) {
                 e.preventDefault();
@@ -1065,6 +1066,12 @@ export function initJukeboxFileInput() {
             if ((k === bgBuildKey || k === 'b') && !isInventoryOpen && !isWorldMapOpen) {
                 e.preventDefault();
                 toggleBackgroundBuildMode();
+                return;
+            }
+            if ((k === offhandKey || k === 'f') && !isInventoryOpen && !isWorldMapOpen) {
+                e.preventDefault();
+                if (typeof UI !== 'undefined' && typeof UI.swapHotbarWithOffhand === 'function') UI.swapHotbarWithOffhand();
+                else if (typeof window !== 'undefined' && typeof window.swapHotbarWithOffhand === 'function') window.swapHotbarWithOffhand();
                 return;
             }
             if (isWorldMapOpen) {
@@ -1099,8 +1106,9 @@ export function initJukeboxFileInput() {
                 e.preventDefault();
                 let item = inventory[selectedHotbarIndex];
                 if (item && item.id) {
-                    dropItemForWorld(item.id, player.x + player.width/2 + (player.facingRight ? 16 : -16), player.y + 10, 1);
-                    item.count--;
+                    const dropAmount = (e.ctrlKey || e.metaKey) ? item.count : 1;
+                    dropItemForWorld(item.id, player.x + player.width/2 + (player.facingRight ? 16 : -16), player.y + 10, dropAmount);
+                    item.count -= dropAmount;
                     if (item.count <= 0) inventory[selectedHotbarIndex] = null;
                     playSound('pop');
                     updateUI();
@@ -1958,7 +1966,7 @@ export function initJukeboxFileInput() {
         const curBgMode = (typeof window !== 'undefined' && window.isBackgroundBuildMode !== undefined) ? window.isBackgroundBuildMode : isBackgroundBuildMode;
         if (curBgMode) {
             let bgBlockId = bgWorld[gridX]?.[gridY] || IDS.AIR;
-            if (bgBlockId === IDS.AIR) { miningTarget.progress = 0; return; }
+            if (bgBlockId === IDS.AIR || bgBlockId === IDS.WATER || bgBlockId === IDS.LAVA || !Number.isInteger(bgBlockId)) { miningTarget.progress = 0; return; }
 
             const heldToolBg = inventory[selectedHotbarIndex];
             const curToolIdBg = heldToolBg ? heldToolBg.id : null;
@@ -2004,8 +2012,11 @@ export function initJukeboxFileInput() {
             return;
         }
 
-        let blockId = world[gridX][gridY];
-        if (blockId === IDS.AIR) { miningTarget.progress = 0; return; }
+        let blockId = world[gridX]?.[gridY];
+        if (blockId === undefined || blockId === null || blockId === IDS.AIR || blockId === IDS.WATER || blockId === IDS.LAVA || !Number.isInteger(blockId)) {
+            miningTarget.progress = 0;
+            return;
+        }
 
         const heldTool = inventory[selectedHotbarIndex];
         const isHoldingHoe = heldTool && isHoe(heldTool.id);
