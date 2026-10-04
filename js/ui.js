@@ -1,7 +1,7 @@
 import {
     IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, currentWorldSize,
     Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot, AtlasExplorer, Gloomstalker,
-    generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview,
+    generateWorld, getInitialSpawnPoint, drawCharacter, drawPlayerPreview, drawFrontCharacter,
     startPlayerPreviewWalk, ensureDesertScorpions, ensureTreeWoodNonCollidable, sanitizeTreeWoodCollision,
     setEngineNonCollidableTreeWood,
     textures, getPlayerCaveSkyOpacity, getWorldSurfaceY, getActiveBiomeAt, isNonSurfaceBlock,
@@ -8155,6 +8155,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     export function openProfileEditor() {
+        openStandaloneProfileEditor();
+    }
+
+    export function openStandaloneProfileEditor() {
         const detailsModal = document.getElementById('profile-details-modal');
         if (detailsModal && !detailsModal.classList.contains('hidden')) {
             profileEditorOpenedFromDetails = true;
@@ -8569,11 +8573,366 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     // =========================================================================
-    // UNIFIED ASTRAL SHOP CONTROLLER
+    // WEBCRAFT STORE CONTROLLER
     // =========================================================================
 
     let currentShopTab = 'cosmetics';
     let currentCosmeticsFilter = 'all';
+    let currentLockerFilter = 'all';
+    export let storeSearchQuery = '';
+    export let storeOwnershipFilter = 'all';
+
+    export let storeActiveTryOn = {
+        avatarFrame: null,
+        bannerPattern: null,
+        titlePlate: null,
+        cardTheme: null,
+        lastItemId: null
+    };
+
+    // Compatibility stubs for legacy Barnaby & Store customizer exports
+    export let barnabySkinCanvas = null;
+    export function getBarnabySkinCanvas() { return null; }
+    export const WEBCRAFT_STORE_DIALOGUES = [];
+    export let currentStoreDialogueIdx = 0;
+    export function cycleStoreNpcDialogue() {}
+    export function drawStoreShopkeeper() {}
+    export function startWebcraftStoreNpc() {}
+    export function stopWebcraftStoreNpc() {}
+
+    // =========================================================================
+    // =========================================================================
+    // WEBCRAFT STORE: IN-STORE LIVE TRY-ON SHOWCASE
+    // =========================================================================
+
+    export function updateStoreShowcase() {
+        const cust = getPlayerCustomization();
+        const activeFrameId = storeActiveTryOn.avatarFrame || cust.avatarFrame || 'frame_classic';
+        const activeBannerId = storeActiveTryOn.bannerPattern || cust.bannerPattern || 'banner_slate';
+        const activeTitleId = storeActiveTryOn.titlePlate || cust.titlePlate || 'title_novice';
+        const activeThemeId = storeActiveTryOn.cardTheme || cust.cardTheme || 'theme_slate';
+
+        const hasTryOn = !!(storeActiveTryOn.avatarFrame || storeActiveTryOn.bannerPattern || storeActiveTryOn.titlePlate || storeActiveTryOn.cardTheme);
+
+        // Update Theme
+        const card = document.getElementById('store-preview-card');
+        if (card) {
+            const themeItem = getCosmeticItem(activeThemeId) || getCosmeticItem('theme_slate');
+            card.className = `discord-card-preview ${themeItem ? themeItem.themeClass : 'card-theme-slate'} w-full shadow-xl relative select-none`;
+        }
+
+        // Update Banner
+        const banner = document.getElementById('store-preview-banner');
+        if (banner) {
+            const bannerItem = getCosmeticItem(activeBannerId) || getCosmeticItem('banner_slate');
+            banner.className = `discord-card-banner ${bannerItem ? bannerItem.bannerClass : 'banner-pattern-slate'} w-full relative`;
+            banner.style.backgroundColor = cust.bannerColor || (bannerItem ? bannerItem.color : '#181e24');
+        }
+
+        // Update Avatar Frame & Crown
+        const frameWrap = document.getElementById('store-preview-avatar-frame');
+        const crown = document.getElementById('store-preview-crown-badge');
+        const frameItem = getCosmeticItem(activeFrameId) || getCosmeticItem('frame_classic');
+        if (frameWrap) {
+            frameWrap.className = `avatar-frame-wrapper ${frameItem ? frameItem.frameClass : 'avatar-frame-classic'} relative inline-block`;
+        }
+        if (crown) {
+            crown.classList.toggle('hidden', frameItem ? frameItem.id !== 'frame_crown' : true);
+        }
+
+        // Render Head on Avatar Canvas
+        const canvas = document.getElementById('store-preview-avatar-canvas');
+        if (canvas && typeof drawPlayerHead === 'function') {
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, 50, 50);
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 16;
+            tempCanvas.height = 32;
+            const tCtx = tempCanvas.getContext('2d');
+            const imgData = tCtx.createImageData(16, 32);
+            const activeSkin = (typeof getSkinSaveData === 'function' ? getSkinSaveData() : null) || playerSkinData;
+            if (activeSkin) {
+                for (let i = 0; i < 16 * 32; i++) {
+                    const c = activeSkin[i] || '#00000000';
+                    const rgb = hexToRgb(c);
+                    imgData.data[i * 4] = rgb.r;
+                    imgData.data[i * 4 + 1] = rgb.g;
+                    imgData.data[i * 4 + 2] = rgb.b;
+                    imgData.data[i * 4 + 3] = (c === '#00000000' || !c) ? 0 : 255;
+                }
+                tCtx.putImageData(imgData, 0, 0);
+                drawPlayerHead(ctx, tempCanvas, 0, 0, 50);
+            }
+        }
+
+        // Update Title Badge
+        const titleBadge = document.getElementById('store-preview-title-badge');
+        if (titleBadge) {
+            const titleItem = getCosmeticItem(activeTitleId);
+            if (titleItem && titleItem.id !== 'title_novice') {
+                titleBadge.classList.remove('hidden');
+                titleBadge.innerText = titleItem.prefixTag || titleItem.name;
+                titleBadge.style.color = titleItem.nameColor || '#ffd34d';
+                titleBadge.style.borderColor = titleItem.nameColor || '#ffd34d';
+            } else {
+                titleBadge.classList.add('hidden');
+            }
+        }
+
+        // Update Username & Tag
+        const uName = document.getElementById('store-preview-username');
+        if (uName) {
+            const rawName = (currentUserProfile && currentUserProfile.username) ? currentUserProfile.username : 'Player';
+            uName.innerText = rawName;
+            uName.style.color = cust.nameColor || '#ffffff';
+        }
+        const uTag = document.getElementById('store-preview-tag');
+        if (uTag) {
+            const rawName = (currentUserProfile && currentUserProfile.username) ? currentUserProfile.username : 'Player';
+            uTag.innerText = `@${rawName}`;
+        }
+
+        // Update Bio
+        const bioEl = document.getElementById('store-preview-bio');
+        if (bioEl) {
+            bioEl.innerText = cust.bio || 'Mining across dimensions.';
+        }
+
+        // Update Status & Controls
+        const dot = document.getElementById('store-showcase-dot');
+        const statusText = document.getElementById('store-showcase-status-text');
+        const revertBtn = document.getElementById('store-showcase-revert-btn');
+        const actionWrap = document.getElementById('store-showcase-action-btn-wrap');
+
+        if (revertBtn) revertBtn.classList.toggle('hidden', !hasTryOn);
+
+        if (hasTryOn) {
+            const lastItem = storeActiveTryOn.lastItemId ? getCosmeticItem(storeActiveTryOn.lastItemId) : null;
+            const tryOnLabel = lastItem ? `Trying on: ${lastItem.name}` : 'Previewing Custom Look';
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-purple-400 animate-pulse';
+            if (statusText) {
+                statusText.innerText = tryOnLabel;
+                statusText.className = 'text-xs font-[\'VT323\'] text-purple-300 truncate';
+            }
+
+            if (actionWrap) {
+                if (lastItem) {
+                    const unlocked = getPlayerUnlockedCosmetics();
+                    const isOwned = unlocked.includes(lastItem.id) || lastItem.isDefault;
+                    const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+                    const gems = typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0;
+                    const canAfford = !isGuest && gems >= lastItem.price;
+
+                    if (isOwned) {
+                        actionWrap.innerHTML = `
+                            <button type="button" class="mc-btn !bg-[#2563eb] hover:!bg-[#1d4ed8] !text-white !h-8 !w-full !text-base font-bold flex items-center justify-center gap-1.5" onclick="equipCosmeticItem('${lastItem.id}')">
+                                <span>Equip ${lastItem.name}</span>
+                            </button>
+                        `;
+                    } else if (isGuest) {
+                        actionWrap.innerHTML = `
+                            <button type="button" class="mc-btn auth-primary-btn !h-8 !w-full !text-base font-bold flex items-center justify-center gap-1.5" onclick="purchaseCosmeticItem('${lastItem.id}')">
+                                <span>Sign In to Unlock (${lastItem.price} ✦)</span>
+                            </button>
+                        `;
+                    } else if (canAfford) {
+                        actionWrap.innerHTML = `
+                            <button type="button" class="mc-btn auth-primary-btn !h-8 !w-full !text-base font-bold flex items-center justify-center gap-1.5" onclick="purchaseCosmeticItem('${lastItem.id}')">
+                                <span>Buy ${lastItem.name} (${lastItem.price} ✦)</span>
+                            </button>
+                        `;
+                    } else {
+                        const diff = lastItem.price - gems;
+                        actionWrap.innerHTML = `
+                            <button type="button" class="mc-btn !bg-[#382645] !text-[#d8b4fe] opacity-80 cursor-not-allowed !h-8 !w-full !text-base font-bold flex items-center justify-center gap-1.5" disabled>
+                                <span>Need ${diff} more ✦ to Buy</span>
+                            </button>
+                        `;
+                    }
+                } else {
+                    actionWrap.innerHTML = `
+                        <button type="button" class="mc-btn !h-8 !w-full !text-base font-bold flex items-center justify-center gap-1.5" onclick="revertStoreTryOn()">
+                            <span>Revert to Current Look</span>
+                        </button>
+                    `;
+                }
+            }
+        } else {
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+            if (statusText) {
+                statusText.innerText = 'Showing Equipped Look';
+                statusText.className = 'text-xs font-[\'VT323\'] text-emerald-400 truncate';
+            }
+            if (actionWrap) {
+                actionWrap.innerHTML = `
+                    <div class="p-1 bg-[#12161b] border border-[#2b3542] text-center text-xs font-['VT323'] text-gray-400">
+                        Click 'Try On' on any cosmetic to preview!
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // Locker Showcase Preview
+    export function updateStoreLockerShowcase() {
+        const cust = getPlayerCustomization();
+        const activeFrameId = cust.avatarFrame || 'frame_classic';
+        const activeBannerId = cust.bannerPattern || 'banner_slate';
+        const activeTitleId = cust.titlePlate || 'title_novice';
+        const activeThemeId = cust.cardTheme || 'theme_slate';
+
+        const card = document.getElementById('store-locker-card');
+        if (card) {
+            const themeItem = getCosmeticItem(activeThemeId) || getCosmeticItem('theme_slate');
+            card.className = `discord-card-preview ${themeItem ? themeItem.themeClass : 'card-theme-slate'} w-full shadow-xl relative select-none`;
+        }
+
+        const banner = document.getElementById('store-locker-banner');
+        if (banner) {
+            const bannerItem = getCosmeticItem(activeBannerId) || getCosmeticItem('banner_slate');
+            banner.className = `discord-card-banner ${bannerItem ? bannerItem.bannerClass : 'banner-pattern-slate'} w-full relative`;
+            banner.style.backgroundColor = cust.bannerColor || (bannerItem ? bannerItem.color : '#181e24');
+        }
+
+        const frameWrap = document.getElementById('store-locker-avatar-frame');
+        const crown = document.getElementById('store-locker-crown-badge');
+        const frameItem = getCosmeticItem(activeFrameId) || getCosmeticItem('frame_classic');
+        if (frameWrap) {
+            frameWrap.className = `avatar-frame-wrapper ${frameItem ? frameItem.frameClass : 'avatar-frame-classic'} relative inline-block`;
+        }
+        if (crown) {
+            crown.classList.toggle('hidden', frameItem ? frameItem.id !== 'frame_crown' : true);
+        }
+
+        const canvas = document.getElementById('store-locker-avatar-canvas');
+        if (canvas && typeof drawPlayerHead === 'function') {
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, 50, 50);
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 16;
+            tempCanvas.height = 32;
+            const tCtx = tempCanvas.getContext('2d');
+            const imgData = tCtx.createImageData(16, 32);
+            const activeSkin = (typeof getSkinSaveData === 'function' ? getSkinSaveData() : null) || playerSkinData;
+            if (activeSkin) {
+                for (let i = 0; i < 16 * 32; i++) {
+                    const c = activeSkin[i] || '#00000000';
+                    const rgb = hexToRgb(c);
+                    imgData.data[i * 4] = rgb.r;
+                    imgData.data[i * 4 + 1] = rgb.g;
+                    imgData.data[i * 4 + 2] = rgb.b;
+                    imgData.data[i * 4 + 3] = (c === '#00000000' || !c) ? 0 : 255;
+                }
+                tCtx.putImageData(imgData, 0, 0);
+                drawPlayerHead(ctx, tempCanvas, 0, 0, 50);
+            }
+        }
+
+        const titleBadge = document.getElementById('store-locker-title-badge');
+        if (titleBadge) {
+            const titleItem = getCosmeticItem(activeTitleId);
+            if (titleItem && titleItem.id !== 'title_novice') {
+                titleBadge.classList.remove('hidden');
+                titleBadge.innerText = titleItem.prefixTag || titleItem.name;
+                titleBadge.style.color = titleItem.nameColor || '#ffd34d';
+                titleBadge.style.borderColor = titleItem.nameColor || '#ffd34d';
+            } else {
+                titleBadge.classList.add('hidden');
+            }
+        }
+
+        const uName = document.getElementById('store-locker-username');
+        if (uName) {
+            const rawName = (currentUserProfile && currentUserProfile.username) ? currentUserProfile.username : 'Player';
+            uName.innerText = rawName;
+            uName.style.color = cust.nameColor || '#ffffff';
+        }
+        const uTag = document.getElementById('store-locker-tag');
+        if (uTag) {
+            const rawName = (currentUserProfile && currentUserProfile.username) ? currentUserProfile.username : 'Player';
+            uTag.innerText = `@${rawName}`;
+        }
+
+        const bioEl = document.getElementById('store-locker-bio');
+        if (bioEl) {
+            bioEl.innerText = cust.bio || 'Mining across dimensions.';
+        }
+    }
+
+    export function tryOnCosmeticItem(itemId) {
+        const item = getCosmeticItem(itemId);
+        if (!item) return;
+
+        if (item.category === COSMETIC_CATEGORIES.FRAME) storeActiveTryOn.avatarFrame = item.id;
+        if (item.category === COSMETIC_CATEGORIES.BANNER) storeActiveTryOn.bannerPattern = item.id;
+        if (item.category === COSMETIC_CATEGORIES.TITLE) storeActiveTryOn.titlePlate = item.id;
+        if (item.category === COSMETIC_CATEGORIES.THEME) storeActiveTryOn.cardTheme = item.id;
+        storeActiveTryOn.lastItemId = item.id;
+
+        updateStoreShowcase();
+        renderShopCosmetics(currentCosmeticsFilter);
+
+        if (typeof playSound === 'function') playSound('click', { vol: 0.5 });
+        showToast(`Previewing ${item.name} in Live Try-On!`);
+    }
+
+    export function revertStoreTryOn() {
+        storeActiveTryOn = {
+            avatarFrame: null,
+            bannerPattern: null,
+            titlePlate: null,
+            cardTheme: null,
+            lastItemId: null
+        };
+        updateStoreShowcase();
+        renderShopCosmetics(currentCosmeticsFilter);
+        if (typeof playSound === 'function') playSound('click', { vol: 0.4 });
+        showToast("Reverted to equipped look.");
+    }
+
+    export function updateStoreTryOnPreview() {
+        updateStoreShowcase();
+    }
+
+    // =========================================================================
+    // WEBCRAFT STORE: SEARCH & CATALOG FILTER CONTROLS
+    // =========================================================================
+    export function handleStoreSearchInput(query) {
+        storeSearchQuery = (query || '').trim().toLowerCase();
+        const clearBtn = document.getElementById('shop-search-clear-btn');
+        if (clearBtn) clearBtn.classList.toggle('hidden', !storeSearchQuery);
+        renderShopCosmetics(currentCosmeticsFilter);
+    }
+
+    export function clearStoreSearch() {
+        storeSearchQuery = '';
+        const sIn = document.getElementById('shop-search-input');
+        if (sIn) sIn.value = '';
+        const clearBtn = document.getElementById('shop-search-clear-btn');
+        if (clearBtn) clearBtn.classList.add('hidden');
+        renderShopCosmetics(currentCosmeticsFilter);
+    }
+
+    export function handleStoreOwnershipFilter(filter) {
+        storeOwnershipFilter = filter || 'all';
+        renderShopCosmetics(currentCosmeticsFilter);
+    }
+
+    export function clearStoreFilters() {
+        clearStoreSearch();
+        storeOwnershipFilter = 'all';
+        const oSel = document.getElementById('shop-ownership-filter');
+        if (oSel) oSel.value = 'all';
+        renderShopCosmetics(currentCosmeticsFilter);
+    }
+
+    // =========================================================================
+    // WEBCRAFT STORE CONTROLLER
+    // =========================================================================
 
     export function openShop(initialTab = 'cosmetics') {
         const modal = document.getElementById('unified-shop-modal');
@@ -8581,7 +8940,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         modal.classList.remove('hidden');
 
-        // Update balances in header and external bottom bar
+        // Update Header Gem Texture
+        const gemImg = document.getElementById('shop-header-gem-img');
+        if (gemImg) {
+            gemImg.src = (typeof textures !== 'undefined' && textures && textures[IDS?.ASTRAL_EMERALD]?.src) || '';
+        }
+
+        // Update balances in header
         const astral = (typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0).toLocaleString();
         const emeralds = (typeof getPlayerEmeralds === 'function' ? getPlayerEmeralds() : 0).toLocaleString();
 
@@ -8590,11 +8955,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const emeraldsCount = document.getElementById('shop-emeralds-count');
         if (emeraldsCount) emeraldsCount.innerText = emeralds;
 
-        const bEmerald = document.getElementById('shop-bottom-emerald-count');
-        if (bEmerald) bEmerald.innerText = emeralds;
-        const bAstral = document.getElementById('shop-bottom-astral-count');
-        if (bAstral) bAstral.innerText = astral;
-
         // Check Kael encounter status for Outpost category gating
         const talked = typeof hasPlayerTalkedToKael === 'function' ? hasPlayerTalkedToKael() : false;
         const atlasTabCount = document.getElementById('shop-atlas-tab-count');
@@ -8602,9 +8962,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (atlasTabCount) {
             atlasTabCount.innerText = talked ? '10 Wares' : 'Locked';
             if (talked) {
-                atlasTabCount.className = 'ach-tab-count';
+                atlasTabCount.className = 'store-tab-badge';
             } else {
-                atlasTabCount.className = 'ach-tab-count !text-amber-400 !border-amber-600/60 !bg-amber-950/60';
+                atlasTabCount.className = 'store-tab-badge !text-amber-400 !border-amber-600/60 !bg-amber-950/60';
             }
         }
         if (atlasTabBtn) {
@@ -8615,27 +8975,43 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
         }
 
+        // Update Locker badge
+        const unlocked = getPlayerUnlockedCosmetics();
+        const lockerBadge = document.getElementById('shop-locker-tab-badge');
+        if (lockerBadge) lockerBadge.innerText = `${unlocked.length} Owned`;
+
+        updateStoreShowcase();
         switchShopTab(initialTab);
     }
 
     export function closeShop() {
         const modal = document.getElementById('unified-shop-modal');
         if (modal) modal.classList.add('hidden');
+        storeActiveTryOn = {
+            avatarFrame: null,
+            bannerPattern: null,
+            titlePlate: null,
+            cardTheme: null,
+            lastItemId: null
+        };
+        if (profileEditorOpenedFromDetails) {
+            profileEditorOpenedFromDetails = false;
+            openProfileDetailsModal();
+        }
     }
 
     export function switchShopTab(tab) {
         currentShopTab = tab;
         const talked = typeof hasPlayerTalkedToKael === 'function' ? hasPlayerTalkedToKael() : false;
 
-        // Update Outpost tab badge and visual indicator
         const atlasTabCount = document.getElementById('shop-atlas-tab-count');
         const atlasTabBtn = document.getElementById('shop-main-tab-atlas-btn');
         if (atlasTabCount) {
             atlasTabCount.innerText = talked ? '10 Wares' : 'Locked';
             if (talked) {
-                atlasTabCount.className = 'ach-tab-count';
+                atlasTabCount.className = 'store-tab-badge';
             } else {
-                atlasTabCount.className = 'ach-tab-count !text-amber-400 !border-amber-600/60 !bg-amber-950/60';
+                atlasTabCount.className = 'store-tab-badge !text-amber-400 !border-amber-600/60 !bg-amber-950/60';
             }
         }
         if (atlasTabBtn) {
@@ -8646,7 +9022,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
         }
 
-        ['cosmetics', 'exchange', 'atlas'].forEach(t => {
+        const tabs = ['cosmetics', 'locker', 'exchange', 'atlas'];
+        tabs.forEach(t => {
             const btn = document.getElementById(`shop-main-tab-${t}-btn`);
             const pane = document.getElementById(`shop-pane-${t}`);
             if (btn) btn.classList.toggle('active', t === tab);
@@ -8659,6 +9036,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         if (tab === 'cosmetics') {
             renderShopCosmetics(currentCosmeticsFilter);
+            updateStoreShowcase();
+        } else if (tab === 'locker') {
+            renderShopLocker(currentLockerFilter);
+            updateStoreLockerShowcase();
         } else if (tab === 'exchange') {
             renderShopAstralExchange();
         } else if (tab === 'atlas') {
@@ -8681,9 +9062,36 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         const unlocked = getPlayerUnlockedCosmetics();
         const cust = getPlayerCustomization();
-        const items = category === 'all' ? COSMETICS_CATALOG : getCosmeticsByCategory(category);
+        let items = category === 'all' ? COSMETICS_CATALOG : getCosmeticsByCategory(category);
         const playerGems = typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0;
         const isGuest = !currentUserProfile || currentUserProfile.isGuest;
+
+        // Apply search keyword filter
+        if (storeSearchQuery) {
+            items = items.filter(it => 
+                (it.name && it.name.toLowerCase().includes(storeSearchQuery)) ||
+                (it.description && it.description.toLowerCase().includes(storeSearchQuery)) ||
+                (it.rarity && it.rarity.toLowerCase().includes(storeSearchQuery))
+            );
+        }
+
+        // Apply ownership status filter
+        if (storeOwnershipFilter === 'owned') {
+            items = items.filter(it => unlocked.includes(it.id) || it.isDefault);
+        } else if (storeOwnershipFilter === 'unowned') {
+            items = items.filter(it => !unlocked.includes(it.id) && !it.isDefault);
+        }
+
+        if (items.length === 0) {
+            grid.innerHTML = `
+                <div class="col-span-full py-10 text-center flex flex-col items-center justify-center gap-2">
+                    <div class="text-amber-400 font-['VT323'] text-2xl">No matching wares found!</div>
+                    <p class="text-gray-400 font-['VT323'] text-base m-0">Try changing your search keywords or switching category filters.</p>
+                    <button type="button" class="mc-btn !w-auto !px-4 !py-1 !text-base mt-2" onclick="clearStoreFilters()">Reset Filters</button>
+                </div>
+            `;
+            return;
+        }
 
         grid.innerHTML = items.map(item => {
             const isOwned = unlocked.includes(item.id) || item.isDefault;
@@ -8692,6 +9100,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 cust.bannerPattern === item.id ||
                 cust.titlePlate === item.id ||
                 cust.cardTheme === item.id;
+            const isTryingOn = 
+                storeActiveTryOn.avatarFrame === item.id ||
+                storeActiveTryOn.bannerPattern === item.id ||
+                storeActiveTryOn.titlePlate === item.id ||
+                storeActiveTryOn.cardTheme === item.id;
+
             const canAfford = !isGuest && playerGems >= item.price;
 
             let actionBtnHtml = '';
@@ -8699,26 +9113,27 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
             if (isEquipped) {
                 statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-amber-300 bg-amber-950/60 border border-amber-600/50 shadow-inner flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>EQUIPPED</span>`;
-                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !bg-[#ffd34d] !text-black font-bold cursor-default" disabled>Equipped</button>`;
+                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#ffd34d] !text-black font-bold cursor-default" disabled>Equipped</button>`;
             } else if (isOwned) {
                 statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-600/50 shadow-inner">OWNED</span>`;
-                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !bg-[#2563eb] hover:!bg-[#1d4ed8] !text-white" onclick="equipCosmeticItem('${item.id}')">Equip</button>`;
+                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#2563eb] hover:!bg-[#1d4ed8] !text-white" onclick="equipCosmeticItem('${item.id}')">Equip</button>`;
             } else {
                 statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-purple-300 bg-purple-950/60 border border-purple-600/50 shadow-inner">${item.price > 0 ? `${item.price} ✦` : 'FREE'}</span>`;
                 if (isGuest) {
-                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white" onclick="purchaseCosmeticItem('${item.id}')">Sign In</button>`;
+                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white" onclick="purchaseCosmeticItem('${item.id}')">Sign In</button>`;
                 } else if (canAfford) {
-                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white" onclick="purchaseCosmeticItem('${item.id}')">Buy</button>`;
+                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white" onclick="purchaseCosmeticItem('${item.id}')">Buy</button>`;
                 } else {
                     const diff = item.price - playerGems;
-                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !bg-[#382645] !text-[#d8b4fe] opacity-80 cursor-not-allowed" disabled title="Need ${diff} more Astral Gems">Need ${diff} ✦</button>`;
+                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#382645] !text-[#d8b4fe] opacity-80 cursor-not-allowed" disabled title="Need ${diff} more Astral Gems">Need ${diff} ✦</button>`;
                 }
             }
 
             const rarityClass = `rarity-${(item.rarity || 'common').toLowerCase()}`;
+            const activeCardClass = isEquipped ? 'equipped' : (isTryingOn ? '!border-purple-400 shadow-[0_0_12px_rgba(192,132,252,0.35)]' : '');
 
             return `
-                <div class="cosmetic-card ${isEquipped ? 'equipped' : ''}">
+                <div class="cosmetic-card ${activeCardClass}">
                     <div>
                         <!-- Header: Category Rarity Badge + Status / Price -->
                         <div class="flex items-center justify-between mb-1.5">
@@ -8740,12 +9155,103 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
                     <!-- Footer: Price Box + Action Buttons -->
                     <div class="flex items-center justify-between pt-1.5 border-t border-[#2b3542] mt-auto">
-                        <div class="flex items-center gap-1 bg-[#12161b] px-2 py-0.5 border border-[#2b3542] shadow-inner">
-                            <span class="text-lg font-bold text-[#c084fc] font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000]">${item.price > 0 ? item.price : 'FREE'}</span>
-                            <span class="text-[10px] text-purple-300 font-['VT323'] uppercase">${item.price > 0 ? 'ASTRAL' : ''}</span>
+                        <div class="flex items-center gap-1 bg-[#12161b] px-1.5 py-0.5 border border-[#2b3542] shadow-inner">
+                            <span class="text-base sm:text-lg font-bold text-[#c084fc] font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000]">${item.price > 0 ? item.price : 'FREE'}</span>
+                            <span class="text-[10px] text-purple-300 font-['VT323'] uppercase">${item.price > 0 ? '✦' : ''}</span>
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <button type="button" class="text-cyan-400 hover:text-cyan-300 text-xs font-['VT323'] underline cursor-pointer" onclick="tryOnCosmeticItem('${item.id}')">Try On</button>
+                            <button type="button" class="text-cyan-400 hover:text-cyan-300 text-xs font-['VT323'] underline cursor-pointer" onclick="tryOnCosmeticItem('${item.id}')">${isTryingOn ? 'Previewing' : 'Try On'}</button>
+                            ${actionBtnHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    export function filterShopLocker(category) {
+        currentLockerFilter = category;
+        ['all', 'frame', 'banner', 'title', 'theme'].forEach(c => {
+            const pill = document.getElementById(`locker-filter-${c}`);
+            if (pill) pill.classList.toggle('active', c === category);
+        });
+        renderShopLocker(category);
+    }
+
+    export function renderShopLocker(category = 'all') {
+        const grid = document.getElementById('shop-locker-grid');
+        if (!grid) return;
+
+        const unlocked = getPlayerUnlockedCosmetics();
+        const cust = getPlayerCustomization();
+        let items = category === 'all' ? COSMETICS_CATALOG : getCosmeticsByCategory(category);
+        const ownedItems = items.filter(it => unlocked.includes(it.id) || it.isDefault);
+
+        // Update counts
+        const ownedCountEl = document.getElementById('shop-locker-owned-count');
+        if (ownedCountEl) {
+            ownedCountEl.innerText = `${unlocked.length} / ${COSMETICS_CATALOG.length} Unlocked`;
+        }
+        const lockerBadge = document.getElementById('shop-locker-tab-badge');
+        if (lockerBadge) {
+            lockerBadge.innerText = `${unlocked.length} Owned`;
+        }
+
+        if (ownedItems.length === 0) {
+            grid.innerHTML = `
+                <div class="col-span-full py-10 text-center flex flex-col items-center justify-center gap-2">
+                    <div class="text-amber-400 font-['VT323'] text-2xl">No unlocked items in this category!</div>
+                    <p class="text-gray-400 font-['VT323'] text-base m-0">Browse the Catalog to unlock new frames, banners, and themes with Astral Gems.</p>
+                    <button type="button" class="mc-btn auth-primary-btn !w-auto !px-4 !py-1 !text-base mt-2" onclick="switchShopTab('cosmetics')">Browse Catalog</button>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = ownedItems.map(item => {
+            const isEquipped = 
+                cust.avatarFrame === item.id ||
+                cust.bannerPattern === item.id ||
+                cust.titlePlate === item.id ||
+                cust.cardTheme === item.id;
+
+            const rarityClass = `rarity-${(item.rarity || 'common').toLowerCase()}`;
+            let actionBtnHtml = '';
+            let statusBadgeHtml = '';
+
+            if (isEquipped) {
+                statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-amber-300 bg-amber-950/60 border border-amber-600/50 shadow-inner flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>EQUIPPED</span>`;
+                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#ffd34d] !text-black font-bold cursor-default" disabled>Equipped</button>`;
+            } else {
+                statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-600/50 shadow-inner">UNLOCKED</span>`;
+                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#2563eb] hover:!bg-[#1d4ed8] !text-white" onclick="equipCosmeticItem('${item.id}')">Equip</button>`;
+            }
+
+            return `
+                <div class="cosmetic-card ${isEquipped ? 'equipped' : ''}">
+                    <div>
+                        <!-- Header: Category Rarity Badge + Status -->
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="cosmetic-rarity-tag ${rarityClass}">${item.rarity}</span>
+                            ${statusBadgeHtml}
+                        </div>
+
+                        <!-- Content Row: Pixel Preview Frame + Name + Description -->
+                        <div class="flex items-start gap-2.5 mb-1.5">
+                            <div class="cosmetic-card-icon" title="${item.name}">
+                                ${item.iconSvg || ''}
+                            </div>
+                            <div class="flex-1 min-w-0 text-left">
+                                <div class="text-base sm:text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate drop-shadow-[1px_1px_0_#000]">${item.name}</div>
+                                <p class="text-xs text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-0.5 drop-shadow-[1px_1px_0_#000]">${item.description}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer: Equip Action Button -->
+                    <div class="flex items-center justify-between pt-1.5 border-t border-[#2b3542] mt-auto">
+                        <span class="text-xs text-gray-400 font-['VT323']">${item.category.toUpperCase()}</span>
+                        <div class="flex items-center gap-1.5">
                             ${actionBtnHtml}
                         </div>
                     </div>
@@ -8809,12 +9315,18 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         playSound('astral_exchange');
         showToast(`Unlocked and equipped ${item.name}!`);
 
-        // Update UI balances
+        // Update UI balances & previews
         const astralCount = document.getElementById('shop-astral-count');
         if (astralCount) astralCount.innerText = getPlayerAstralEmeralds().toLocaleString();
         updateEmeraldsUI();
+        updateStoreShowcase();
+        updateStoreLockerShowcase();
 
-        renderShopCosmetics(currentCosmeticsFilter);
+        if (currentShopTab === 'locker') {
+            renderShopLocker(currentLockerFilter);
+        } else {
+            renderShopCosmetics(currentCosmeticsFilter);
+        }
     }
 
     export async function equipCosmeticItem(itemId) {
@@ -8841,39 +9353,30 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
         playSound('click');
         showToast(`Equipped ${item.name}!`);
-        renderShopCosmetics(currentCosmeticsFilter);
-    }
+        updateStoreShowcase();
+        updateStoreLockerShowcase();
 
-    export function tryOnCosmeticItem(itemId) {
-        const item = getCosmeticItem(itemId);
-        if (!item) return;
-
-        closeShop();
-        openProfileEditor();
-
-        if (!editorDraftCustomization) editorDraftCustomization = { ...getPlayerCustomization() };
-
-        if (item.category === COSMETIC_CATEGORIES.FRAME) {
-            editorDraftCustomization.avatarFrame = item.id;
-            const sel = document.getElementById('editor-frame-select');
-            if (sel) sel.value = item.id;
-        } else if (item.category === COSMETIC_CATEGORIES.BANNER) {
-            editorDraftCustomization.bannerPattern = item.id;
-            const sel = document.getElementById('editor-banner-pattern-select');
-            if (sel) sel.value = item.id;
-        } else if (item.category === COSMETIC_CATEGORIES.TITLE) {
-            editorDraftCustomization.titlePlate = item.id;
-            const sel = document.getElementById('editor-title-select');
-            if (sel) sel.value = item.id;
-        } else if (item.category === COSMETIC_CATEGORIES.THEME) {
-            editorDraftCustomization.cardTheme = item.id;
-            const sel = document.getElementById('editor-theme-select');
-            if (sel) sel.value = item.id;
+        if (currentShopTab === 'locker') {
+            renderShopLocker(currentLockerFilter);
+        } else {
+            renderShopCosmetics(currentCosmeticsFilter);
         }
-
-        renderProfileEditorLivePreview();
-        showToast(`Trying on ${item.name} in live preview!`);
     }
+
+    // Fallback compatibility stubs for legacy store profile customizer callers
+    export function renderStoreProfileCustomizer() {
+        openProfileEditor();
+    }
+    export function selectStoreCustomizerTitle(titleId) { equipCosmeticItem(titleId); }
+    export function selectStoreCustomizerFrame(frameId) { equipCosmeticItem(frameId); }
+    export function selectStoreCustomizerBanner(bannerId) { equipCosmeticItem(bannerId); }
+    export function selectStoreCustomizerTheme(themeId) { equipCosmeticItem(themeId); }
+    export function setStoreCustomizerNameColor(c) {}
+    export function setStoreCustomizerBannerColor(c) {}
+    export function handleStoreCustomizerChange() {}
+    export function renderStoreLiveCardPreview() { updateStoreShowcase(); }
+    export async function saveStoreCustomizationChanges() {}
+    export function resetStoreCustomization() {}
 
     function renderShopAstralExchange() {
         const container = document.getElementById('shop-exchange-cards-container');
@@ -16104,9 +16607,32 @@ try { if (typeof closeShop !== "undefined") window.closeShop = closeShop; } catc
 try { if (typeof switchShopTab !== "undefined") window.switchShopTab = switchShopTab; } catch(e) {}
 try { if (typeof filterShopCosmetics !== "undefined") window.filterShopCosmetics = filterShopCosmetics; } catch(e) {}
 try { if (typeof renderShopCosmetics !== "undefined") window.renderShopCosmetics = renderShopCosmetics; } catch(e) {}
+try { if (typeof filterShopLocker !== "undefined") window.filterShopLocker = filterShopLocker; } catch(e) {}
+try { if (typeof renderShopLocker !== "undefined") window.renderShopLocker = renderShopLocker; } catch(e) {}
 try { if (typeof purchaseCosmeticItem !== "undefined") window.purchaseCosmeticItem = purchaseCosmeticItem; } catch(e) {}
 try { if (typeof equipCosmeticItem !== "undefined") window.equipCosmeticItem = equipCosmeticItem; } catch(e) {}
 try { if (typeof tryOnCosmeticItem !== "undefined") window.tryOnCosmeticItem = tryOnCosmeticItem; } catch(e) {}
+try { if (typeof cycleStoreNpcDialogue !== "undefined") window.cycleStoreNpcDialogue = cycleStoreNpcDialogue; } catch(e) {}
+try { if (typeof drawStoreShopkeeper !== "undefined") window.drawStoreShopkeeper = drawStoreShopkeeper; } catch(e) {}
+try { if (typeof revertStoreTryOn !== "undefined") window.revertStoreTryOn = revertStoreTryOn; } catch(e) {}
+try { if (typeof startWebcraftStoreNpc !== "undefined") window.startWebcraftStoreNpc = startWebcraftStoreNpc; } catch(e) {}
+try { if (typeof stopWebcraftStoreNpc !== "undefined") window.stopWebcraftStoreNpc = stopWebcraftStoreNpc; } catch(e) {}
+try { if (typeof handleStoreSearchInput !== "undefined") window.handleStoreSearchInput = handleStoreSearchInput; } catch(e) {}
+try { if (typeof handleStoreOwnershipFilter !== "undefined") window.handleStoreOwnershipFilter = handleStoreOwnershipFilter; } catch(e) {}
+try { if (typeof clearStoreFilters !== "undefined") window.clearStoreFilters = clearStoreFilters; } catch(e) {}
+try { if (typeof clearStoreSearch !== "undefined") window.clearStoreSearch = clearStoreSearch; } catch(e) {}
+try { if (typeof updateStoreShowcase !== "undefined") window.updateStoreShowcase = updateStoreShowcase; } catch(e) {}
+try { if (typeof updateStoreLockerShowcase !== "undefined") window.updateStoreLockerShowcase = updateStoreLockerShowcase; } catch(e) {}
+try { if (typeof renderStoreProfileCustomizer !== "undefined") window.renderStoreProfileCustomizer = renderStoreProfileCustomizer; } catch(e) {}
+try { if (typeof selectStoreCustomizerTitle !== "undefined") window.selectStoreCustomizerTitle = selectStoreCustomizerTitle; } catch(e) {}
+try { if (typeof selectStoreCustomizerFrame !== "undefined") window.selectStoreCustomizerFrame = selectStoreCustomizerFrame; } catch(e) {}
+try { if (typeof selectStoreCustomizerBanner !== "undefined") window.selectStoreCustomizerBanner = selectStoreCustomizerBanner; } catch(e) {}
+try { if (typeof selectStoreCustomizerTheme !== "undefined") window.selectStoreCustomizerTheme = selectStoreCustomizerTheme; } catch(e) {}
+try { if (typeof setStoreCustomizerNameColor !== "undefined") window.setStoreCustomizerNameColor = setStoreCustomizerNameColor; } catch(e) {}
+try { if (typeof setStoreCustomizerBannerColor !== "undefined") window.setStoreCustomizerBannerColor = setStoreCustomizerBannerColor; } catch(e) {}
+try { if (typeof handleStoreCustomizerChange !== "undefined") window.handleStoreCustomizerChange = handleStoreCustomizerChange; } catch(e) {}
+try { if (typeof saveStoreCustomizationChanges !== "undefined") window.saveStoreCustomizationChanges = saveStoreCustomizationChanges; } catch(e) {}
+try { if (typeof resetStoreCustomization !== "undefined") window.resetStoreCustomization = resetStoreCustomization; } catch(e) {}
 try { if (typeof performShopAstralExchange !== "undefined") window.performShopAstralExchange = performShopAstralExchange; } catch(e) {}
 try { if (typeof purchaseAtlasWareFromShop !== "undefined") window.purchaseAtlasWareFromShop = purchaseAtlasWareFromShop; } catch(e) {}
 try { if (typeof openProfileEditor !== "undefined") window.openProfileEditor = openProfileEditor; } catch(e) {}

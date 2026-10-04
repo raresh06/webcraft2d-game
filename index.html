@@ -2484,7 +2484,7 @@
                             </div>
                         </div>
 
-                        <!-- Astral Emporium Promo -->
+                        <!-- Webcraft Store Promo -->
                         <div class="editor-promo-box">
                             <div class="flex items-center gap-3">
                                 <svg class="pixel-art-icon flex-shrink-0" width="28" height="28" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="image-rendering: pixelated; shape-rendering: crispEdges;" aria-hidden="true">
@@ -2505,11 +2505,11 @@
                                 </svg>
                                 <div>
                                     <div class="text-[#c084fc] font-['VT323'] text-xl font-bold leading-tight">Unlock More Cosmetics!</div>
-                                    <div class="text-purple-300 font-['VT323'] text-sm leading-tight">Frames, halos, crowns, banners &amp; themes at the Emporium.</div>
+                                    <div class="text-purple-300 font-['VT323'] text-sm leading-tight">Frames, halos, crowns, banners &amp; themes at the Webcraft Store.</div>
                                 </div>
                             </div>
                             <button type="button" class="mc-btn auth-primary-btn !h-9 !w-auto !px-3 !text-lg whitespace-nowrap" onclick="closeProfileEditor(); openShop('cosmetics');">
-                                Visit Shop
+                                Visit Store
                             </button>
                         </div>
 
@@ -2627,125 +2627,328 @@
         </div>
     </div>
 
-    <!-- Unified Astral Shop Modal -->
-    <div id="unified-shop-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="shop-modal-title">
-        <div class="vault-modal-wrapper select-none">
-            <section class="shop-panel select-none">
+    <!-- Unified Webcraft Store Modal -->
+    <div id="unified-shop-modal" class="menu-overlay hidden bg-black/85 backdrop-blur-md z-[260] flex items-center justify-center p-2 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="shop-modal-title">
+        <div class="webcraft-store-wrapper select-none">
+            <section class="webcraft-store-panel select-none">
+                
                 <!-- Shop Header -->
-                <div class="flex justify-between items-center pb-2.5 mb-2.5 border-b-2 border-[#46515a] flex-shrink-0">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-[#171226] border-2 border-[#a855f7] shadow-md flex items-center justify-center p-1 flex-shrink-0">
-                            <img id="shop-header-gem-img" class="pixelated w-8 h-8 object-contain" alt="Astral Gem" />
+                <div class="store-modal-header">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="store-header-icon-frame">
+                            <img id="shop-header-gem-img" class="pixelated w-7 h-7 object-contain" alt="Astral Gem" />
                         </div>
-                        <div>
-                            <h2 id="shop-modal-title" class="screen-title text-[#c084fc] m-0 tracking-wide leading-none">The Astral Emporium</h2>
-                            <div class="text-xs sm:text-sm text-cyan-300 font-['VT323'] tracking-wider mt-0.5">Profile Cosmetics • Astral Gem Exchange • Atlas Outpost</div>
+                        <div class="min-w-0">
+                            <h2 id="shop-modal-title" class="store-modal-title">Webcraft Store</h2>
+                            <div class="store-modal-subtitle">Cosmetics Catalog • Character Locker • Astral Exchange • Planar Outpost</div>
                         </div>
                     </div>
+
                     <!-- Right header tools: Balance chips & Close button -->
-                    <div class="flex items-center gap-3">
-                        <div class="hidden sm:flex items-center gap-2 bg-[#12161c] border-2 border-[#333a41] px-2.5 py-1 shadow-inner">
-                            <div class="flex items-center gap-1.5" title="Astral Gems">
-                                <span class="text-purple-300 font-bold font-['VT323'] text-xl leading-none" id="shop-astral-count">0</span>
-                                <svg class="pixel-art-icon w-4 h-4" viewBox="0 0 16 16" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                                    <polygon points="8,1 15,8 8,15 1,8" fill="#c084fc" />
-                                    <polygon points="8,4 12,8 8,12 4,8" fill="#ffffff" />
-                                </svg>
-                            </div>
-                            <span class="text-gray-600 font-['VT323']">|</span>
-                            <div class="flex items-center gap-1.5" title="Mined Emeralds">
-                                <span class="text-emerald-400 font-bold font-['VT323'] text-xl leading-none" id="shop-emeralds-count">0</span>
-                                <svg class="pixel-art-icon w-4 h-4" viewBox="0 0 16 16" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                                    <polygon points="8,1 14,5 14,11 8,15 2,11 2,5" fill="#10b981" />
-                                    <polygon points="8,3 12,6 12,10 8,13 4,10 4,6" fill="#34d399" />
-                                </svg>
-                            </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <!-- Astral Gems Chip -->
+                        <div class="store-currency-chip astral" title="Astral Gems - Used for Cosmetics & Relics">
+                            <svg class="pixel-art-icon w-4 h-4 flex-shrink-0" viewBox="0 0 16 16" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                <polygon points="8,1 15,8 8,15 1,8" fill="#c084fc" />
+                                <polygon points="8,4 12,8 8,12 4,8" fill="#ffffff" />
+                            </svg>
+                            <span class="store-currency-val text-purple-300" id="shop-astral-count">0</span>
+                            <span class="store-currency-lbl text-purple-400">GEMS</span>
                         </div>
+
+                        <!-- Mined Emeralds Chip -->
+                        <div class="store-currency-chip emerald" title="Mined Emeralds - Earned via mining ore and daily challenges">
+                            <svg class="pixel-art-icon w-4 h-4 flex-shrink-0" viewBox="0 0 16 16" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                <polygon points="8,1 14,5 14,11 8,15 2,11 2,5" fill="#10b981" />
+                                <polygon points="8,3 12,6 12,10 8,13 4,10 4,6" fill="#34d399" />
+                            </svg>
+                            <span class="store-currency-val text-emerald-400" id="shop-emeralds-count">0</span>
+                            <span class="store-currency-lbl text-emerald-500">EMERALDS</span>
+                        </div>
+
+                        <!-- Close Button -->
                         <button class="modal-close-red-btn" type="button" onclick="closeShop()" title="Close (Esc)" aria-label="Close">X</button>
                     </div>
                 </div>
 
-                <!-- Main Navigation Tabs UP TOP (Achievements & Atlas Market Style) -->
-                <div class="shop-tab-container grid grid-cols-3 gap-2 w-full mb-2.5 flex-shrink-0" id="shop-tab-container">
-                    <button id="shop-main-tab-cosmetics-btn" class="ach-tab-btn shop-tab-btn active" onclick="switchShopTab('cosmetics')" aria-label="Profile Cosmetics">
-                        <div class="ach-tab-label-group">
-                            <span class="ach-tab-icon" aria-hidden="true">
-                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                                    <rect x="7" y="1" width="2" height="6" fill="#facc15" />
-                                    <rect x="5" y="3" width="6" height="2" fill="#facc15" />
-                                    <rect x="7" y="9" width="2" height="6" fill="#c084fc" />
-                                    <rect x="5" y="11" width="6" height="2" fill="#c084fc" />
-                                    <rect x="2" y="7" width="12" height="2" fill="#38bdf8" />
-                                    <rect x="7" y="7" width="2" height="2" fill="#ffffff" />
-                                </svg>
-                            </span>
-                            <span class="shop-tab-title font-['VT323'] text-xl">Cosmetics</span>
+                <!-- Navigation Tabs UP TOP (4 Tabs Grid) -->
+                <div class="store-tab-bar" id="shop-tab-container">
+                    <!-- Tab 1: Catalog -->
+                    <button id="shop-main-tab-cosmetics-btn" class="store-nav-tab active" onclick="switchShopTab('cosmetics')" aria-label="Cosmetics Catalog">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <svg class="pixel-art-icon flex-shrink-0" viewBox="0 0 16 16" width="16" height="16" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                <rect x="7" y="1" width="2" height="6" fill="#facc15" />
+                                <rect x="5" y="3" width="6" height="2" fill="#facc15" />
+                                <rect x="7" y="9" width="2" height="6" fill="#c084fc" />
+                                <rect x="5" y="11" width="6" height="2" fill="#c084fc" />
+                                <rect x="2" y="7" width="12" height="2" fill="#38bdf8" />
+                                <rect x="7" y="7" width="2" height="2" fill="#ffffff" />
+                            </svg>
+                            <span class="store-tab-label">Catalog</span>
                         </div>
-                        <span class="ach-tab-count">27</span>
+                        <span class="store-tab-badge">27 Items</span>
                     </button>
-                    <button id="shop-main-tab-exchange-btn" class="ach-tab-btn shop-tab-btn" onclick="switchShopTab('exchange')" aria-label="Astral Exchange">
-                        <div class="ach-tab-label-group">
-                            <span class="ach-tab-icon" aria-hidden="true">
-                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                                    <rect x="7" y="1" width="2" height="2" fill="#f3e8ff"/>
-                                    <rect x="5" y="3" width="6" height="2" fill="#e9d5ff"/>
-                                    <rect x="4" y="5" width="8" height="6" fill="#a855f7"/>
-                                    <rect x="6" y="6" width="4" height="4" fill="#faf5ff"/>
-                                    <rect x="5" y="11" width="6" height="2" fill="#7e22ce"/>
-                                    <rect x="7" y="13" width="2" height="2" fill="#581c87"/>
-                                </svg>
-                            </span>
-                            <span class="shop-tab-title font-['VT323'] text-xl">Exchange</span>
+
+                    <!-- Tab 2: My Locker -->
+                    <button id="shop-main-tab-locker-btn" class="store-nav-tab" onclick="switchShopTab('locker')" aria-label="My Locker">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <svg class="pixel-art-icon flex-shrink-0" viewBox="0 0 16 16" width="16" height="16" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                <rect x="2" y="3" width="12" height="11" fill="#78350f" />
+                                <rect x="3" y="4" width="10" height="9" fill="#92400e" />
+                                <rect x="2" y="6" width="12" height="2" fill="#1e1b4b" />
+                                <rect x="7" y="7" width="2" height="2" fill="#ffd34d" />
+                            </svg>
+                            <span class="store-tab-label">My Locker</span>
                         </div>
-                        <span class="ach-tab-count">3 Tiers</span>
+                        <span id="shop-locker-tab-badge" class="store-tab-badge">Owned</span>
                     </button>
-                    <button id="shop-main-tab-atlas-btn" class="ach-tab-btn shop-tab-btn" onclick="switchShopTab('atlas')" aria-label="Atlas Outpost">
-                        <div class="ach-tab-label-group">
-                            <span class="ach-tab-icon" id="shop-atlas-tab-icon" aria-hidden="true">
-                                <svg class="pixel-art-icon" viewBox="0 0 16 16" width="20" height="20" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                                    <rect x="2" y="4" width="12" height="10" fill="#7e22ce"/>
-                                    <rect x="3" y="5" width="10" height="8" fill="#a855f7"/>
-                                    <rect x="5" y="2" width="6" height="3" fill="#c084fc"/>
-                                    <rect x="7" y="7" width="2" height="3" fill="#facc15"/>
-                                </svg>
-                            </span>
-                            <span class="shop-tab-title font-['VT323'] text-xl">Outpost</span>
+
+                    <!-- Tab 3: Astral Exchange -->
+                    <button id="shop-main-tab-exchange-btn" class="store-nav-tab" onclick="switchShopTab('exchange')" aria-label="Astral Exchange">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <svg class="pixel-art-icon flex-shrink-0" viewBox="0 0 16 16" width="16" height="16" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                <rect x="7" y="1" width="2" height="2" fill="#f3e8ff"/>
+                                <rect x="5" y="3" width="6" height="2" fill="#e9d5ff"/>
+                                <rect x="4" y="5" width="8" height="6" fill="#a855f7"/>
+                                <rect x="6" y="6" width="4" height="4" fill="#faf5ff"/>
+                                <rect x="5" y="11" width="6" height="2" fill="#7e22ce"/>
+                                <rect x="7" y="13" width="2" height="2" fill="#581c87"/>
+                            </svg>
+                            <span class="store-tab-label">Astral Exchange</span>
                         </div>
-                        <span class="ach-tab-count" id="shop-atlas-tab-count">10 Wares</span>
+                        <span class="store-tab-badge">3 Tiers</span>
+                    </button>
+
+                    <!-- Tab 4: Atlas Outpost -->
+                    <button id="shop-main-tab-atlas-btn" class="store-nav-tab" onclick="switchShopTab('atlas')" aria-label="Atlas Outpost">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <svg class="pixel-art-icon flex-shrink-0" id="shop-atlas-tab-icon" viewBox="0 0 16 16" width="16" height="16" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                <rect x="2" y="4" width="12" height="10" fill="#7e22ce"/>
+                                <rect x="3" y="5" width="10" height="8" fill="#a855f7"/>
+                                <rect x="5" y="2" width="6" height="3" fill="#c084fc"/>
+                                <rect x="7" y="7" width="2" height="3" fill="#facc15"/>
+                            </svg>
+                            <span class="store-tab-label">Atlas Outpost</span>
+                        </div>
+                        <span class="store-tab-badge" id="shop-atlas-tab-count">10 Wares</span>
                     </button>
                 </div>
 
-                <!-- Tab 1: Profile Cosmetics Pane -->
-                <div id="shop-pane-cosmetics" class="shop-content-pane flex-1 flex flex-col overflow-hidden min-h-0">
-                    <!-- Category Filter Sub-Pills (Achievement Tier Style) -->
-                    <div class="flex gap-1.5 mb-2 overflow-x-auto py-1 px-0.5 flex-shrink-0" id="shop-cosmetics-filters">
-                        <button id="cosmetics-filter-all" class="shop-filter-btn active" onclick="filterShopCosmetics('all')">All (27)</button>
-                        <button id="cosmetics-filter-frame" class="shop-filter-btn" onclick="filterShopCosmetics('frame')">Frames (8)</button>
-                        <button id="cosmetics-filter-banner" class="shop-filter-btn" onclick="filterShopCosmetics('banner')">Banners (7)</button>
-                        <button id="cosmetics-filter-title" class="shop-filter-btn" onclick="filterShopCosmetics('title')">Titles (7)</button>
-                        <button id="cosmetics-filter-theme" class="shop-filter-btn" onclick="filterShopCosmetics('theme')">Themes (5)</button>
+                <!-- Pane 1: Store Catalog (Two-column: Items on Left, Live Try-on Showcase on Right) -->
+                <div id="shop-pane-cosmetics" class="shop-content-pane store-split-pane flex-1 min-h-0">
+                    <!-- Left: Search, Filters & Cards Grid -->
+                    <div class="store-catalog-col">
+                        <!-- Toolbar: Search + Ownership Dropdown -->
+                        <div class="store-toolbar">
+                            <div class="store-search-wrap">
+                                <svg class="store-search-icon" viewBox="0 0 16 16" width="14" height="14">
+                                    <circle cx="6" cy="6" r="4" stroke="#94a3b8" stroke-width="2" fill="none"/>
+                                    <line x1="9" y1="9" x2="14" y2="14" stroke="#94a3b8" stroke-width="2"/>
+                                </svg>
+                                <input type="text" id="shop-search-input" placeholder="Search cosmetics by name..." class="store-search-field" oninput="handleStoreSearchInput(this.value)" />
+                                <button type="button" id="shop-search-clear-btn" class="store-search-clear hidden" onclick="clearStoreSearch()" title="Clear">✕</button>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <label for="shop-ownership-filter" class="text-xs text-gray-400 font-['VT323'] uppercase">Show:</label>
+                                <select id="shop-ownership-filter" class="mc-input-select !w-auto !py-0.5 !text-sm" onchange="handleStoreOwnershipFilter(this.value)">
+                                    <option value="all">All Items</option>
+                                    <option value="unowned">Unowned</option>
+                                    <option value="owned">Owned</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Category Filter Pills -->
+                        <div class="store-filter-pills" id="shop-cosmetics-filters">
+                            <button id="cosmetics-filter-all" class="shop-filter-btn active" onclick="filterShopCosmetics('all')">All (27)</button>
+                            <button id="cosmetics-filter-frame" class="shop-filter-btn" onclick="filterShopCosmetics('frame')">Frames (8)</button>
+                            <button id="cosmetics-filter-banner" class="shop-filter-btn" onclick="filterShopCosmetics('banner')">Banners (7)</button>
+                            <button id="cosmetics-filter-title" class="shop-filter-btn" onclick="filterShopCosmetics('title')">Titles (7)</button>
+                            <button id="cosmetics-filter-theme" class="shop-filter-btn" onclick="filterShopCosmetics('theme')">Themes (5)</button>
+                        </div>
+
+                        <!-- Cosmetics Grid (2 Columns, spacious) -->
+                        <div id="shop-cosmetics-grid" class="store-items-grid custom-scrollbar">
+                            <!-- Populated dynamically -->
+                        </div>
                     </div>
 
-                    <!-- Cosmetics Cards Grid (Kael Atlas Market Style 3-Column Grid) -->
-                    <div id="shop-cosmetics-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 overflow-y-auto custom-scrollbar flex-1 min-h-0 p-1">
-                        <!-- Populated dynamically -->
+                    <!-- Right: Live Try-On Showcase Card -->
+                    <div class="store-showcase-col custom-scrollbar">
+                        <div class="store-showcase-box">
+                            <div class="store-showcase-title">
+                                <span>✦ LIVE TRY-ON SHOWCASE ✦</span>
+                            </div>
+
+                            <!-- Discord / Minecraft Live Card Preview -->
+                            <div id="store-preview-card" class="discord-card-preview card-theme-slate w-full shadow-xl relative select-none">
+                                <div id="store-preview-banner" class="discord-card-banner banner-pattern-slate w-full relative">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                </div>
+                                <div class="discord-card-body px-3 pb-3 pt-0 relative">
+                                    <div class="discord-card-avatar-wrap mb-1.5 relative inline-block">
+                                        <div id="store-preview-avatar-frame" class="avatar-frame-wrapper avatar-frame-classic relative">
+                                            <div id="store-preview-crown-badge" class="avatar-crown-element hidden">
+                                                <svg class="pixel-crown-svg" width="24" height="18" viewBox="0 0 16 12" fill="none" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                                    <rect x="1" y="10" width="14" height="2" fill="#080a0c"/>
+                                                    <rect x="2" y="7" width="12" height="4" fill="#fbbf24"/>
+                                                    <rect x="2" y="2" width="2" height="5" fill="#fbbf24"/>
+                                                    <rect x="7" y="0" width="2" height="7" fill="#fbbf24"/>
+                                                    <rect x="12" y="2" width="2" height="5" fill="#fbbf24"/>
+                                                    <rect x="4" y="7" width="2" height="2" fill="#ef4444"/>
+                                                    <rect x="7" y="4" width="2" height="2" fill="#3b82f6"/>
+                                                    <rect x="10" y="7" width="2" height="2" fill="#ef4444"/>
+                                                </svg>
+                                            </div>
+                                            <canvas id="store-preview-avatar-canvas" width="50" height="50" class="pixelated block bg-[#181c24]"></canvas>
+                                            <div class="discord-avatar-status online" title="Online in Webcraft"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-1">
+                                        <span id="store-preview-title-badge" class="profile-title-badge">[Crafter]</span>
+                                    </div>
+                                    <div class="mb-1 text-left">
+                                        <div id="store-preview-username" class="text-white font-['VT323'] text-xl font-bold leading-tight truncate">Player</div>
+                                        <div id="store-preview-tag" class="text-amber-400 font-['VT323'] text-xs font-bold leading-none mt-0.5">@Player</div>
+                                    </div>
+                                    <div class="h-0.5 bg-gray-700/60 my-1.5"></div>
+                                    <div class="text-left mb-1">
+                                        <div class="text-[10px] uppercase text-gray-400 font-bold font-['VT323'] tracking-wider mb-0.5">ABOUT ME</div>
+                                        <div id="store-preview-bio" class="text-gray-200 font-['VT323'] text-sm leading-snug break-words line-clamp-2">Mining across dimensions.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Showcase Status & Try-On Actions -->
+                            <div class="store-showcase-actions">
+                                <div class="store-showcase-status-bar">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <span id="store-showcase-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                        <span id="store-showcase-status-text" class="text-xs font-['VT323'] text-emerald-400 truncate">Showing Current Look</span>
+                                    </div>
+                                    <button id="store-showcase-revert-btn" type="button" class="text-xs text-amber-400 hover:text-amber-300 underline font-['VT323'] hidden cursor-pointer" onclick="revertStoreTryOn()">Revert</button>
+                                </div>
+
+                                <div id="store-showcase-action-btn-wrap" class="w-full">
+                                    <!-- Populated dynamically -->
+                                </div>
+
+                                <div class="store-showcase-editor-link">
+                                    <button type="button" class="text-xs text-cyan-300 hover:text-cyan-200 underline font-['VT323'] flex items-center justify-center gap-1 cursor-pointer w-full py-1" onclick="closeShop(); openProfileEditor();">
+                                        <span>Customize Name Color &amp; Bio ➔</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Tab 2: Astral Exchange Pane -->
+                <!-- Pane 2: My Locker (Owned Items) -->
+                <div id="shop-pane-locker" class="shop-content-pane store-split-pane flex-1 min-h-0 hidden">
+                    <!-- Left: Locker Category Pills & Owned Items Grid -->
+                    <div class="store-catalog-col">
+                        <div class="store-toolbar !justify-between">
+                            <div class="text-sm font-['VT323'] text-amber-300 flex items-center gap-1">
+                                <span>✦ YOUR UNLOCKED COSMETICS WARDROBE</span>
+                            </div>
+                            <span id="shop-locker-owned-count" class="text-xs font-['VT323'] text-gray-400">4 / 27 Unlocked</span>
+                        </div>
+
+                        <div class="store-filter-pills" id="shop-locker-filters">
+                            <button id="locker-filter-all" class="shop-filter-btn active" onclick="filterShopLocker('all')">All Owned</button>
+                            <button id="locker-filter-frame" class="shop-filter-btn" onclick="filterShopLocker('frame')">Frames</button>
+                            <button id="locker-filter-banner" class="shop-filter-btn" onclick="filterShopLocker('banner')">Banners</button>
+                            <button id="locker-filter-title" class="shop-filter-btn" onclick="filterShopLocker('title')">Titles</button>
+                            <button id="locker-filter-theme" class="shop-filter-btn" onclick="filterShopLocker('theme')">Themes</button>
+                        </div>
+
+                        <div id="shop-locker-grid" class="store-items-grid custom-scrollbar">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Locker Character Showcase -->
+                    <div class="store-showcase-col custom-scrollbar">
+                        <div class="store-showcase-box">
+                            <div class="store-showcase-title">
+                                <span>✦ ACTIVE CARD PREVIEW ✦</span>
+                            </div>
+
+                            <!-- Locker Card Preview -->
+                            <div id="store-locker-card" class="discord-card-preview card-theme-slate w-full shadow-xl relative select-none">
+                                <div id="store-locker-banner" class="discord-card-banner banner-pattern-slate w-full relative">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                </div>
+                                <div class="discord-card-body px-3 pb-3 pt-0 relative">
+                                    <div class="discord-card-avatar-wrap mb-1.5 relative inline-block">
+                                        <div id="store-locker-avatar-frame" class="avatar-frame-wrapper avatar-frame-classic relative">
+                                            <div id="store-locker-crown-badge" class="avatar-crown-element hidden">
+                                                <svg class="pixel-crown-svg" width="24" height="18" viewBox="0 0 16 12" fill="none" style="image-rendering: pixelated; shape-rendering: crispEdges;">
+                                                    <rect x="1" y="10" width="14" height="2" fill="#080a0c"/>
+                                                    <rect x="2" y="7" width="12" height="4" fill="#fbbf24"/>
+                                                    <rect x="2" y="2" width="2" height="5" fill="#fbbf24"/>
+                                                    <rect x="7" y="0" width="2" height="7" fill="#fbbf24"/>
+                                                    <rect x="12" y="2" width="2" height="5" fill="#fbbf24"/>
+                                                    <rect x="4" y="7" width="2" height="2" fill="#ef4444"/>
+                                                    <rect x="7" y="4" width="2" height="2" fill="#3b82f6"/>
+                                                    <rect x="10" y="7" width="2" height="2" fill="#ef4444"/>
+                                                </svg>
+                                            </div>
+                                            <canvas id="store-locker-avatar-canvas" width="50" height="50" class="pixelated block bg-[#181c24]"></canvas>
+                                            <div class="discord-avatar-status online" title="Online in Webcraft"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-1">
+                                        <span id="store-locker-title-badge" class="profile-title-badge">[Crafter]</span>
+                                    </div>
+                                    <div class="mb-1 text-left">
+                                        <div id="store-locker-username" class="text-white font-['VT323'] text-xl font-bold leading-tight truncate">Player</div>
+                                        <div id="store-locker-tag" class="text-amber-400 font-['VT323'] text-xs font-bold leading-none mt-0.5">@Player</div>
+                                    </div>
+                                    <div class="h-0.5 bg-gray-700/60 my-1.5"></div>
+                                    <div class="text-left mb-1">
+                                        <div class="text-[10px] uppercase text-gray-400 font-bold font-['VT323'] tracking-wider mb-0.5">ABOUT ME</div>
+                                        <div id="store-locker-bio" class="text-gray-200 font-['VT323'] text-sm leading-snug break-words line-clamp-2">Mining across dimensions.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Locker Actions -->
+                            <div class="store-showcase-actions">
+                                <div class="store-showcase-status-bar">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                        <span class="text-xs font-['VT323'] text-emerald-400 truncate">Equipped &amp; Active</span>
+                                    </div>
+                                </div>
+
+                                <div class="w-full">
+                                    <button type="button" class="mc-btn auth-primary-btn !h-8 !w-full !text-base flex items-center justify-center gap-1.5" onclick="closeShop(); openProfileEditor();">
+                                        <span>Full Profile Customizer ➔</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane 3: Astral Exchange -->
                 <div id="shop-pane-exchange" class="shop-content-pane flex-1 flex flex-col overflow-y-auto custom-scrollbar min-h-0 hidden">
-                    <div class="bg-[#171b20] border border-[#333a41] p-2 mb-2 text-[#aebac2] font-['VT323'] text-lg text-center flex-shrink-0">
-                        <span>Transmute mined emeralds into rare cosmic Astral Gems at planar conversion rates.</span>
+                    <div class="bg-[#171b20] border-2 border-[#333a41] p-2.5 mb-3 text-[#aebac2] font-['VT323'] text-lg text-center flex-shrink-0 shadow-inner">
+                        <span class="text-purple-300 font-bold">Astral Transmutation Chamber:</span> Transmute mined emeralds into rare cosmic Astral Gems at planar conversion rates.
                     </div>
-                    <div id="shop-exchange-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1 items-stretch">
+                    <div id="shop-exchange-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-3.5 flex-1 items-stretch p-1">
                         <!-- Populated with .exchange-card format -->
                     </div>
+                    <div class="mt-3 p-2 bg-[#12161b] border border-[#2b3542] text-xs text-gray-400 font-['VT323'] text-center">
+                        <span>💡 Tip: Emeralds are found underground in emerald ore veins (capped at 40/day) and daily challenges. Astral Gems are used to unlock cosmic cosmetics.</span>
+                    </div>
                 </div>
 
-                <!-- Tab 3: Atlas Outpost Pane -->
+                <!-- Pane 4: Atlas Outpost -->
                 <div id="shop-pane-atlas" class="shop-content-pane flex-1 flex flex-col overflow-hidden min-h-0 hidden">
-                    <div id="shop-atlas-header" class="bg-[#171b20] border border-[#333a41] p-2 mb-2 text-[#aebac2] font-['VT323'] text-lg text-center flex-shrink-0">
-                        <span class="text-purple-300">Kael's Planar Oddities:</span> Relics, cosmic gear, flora, and dimensional matter.
+                    <div id="shop-atlas-header" class="bg-[#171b20] border-2 border-[#333a41] p-2 mb-2 text-[#aebac2] font-['VT323'] text-lg text-center flex-shrink-0 shadow-inner">
+                        <span class="text-purple-300 font-bold">Kael's Planar Oddities:</span> Relics, cosmic gear, flora, and dimensional matter.
                     </div>
                     <div id="shop-atlas-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 overflow-y-auto custom-scrollbar flex-1 min-h-0 p-1">
                         <!-- Populated with .atlas-market-card format -->
@@ -2753,52 +2956,17 @@
                 </div>
 
                 <!-- Bottom Status Bar -->
-                <div class="mt-2 pt-2 border-t-2 border-[#46515a] flex justify-between items-center flex-shrink-0 text-xs text-[#8292a0] font-['VT323']">
-                    <span>✦ Purchases require a Webcraft account • Saved to Cloud Profile • Press [Esc] to exit</span>
-                    <button type="button" class="text-amber-400 hover:underline cursor-pointer text-sm" onclick="closeShop(); openProfileEditor();">Open Profile Customizer ➔</button>
+                <div class="store-footer-bar">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[#8292a0]">✦ Purchases require a Webcraft account • Saved to Cloud Profile • Press [Esc] to exit</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="button" class="text-amber-400 hover:text-amber-300 hover:underline cursor-pointer text-sm font-['VT323']" onclick="closeShop(); openProfileEditor();">Open Profile Customizer ➔</button>
+                        <span class="text-cyan-400 font-['VT323'] text-xs border border-cyan-800/60 bg-cyan-950/40 px-1.5 py-0.5">v0.1.6</span>
+                    </div>
                 </div>
+
             </section>
-
-            <!-- External Bottom Currency Box (Matches Atlas Market & Emerald Vault) -->
-            <div class="vault-bottom-currency-box select-none">
-                <!-- Standard Emeralds Balance Card -->
-                <div class="vault-balance-card standard">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="achievement-icon-frame !w-10 !h-10 flex-shrink-0">
-                            <img id="shop-bottom-emerald-img" class="pixelated w-7 h-7 object-contain" alt="Emerald" />
-                        </div>
-                        <div class="min-w-0">
-                            <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-wider leading-none vault-stat-green truncate">Standard Emeralds</div>
-                            <div class="text-xs sm:text-sm font-['VT323'] leading-tight vault-stat-sub text-[#94a3b8] truncate">Mined Wealth &amp; Challenges</div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-shrink-0 ml-2">
-                        <div id="shop-bottom-emerald-count" class="text-2xl sm:text-3xl font-bold font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000] vault-stat-green">0</div>
-                        <div class="text-xs sm:text-sm font-['VT323'] font-semibold vault-badge-green flex items-center justify-end gap-1">
-                            <span>BALANCE</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Astral Gems Balance Card -->
-                <div class="vault-balance-card astral">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="achievement-icon-frame !w-10 !h-10 flex-shrink-0">
-                            <img id="shop-bottom-astral-img" class="pixelated w-7 h-7 object-contain" alt="Astral Gem" />
-                        </div>
-                        <div class="min-w-0">
-                            <div class="text-base sm:text-lg font-bold uppercase font-['VT323'] tracking-wider leading-none vault-stat-purple truncate">Astral Gems</div>
-                            <div class="text-xs sm:text-sm font-['VT323'] leading-tight vault-stat-sub text-[#94a3b8] truncate">Cosmetics &amp; Planar Relics</div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-shrink-0 ml-2">
-                        <div id="shop-bottom-astral-count" class="text-2xl sm:text-3xl font-bold font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000] vault-stat-purple">0</div>
-                        <div class="text-xs sm:text-sm font-['VT323'] font-semibold vault-badge-purple flex items-center justify-end gap-1">
-                            <span>BALANCE</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
