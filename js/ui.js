@@ -8618,7 +8618,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const card = document.getElementById('store-preview-card');
         if (card) {
             const themeItem = getCosmeticItem(activeThemeId) || getCosmeticItem('theme_slate');
-            card.className = `discord-card-preview ${themeItem ? themeItem.themeClass : 'card-theme-slate'} w-full shadow-xl relative select-none`;
+            card.className = `discord-card-preview ${themeItem ? themeItem.themeClass : 'card-theme-slate'} w-full relative select-none`;
         }
 
         // Update Banner
@@ -8711,10 +8711,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (hasTryOn) {
             const lastItem = storeActiveTryOn.lastItemId ? getCosmeticItem(storeActiveTryOn.lastItemId) : null;
             const tryOnLabel = lastItem ? `Trying on: ${lastItem.name}` : 'Previewing Custom Look';
-            if (dot) dot.className = 'w-2 h-2 rounded-full bg-purple-400 animate-pulse';
+            if (dot) dot.className = 'w-2 h-2 rounded-full bg-purple-400';
             if (statusText) {
                 statusText.innerText = tryOnLabel;
-                statusText.className = 'text-xs font-[\'VT323\'] text-purple-300 truncate';
+                statusText.className = 'text-sm font-[\'VT323\'] text-purple-300 truncate pixel-text';
             }
 
             if (actionWrap) {
@@ -8727,33 +8727,33 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
                     if (isOwned) {
                         actionWrap.innerHTML = `
-                            <button type="button" class="mc-btn !bg-[#2563eb] hover:!bg-[#1d4ed8] !text-white !h-8 !w-full !text-base font-bold flex items-center justify-center gap-1.5" onclick="equipCosmeticItem('${lastItem.id}')">
+                            <button type="button" class="mc-btn shop-btn btn-blue !w-full !h-8 !text-lg flex items-center justify-center gap-1.5" onclick="equipCosmeticItem('${lastItem.id}')">
                                 <span>Equip ${lastItem.name}</span>
                             </button>
                         `;
                     } else if (isGuest) {
                         actionWrap.innerHTML = `
-                            <button type="button" class="mc-btn auth-primary-btn !h-8 !w-full !text-base font-bold flex items-center justify-center gap-1.5" onclick="purchaseCosmeticItem('${lastItem.id}')">
+                            <button type="button" class="mc-btn shop-btn btn-amber !w-full !h-8 !text-lg flex items-center justify-center gap-1.5" onclick="purchaseCosmeticItem('${lastItem.id}')">
                                 <span>Sign In to Unlock (${lastItem.price} ✦)</span>
                             </button>
                         `;
                     } else if (canAfford) {
                         actionWrap.innerHTML = `
-                            <button type="button" class="mc-btn auth-primary-btn !h-8 !w-full !text-base font-bold flex items-center justify-center gap-1.5" onclick="purchaseCosmeticItem('${lastItem.id}')">
+                            <button type="button" class="mc-btn shop-btn btn-purple !w-full !h-8 !text-lg flex items-center justify-center gap-1.5" onclick="purchaseCosmeticItem('${lastItem.id}')">
                                 <span>Buy ${lastItem.name} (${lastItem.price} ✦)</span>
                             </button>
                         `;
                     } else {
                         const diff = lastItem.price - gems;
                         actionWrap.innerHTML = `
-                            <button type="button" class="mc-btn !bg-[#382645] !text-[#d8b4fe] opacity-80 cursor-not-allowed !h-8 !w-full !text-base font-bold flex items-center justify-center gap-1.5" disabled>
+                            <button type="button" class="mc-btn shop-btn btn-disabled !w-full !h-8 !text-lg flex items-center justify-center gap-1.5" disabled>
                                 <span>Need ${diff} more ✦ to Buy</span>
                             </button>
                         `;
                     }
                 } else {
                     actionWrap.innerHTML = `
-                        <button type="button" class="mc-btn !h-8 !w-full !text-base font-bold flex items-center justify-center gap-1.5" onclick="revertStoreTryOn()">
+                        <button type="button" class="mc-btn shop-btn !w-full !h-8 !text-lg flex items-center justify-center gap-1.5" onclick="revertStoreTryOn()">
                             <span>Revert to Current Look</span>
                         </button>
                     `;
@@ -8763,11 +8763,11 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
             if (statusText) {
                 statusText.innerText = 'Showing Equipped Look';
-                statusText.className = 'text-xs font-[\'VT323\'] text-emerald-400 truncate';
+                statusText.className = 'text-sm font-[\'VT323\'] text-emerald-400 truncate pixel-text';
             }
             if (actionWrap) {
                 actionWrap.innerHTML = `
-                    <div class="p-1 bg-[#12161b] border border-[#2b3542] text-center text-xs font-['VT323'] text-gray-400">
+                    <div class="p-1.5 bg-[#090c10] border border-[#242c38] text-center text-sm font-['VT323'] text-gray-400 pixel-text">
                         Click 'Try On' on any cosmetic to preview!
                     </div>
                 `;
@@ -8786,7 +8786,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         const card = document.getElementById('store-locker-card');
         if (card) {
             const themeItem = getCosmeticItem(activeThemeId) || getCosmeticItem('theme_slate');
-            card.className = `discord-card-preview ${themeItem ? themeItem.themeClass : 'card-theme-slate'} w-full shadow-xl relative select-none`;
+            card.className = `discord-card-preview ${themeItem ? themeItem.themeClass : 'card-theme-slate'} w-full relative select-none`;
         }
 
         const banner = document.getElementById('store-locker-banner');
@@ -9112,55 +9112,55 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             let statusBadgeHtml = '';
 
             if (isEquipped) {
-                statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-amber-300 bg-amber-950/60 border border-amber-600/50 shadow-inner flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>EQUIPPED</span>`;
-                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#ffd34d] !text-black font-bold cursor-default" disabled>Equipped</button>`;
+                statusBadgeHtml = `<span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-amber-300 bg-amber-950/80 border border-amber-600/60 flex items-center gap-1 pixel-text"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>EQUIPPED</span>`;
+                actionBtnHtml = `<button type="button" class="mc-btn shop-btn btn-equipped" disabled>Equipped</button>`;
             } else if (isOwned) {
-                statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-600/50 shadow-inner">OWNED</span>`;
-                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#2563eb] hover:!bg-[#1d4ed8] !text-white" onclick="equipCosmeticItem('${item.id}')">Equip</button>`;
+                statusBadgeHtml = `<span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-600/60 pixel-text">OWNED</span>`;
+                actionBtnHtml = `<button type="button" class="mc-btn shop-btn btn-blue" onclick="equipCosmeticItem('${item.id}')">Equip</button>`;
             } else {
-                statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-purple-300 bg-purple-950/60 border border-purple-600/50 shadow-inner">${item.price > 0 ? `${item.price} ✦` : 'FREE'}</span>`;
+                statusBadgeHtml = `<span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-purple-300 bg-purple-950/80 border border-purple-600/60 pixel-text">${item.price > 0 ? `${item.price} ✦` : 'FREE'}</span>`;
                 if (isGuest) {
-                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white" onclick="purchaseCosmeticItem('${item.id}')">Sign In</button>`;
+                    actionBtnHtml = `<button type="button" class="mc-btn shop-btn btn-amber" onclick="purchaseCosmeticItem('${item.id}')">Sign In</button>`;
                 } else if (canAfford) {
-                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white" onclick="purchaseCosmeticItem('${item.id}')">Buy</button>`;
+                    actionBtnHtml = `<button type="button" class="mc-btn shop-btn btn-purple" onclick="purchaseCosmeticItem('${item.id}')">Buy</button>`;
                 } else {
                     const diff = item.price - playerGems;
-                    actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#382645] !text-[#d8b4fe] opacity-80 cursor-not-allowed" disabled title="Need ${diff} more Astral Gems">Need ${diff} ✦</button>`;
+                    actionBtnHtml = `<button type="button" class="mc-btn shop-btn btn-disabled" disabled title="Need ${diff} more Astral Gems">Need ${diff} ✦</button>`;
                 }
             }
 
             const rarityClass = `rarity-${(item.rarity || 'common').toLowerCase()}`;
-            const activeCardClass = isEquipped ? 'equipped' : (isTryingOn ? '!border-purple-400 shadow-[0_0_12px_rgba(192,132,252,0.35)]' : '');
+            const activeCardClass = isEquipped ? 'equipped' : (isTryingOn ? 'previewing' : '');
 
             return `
                 <div class="cosmetic-card ${activeCardClass}">
                     <div>
                         <!-- Header: Category Rarity Badge + Status / Price -->
-                        <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center justify-between mb-2">
                             <span class="cosmetic-rarity-tag ${rarityClass}">${item.rarity}</span>
                             ${statusBadgeHtml}
                         </div>
 
                         <!-- Content Row: Pixel Preview Frame + Name + Description -->
-                        <div class="flex items-start gap-2.5 mb-1.5">
+                        <div class="flex items-start gap-3 mb-2">
                             <div class="cosmetic-card-icon" title="${item.name}">
                                 ${item.iconSvg || ''}
                             </div>
                             <div class="flex-1 min-w-0 text-left">
-                                <div class="text-base sm:text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate drop-shadow-[1px_1px_0_#000]">${item.name}</div>
-                                <p class="text-xs text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-0.5 drop-shadow-[1px_1px_0_#000]">${item.description}</p>
+                                <div class="text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate store-card-title">${item.name}</div>
+                                <p class="text-sm text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-1 store-card-desc">${item.description}</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Footer: Price Box + Action Buttons -->
-                    <div class="flex items-center justify-between pt-1.5 border-t border-[#2b3542] mt-auto">
-                        <div class="flex items-center gap-1 bg-[#12161b] px-1.5 py-0.5 border border-[#2b3542] shadow-inner">
-                            <span class="text-base sm:text-lg font-bold text-[#c084fc] font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000]">${item.price > 0 ? item.price : 'FREE'}</span>
-                            <span class="text-[10px] text-purple-300 font-['VT323'] uppercase">${item.price > 0 ? '✦' : ''}</span>
+                    <div class="flex items-center justify-between pt-2 border-t border-[#242c38] mt-auto">
+                        <div class="store-price-tag">
+                            <span class="store-price-val">${item.price > 0 ? item.price : 'FREE'}</span>
+                            <span class="text-xs text-purple-300 font-['VT323'] uppercase">${item.price > 0 ? '✦' : ''}</span>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                            <button type="button" class="text-cyan-400 hover:text-cyan-300 text-xs font-['VT323'] underline cursor-pointer" onclick="tryOnCosmeticItem('${item.id}')">${isTryingOn ? 'Previewing' : 'Try On'}</button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="text-cyan-400 hover:text-cyan-300 text-sm font-['VT323'] underline cursor-pointer pixel-text" onclick="tryOnCosmeticItem('${item.id}')">${isTryingOn ? 'Previewing' : 'Try On'}</button>
                             ${actionBtnHtml}
                         </div>
                     </div>
@@ -9200,9 +9200,9 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if (ownedItems.length === 0) {
             grid.innerHTML = `
                 <div class="col-span-full py-10 text-center flex flex-col items-center justify-center gap-2">
-                    <div class="text-amber-400 font-['VT323'] text-2xl">No unlocked items in this category!</div>
-                    <p class="text-gray-400 font-['VT323'] text-base m-0">Browse the Catalog to unlock new frames, banners, and themes with Astral Gems.</p>
-                    <button type="button" class="mc-btn auth-primary-btn !w-auto !px-4 !py-1 !text-base mt-2" onclick="switchShopTab('cosmetics')">Browse Catalog</button>
+                    <div class="text-amber-400 font-['VT323'] text-2xl pixel-text">No unlocked items in this category!</div>
+                    <p class="text-gray-400 font-['VT323'] text-base m-0 pixel-text">Browse the Catalog to unlock new frames, banners, and themes with Astral Gems.</p>
+                    <button type="button" class="mc-btn shop-btn btn-purple !w-auto !px-4 !py-1 !text-lg mt-2" onclick="switchShopTab('cosmetics')">Browse Catalog</button>
                 </div>
             `;
             return;
@@ -9220,38 +9220,38 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             let statusBadgeHtml = '';
 
             if (isEquipped) {
-                statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-amber-300 bg-amber-950/60 border border-amber-600/50 shadow-inner flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>EQUIPPED</span>`;
-                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#ffd34d] !text-black font-bold cursor-default" disabled>Equipped</button>`;
+                statusBadgeHtml = `<span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-amber-300 bg-amber-950/80 border border-amber-600/60 flex items-center gap-1 pixel-text"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>EQUIPPED</span>`;
+                actionBtnHtml = `<button type="button" class="mc-btn shop-btn btn-equipped" disabled>Equipped</button>`;
             } else {
-                statusBadgeHtml = `<span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-600/50 shadow-inner">UNLOCKED</span>`;
-                actionBtnHtml = `<button type="button" class="mc-btn !w-auto !min-w-[65px] !px-2 !py-0.5 !text-base !bg-[#2563eb] hover:!bg-[#1d4ed8] !text-white" onclick="equipCosmeticItem('${item.id}')">Equip</button>`;
+                statusBadgeHtml = `<span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-600/60 pixel-text">UNLOCKED</span>`;
+                actionBtnHtml = `<button type="button" class="mc-btn shop-btn btn-blue" onclick="equipCosmeticItem('${item.id}')">Equip</button>`;
             }
 
             return `
                 <div class="cosmetic-card ${isEquipped ? 'equipped' : ''}">
                     <div>
                         <!-- Header: Category Rarity Badge + Status -->
-                        <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center justify-between mb-2">
                             <span class="cosmetic-rarity-tag ${rarityClass}">${item.rarity}</span>
                             ${statusBadgeHtml}
                         </div>
 
                         <!-- Content Row: Pixel Preview Frame + Name + Description -->
-                        <div class="flex items-start gap-2.5 mb-1.5">
+                        <div class="flex items-start gap-3 mb-2">
                             <div class="cosmetic-card-icon" title="${item.name}">
                                 ${item.iconSvg || ''}
                             </div>
                             <div class="flex-1 min-w-0 text-left">
-                                <div class="text-base sm:text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate drop-shadow-[1px_1px_0_#000]">${item.name}</div>
-                                <p class="text-xs text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-0.5 drop-shadow-[1px_1px_0_#000]">${item.description}</p>
+                                <div class="text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate store-card-title">${item.name}</div>
+                                <p class="text-sm text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-1 store-card-desc">${item.description}</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Footer: Equip Action Button -->
-                    <div class="flex items-center justify-between pt-1.5 border-t border-[#2b3542] mt-auto">
-                        <span class="text-xs text-gray-400 font-['VT323']">${item.category.toUpperCase()}</span>
-                        <div class="flex items-center gap-1.5">
+                    <!-- Footer: Category Label + Equip Action Button -->
+                    <div class="flex items-center justify-between pt-2 border-t border-[#242c38] mt-auto">
+                        <span class="text-sm text-gray-400 font-['VT323'] uppercase pixel-text">${item.category}</span>
+                        <div class="flex items-center gap-2">
                             ${actionBtnHtml}
                         </div>
                     </div>
@@ -9406,23 +9406,23 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             return `
                 <div class="exchange-card ${t.cardClass}">
                     <div class="exchange-card-header flex-shrink-0">
-                        <div class="text-2xl font-bold text-purple-200 font-['VT323'] leading-tight mb-0.5">${t.title}</div>
-                        <div class="text-xs text-purple-400 font-['VT323'] uppercase tracking-wider">${t.note}</div>
+                        <div class="text-2xl font-bold text-purple-200 font-['VT323'] leading-tight mb-0.5 pixel-text">${t.title}</div>
+                        <div class="text-xs text-purple-400 font-['VT323'] uppercase tracking-wider pixel-text">${t.note}</div>
                     </div>
                     <div class="exchange-card-center-body">
                         <div class="exchange-card-illustration" title="${t.title}">${t.illustration}</div>
                         <div class="exchange-preview-box">
                             <div class="flex items-center gap-1">
-                                <span class="text-emerald-400 font-bold font-['VT323'] text-2xl leading-none">${t.cost}</span>
+                                <span class="text-emerald-400 font-bold font-['VT323'] text-2xl leading-none pixel-text">${t.cost}</span>
                                 <span class="inline-flex items-center">${getPixelEmeraldSvg(16)}</span>
                             </div>
                             <span class="text-purple-400 font-bold text-sm px-1">➔</span>
                             <div class="flex items-center gap-1">
-                                <span class="text-purple-300 font-bold font-['VT323'] text-2xl leading-none">+${t.gain}</span>
+                                <span class="text-purple-300 font-bold font-['VT323'] text-2xl leading-none pixel-text">+${t.gain}</span>
                                 <span class="inline-flex items-center">${getPixelAstralEmeraldSvg(16)}</span>
                             </div>
                         </div>
-                        <div class="text-xs text-purple-200/80 font-['VT323'] leading-tight text-center px-1">${t.subtitle}</div>
+                        <div class="text-xs text-purple-200/90 font-['VT323'] leading-tight text-center px-1 pixel-text">${t.subtitle}</div>
                     </div>
                     <div class="exchange-card-btn-wrap">${btnHtml}</div>
                 </div>
@@ -9449,8 +9449,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (header) header.style.display = 'none';
             grid.className = 'flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto custom-scrollbar';
             grid.innerHTML = `
-                <div class="w-full max-w-md bg-[#171b20] border-2 border-[#46515a] shadow-[inset_0_0_24px_rgba(0,0,0,0.8),_4px_4px_0_rgba(0,0,0,0.4)] p-6 text-center flex flex-col items-center justify-center gap-3 my-auto select-none">
-                    <div class="w-16 h-16 flex items-center justify-center bg-purple-950/70 border-2 border-purple-500/60 shadow-[0_0_16px_rgba(168,85,247,0.35)]">
+                <div class="w-full max-w-md bg-[#161b22] border-4 border-[#0c0f13] outline outline-2 outline-[#46515a] -outline-offset-4 shadow-[6px_6px_0_rgba(0,0,0,0.7)] p-6 text-center flex flex-col items-center justify-center gap-3 my-auto select-none">
+                    <div class="w-16 h-16 flex items-center justify-center bg-[#140f20] border-2 border-t-[#c084fc] border-l-[#c084fc] border-b-[#581c87] border-r-[#581c87] shadow-[inset_2px_2px_0_#06080a]">
                         <svg viewBox="0 0 16 16" width="36" height="36" style="image-rendering: pixelated; shape-rendering: crispEdges;">
                             <rect x="5" y="2" width="6" height="5" fill="#c084fc"/>
                             <rect x="7" y="4" width="2" height="3" fill="#171b20"/>
@@ -9460,24 +9460,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                             <rect x="7" y="12" width="2" height="1" fill="#facc15"/>
                         </svg>
                     </div>
-                    <h3 class="text-2xl sm:text-3xl font-bold font-['VT323'] text-amber-400 tracking-wider m-0 drop-shadow-[2px_2px_0_#080a0c]">
+                    <h3 class="text-2xl sm:text-3xl font-bold font-['VT323'] text-amber-400 tracking-wider m-0 pixel-text-lg">
                         PLANAR OUTPOST LOCKED
                     </h3>
-                    <div class="px-2.5 py-0.5 bg-amber-950/70 border border-amber-500/60 text-amber-300 font-['VT323'] text-sm uppercase tracking-widest">
+                    <div class="px-3 py-1 bg-[#261505] border-2 border-t-[#fbbf24] border-l-[#fbbf24] border-b-[#78350f] border-r-[#78350f] text-amber-300 font-['VT323'] text-sm uppercase tracking-widest pixel-text">
                         First Interaction Required
                     </div>
-                    <p class="text-gray-200 font-['VT323'] text-xl leading-snug max-w-sm m-0 drop-shadow-[1px_1px_0_#000]">
+                    <p class="text-gray-200 font-['VT323'] text-xl leading-snug max-w-sm m-0 pixel-text">
                         You have not met <span class="text-purple-300 font-bold">Kael, The Atlas Explorer</span> in this world yet!
                     </p>
-                    <div class="bg-[#101317] border border-[#2c333a] p-3 text-left w-full mt-1">
-                        <p class="text-gray-300 font-['VT323'] text-base leading-normal m-0">
+                    <div class="bg-[#0e1216] border-2 border-t-[#06080b] border-l-[#06080b] border-b-[#2c3644] border-r-[#2c3644] shadow-[inset_2px_2px_0_#040507] p-3 text-left w-full mt-1">
+                        <p class="text-gray-300 font-['VT323'] text-base leading-normal m-0 pixel-text">
                             ✦ Kael arrives through a planar rift on <strong class="text-amber-300 font-bold">Day 14</strong>.
                         </p>
-                        <p class="text-gray-400 font-['VT323'] text-base leading-normal m-0 mt-1">
+                        <p class="text-gray-400 font-['VT323'] text-base leading-normal m-0 mt-1 pixel-text">
                             ✦ Find and speak with Kael to establish contact and reveal his Outpost wares.
                         </p>
                     </div>
-                    <span class="text-xs text-purple-300/80 font-['VT323'] tracking-wider mt-1">
+                    <span class="text-xs text-purple-300 font-['VT323'] tracking-wider mt-1 pixel-text">
                         Shop contents are hidden until planar contact is made.
                     </span>
                 </div>
@@ -9520,60 +9520,61 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
             let buttonLabel = 'Buy';
             let buttonDisabled = '';
-            let buttonClass = '!bg-[#7c3aed] hover:!bg-[#6d28d9] !text-white';
+            let buttonClass = 'btn-purple';
             if (isGuest) {
                 buttonLabel = 'Sign In';
+                buttonClass = 'btn-amber';
             } else if (!inStock) {
                 buttonLabel = 'Sold Out';
                 buttonDisabled = 'disabled';
-                buttonClass = '!bg-[#2d353e] !text-[#64748b] opacity-60 cursor-not-allowed';
+                buttonClass = 'btn-disabled';
             } else if (!canAfford) {
                 const diff = item.cost - astralGems;
                 buttonLabel = `Need ${diff} ✦`;
                 buttonDisabled = 'disabled';
-                buttonClass = '!bg-[#382645] !text-[#d8b4fe] opacity-80 cursor-not-allowed';
+                buttonClass = 'btn-disabled';
             }
 
             return `
                 <div class="atlas-market-card flex flex-col justify-between">
                     <div>
                         <!-- Category Badge + Stock Indicator -->
-                        <div class="flex justify-between items-center mb-1.5">
+                        <div class="flex justify-between items-center mb-2">
                             <span class="atlas-ware-badge text-xs" style="background: ${categoryColor}18; color: ${categoryColor}; border: 1px solid ${categoryColor}66; padding: 1px 6px;">
                                 ${categoryName}
                             </span>
                             ${inStock ? `
-                                <span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-600/50 flex items-center gap-1 shadow-inner">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-600/60 flex items-center gap-1 pixel-text">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                     <span>STOCK: ${stock}/${item.baseStock}</span>
                                 </span>
                             ` : `
-                                <span class="px-1.5 py-0.5 text-xs font-['VT323'] font-bold text-red-400 bg-red-950/60 border border-red-600/50 shadow-inner">
+                                <span class="px-2 py-0.5 text-xs font-['VT323'] font-bold text-red-400 bg-red-950/80 border border-red-600/60 pixel-text">
                                     SOLD OUT
                                 </span>
                             `}
                         </div>
 
                         <!-- Item Icon + Name + Description -->
-                        <div class="flex items-start gap-2.5 mb-1.5">
+                        <div class="flex items-start gap-3 mb-2">
                             <div class="cosmetic-card-icon flex-shrink-0">
-                                ${itemSrc ? `<img src="${itemSrc}" class="pixelated w-7 h-7 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" alt="${item.name}" />` : ''}
+                                ${itemSrc ? `<img src="${itemSrc}" class="pixelated w-8 h-8 object-contain" alt="${item.name}" />` : ''}
                             </div>
                             <div class="flex-1 min-w-0 text-left">
-                                <div class="text-base sm:text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate drop-shadow-[1px_1px_0_#000]">${item.name}</div>
-                                <p class="text-xs text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-0.5 drop-shadow-[1px_1px_0_#000]">${item.description}</p>
+                                <div class="text-lg font-bold text-purple-200 font-['VT323'] leading-tight truncate store-card-title">${item.name}</div>
+                                <p class="text-sm text-[#95a5b5] font-['VT323'] leading-snug line-clamp-2 m-0 mt-1 store-card-desc">${item.description}</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Footer: Astral Cost Box + Action Button -->
-                    <div class="flex items-center justify-between pt-1.5 border-t border-[#2b3542] mt-auto">
-                        <div class="flex items-center gap-1 bg-[#12161b] px-2 py-0.5 border border-[#2b3542] shadow-inner">
+                    <div class="flex items-center justify-between pt-2 border-t border-[#242c38] mt-auto">
+                        <div class="store-price-tag">
                             ${astralSrc ? `<img src="${astralSrc}" class="pixelated w-4 h-4 object-contain" alt="Astral Gem" />` : ''}
-                            <span class="text-lg font-bold text-[#c084fc] font-['VT323'] leading-none drop-shadow-[1px_1px_0_#000]">${item.cost}</span>
-                            <span class="text-[10px] text-purple-300 font-['VT323'] uppercase">✦</span>
+                            <span class="store-price-val">${item.cost}</span>
+                            <span class="text-xs text-purple-300 font-['VT323'] uppercase">✦</span>
                         </div>
-                        <button class="mc-btn ${buttonClass} !w-auto !min-w-[70px] !px-2.5 !py-0.5 !text-base !font-['VT323']"
+                        <button class="mc-btn shop-btn ${buttonClass} !w-auto !min-w-[76px]"
                                 onclick="purchaseAtlasWareFromShop('${item.id}')" ${buttonDisabled}>
                             ${buttonLabel}
                         </button>

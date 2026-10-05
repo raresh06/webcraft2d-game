@@ -702,7 +702,8 @@ export function getMaxAnimals() {
             'Corner Control Hints & Tutorial: Added interactive bottom-left HUD hotkey hints ([C] Emerald Vault, [L] Achievements, [M] World Map, [B] Background Build) with authentic pixel-art keycaps, plus a toggle in Settings to customize visibility.',
             'Unboxed Retro Cassette Autosave: Overhauled autosave notifications into an unboxed, large retro pixel-art cassette tape with animated spinning reels and crisp text.',
             'Circular Radar Minimap Default: The minimap now defaults to the circular radar shape for a modern, sleek HUD view.',
-            'Offhand Quick-Swap & Full Stack Drop: Instantly swap held items into the offhand slot using the customizable [F] key or by clicking the HUD offhand slot, and drop entire item stacks at once with [Ctrl + Q].'
+            'Offhand Quick-Swap & Full Stack Drop: Instantly swap held items into the offhand slot using the customizable [F] key or by clicking the HUD offhand slot, and drop entire item stacks at once with [Ctrl + Q].',
+            '[unfinished] Webcraft Store UI Overhaul: Ground-up overhaul of the Webcraft Store with authentic retro pixel-art shop box UI, generous breathing room and spacious multi-column layout, crisp zero-blur typography (zero blurry text glows or halos), authentic 3D beveled inventory slot wells, sunken display pedestals, and polished Live Try-On preview.'
         ]
     };
 
