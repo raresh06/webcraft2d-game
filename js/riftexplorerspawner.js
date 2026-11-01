@@ -5,11 +5,11 @@
 
 import {
     IDS, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT,
-    entities, isSolidWorldBlock, showToast, playSound,
+    entities, isSolidWorldBlock, playSound,
     isMultiplayer, isMultiplayerAuthority, broadcastDataPacket,
     AtlasExplorer, findSafeKaelPositionNear
 } from './engine.js';
-import { showKaelArrivalBanner, showKaelDepartureBanner } from './ui.js';
+import { showKaelArrivalBanner, showKaelDepartureBanner } from './ui/toasts.js';
 
 class RiftExplorerSpawnerManager {
     constructor() {

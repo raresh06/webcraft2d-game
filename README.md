@@ -6,6 +6,27 @@
 
 ---
 
+---
+
+## 📢 Latest Release: Beta v0.2.0 (Engine Modularization & Architectural Reconstruction)
+
+Webcraft2D has undergone a massive architectural overhaul, transforming the monolithic 17,676-line `engine.js` into 41 modular, domain-specific ES modules organized cleanly by subsystem:
+
+* **Engine Subsystem Modularization**: Decomposed into cleanly organized modules:
+  * `js/core/`: Constants, IDs, config, and authoritative game state.
+  * `js/world/`: Block helpers, procedural world generation, liquid fluid physics, and lifecycle queues.
+  * `js/entities/`: Physics entity base, player, drops, hostile mobs, passive animals, and Atlas Explorer NPC.
+  * `js/rendering/`: Master world renderer, character/skin renderer, lighting, celestial atmosphere, and minimap.
+  * `js/crafting/`: Complete 2x2/3x3 recipe catalog and crafting manager.
+  * `js/shop/`: Dual-currency emerald store, cosmetics, and Atlas trading outpost.
+  * `js/ui/`: Standard components, toasts, and world thumbnail captures.
+* **Direct ES Module Graph**: 100% native browser ES modules with zero bundlers required, zero circular dependencies, and full live-binding exports.
+* **Backwards Compatibility Bridge**: Preserved `js/engine.js` barrel re-exports and window bindings for full backward compatibility with save files, remote player sync, and developer cheats.
+* **Reliable Character Rendering**: Bulletproofed character and wardrobe skin rendering with procedural classic Steve fallbacks, eliminating invisible player character glitches.
+* **Automated Headless Test Suite**: Verified across 266 comprehensive automated tests (Tiers 1–4) covering constants, state, crafting, fluids, worldgen, mob AI, textures, persistence, and real-world survival loops.
+
+---
+
 ## 🌟 Game Features Overview
 
 ### 🌍 World Generation & Exploration

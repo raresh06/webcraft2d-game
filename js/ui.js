@@ -1,3 +1,14 @@
+
+// Barrel re-exports of crafting, shop, and toasts
+export * from './crafting/recipes.js';
+export * from './crafting/craftingmanager.js';
+export * from './shop/shopmanager.js';
+export * from './ui/toasts.js';
+
+import { RECIPES, getRecipeCategory, getRecipesByCategory, getRecipeByIdx, findRecipesByOutput, searchRecipes } from './crafting/recipes.js';
+import { canFitItem, getItemCount, hasItem, consumeItem, getRecipeInputCount, hasRecipeInput, consumeRecipeInput, checkNearCraftingTable, canCraftRecipe, craftItem, craftRecipe } from './crafting/craftingmanager.js';
+import { getPlayerEmeralds, setPlayerEmeralds, addPlayerEmeralds, getPlayerAstralEmeralds, setPlayerAstralEmeralds, addPlayerAstralEmeralds, performAstralExchange, purchaseCosmeticItem, equipCosmeticItem, getCosmeticPrice, getAtlasTrades, ShopManager } from './shop/shopmanager.js';
+import { showToast, showKaelArrivalBanner, showKaelDepartureBanner } from './ui/toasts.js';
 import {
     IDS, ID_NAMES, TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, currentWorldSize,
     Player, Zombie, Pig, Chicken, Sheep, Creeper, Scorpion, Cow, Pigeon, Parrot, AtlasExplorer, Gloomstalker,
@@ -303,14 +314,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 }
 
-    export const GAME_VERSION = '0.1.6';
-    export const DISPLAY_VERSION = '0.1.6';
-    export const GAME_BUILD = 'webcraft2d-beta-0.1.6';
+    export const GAME_VERSION = '0.2.0';
+    export const DISPLAY_VERSION = '0.2.0';
+    export const GAME_BUILD = 'webcraft2d-beta-0.2.0';
 
     export function updateVersionLabels() {
         if (typeof document === 'undefined') return;
         const versionLabel = document.getElementById('game-version-label');
-        if (versionLabel) versionLabel.innerHTML = `<a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v${DISPLAY_VERSION} (Happy Halloween)`;
+        if (versionLabel) versionLabel.innerHTML = `<a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v${DISPLAY_VERSION} (Engine Modularization)`;
     }
 
     updateVersionLabels();
@@ -479,38 +490,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
     setRandomSplashText();
-
-    export function showToast(msg, iconOrDuration = null, maybeDuration = 3000) {
-        const c = document.getElementById('toast-container');
-        if (!c) return;
-
-        let iconHtml = null;
-        let duration = 3000;
-
-        if (typeof iconOrDuration === 'number') {
-            duration = iconOrDuration;
-        } else if (typeof iconOrDuration === 'string') {
-            if (/^\d+$/.test(iconOrDuration.trim())) {
-                duration = parseInt(iconOrDuration.trim(), 10);
-            } else {
-                iconHtml = iconOrDuration;
-                if (typeof maybeDuration === 'number') {
-                    duration = maybeDuration;
-                }
-            }
-        }
-
-        const t = document.createElement('div');
-        t.className = 'toast flex items-center gap-2.5';
-        if (iconHtml) {
-            t.innerHTML = `${iconHtml}<span>${msg}</span>`;
-        } else {
-            t.innerText = msg;
-        }
-        c.appendChild(t);
-        setTimeout(() => { if(t.parentElement) t.remove(); }, duration);
-    }
-
 
     // ==========================================
     // KEYBINDS & SETTINGS CONFIGURATION
@@ -1267,64 +1246,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         return getPixelCrownSvgDef(size);
     }
 
-    export function getPlayerEmeralds() {
-        try {
-            const val = parseInt(localStorage.getItem('swc_emeralds_v1'), 10);
-            return isNaN(val) || val < 0 ? 0 : val;
-        } catch (e) {
-            return 0;
-        }
-    }
-
-    export function setPlayerEmeralds(val) {
-        try {
-            const safeVal = Math.max(0, Math.floor(val));
-            localStorage.setItem('swc_emeralds_v1', safeVal.toString());
-            if (currentUserProfile) {
-                currentUserProfile.emeralds = safeVal;
-                try { localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile)); } catch(e){}
-            }
-            updateEmeraldsUI();
-            return safeVal;
-        } catch (e) {
-            return 0;
-        }
-    }
-
-    export function addPlayerEmeralds(amt) {
-        const current = getPlayerEmeralds();
-        return setPlayerEmeralds(current + amt);
-    }
-
-    export function getPlayerAstralEmeralds() {
-        try {
-            const val = parseInt(localStorage.getItem('swc_astral_emeralds_v1'), 10);
-            return isNaN(val) || val < 0 ? 0 : val;
-        } catch (e) {
-            return 0;
-        }
-    }
-
-    export function setPlayerAstralEmeralds(val) {
-        try {
-            const safeVal = Math.max(0, Math.floor(val));
-            localStorage.setItem('swc_astral_emeralds_v1', safeVal.toString());
-            if (currentUserProfile) {
-                currentUserProfile.astralEmeralds = safeVal;
-                try { localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile)); } catch(e){}
-            }
-            updateEmeraldsUI();
-            return safeVal;
-        } catch (e) {
-            return 0;
-        }
-    }
-
-    export function addPlayerAstralEmeralds(amt) {
-        const current = getPlayerAstralEmeralds();
-        return setPlayerAstralEmeralds(current + amt);
-    }
-
     export function getClaimedAchievementRewards() {
         try {
             const raw = localStorage.getItem('swc_claimed_achievements_v1');
@@ -1958,27 +1879,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 </div>
             `;
         }).join('');
-    }
-
-    export function performAstralExchange(emeraldCost, astralGain) {
-        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
-        if (isGuest) {
-            showToast("Registered account required for Astral Emerald Exchange!");
-            return;
-        }
-        const current = getPlayerEmeralds();
-        if (current < emeraldCost) {
-            showToast(`Not enough Emeralds! (${emeraldCost} needed, you have ${current})`);
-            return;
-        }
-        addPlayerEmeralds(-emeraldCost);
-        addPlayerAstralEmeralds(astralGain);
-        playSound('astral_exchange');
-        showToast(`Exchanged ${emeraldCost} Emeralds for +${astralGain} Astral Emerald${astralGain > 1 ? 's' : ''}!`);
-        unlockAchievement('astral_pioneer');
-        unlockAchievement('astral_exchange_master');
-        updateEmeraldsUI();
-        renderAstralExchangeUI();
     }
 
     // --- Live Daily UTC Reset Countdown Timer ---
@@ -4192,76 +4092,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 
 
-    export const RECIPES = [
-        { output: { id: IDS.BUCKET, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 3 }], reqTable: true, category: 'utility' },
-        { output: { id: IDS.JUKEBOX, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 8 }, { id: IDS.DIAMOND, count: 1 }], reqTable: true, category: 'utility' },
-        { output: { id: IDS.EMPTY_VINYL, count: 1 }, inputs: [{ id: IDS.COAL, count: 4 }, { id: IDS.IRON_INGOT, count: 1 }], reqTable: true, category: 'utility' },
-        { output: { id: IDS.PLANKS, count: 4 }, inputs: [{ id: IDS.WOOD, count: 1 }], reqTable: false },
-        { output: { id: IDS.JUNGLE_PLANKS, count: 4 }, inputs: [{ id: IDS.JUNGLE_WOOD, count: 1 }], reqTable: false, category: 'blocks' },
-        { output: { id: IDS.CHEST, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 8 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.STICK, count: 4 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 2 }], reqTable: false },
-        { output: { id: IDS.JUNGLE_DOOR, count: 1 }, inputs: [{ id: IDS.JUNGLE_PLANKS, count: 6 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.SIGN, count: 3 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 6 }, { id: IDS.STICK, count: 1 }], reqTable: true, category: 'utility' },
-        { output: { id: IDS.MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
-        { output: { id: IDS.MELON, count: 1 }, inputs: [{ id: IDS.MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.LADDER, count: 3 }, inputs: [{ id: IDS.STICK, count: 7 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.WOODEN_STAIRS, count: 4 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 6 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.COBBLESTONE_STAIRS, count: 4 }, inputs: [{ id: IDS.COBBLESTONE, count: 6 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.TORCH, count: 4 }, inputs: [{ id: IDS.COAL, count: 1 }, { id: IDS.STICK, count: 1 }], reqTable: false },
-        { output: { id: IDS.CRAFTING_TABLE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 4 }], reqTable: false },
-        { output: { id: IDS.DOOR, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 6 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.FURNACE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 8 }], reqTable: true },
-        { output: { id: IDS.BED, count: 1 }, inputs: [{ id: IDS.WOOL, count: 3 }, { id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 3 }], reqTable: true },
-        { output: { id: IDS.WOOD_PICKAXE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.WOOD_SWORD, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
-        { output: { id: IDS.WOOD_AXE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.WOOD_SHOVEL, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.WOOD_HOE, count: 1 }, inputs: [{ id: IDS.PLANKS, ids: [IDS.PLANKS, IDS.JUNGLE_PLANKS], name: 'Any Planks', count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.STONE_PICKAXE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.STONE_SWORD, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
-        { output: { id: IDS.STONE_AXE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.STONE_SHOVEL, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.STONE_HOE, count: 1 }, inputs: [{ id: IDS.COBBLESTONE, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.IRON_INGOT, count: 1 }, inputs: [{ id: IDS.IRON_ORE, count: 1 }, { id: IDS.COAL, count: 1 }], reqTable: true, category: 'materials' },
-        { output: { id: IDS.GOLD_INGOT, count: 1 }, inputs: [{ id: IDS.GOLD_ORE, count: 1 }, { id: IDS.COAL, count: 1 }], reqTable: true, category: 'materials' },
-        { output: { id: IDS.DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND_ORE, count: 1 }], reqTable: true, category: 'materials' },
-        { output: { id: IDS.GOLD_PICKAXE, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.GOLD_SWORD, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
-        { output: { id: IDS.GOLD_AXE, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.GOLD_SHOVEL, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.GOLD_HOE, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.IRON_PICKAXE, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.IRON_SWORD, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
-        { output: { id: IDS.IRON_AXE, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.IRON_SHOVEL, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.IRON_HOE, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.DIAMOND_PICKAXE, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.DIAMOND_SWORD, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 2 }, { id: IDS.STICK, count: 1 }], reqTable: true },
-        { output: { id: IDS.DIAMOND_AXE, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        { output: { id: IDS.DIAMOND_SHOVEL, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 1 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.DIAMOND_HOE, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 2 }, { id: IDS.STICK, count: 2 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.BREAD, count: 1 }, inputs: [{ id: IDS.WHEAT, count: 3 }], reqTable: true, category: 'utility' },
-        { output: { id: IDS.SNOW, count: 1 }, inputs: [{ id: IDS.SNOWBALL, count: 4 }], reqTable: false, category: 'blocks' },
-        { output: { id: IDS.DIAMOND_AXE, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 3 }, { id: IDS.STICK, count: 2 }], reqTable: true },
-        // --- ARMOR RECIPES ---
-        { output: { id: IDS.HELMET_IRON, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 5 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.CHESTPLATE_IRON, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 8 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.LEGGINGS_IRON, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 7 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.BOOTS_IRON, count: 1 }, inputs: [{ id: IDS.IRON_INGOT, count: 4 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.HELMET_GOLD, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 5 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.CHESTPLATE_GOLD, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 8 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.LEGGINGS_GOLD, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 7 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.BOOTS_GOLD, count: 1 }, inputs: [{ id: IDS.GOLD_INGOT, count: 4 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.HELMET_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 5 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.CHESTPLATE_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 8 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.LEGGINGS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 7 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.BOOTS_DIAMOND, count: 1 }, inputs: [{ id: IDS.DIAMOND, count: 4 }], reqTable: true, category: 'armor' },
-        { output: { id: IDS.SUNBURST_MELON_SEEDS, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 1 }], reqTable: false, category: 'utility' },
-        { output: { id: IDS.SUNBURST_MELON, count: 1 }, inputs: [{ id: IDS.SUNBURST_MELON_SLICE, count: 9 }], reqTable: true, category: 'blocks' },
-        { output: { id: IDS.SHADOWFANG, count: 1 }, inputs: [{ id: IDS.SHADOW_CARAPACE, count: 2 }, { id: IDS.GLOOM_SILK, count: 2 }, { id: IDS.IRON_INGOT, count: 1 }], reqTable: true, category: 'tools' },
-        { output: { id: IDS.GLOOM_LANTERN, count: 1 }, inputs: [{ id: IDS.GLOOM_SILK, count: 4 }, { id: IDS.TORCH, count: 1 }, { id: IDS.IRON_INGOT, count: 2 }], reqTable: true, category: 'utility' }
-    ];
-
     export const ACHIEVEMENTS = [
         // --- EASY TIER ---
         {
@@ -5099,137 +4929,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         }, 4000);
     }
 
-    export function showKaelArrivalBanner() {
-        let container = document.getElementById('kael-banner-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'kael-banner-container';
-            document.body.appendChild(container);
-        }
-
-        const banner = document.createElement('div');
-        banner.className = 'kael-arrival-banner';
-
-        const iconFrame = document.createElement('div');
-        iconFrame.className = 'kael-relic-frame';
-        if (typeof textures !== 'undefined' && textures[IDS.ASTRAL_SHARD]) {
-            const img = document.createElement('img');
-            img.src = textures[IDS.ASTRAL_SHARD].src;
-            img.className = 'w-8 h-8 pixelated drop-shadow-[2px_2px_0_#000]';
-            iconFrame.appendChild(img);
-        } else {
-            iconFrame.innerHTML = `
-                <svg viewBox="0 0 24 24" width="28" height="28" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                    <rect x="10" y="2" width="4" height="2" fill="#fde047"/>
-                    <rect x="8" y="4" width="8" height="3" fill="#c084fc"/>
-                    <rect x="6" y="7" width="12" height="10" fill="#a855f7"/>
-                    <rect x="8" y="10" width="8" height="4" fill="#7e22ce"/>
-                    <rect x="9" y="17" width="6" height="3" fill="#6b21a8"/>
-                    <rect x="11" y="20" width="2" height="2" fill="#3b0764"/>
-                    <rect x="9" y="8" width="2" height="2" fill="#ffffff"/>
-                </svg>
-            `;
-        }
-        banner.appendChild(iconFrame);
-
-        const content = document.createElement('div');
-        content.className = 'flex flex-col min-w-0';
-
-        const header = document.createElement('span');
-        header.className = "kael-banner-header text-amber-300 font-bold font-['VT323'] tracking-widest leading-none drop-shadow-[2px_2px_0_#000] uppercase";
-        header.style.color = '#fde047';
-        header.innerText = 'PLANAR RIFT OPENED';
-        content.appendChild(header);
-
-        const title = document.createElement('span');
-        title.className = "kael-banner-title text-2xl sm:text-3xl text-white font-bold font-['VT323'] drop-shadow-[2px_2px_0_#000] truncate leading-tight";
-        title.style.color = '#ffffff';
-        title.innerText = 'Kael, The Atlas Explorer has arrived!';
-        content.appendChild(title);
-
-        const subtitle = document.createElement('span');
-        subtitle.className = "kael-banner-subtitle text-sm sm:text-base text-white font-['VT323'] drop-shadow-[1px_1px_0_#000] leading-none mt-0.5";
-        subtitle.style.color = '#ffffff';
-        subtitle.innerText = 'Seek the cosmic traveler before the rift collapses!';
-        content.appendChild(subtitle);
-
-        banner.appendChild(content);
-        container.appendChild(banner);
-
-        if (typeof playSound === 'function') {
-            playSound('portal_warp', { vol: 1.0 });
-        }
-
-        setTimeout(() => {
-            banner.classList.add('dismissing');
-            setTimeout(() => {
-                if (banner.parentElement) banner.remove();
-            }, 400);
-        }, 6500);
-    }
-
-    export function showKaelDepartureBanner() {
-        if (typeof closeAtlasDialogue === 'function') closeAtlasDialogue();
-        if (typeof closeAtlasMarket === 'function') closeAtlasMarket();
-
-        let container = document.getElementById('kael-banner-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'kael-banner-container';
-            document.body.appendChild(container);
-        }
-
-        const banner = document.createElement('div');
-        banner.className = 'kael-arrival-banner';
-
-        const iconFrame = document.createElement('div');
-        iconFrame.className = 'kael-relic-frame';
-        iconFrame.innerHTML = `
-            <svg viewBox="0 0 24 24" width="28" height="28" style="image-rendering: pixelated; shape-rendering: crispEdges;">
-                <rect x="4" y="2" width="16" height="20" fill="#1e1035"/>
-                <rect x="7" y="6" width="10" height="12" fill="#311042"/>
-                <rect x="10" y="9" width="4" height="6" fill="#6b21a8"/>
-                <rect x="11" y="11" width="2" height="2" fill="#38bdf8"/>
-            </svg>
-        `;
-        banner.appendChild(iconFrame);
-
-        const content = document.createElement('div');
-        content.className = 'flex flex-col min-w-0';
-
-        const header = document.createElement('span');
-        header.className = "kael-banner-header text-amber-400 font-bold font-['VT323'] tracking-widest leading-none drop-shadow-[2px_2px_0_#000] uppercase";
-        header.style.color = '#fbbf24';
-        header.innerText = 'PLANAR RIFT COLLAPSED';
-        content.appendChild(header);
-
-        const title = document.createElement('span');
-        title.className = "kael-banner-title text-2xl sm:text-3xl text-white font-bold font-['VT323'] drop-shadow-[2px_2px_0_#000] truncate leading-tight";
-        title.style.color = '#ffffff';
-        title.innerText = 'Kael has departed through the void.';
-        content.appendChild(title);
-
-        const subtitle = document.createElement('span');
-        subtitle.className = "kael-banner-subtitle text-sm sm:text-base text-white font-['VT323'] drop-shadow-[1px_1px_0_#000] leading-none mt-0.5";
-        subtitle.style.color = '#ffffff';
-        subtitle.innerText = 'The cosmic traveler will return on another day.';
-        content.appendChild(subtitle);
-
-        banner.appendChild(content);
-        container.appendChild(banner);
-
-        if (typeof playSound === 'function') {
-            playSound('portal_warp', { vol: 0.7 });
-        }
-
-        setTimeout(() => {
-            banner.classList.add('dismissing');
-            setTimeout(() => {
-                if (banner.parentElement) banner.remove();
-            }, 400);
-        }, 5000);
-    }
-
     export function openAchievements(initialTab = null) {
         if (initialTab) {
             currentAchievementsTab = initialTab;
@@ -5851,16 +5550,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export let craftingCategory = 'all';
 
-    export function getRecipeCategory(recipe) {
-        if (recipe.category) return recipe.category;
-        if (isArmor(recipe.output.id)) return 'armor';
-        if (isTool(recipe.output.id)) return 'tools';
-        if ([IDS.GOLD_INGOT, IDS.IRON_INGOT, IDS.DIAMOND].includes(recipe.output.id)) return 'materials';
-        if ([IDS.BUCKET, IDS.WATER_BUCKET, IDS.LAVA_BUCKET].includes(recipe.output.id)) return 'utility';
-        if ([IDS.PLANKS, IDS.CRAFTING_TABLE, IDS.FURNACE, IDS.BED, IDS.DOOR, IDS.CHEST].includes(recipe.output.id)) return 'blocks';
-        return 'utility';
-    }
-
     export function setCraftingCategory(category) {
         craftingCategory = category;
         document.querySelectorAll('#crafting-categories button').forEach(button => button.classList.toggle('active', button.dataset.category === category));
@@ -5979,130 +5668,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         if(STATE==='PLAYING' && !isInventoryOpen) updateUI();
         return amount === 0; 
     }
-
-    export function canFitItem(id, amount) {
-        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
-        let capacity = 0;
-        const maxStack = getItemMaxStack(id);
-        for (let i = 0; i < 27; i++) {
-            if (liveInv[i] && liveInv[i].id === id && maxStack > 1) capacity += Math.max(0, maxStack - liveInv[i].count);
-            else if (!liveInv[i]) capacity += maxStack;
-            if (capacity >= amount) return true;
-        }
-        return false;
-    }
-
-    export function getItemCount(id) {
-        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
-        let count = 0;
-        for (let i = 0; i < 27; i++) {
-            if (liveInv[i] && liveInv[i].id === id) count += liveInv[i].count;
-        }
-        return count;
-    }
-
-    export function hasItem(id, amount) {
-        return getItemCount(id) >= amount;
-    }
-
-    export function consumeItem(id, amount) {
-        const liveInv = (typeof window !== 'undefined' && Array.isArray(window.inventory)) ? window.inventory : inventory;
-        for (let i = 0; i < 27; i++) {
-            if (liveInv[i] && liveInv[i].id === id) {
-                if (liveInv[i].count >= amount) {
-                    liveInv[i].count -= amount;
-                    if (liveInv[i].count === 0) liveInv[i] = null;
-                    return true;
-                } else { amount -= liveInv[i].count; liveInv[i] = null; }
-            }
-        }
-        return false;
-    }
-
-    export function getRecipeInputCount(input) {
-        if (Array.isArray(input.ids)) {
-            let total = 0;
-            input.ids.forEach(id => {
-                total += getItemCount(id);
-            });
-            return total;
-        }
-        return getItemCount(input.id);
-    }
-
-    export function hasRecipeInput(input) {
-        return getRecipeInputCount(input) >= input.count;
-    }
-
-    export function consumeRecipeInput(input) {
-        if (Array.isArray(input.ids)) {
-            let remainingNeeded = input.count;
-            const inv = (typeof window !== 'undefined' && window.inventory) ? window.inventory : inventory;
-            for (let i = 0; i < inv.length; i++) {
-                const item = inv[i];
-                if (item && input.ids.includes(item.id)) {
-                    if (item.count <= remainingNeeded) {
-                        remainingNeeded -= item.count;
-                        inv[i] = null;
-                    } else {
-                        item.count -= remainingNeeded;
-                        remainingNeeded = 0;
-                    }
-                    if (remainingNeeded <= 0) break;
-                }
-            }
-            if (typeof setEngineInventory === 'function') setEngineInventory(inv);
-            if (typeof window !== 'undefined') window.inventory = inv;
-            return remainingNeeded <= 0;
-        }
-        return consumeItem(input.id, input.count);
-    }
-
-    export function craftRecipe(recipeIndex) {
-        const recipe = RECIPES[recipeIndex];
-        let canCraft = recipe.inputs.every(req => hasRecipeInput(req));
-        const outputFits = canFitItem(recipe.output.id, recipe.output.count);
-        if (canCraft && !outputFits && isMultiplayer && !isMultiplayerAuthority() && pendingDropRequest) return;
-        if (canCraft) {
-            recipe.inputs.forEach(req => consumeRecipeInput(req));
-            if (!outputFits) {
-                dropItemForWorld(recipe.output.id, player.x + player.width / 2, player.y, recipe.output.count);
-            } else {
-                giveItem(recipe.output.id, recipe.output.count);
-            }
-            trackDailyQuestProgress('craft_item', { itemId: recipe.output.id, count: recipe.output.count });
-            craftedItemsCount = (craftedItemsCount || 0) + 1;
-            if (craftedItemsCount >= 20) unlockAchievement('master_crafter');
-
-            if (recipe.output.id === IDS.CRAFTING_TABLE) unlockAchievement('benchmarking');
-            else if (recipe.output.id === IDS.WOOD_PICKAXE) unlockAchievement('time_to_mine');
-            else if (recipe.output.id === IDS.FURNACE) unlockAchievement('hot_topic');
-            else if (recipe.output.id === IDS.WOOD_SWORD) unlockAchievement('time_to_strike');
-            else if (recipe.output.id === IDS.LADDER) unlockAchievement('ladder_climber');
-            else if (recipe.output.id === IDS.WOODEN_STAIRS || recipe.output.id === IDS.COBBLESTONE_STAIRS) unlockAchievement('stairway_heaven');
-            else if (recipe.output.id === IDS.IRON_PICKAXE) unlockAchievement('iron_age');
-            else if (recipe.output.id === IDS.BUCKET) unlockAchievement('bucket_brigade');
-            else if (recipe.output.id === IDS.DIAMOND_PICKAXE || recipe.output.id === IDS.DIAMOND_SWORD || recipe.output.id === IDS.DIAMOND_AXE) unlockAchievement('diamond_tools');
-            else if (recipe.output.id === IDS.GOLD_PICKAXE || recipe.output.id === IDS.GOLD_SWORD || recipe.output.id === IDS.GOLD_AXE) unlockAchievement('shiny_bling');
-            else if ([IDS.WOOD_HOE, IDS.STONE_HOE, IDS.IRON_HOE, IDS.GOLD_HOE, IDS.DIAMOND_HOE].includes(recipe.output.id)) unlockAchievement('time_to_cultivate');
-            else if (recipe.output.id === IDS.BREAD) unlockAchievement('bake_bread');
-            else if (recipe.output.id === IDS.ASTRAL_INFUSER) unlockAchievement('astral_infusion');
-            else if (recipe.output.id === IDS.SIGN) unlockAchievement('notice_board');
-            else if (recipe.output.id === IDS.DOOR || recipe.output.id === IDS.JUNGLE_DOOR) unlockAchievement('knock_knock');
-            else if (recipe.output.id === IDS.EMPTY_VINYL) unlockAchievement('craft_vinyl');
-            else if (recipe.output.id === IDS.PRISM_GLASS) unlockAchievement('prism_glass_art');
-            else if (recipe.output.id === IDS.SHADOWFANG) unlockAchievement('forge_shadowfang');
-            else if (recipe.output.id === IDS.GLOOM_LANTERN) unlockAchievement('gloom_lantern_placed');
-            else if ([IDS.ASTRAL_SWORD, IDS.ASTRAL_AXE, IDS.ASTRAL_SHOVEL].includes(recipe.output.id)) unlockAchievement('stellar_arsenal');
-            if (isArmor(recipe.output.id)) {
-                unlockAchievement('suit_up');
-                if (recipe.output.id === IDS.HELMET_GOLD || recipe.output.id === IDS.CHESTPLATE_GOLD || recipe.output.id === IDS.LEGGINGS_GOLD || recipe.output.id === IDS.BOOTS_GOLD) {
-                    unlockAchievement('shiny_bling');
-                }
-            }
-        }
-    }
-
 
     export function selectDifficulty(diffKey) {
         selectedDiffChoice = diffKey;
@@ -6300,70 +5865,34 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             return;
         }
 
-        // 1. Beta 0.1.6 (Latest Release)
-        const v016 = UPDATE_HISTORY_LOGS[0];
-        if (v016) {
-            const art016 = document.createElement('article');
-            art016.className = 'news-entry is-newest';
-            art016.innerHTML = `
-                <div class="news-entry-header">
-                    <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${v016.title}</h3>
-                    <span class="news-badge" style="background: #16a34a; color: #fff;">0.1.6</span>
-                </div>
-                ${renderPatchNoteList(v016.items)}
-            `;
-            entriesRoot.appendChild(art016);
-        }
-
-        // 2. Beta 0.1.5
-        const v015 = UPDATE_HISTORY_LOGS[1];
-        if (v015) {
-            const art015 = document.createElement('article');
-            art015.className = 'news-entry';
-            art015.style.borderColor = '#9333ea';
-            art015.style.boxShadow = 'inset 0 0 0 1px #080a0c, 0 0 0 1px rgba(147, 51, 234, 0.45)';
-            art015.innerHTML = `
-                <div class="news-entry-header">
-                    <h3 class="text-purple-300 font-bold text-2xl font-['VT323']">${v015.title}</h3>
-                    <span class="news-badge" style="background: #9333ea; color: #fff;">0.1.5</span>
-                </div>
-                ${renderPatchNoteList(v015.items)}
-            `;
-            entriesRoot.appendChild(art015);
-        }
-
-        // 3. Beta 0.1.4 Patch 1
-        const vPatch1 = UPDATE_HISTORY_LOGS[2];
-        if (vPatch1) {
-            const artPatch1 = document.createElement('article');
-            artPatch1.className = 'news-entry';
-            artPatch1.style.borderColor = '#0284c7';
-            artPatch1.style.boxShadow = 'inset 0 0 0 1px #080a0c, 0 0 0 1px rgba(2, 132, 199, 0.45)';
-            artPatch1.innerHTML = `
-                <div class="news-entry-header">
-                    <h3 class="text-sky-400 font-bold text-2xl font-['VT323']">${vPatch1.title}</h3>
-                    <span class="news-badge">PATCH 1</span>
-                </div>
-                ${renderPatchNoteList(vPatch1.items)}
-            `;
-            entriesRoot.appendChild(artPatch1);
-        }
-
-        // 4. Older Versions (Beta 0.1.4, Beta 0.1.3) inside clean collapsible summaries
-        for (let i = 3; i < UPDATE_HISTORY_LOGS.length; i++) {
-            const entry = UPDATE_HISTORY_LOGS[i];
-            if (!entry) continue;
-            const details = document.createElement('details');
-            details.className = 'news-entry patch-history';
-            details.open = false;
-            details.innerHTML = `
-                <summary style="cursor: pointer; font-size: 22px; font-weight: bold; color: #94a3b8; font-family: 'VT323', monospace; padding: 4px 0;">
-                    ${entry.title} (Click to expand)
-                </summary>
-                ${renderPatchNoteList(entry.items)}
-            `;
-            entriesRoot.appendChild(details);
-        }
+        UPDATE_HISTORY_LOGS.forEach((log, idx) => {
+            if (!log) return;
+            const isLatest = idx === 0;
+            if (isLatest) {
+                const art = document.createElement('article');
+                art.className = 'news-entry is-newest';
+                art.innerHTML = `
+                    <div class="news-entry-header">
+                        <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${log.title}</h3>
+                        <span class="news-badge" style="background: #16a34a; color: #fff;">0.2.0 (LATEST)</span>
+                    </div>
+                    ${renderPatchNoteList(log.items)}
+                `;
+                entriesRoot.appendChild(art);
+            } else {
+                const details = document.createElement('details');
+                details.className = 'news-entry patch-history';
+                details.open = (idx === 1);
+                details.innerHTML = `
+                    <summary style="cursor: pointer; font-size: 22px; font-weight: bold; color: #94a3b8; font-family: 'VT323', monospace; padding: 4px 0;">
+                        ${log.title} (Click to expand)
+                    </summary>
+                    ${renderPatchNoteList(log.items)}
+                `;
+                entriesRoot.appendChild(details);
+            }
+        });
+    }
     }
 
     export function openWhatsNew(force = false) {
@@ -9258,109 +8787,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 </div>
             `;
         }).join('');
-    }
-
-    export async function purchaseCosmeticItem(itemId) {
-        const isGuest = !currentUserProfile || currentUserProfile.isGuest;
-        if (isGuest) {
-            showToast("Log in or create an account to purchase cosmetics with Astral Gems!");
-            closeShop();
-            openAuthProfileModal('credentials');
-            return;
-        }
-
-        const item = getCosmeticItem(itemId);
-        if (!item) return;
-
-        const unlocked = getPlayerUnlockedCosmetics();
-        if (unlocked.includes(itemId)) {
-            showToast(`${item.name} is already unlocked!`);
-            return;
-        }
-
-        const gems = typeof getPlayerAstralEmeralds === 'function' ? getPlayerAstralEmeralds() : 0;
-        if (gems < item.price) {
-            showToast(`Not enough Astral Gems! (${item.price} ✦ required, you have ${gems} ✦)`);
-            return;
-        }
-
-        // Deduct Astral Gems
-        addPlayerAstralEmeralds(-item.price);
-
-        // Add to unlocked cosmetics
-        if (!Array.isArray(currentUserProfile.unlockedCosmetics)) {
-            currentUserProfile.unlockedCosmetics = ['frame_classic', 'banner_slate', 'title_novice', 'theme_slate'];
-        }
-        currentUserProfile.unlockedCosmetics.push(itemId);
-
-        // Auto-equip the newly purchased cosmetic
-        if (!currentUserProfile.profileCustomization) {
-            currentUserProfile.profileCustomization = getDefaultCustomization();
-        }
-        if (item.category === COSMETIC_CATEGORIES.FRAME) currentUserProfile.profileCustomization.avatarFrame = item.id;
-        if (item.category === COSMETIC_CATEGORIES.BANNER) currentUserProfile.profileCustomization.bannerPattern = item.id;
-        if (item.category === COSMETIC_CATEGORIES.TITLE) currentUserProfile.profileCustomization.titlePlate = item.id;
-        if (item.category === COSMETIC_CATEGORIES.THEME) currentUserProfile.profileCustomization.cardTheme = item.id;
-
-        try {
-            localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile));
-        } catch(e) {}
-
-        try {
-            await saveProfileCustomizationToCloud(currentUserProfile.profileCustomization, currentUserProfile.unlockedCosmetics);
-        } catch(e) {
-            console.warn("Cloud sync warning", e);
-        }
-
-        playSound('astral_exchange');
-        showToast(`Unlocked and equipped ${item.name}!`);
-
-        // Update UI balances & previews
-        const astralCount = document.getElementById('shop-astral-count');
-        if (astralCount) astralCount.innerText = getPlayerAstralEmeralds().toLocaleString();
-        updateEmeraldsUI();
-        updateStoreShowcase();
-        updateStoreLockerShowcase();
-
-        if (currentShopTab === 'locker') {
-            renderShopLocker(currentLockerFilter);
-        } else {
-            renderShopCosmetics(currentCosmeticsFilter);
-        }
-    }
-
-    export async function equipCosmeticItem(itemId) {
-        const item = getCosmeticItem(itemId);
-        if (!item) return;
-
-        if (!currentUserProfile) currentUserProfile = { isGuest: true, username: 'Player' };
-        if (!currentUserProfile.profileCustomization) currentUserProfile.profileCustomization = getDefaultCustomization();
-
-        if (item.category === COSMETIC_CATEGORIES.FRAME) currentUserProfile.profileCustomization.avatarFrame = item.id;
-        if (item.category === COSMETIC_CATEGORIES.BANNER) currentUserProfile.profileCustomization.bannerPattern = item.id;
-        if (item.category === COSMETIC_CATEGORIES.TITLE) currentUserProfile.profileCustomization.titlePlate = item.id;
-        if (item.category === COSMETIC_CATEGORIES.THEME) currentUserProfile.profileCustomization.cardTheme = item.id;
-
-        try {
-            localStorage.setItem('webcraft_user_profile', JSON.stringify(currentUserProfile));
-        } catch(e) {}
-
-        if (!currentUserProfile.isGuest) {
-            try {
-                await saveProfileCustomizationToCloud(currentUserProfile.profileCustomization, currentUserProfile.unlockedCosmetics || []);
-            } catch(e) {}
-        }
-
-        playSound('click');
-        showToast(`Equipped ${item.name}!`);
-        updateStoreShowcase();
-        updateStoreLockerShowcase();
-
-        if (currentShopTab === 'locker') {
-            renderShopLocker(currentLockerFilter);
-        } else {
-            renderShopCosmetics(currentCosmeticsFilter);
-        }
     }
 
     // Fallback compatibility stubs for legacy store profile customizer callers
@@ -12681,21 +12107,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             return `${usedMb.toFixed(1)} MB / ${limitMb.toFixed(0)} MB`;
         }
         return 'Unavailable in this browser';
-    }
-
-    export function checkNearCraftingTable() {
-        const p = player || (typeof window !== 'undefined' ? window.player : null);
-        if (!p) return false;
-        let px = Math.floor((p.x + p.width / 2) / TILE_SIZE); 
-        let py = Math.floor((p.y + p.height / 2) / TILE_SIZE);
-        const w = (typeof world !== 'undefined' && world) || (typeof window !== 'undefined' ? window.world : null);
-        if (!w) return false;
-        for(let x = px - 3; x <= px + 3; x++) {
-            for(let y = py - 3; y <= py + 3; y++) {
-                if(x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT && w[x] && w[x][y] === IDS.CRAFTING_TABLE) return true;
-            }
-        }
-        return false;
     }
 
     export function checkNearFurnace() {

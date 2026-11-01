@@ -7,7 +7,7 @@ import {
     IDS, giveItem, playSound, showToast, unlockAchievement,
     isMultiplayer, isMultiplayerAuthority, broadcastDataPacket
 } from './engine.js';
-import { getPlayerAstralEmeralds, addPlayerAstralEmeralds } from './ui.js';
+import { getPlayerAstralEmeralds, addPlayerAstralEmeralds } from './shop/shopmanager.js';
 
 export const ATLAS_CATALOG = [
     {
