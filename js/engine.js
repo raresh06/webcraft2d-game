@@ -703,7 +703,7 @@ export function getMaxAnimals() {
             'Unboxed Retro Cassette Autosave: Overhauled autosave notifications into an unboxed, large retro pixel-art cassette tape with animated spinning reels and crisp text.',
             'Circular Radar Minimap Default: The minimap now defaults to the circular radar shape for a modern, sleek HUD view.',
             'Offhand Quick-Swap & Full Stack Drop: Instantly swap held items into the offhand slot using the customizable [F] key or by clicking the HUD offhand slot, and drop entire item stacks at once with [Ctrl + Q].',
-            '[unfinished] Webcraft Store UI Overhaul: Ground-up overhaul of the Webcraft Store with authentic retro pixel-art shop box UI, generous breathing room and spacious multi-column layout, crisp zero-blur typography (zero blurry text glows or halos), authentic 3D beveled inventory slot wells, sunken display pedestals, and polished Live Try-On preview.'
+            'Webcraft Store & Wardrobe Overhaul: Ground-up overhaul of the Webcraft Store with authentic retro pixel-art shop box UI, generous breathing room and spacious multi-column layout, crisp zero-blur typography (zero blurry text glows or halos), authentic 3D beveled inventory slot wells, sunken display pedestals, and polished Live Try-On preview.'
         ]
     };
 
@@ -12838,12 +12838,13 @@ export const SKIN_H = 32;
         let currentAnimals = entities.filter(e => e instanceof Animal).length;
         if (currentAnimals >= maxAnimals) return;
 
-        let activePlayers = [{ x: player.x, y: player.y }];
+        let activePlayers = (player && player.x !== undefined) ? [{ x: player.x, y: player.y }] : [];
         if (isMultiplayer && isMultiplayerAuthority()) {
             Object.values(remotePlayers).forEach(rp => {
                 if (!rp.isDead && rp.x !== undefined) activePlayers.push({ x: rp.x, y: rp.y });
             });
         }
+        if (activePlayers.length === 0) return;
 
         const validGround = new Set([IDS.GRASS, IDS.SNOW, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.DIRT, IDS.JUNGLE_LEAVES, IDS.LEAVES]);
         const nonSolid = new Set([IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.JUNGLE_SAPLING, IDS.SHORT_GRASS, IDS.TALL_GRASS, IDS.FLOWER_RED, IDS.FLOWER_YELLOW, IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP, IDS.BAMBOO, IDS.FERN, IDS.VINES]);
@@ -13029,6 +13030,7 @@ export const SKIN_H = 32;
         const isNight = timeOfDay >= 0.68 && timeOfDay < 0.90;
         const isDay = !isNight;
 
+        if (!player || player.x === undefined) return;
         let activePlayerPositions = [{ x: player.x, y: player.y }];
         if (isMultiplayer && isMultiplayerAuthority()) {
             Object.values(remotePlayers).forEach(rp => {
@@ -18561,4 +18563,3 @@ try { if (typeof menuBackgroundRendered !== "undefined") window.menuBackgroundRe
 try { if (typeof dismissBootLoadingScreen !== "undefined") window.dismissBootLoadingScreen = dismissBootLoadingScreen; } catch(e) {}
 try { if (typeof sanitizeTreeWoodCollision !== "undefined") window.sanitizeTreeWoodCollision = sanitizeTreeWoodCollision; } catch(e) {}
 try { if (typeof isChestPairedWithLeft !== "undefined") window.isChestPairedWithLeft = isChestPairedWithLeft; } catch(e) {}
-

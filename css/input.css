@@ -3878,9 +3878,12 @@
         #f-flame { image-rendering: pixelated; animation: furnace-flame 0.45s steps(2, end) infinite alternate; }
         #f-prog { image-rendering: pixelated; transition: none; }
         @keyframes furnace-flame { from { opacity: 0.55; transform: scaleY(0.85); transform-origin: bottom; } to { opacity: 1; transform: scaleY(1); transform-origin: bottom; } }
+        @media (max-width: 1024px) {
+            .menu-credit { left: 24px; right: auto; bottom: 46px; text-align: left; }
+        }
         @media (max-width: 640px) {
             #main-menu .menu-brand { top: -18px; left: 0; right: auto; }
-            .menu-credit { right: 14px; bottom: 14px; font-size: 18px; }
+            .menu-credit { left: 14px; right: auto; bottom: 38px; font-size: 18px; text-align: left; }
             .menu-version { left: 14px; bottom: 14px; font-size: 18px; }
             .menu-news-button { top: 12px; right: 14px; width: 42px; height: 38px; font-size: 22px; }
             .whats-new-panel { padding: 18px; }

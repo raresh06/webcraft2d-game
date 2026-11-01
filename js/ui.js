@@ -9619,7 +9619,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
 
     export function showMainMenu() {
         const isMenuInit = (typeof window !== 'undefined' && window.menuWorldInitialized) || menuWorldInitialized;
-        const splashEl = document.getElementById('splash-text');
+        const splashEl = document.getElementById('menu-splash') || document.getElementById('splash-text');
         if (!splashEl || !splashEl.innerText || !isMenuInit) {
             setRandomSplashText();
         }

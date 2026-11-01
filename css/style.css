@@ -8989,6 +8989,14 @@ input, textarea {
     transform-origin: bottom;
   }
 }
+@media (max-width: 1024px) {
+  .menu-credit {
+    left: 24px;
+    right: auto;
+    bottom: 46px;
+    text-align: left;
+  }
+}
 @media (max-width: 640px) {
   #main-menu .menu-brand {
     top: -18px;
@@ -8996,9 +9004,11 @@ input, textarea {
     right: auto;
   }
   .menu-credit {
-    right: 14px;
-    bottom: 14px;
+    left: 14px;
+    right: auto;
+    bottom: 38px;
     font-size: 18px;
+    text-align: left;
   }
   .menu-version {
     left: 14px;

@@ -872,6 +872,10 @@ export function initJukeboxFileInput() {
                 if (overlayId === 'atlas-dialogue-modal') { callClose('closeAtlasDialogue'); return true; }
                 if (overlayId === 'atlas-market-modal') { callClose('closeAtlasMarket'); return true; }
                 if (overlayId === 'astral-infuser-modal') { callClose('closeAstralInfuser'); return true; }
+                if (overlayId === 'unified-shop-modal') { callClose('closeShop'); return true; }
+                if (overlayId === 'profile-editor-modal') { callClose('closeProfileEditor'); return true; }
+                if (overlayId === 'friend-profile-modal') { callClose('closeFriendProfileModal'); return true; }
+                if (overlayId === 'account-recovery-modal') { callClose('closeAccountRecoveryModal'); return true; }
 
                 // --- Universal Handler for ANY Future UI / Menu ---
                 // 1. Check for standard action attributes or class names:

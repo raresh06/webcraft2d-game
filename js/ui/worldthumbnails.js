@@ -16,7 +16,7 @@ const proceduralCache = new Map();
  */
 export function captureWorldThumbnail(gameCanvas) {
     try {
-        const cv = gameCanvas || document.getElementById('game-canvas');
+        const cv = gameCanvas || document.getElementById('gameCanvas') || document.getElementById('game-canvas');
         if (!cv || !cv.width || !cv.height) return null;
 
         const thumb = document.createElement('canvas');
