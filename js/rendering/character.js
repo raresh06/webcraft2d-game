@@ -23,7 +23,7 @@ export const SKIN_H = 32;
 
 export function paintDefaultSteveSkin(targetCanvas) {
     if (!targetCanvas) return;
-    const sCtx = targetCanvas.getContext('2d');
+    const sCtx = targetCanvas.getContext('2d', { willReadFrequently: true });
     if (!sCtx) return;
     sCtx.clearRect(0, 0, SKIN_W, SKIN_H);
 

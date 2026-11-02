@@ -28,7 +28,7 @@ import {
     export const minimapOffscreenCtx = minimapOffscreenCanvas ? minimapOffscreenCanvas.getContext('2d') : null;
     export const minimapImageData = minimapOffscreenCtx ? minimapOffscreenCtx.createImageData(64, 64) : null;
     export const minimapBuf32 = minimapImageData ? new Uint32Array(minimapImageData.data.buffer) : null;
-    export const visibleFluids = [];
+
 
     export const MINIMAP_COLOR_32 = new Uint32Array(256);
 

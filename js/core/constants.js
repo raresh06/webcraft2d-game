@@ -434,21 +434,6 @@ export function isFoliageOrAir(id) {
            id === IDS.VINES || id === IDS.SNOW || isLeafBlock(id);
 }
 
-export const PATCH_NOTES_0_2_0 = {
-    title: 'Beta 0.2.0 (Engine Modularization, Architectural Reconstruction & Headless Test Suite)',
-    items: [
-        'Complete Engine Architecture Reconstruction: The monolithic 17,676-line engine.js has been thoroughly decomposed into 41 cleanly isolated ES modules organized into logical domain subsystems (core, world, entities, rendering, crafting, shop, ui).',
-        'Direct ES Module Graph: Fully native browser ES module imports across all subsystems with zero bundlers, 100% circular-dependency-free import tree, and full live-binding exports.',
-        'Backwards Compatibility Facade: Retained engine.js barrel re-exports and window namespace bridges, ensuring all inline HTML event handlers, save files, remote player synchronization, and dev tools operate with zero breakage.',
-        'Entity Hierarchy & Performance Optimizations: Segmented physics entity lifecycles, drop processors, hostile mobs, passive animals, and special NPCs (Kael the Atlas Explorer) into dedicated files with optimized draw loops and tick scheduling.',
-        'Skin & Wardrobe Rendering Reliability: Bulletproofed player character rendering with procedural classic Steve skin fallbacks, preventing invisible character bugs even before user skin compilation.',
-        'Atmosphere & Shaders Decoupling: Refactored celestial day/night sky, dynamic weather gradients, parallax mountains, and particle emitters into standalone rendering pipelines.',
-        'Dual Economy & Shop Modularization: Decoupled emerald economy, Astral exchanges, and cosmetic catalog logic into independent managers with strict validation.',
-        'Crafting Engine Separation: Isolated 2x2 and 3x3 recipe databases, crafting matrices, recipe lookups, and inventory deduction pipelines into a dedicated crafting subsystem.',
-        'Automated Headless Test Suite: Built an end-to-end multi-tier test runner (266 tests across Tiers 1-4) spanning unit boundaries, stress tests, and real-world survival gameplay loops.'
-    ]
-};
-
 export const PATCH_NOTES_0_1_6 = {
     title: 'Beta 0.1.6 (Smarter Hostile Mobs, Door Breaches & Combat Overhaul)',
     items: [
@@ -584,8 +569,8 @@ export const PATCH_NOTES_0_1_3 = {
     ]
 };
 
-export const LATEST_PATCH_NOTES = PATCH_NOTES_0_2_0;
-export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_2_0, PATCH_NOTES_0_1_6, PATCH_NOTES_0_1_5, PATCH_NOTES_0_1_4_PATCH_1, PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3];
+export const LATEST_PATCH_NOTES = PATCH_NOTES_0_1_6;
+export const UPDATE_HISTORY_LOGS = [PATCH_NOTES_0_1_6, PATCH_NOTES_0_1_5, PATCH_NOTES_0_1_4_PATCH_1, PATCH_NOTES_0_1_4, PATCH_NOTES_0_1_3];
 
 // Backward compatibility window bindings
 if (typeof window !== 'undefined') {

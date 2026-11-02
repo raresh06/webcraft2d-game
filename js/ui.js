@@ -315,14 +315,14 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     }
 }
 
-    export const GAME_VERSION = '0.2.0';
-    export const DISPLAY_VERSION = '0.2.0';
-    export const GAME_BUILD = 'webcraft2d-beta-0.2.0';
+    export const GAME_VERSION = '0.1.6';
+    export const DISPLAY_VERSION = '0.1.6';
+    export const GAME_BUILD = 'webcraft2d-beta-0.1.6';
 
     export function updateVersionLabels() {
         if (typeof document === 'undefined') return;
         const versionLabel = document.getElementById('game-version-label');
-        if (versionLabel) versionLabel.innerHTML = `<a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v${DISPLAY_VERSION} (Engine Modularization)`;
+        if (versionLabel) versionLabel.innerHTML = `<a href="https://github.com/raresh06/webcraft2d-game" target="_blank" rel="noopener noreferrer" class="game-github-link text-white hover:text-amber-300 transition-colors" title="Visit Webcraft2D on GitHub">Webcraft2D</a> Beta v${DISPLAY_VERSION}`;
     }
 
     updateVersionLabels();
@@ -5954,7 +5954,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 art.innerHTML = `
                     <div class="news-entry-header">
                         <h3 class="text-amber-400 font-bold text-2xl font-['VT323']">${log.title}</h3>
-                        <span class="news-badge" style="background: #16a34a; color: #fff;">0.2.0 (LATEST)</span>
+                        <span class="news-badge" style="background: #16a34a; color: #fff;">0.1.6 (LATEST)</span>
                     </div>
                     ${renderPatchNoteList(log.items)}
                 `;

@@ -8,7 +8,8 @@ export let ctx = canvas ? canvas.getContext('2d', { alpha: false }) : null;
 // =============================================================================
 
 import {
-    IDS, TILE_SIZE, BED_LENGTH, CAVE_SKY_START_TILES, isTool
+    IDS, TILE_SIZE, BED_LENGTH, CAVE_SKY_START_TILES, isTool,
+    HARDNESS, REACH, WATER_FLOW_MAX, LAVA_FLOW_MAX
 } from '../core/constants.js';
 
 import {
@@ -16,15 +17,19 @@ import {
     signs, furnaces, inventory, selectedHotbarIndex, camera, clouds, timeOfDay,
     frameCount,  STATE, WORLD_WIDTH, WORLD_HEIGHT,
     worldBiomes, isMultiplayer, isSleeping, sleepStartTime, destroyProgress, destroyTarget,
-    setEngineBgBuildDarknessAlpha, droppedItems, isInventoryOpen
+    setEngineBgBuildDarknessAlpha, droppedItems, isInventoryOpen,
+    bgWorld, miningTarget, isBackgroundBuildMode, bgBuildDarknessAlpha, sleepTransitionMs,
+    fallingBlocks, activeProjectiles
 } from '../core/state.js';
 
 import {
-    isDevConsoleOpen, activeGraphicPreset, showClouds, graphicsQuality, advancedGraphics, fabulousConfig
+    isDevConsoleOpen, activeGraphicPreset, showClouds, graphicsQuality, advancedGraphics, fabulousConfig,
+    fabulousGraphics, showHeatShimmer, showBiomeGrading, showVignette
 } from '../core/config.js';
 
 import {
-    isSolidWorldBlock, isClimbableBlock, isDoorBlock, isOpenDoorBlock, isJungleDoorBlock, getCrackStage, isChestPairedWithLeft
+    isSolidWorldBlock, isClimbableBlock, isDoorBlock, isOpenDoorBlock, isJungleDoorBlock, getCrackStage, isChestPairedWithLeft,
+    getWorldSurfaceY, BLOCK_CRACK_STAGES
 } from '../world/blockhelper.js';
 
 import {
@@ -40,7 +45,8 @@ import {
 
 import {
     textures, waterStillFrames, waterFlowFrames, lavaStillFrames, lavaFlowFrames,
-    cachedCavernWallStone, cachedCavernWallDirt, cachedCavernWallSand, getBedLength, getBedPairStart, isBedRenderStart
+    cachedCavernWallStone, cachedCavernWallDirt, cachedCavernWallSand, getBedLength, getBedPairStart, isBedRenderStart,
+    NUM_FLUID_FRAMES, largeChestTexture, largeChestImage
 } from './textures.js';
 
 import {
@@ -54,7 +60,9 @@ import {
     cachedShadowCanvas, cachedFabulousVignetteCanvas, cachedSnowFogCanvas,
     drawDynamicSky, drawMountains, drawPixelAurora, drawBiomeGrading, drawSnowFog, drawVignette,
     drawUnderwaterScreenEffect, drawDesertHeatShimmer, drawForestGodRays, drawPlainsWindBreeze,
-    updateAndDrawFabulousParticles, getPlayerCaveSkyOpacity
+    updateAndDrawFabulousParticles, getPlayerCaveSkyOpacity,
+    getSnowBiomeRatio, updateBiomeAtmosphere, LEAF_COLORS,
+    caveSkyOpacity, auroraSnowOpacity, setCaveSkyOpacity, setAuroraSnowOpacity
 } from './atmosphere.js';
 
 import {
@@ -68,6 +76,15 @@ import {
 import {
     drawCharacter
 } from './character.js';
+
+import {
+    Zombie, Creeper, Scorpion, Gloomstalker
+} from '../entities/mobs.js';
+
+export const visibleFluids = [];
+if (typeof window !== 'undefined') {
+    window.visibleFluids = visibleFluids;
+}
 
 
 
@@ -138,13 +155,17 @@ import {
         const playerGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor((player.x + player.width / 2) / TILE_SIZE)));
         const surfaceWorldY = getWorldSurfaceY(playerGridX) * TILE_SIZE;
         const targetCaveSkyOpacity = getPlayerCaveSkyOpacity();
-        caveSkyOpacity += (targetCaveSkyOpacity - caveSkyOpacity) * 0.08;
-        if (Math.abs(targetCaveSkyOpacity - caveSkyOpacity) < 0.01) caveSkyOpacity = targetCaveSkyOpacity;
+        let curCave = (typeof caveSkyOpacity !== 'undefined' ? caveSkyOpacity : 0);
+        curCave += (targetCaveSkyOpacity - curCave) * 0.08;
+        if (Math.abs(targetCaveSkyOpacity - curCave) < 0.01) curCave = targetCaveSkyOpacity;
+        if (typeof setCaveSkyOpacity === 'function') setCaveSkyOpacity(curCave);
 
         const snowRatio = getSnowBiomeRatio(playerGridX, 18);
         const targetSnowOpacity = snowRatio > 0.15 ? Math.min(1.0, (snowRatio - 0.15) / 0.35) : 0;
-        auroraSnowOpacity += (targetSnowOpacity - auroraSnowOpacity) * 0.04;
-        if (Math.abs(targetSnowOpacity - auroraSnowOpacity) < 0.005) auroraSnowOpacity = targetSnowOpacity;
+        let curSnow = (typeof auroraSnowOpacity !== 'undefined' ? auroraSnowOpacity : 0);
+        curSnow += (targetSnowOpacity - curSnow) * 0.04;
+        if (Math.abs(targetSnowOpacity - curSnow) < 0.005) curSnow = targetSnowOpacity;
+        if (typeof setAuroraSnowOpacity === 'function') setAuroraSnowOpacity(curSnow);
 
         drawDynamicSky(ctx, canvas.width, canvas.height, timeOfDay);
         const verticalParallax = Math.max(-80, Math.min(80, (camY - (surfaceWorldY - canvas.height / 2)) * 0.08));
@@ -1110,7 +1131,7 @@ import {
                 ctx.fillText(`Player HP:${Math.round(player.health)}`, player.x - camX, player.y - camY - 4);
             }
             entities.forEach(e => {
-                const isHostile = (e instanceof Zombie || e instanceof Creeper || e instanceof Scorpion || e instanceof Gloomstalker);
+                const isHostile = (typeof Zombie !== 'undefined' && e instanceof Zombie) || (typeof Creeper !== 'undefined' && e instanceof Creeper) || (typeof Scorpion !== 'undefined' && e instanceof Scorpion) || (typeof Gloomstalker !== 'undefined' && e instanceof Gloomstalker) || Boolean(e?.isHostile);
                 ctx.strokeStyle = isHostile ? '#ef4444' : '#38bdf8';
                 ctx.strokeRect(e.x - camX, e.y - camY, e.width, e.height);
                 ctx.font = '12px VT323, monospace';
@@ -1145,8 +1166,10 @@ import {
         }
         floatingTexts.forEach(t => t.draw(ctx, camX, camY));
         // Draw falling blocks and snowball projectiles
-        fallingBlocks.forEach(fb => fb.draw(ctx, camX, camY));
-        activeProjectiles.forEach(proj => proj.draw(ctx, camX, camY));
+        const curFallingBlocks = (typeof fallingBlocks !== 'undefined' && Array.isArray(fallingBlocks)) ? fallingBlocks : (typeof window !== 'undefined' && Array.isArray(window.fallingBlocks) ? window.fallingBlocks : []);
+        curFallingBlocks.forEach(fb => { if (fb && typeof fb.draw === 'function') fb.draw(ctx, camX, camY); });
+        const curActiveProjectiles = (typeof activeProjectiles !== 'undefined' && Array.isArray(activeProjectiles)) ? activeProjectiles : (typeof window !== 'undefined' && Array.isArray(window.activeProjectiles) ? window.activeProjectiles : []);
+        curActiveProjectiles.forEach(proj => { if (proj && typeof proj.draw === 'function') proj.draw(ctx, camX, camY); });
 
         if (advancedGraphics) {
             ctx.save();
@@ -1173,9 +1196,11 @@ import {
                     ctx.lineWidth = curBgMode ? 2.5 : 2;
                     ctx.strokeRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
 
-                    if (miningTarget.x === hX && miningTarget.y === hY && miningTarget.progress > 0) {
-                        let activeBlock = curBgMode ? (bgWorld[hX]?.[hY] || IDS.AIR) : world[hX][hY];
-                        let ratio = Math.max(0, Math.min(1, miningTarget.progress / (HARDNESS[activeBlock] || 100)));
+                    const curMiningTarget = (typeof miningTarget !== 'undefined' && miningTarget) ? miningTarget : (typeof window !== 'undefined' ? window.miningTarget : null);
+                    if (curMiningTarget && curMiningTarget.x === hX && curMiningTarget.y === hY && curMiningTarget.progress > 0) {
+                        const curActiveBgWorld = (typeof bgWorld !== 'undefined' && bgWorld) ? bgWorld : (backgroundWorld || (typeof window !== 'undefined' ? window.bgWorld : null));
+                        let activeBlock = curBgMode ? (curActiveBgWorld && curActiveBgWorld[hX]?.[hY] ? curActiveBgWorld[hX][hY] : IDS.AIR) : (world && world[hX] ? world[hX][hY] : IDS.AIR);
+                        let ratio = Math.max(0, Math.min(1, curMiningTarget.progress / (HARDNESS[activeBlock] || 100)));
                         let stageIdx = Math.min(9, Math.floor(ratio * 10));
                         const crackPixels = (typeof BLOCK_CRACK_STAGES !== 'undefined' && BLOCK_CRACK_STAGES[stageIdx]) ? BLOCK_CRACK_STAGES[stageIdx] : [];
 
@@ -1557,4 +1582,5 @@ if (typeof window !== 'undefined') {
     window.resizeCanvases = resizeCanvases;
     window.updateCamera = updateCamera;
     window.drawWorld = drawWorld;
+    window.visibleFluids = visibleFluids;
 }

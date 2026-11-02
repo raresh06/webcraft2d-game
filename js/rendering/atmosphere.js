@@ -141,6 +141,18 @@ export let menuCtx = menuBgCanvas ? menuBgCanvas.getContext('2d', { alpha: false
 
         export const LEAF_COLORS = ['#6f9f38', '#8dbb45', '#c28a3d', '#d0a34a'];
         export let caveSkyOpacity = 0;
+
+        export function setCaveSkyOpacity(val) {
+            caveSkyOpacity = val;
+            if (typeof window !== 'undefined') window.caveSkyOpacity = val;
+            return caveSkyOpacity;
+        }
+
+        export function setAuroraSnowOpacity(val) {
+            auroraSnowOpacity = val;
+            if (typeof window !== 'undefined') window.auroraSnowOpacity = val;
+            return auroraSnowOpacity;
+        }
     
     export class Cloud {
         constructor() {
@@ -2287,6 +2299,8 @@ if (typeof window !== 'undefined') {
     window.drawForestGodRays = drawForestGodRays;
     window.drawPlainsWindBreeze = drawPlainsWindBreeze;
     window.updateAndDrawFabulousParticles = updateAndDrawFabulousParticles;
+    window.setCaveSkyOpacity = setCaveSkyOpacity;
+    window.setAuroraSnowOpacity = setAuroraSnowOpacity;
     window.updateTimeUI = updateTimeUI;
     window.drawTimeClock = drawTimeClock;
 }
