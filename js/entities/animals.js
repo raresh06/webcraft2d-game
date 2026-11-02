@@ -351,7 +351,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const w = this.width;
             const h = this.height;
 
-            if (advancedGraphics) {
+            if (advancedGraphics && cachedShadowCanvas) {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 6, w * (2 / 2.2), 8);
             }
 
@@ -502,7 +502,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const w = this.width;
             const h = this.height;
 
-            if (advancedGraphics) {
+            if (advancedGraphics && cachedShadowCanvas) {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 5, w * (2 / 2.2), 7);
             }
 
@@ -1012,7 +1012,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const w = this.width;
             const h = this.height;
 
-            if (advancedGraphics && this.state !== 'flying') {
+            if (advancedGraphics && cachedShadowCanvas && this.state !== 'flying') {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w * 0.45, drawY + h - 3, w * 0.9, 5);
             }
 
@@ -1836,7 +1836,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const w = this.width;
             const h = this.height;
 
-            if (advancedGraphics && this.state !== 'flying') {
+            if (advancedGraphics && cachedShadowCanvas && this.state !== 'flying') {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w * 0.45, drawY + h - 3, w * 0.9, 5);
             }
 
@@ -2006,7 +2006,8 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
                 let gx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
                 let gy = Math.floor((this.y + this.height + 2) / TILE_SIZE);
                 if (gx >= 0 && gx < WORLD_WIDTH && gy >= 0 && gy < WORLD_HEIGHT) {
-                    if (world[gx]?.[gy] === IDS.GRASS || world[gx]?.[gy] === IDS.SHORT_GRASS) {
+                    const activeW = this.getActiveWorld() || (typeof world !== 'undefined' ? world : null);
+                    if (activeW?.[gx]?.[gy] === IDS.GRASS || activeW?.[gx]?.[gy] === IDS.SHORT_GRASS) {
                         this.isSheared = false;
                         this.eatAnim = 35;
                         for (let p = 0; p < 10; p++) particles.push(new Particle(this.x + this.width / 2, this.y + this.height - 4, '#35b042'));
@@ -2035,7 +2036,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const w = this.width;
             const h = this.height;
 
-            if (advancedGraphics) {
+            if (advancedGraphics && cachedShadowCanvas) {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 6, w * (2 / 2.2), 8);
             }
 
@@ -2203,7 +2204,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const w = this.width;
             const h = this.height;
 
-            if (advancedGraphics) {
+            if (advancedGraphics && cachedShadowCanvas) {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 6, w * (2 / 2.2), 8);
             }
 
@@ -2359,6 +2360,514 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
         }
     }
 
+    // =========================================================================
+    // CAT ENTITY (Village Feline Companion)
+    // =========================================================================
+    export class Cat extends Animal {
+        constructor(x, y, variant = null, name = null) {
+            super(x, y, TILE_SIZE * 0.70, TILE_SIZE * 0.52, 10, MOVE_SPEED * 0.36);
+            this.variant = (variant !== null && variant >= 0 && variant <= 4) ? variant : Math.floor(Math.random() * 5);
+            this.name = name || null;
+            this.isTamed = false;
+            this.owner = null;
+            this.isSitting = false;
+            this.tailTime = Math.random() * 100;
+            this.earTwitchTimer = Math.floor(Math.random() * 140 + 70);
+            this.earTwitchActive = 0;
+            this.earTwitchSide = 1;
+            this.purrTimer = 0;
+            this.meowTimer = Math.floor(Math.random() * 600 + 400);
+            this.teleportCooldown = 0;
+        }
+
+        isTemptedBy(itemId) {
+            return itemId === IDS.COOKED_BEEF || itemId === IDS.RAW_BEEF;
+        }
+
+        takeDamage(amt, knockbackDir) {
+            if (this.damageCooldown > 0) return;
+            this.health -= amt;
+            this.damageCooldown = 15;
+            this.vy = -4;
+            this.vx = knockbackDir * 6;
+            this.panic = true;
+            this.panicTimer = 180;
+            this.isSitting = false;
+            this.dir = knockbackDir || (Math.random() > 0.5 ? 1 : -1);
+            playSound('cat_meow', { vol: 0.7, pitch: 1.3 });
+            for (let i = 0; i < 5; i++) {
+                particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#fb7185'));
+            }
+            floatingTexts.push(new FloatingText(this.x + this.width / 2, this.y - 10, amt, "#ffcc00"));
+        }
+
+        interact(curPlayer, inv, slotIdx) {
+            const held = inv ? inv[slotIdx] : null;
+            if (held && this.isTemptedBy(held.id) && held.count > 0) {
+                if (!this.isTamed) {
+                    held.count--;
+                    if (held.count <= 0) inv[slotIdx] = null;
+                    if (typeof updateUI === 'function') updateUI();
+                    else if (typeof window !== 'undefined' && typeof window.updateUI === 'function') window.updateUI();
+
+                    if (Math.random() < 0.33) {
+                        this.isTamed = true;
+                        this.owner = 'player';
+                        this.isSitting = false;
+                        playSound('cat_tame', { vol: 0.85 });
+                        for (let i = 0; i < 10; i++) {
+                            const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, i % 2 === 0 ? '#f43f5e' : '#fda4af');
+                            p.vx = (Math.random() - 0.5) * 2.8;
+                            p.vy = -Math.random() * 2.5 - 0.6;
+                            particles.push(p);
+                        }
+                        if (typeof showToast === 'function') showToast('Cat tamed! What a lovely companion!');
+                        else if (typeof window !== 'undefined' && typeof window.showToast === 'function') window.showToast('Cat tamed! What a lovely companion!');
+
+                        if (typeof unlockAchievement === 'function') unlockAchievement('cat_friend');
+                        else if (typeof window !== 'undefined' && typeof window.unlockAchievement === 'function') window.unlockAchievement('cat_friend');
+
+                        if (typeof openCatNameDialog === 'function') openCatNameDialog(this);
+                        else if (typeof window !== 'undefined' && typeof window.openCatNameDialog === 'function') window.openCatNameDialog(this);
+                    } else {
+                        playSound('cat_meow', { vol: 0.5, pitch: 0.95 });
+                        for (let i = 0; i < 4; i++) {
+                            const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, '#9ca3af');
+                            p.vx = (Math.random() - 0.5) * 2;
+                            p.vy = -Math.random() * 2;
+                            particles.push(p);
+                        }
+                    }
+                    if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
+                    else if (!isMultiplayer && typeof window !== 'undefined' && typeof window.saveCurrentWorld === 'function') window.saveCurrentWorld();
+                    return true;
+                } else {
+                    if (this.health < this.maxHealth) {
+                        held.count--;
+                        if (held.count <= 0) inv[slotIdx] = null;
+                        if (typeof updateUI === 'function') updateUI();
+                        else if (typeof window !== 'undefined' && typeof window.updateUI === 'function') window.updateUI();
+                        this.health = Math.min(this.maxHealth, this.health + 4);
+                        playSound('cat_purr', { vol: 0.7 });
+                        for (let i = 0; i < 6; i++) {
+                            const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, '#f43f5e');
+                            p.vx = (Math.random() - 0.5) * 2;
+                            p.vy = -Math.random() * 2 - 0.5;
+                            particles.push(p);
+                        }
+                        if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
+                        else if (!isMultiplayer && typeof window !== 'undefined' && typeof window.saveCurrentWorld === 'function') window.saveCurrentWorld();
+                        return true;
+                    } else {
+                        playSound('cat_purr', { vol: 0.6 });
+                        for (let i = 0; i < 3; i++) {
+                            const p = new Particle(this.x + this.width / 2, this.y + this.height / 2, '#fda4af');
+                            p.vx = (Math.random() - 0.5) * 1.5;
+                            p.vy = -Math.random() * 1.5;
+                            particles.push(p);
+                        }
+                        return true;
+                    }
+                }
+            } else if (this.isTamed) {
+                this.isSitting = !this.isSitting;
+                if (this.isSitting) {
+                    this.vx = 0;
+                    playSound('cat_purr', { vol: 0.65 });
+                    const msg = this.name ? `${this.name} is sitting.` : 'Cat is sitting.';
+                    if (typeof showToast === 'function') showToast(msg);
+                    else if (typeof window !== 'undefined' && typeof window.showToast === 'function') window.showToast(msg);
+                } else {
+                    playSound('cat_meow', { vol: 0.65, pitch: 1.15 });
+                    const msg = this.name ? `${this.name} is following you!` : 'Cat is following you!';
+                    if (typeof showToast === 'function') showToast(msg);
+                    else if (typeof window !== 'undefined' && typeof window.showToast === 'function') window.showToast(msg);
+                }
+                if (!isMultiplayer && typeof saveCurrentWorld === 'function') saveCurrentWorld();
+                else if (!isMultiplayer && typeof window !== 'undefined' && typeof window.saveCurrentWorld === 'function') window.saveCurrentWorld();
+                return true;
+            }
+            return false;
+        }
+
+        update() {
+            if (isMultiplayer && !isMultiplayerAuthority()) {
+                this.updateDamageCooldown();
+                return;
+            }
+
+            const activeWorld = this.getActiveWorld();
+            const curPlayer = (typeof player !== 'undefined' && player) ? player : (typeof window !== 'undefined' ? window.player : null);
+
+            // Ambient ear twitches
+            if (this.earTwitchTimer > 0) {
+                this.earTwitchTimer--;
+            } else {
+                this.earTwitchActive = 12;
+                this.earTwitchSide = Math.random() > 0.5 ? 1 : -1;
+                this.earTwitchTimer = Math.floor(Math.random() * 160 + 80);
+            }
+            if (this.earTwitchActive > 0) this.earTwitchActive--;
+
+            // Ambient meows
+            if (this.meowTimer > 0) {
+                this.meowTimer--;
+            } else {
+                if (Math.random() < 0.40) {
+                    playSound('cat_meow', { vol: 0.35, pitch: 1.0 + (Math.random() - 0.5) * 0.2 });
+                }
+                this.meowTimer = Math.floor(Math.random() * 800 + 400);
+            }
+
+            // Tamed sitting behavior
+            if (this.isTamed && this.isSitting) {
+                this.vx = 0;
+                this.updatePhysics(activeWorld);
+                this.updateDamageCooldown();
+                if (curPlayer) {
+                    const pCX = curPlayer.x + curPlayer.width / 2;
+                    const catCX = this.x + this.width / 2;
+                    if (Math.abs(pCX - catCX) > 16) {
+                        this.dir = pCX > catCX ? 1 : -1;
+                    }
+                }
+                return;
+            }
+
+            // Tamed following owner behavior
+            if (this.isTamed && curPlayer) {
+                const distTiles = Math.hypot((this.x + this.width / 2) - (curPlayer.x + curPlayer.width / 2), (this.y + this.height / 2) - (curPlayer.y + curPlayer.height / 2)) / TILE_SIZE;
+
+                // Safe catch-up teleport if far away
+                if (distTiles > 28 && this.teleportCooldown <= 0) {
+                    const pTileX = Math.floor(curPlayer.x / TILE_SIZE);
+                    const pTileY = Math.floor(curPlayer.y / TILE_SIZE);
+                    let targetX = (pTileX + (curPlayer.facingRight ? -2 : 2)) * TILE_SIZE;
+                    let targetY = pTileY * TILE_SIZE;
+                    this.x = targetX;
+                    this.y = targetY;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.teleportCooldown = 180;
+                    for (let i = 0; i < 6; i++) {
+                        particles.push(new Particle(this.x + this.width / 2, this.y + this.height / 2, '#f43f5e'));
+                    }
+                }
+                if (this.teleportCooldown > 0) this.teleportCooldown--;
+
+                // Walk towards owner if further than 2.8 tiles
+                if (distTiles > 2.8 && distTiles <= 28) {
+                    const pCX = curPlayer.x + curPlayer.width / 2;
+                    const catCX = this.x + this.width / 2;
+                    const targetDir = pCX > catCX ? 1 : -1;
+                    this.dir = targetDir;
+                    const speedMultiplier = distTiles > 8 ? 0.55 : 0.38;
+                    this.vx = targetDir * MOVE_SPEED * speedMultiplier;
+                    this.walkAnimTime = (this.walkAnimTime || 0) + 0.25;
+
+                    // Jump over 1-block obstacles if grounded
+                    const frontGridX = Math.floor((this.x + this.width / 2 + targetDir * (this.width / 2 + 6)) / TILE_SIZE);
+                    const footGridY = Math.floor((this.y + this.height - 2) / TILE_SIZE);
+                    const waistGridY = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+                    const curW = activeWorld;
+                    if (this.isGrounded && curW && curW[frontGridX]) {
+                        const obstacleBelow = isSolidWorldBlock(frontGridX, footGridY, curW[frontGridX][footGridY]);
+                        const obstacleAbove = isSolidWorldBlock(frontGridX, waistGridY - 1, curW[frontGridX][waistGridY - 1]);
+                        if (obstacleBelow && !obstacleAbove) {
+                            this.vy = -JUMP_FORCE * 0.9;
+                            this.isGrounded = false;
+                        }
+                    }
+                    this.updatePhysics(activeWorld);
+                    this.updateDamageCooldown();
+                    return;
+                } else if (distTiles <= 2.8) {
+                    this.vx = 0;
+                    this.updatePhysics(activeWorld);
+                    this.updateDamageCooldown();
+                    return;
+                }
+            }
+
+            // Untamed / wandering AI
+            this.updateAnimalAI();
+        }
+
+        draw(ctx, camX, camY) {
+            const drawX = this.x - camX;
+            const drawY = this.y - camY;
+            const w = this.width;
+            const h = this.height;
+
+            if (advancedGraphics && cachedShadowCanvas) {
+                ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 5, w * (2 / 2.2), 7);
+            }
+
+            ctx.save();
+            ctx.translate(drawX + w / 2, drawY + h / 2);
+            if (this.dir < 0) ctx.scale(-1, 1);
+
+            const isMoving = Math.abs(this.vx) > 0.05 && !this.isSitting;
+            const walk = this.walkAnimTime || 0;
+            const idle = Math.sin((frameCount + this.idleSeed) * 0.08);
+            const bodyBob = this.isSitting ? 2 : (isMoving ? Math.abs(Math.sin(walk * 2)) * 1.0 : idle * 0.5);
+            const isBlinking = ((frameCount + Math.floor(this.idleSeed)) % 190 < 7);
+            const isDamaged = this.damageCooldown > 0;
+
+            // Palette setup based on cat variant (0: Tuxedo, 1: Ginger Tabby, 2: Siamese, 3: Calico, 4: British Shorthair)
+            let baseColor, highColor, shadeColor, bellyColor, eyeColor, noseColor, pointColor;
+            switch (this.variant) {
+                case 0: // Tuxedo
+                    baseColor = isDamaged ? '#ff4d4d' : '#1e293b';
+                    highColor = isDamaged ? '#ff9999' : '#334155';
+                    shadeColor = isDamaged ? '#b91c1c' : '#0f172a';
+                    bellyColor = isDamaged ? '#ffcccc' : '#f8fafc';
+                    eyeColor = '#10b981'; // Vivid green
+                    noseColor = '#f43f5e';
+                    pointColor = '#0f172a';
+                    break;
+                case 1: // Ginger Tabby
+                    baseColor = isDamaged ? '#ff4d4d' : '#f97316';
+                    highColor = isDamaged ? '#ff9999' : '#fb923c';
+                    shadeColor = isDamaged ? '#b91c1c' : '#c2410c';
+                    bellyColor = isDamaged ? '#ffcccc' : '#ffedd5';
+                    eyeColor = '#f59e0b'; // Amber gold
+                    noseColor = '#f43f5e';
+                    pointColor = '#9a3412';
+                    break;
+                case 2: // Siamese
+                    baseColor = isDamaged ? '#ff4d4d' : '#f5ebe0';
+                    highColor = isDamaged ? '#ff9999' : '#faf5ef';
+                    shadeColor = isDamaged ? '#b91c1c' : '#e6ccb2';
+                    bellyColor = isDamaged ? '#ffcccc' : '#ffffff';
+                    eyeColor = '#0284c7'; // Azure blue
+                    noseColor = '#451a03';
+                    pointColor = '#3e2723'; // Dark chocolate mask & points
+                    break;
+                case 3: // Calico
+                    baseColor = isDamaged ? '#ff4d4d' : '#f8fafc';
+                    highColor = isDamaged ? '#ff9999' : '#ffffff';
+                    shadeColor = isDamaged ? '#b91c1c' : '#e2e8f0';
+                    bellyColor = isDamaged ? '#ffcccc' : '#ffffff';
+                    eyeColor = '#22c55e'; // Green
+                    noseColor = '#fb7185';
+                    pointColor = '#ea580c';
+                    break;
+                case 4: // British Shorthair
+                default:
+                    baseColor = isDamaged ? '#ff4d4d' : '#64748b';
+                    highColor = isDamaged ? '#ff9999' : '#94a3b8';
+                    shadeColor = isDamaged ? '#b91c1c' : '#475569';
+                    bellyColor = isDamaged ? '#ffcccc' : '#cbd5e1';
+                    eyeColor = '#eab308'; // Hazel amber
+                    noseColor = '#f43f5e';
+                    pointColor = '#334155';
+                    break;
+            }
+
+            const farLegSwing = isMoving ? Math.sin(walk) * 3.5 : 0;
+            const nearLegSwing = isMoving ? -Math.sin(walk) * 3.5 : 0;
+            const farLegLift = (isMoving && Math.sin(walk) > 0) ? Math.sin(walk) * 1.8 : 0;
+            const nearLegLift = (isMoving && -Math.sin(walk) > 0) ? -Math.sin(walk) * 1.8 : 0;
+
+            if (this.isSitting) {
+                // SITTING POSTURE
+                // 1. Back haunch / curled hind leg
+                ctx.fillStyle = shadeColor;
+                ctx.fillRect(-w * 0.42, h * 0.08, w * 0.40, h * 0.38);
+                ctx.fillStyle = baseColor;
+                ctx.fillRect(-w * 0.38, h * 0.12, w * 0.34, h * 0.32);
+                // Paw
+                ctx.fillStyle = (this.variant === 0 || this.variant === 3) ? bellyColor : pointColor;
+                ctx.fillRect(-w * 0.30, h * 0.38, w * 0.22, 3);
+
+                // 2. Upright Torso
+                ctx.fillStyle = baseColor;
+                ctx.fillRect(-w * 0.24, -h * 0.18 + bodyBob, w * 0.45, h * 0.58);
+                // Belly / Chest bib
+                ctx.fillStyle = bellyColor;
+                ctx.fillRect(-w * 0.05, -h * 0.12 + bodyBob, w * 0.24, h * 0.45);
+
+                // 3. Front straight leg
+                ctx.fillStyle = shadeColor;
+                ctx.fillRect(w * 0.02, h * 0.05 + bodyBob, w * 0.16, h * 0.42);
+                ctx.fillStyle = baseColor;
+                ctx.fillRect(w * 0.05, h * 0.08 + bodyBob, w * 0.14, h * 0.38);
+                // Front Paw
+                ctx.fillStyle = (this.variant === 0 || this.variant === 3) ? bellyColor : pointColor;
+                ctx.fillRect(w * 0.05, h * 0.42, w * 0.16, 3);
+
+                // 4. Tail curled along the floor
+                ctx.fillStyle = pointColor;
+                ctx.fillRect(-w * 0.45, h * 0.36, 4, 3);
+                ctx.fillRect(-w * 0.48, h * 0.38, 4, 3);
+                ctx.fillRect(-w * 0.45, h * 0.42, 6, 2.5);
+                ctx.fillRect(-w * 0.28, h * 0.43, w * 0.45, 2.5);
+                // Tip curled up slightly
+                const tailTipCurl = Math.sin(frameCount * 0.08) * 1.5;
+                ctx.fillRect(w * 0.18, h * 0.41 + tailTipCurl, 3, 2.5);
+            } else {
+                // STANDING / WALKING POSTURE
+                // 1. Far Legs (Back and Front)
+                ctx.fillStyle = shadeColor;
+                ctx.fillRect(-w * 0.40 + farLegSwing, h * 0.15 - farLegLift, w * 0.14, h * 0.35);
+                ctx.fillRect(w * 0.12 - farLegSwing, h * 0.15 - nearLegLift, w * 0.14, h * 0.35);
+                // Far Paws
+                ctx.fillStyle = (this.variant === 0 || this.variant === 3) ? bellyColor : pointColor;
+                ctx.fillRect(-w * 0.40 + farLegSwing, h * 0.48 - farLegLift, w * 0.14, 2.5);
+                ctx.fillRect(w * 0.12 - farLegSwing, h * 0.48 - nearLegLift, w * 0.14, 2.5);
+
+                // 2. Animated Tail
+                const tailSway = isMoving ? Math.sin(walk * 1.5) * 2.5 : Math.sin(frameCount * 0.07) * 2;
+                ctx.fillStyle = pointColor;
+                if (this.isTamed) {
+                    // Upright happy tail with curled tip
+                    ctx.fillRect(-w * 0.46, -h * 0.10 + bodyBob, 3, 3);
+                    ctx.fillRect(-w * 0.49, -h * 0.22 + bodyBob, 3, 4);
+                    ctx.fillRect(-w * 0.50, -h * 0.36 + bodyBob, 3, 5);
+                    ctx.fillRect(-w * 0.48 + tailSway * 0.4, -h * 0.48 + bodyBob, 3, 4);
+                    ctx.fillRect(-w * 0.43 + tailSway * 0.8, -h * 0.52 + bodyBob, 4, 3);
+                } else {
+                    // Horizontal graceful swish tail
+                    ctx.fillRect(-w * 0.46, -h * 0.05 + bodyBob, 4, 3);
+                    ctx.fillRect(-w * 0.53, -h * 0.12 + bodyBob + tailSway * 0.5, 4, 3);
+                    ctx.fillRect(-w * 0.60, -h * 0.18 + bodyBob + tailSway, 4, 3);
+                    ctx.fillRect(-w * 0.66, -h * 0.22 + bodyBob + tailSway * 1.4, 4, 3);
+                }
+
+                // 3. Body Torso
+                ctx.fillStyle = baseColor;
+                ctx.fillRect(-w * 0.42, -h * 0.18 + bodyBob, w * 0.62, h * 0.38);
+                // Highlight spine ridge
+                ctx.fillStyle = highColor;
+                ctx.fillRect(-w * 0.40, -h * 0.18 + bodyBob, w * 0.58, 2);
+                // Underbelly
+                ctx.fillStyle = bellyColor;
+                ctx.fillRect(-w * 0.26, h * 0.10 + bodyBob, w * 0.42, 3);
+
+                // Distinctive pattern markings for Ginger Tabby / Calico
+                if (this.variant === 1) { // Tiger stripes
+                    ctx.fillStyle = pointColor;
+                    ctx.fillRect(-w * 0.28, -h * 0.18 + bodyBob, 2.5, 6);
+                    ctx.fillRect(-w * 0.16, -h * 0.18 + bodyBob, 2.5, 7);
+                    ctx.fillRect(-w * 0.04, -h * 0.18 + bodyBob, 2.5, 6);
+                } else if (this.variant === 3) { // Calico spots
+                    ctx.fillStyle = '#ea580c';
+                    ctx.fillRect(-w * 0.35, -h * 0.15 + bodyBob, 6, 6);
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(-w * 0.15, -h * 0.14 + bodyBob, 7, 7);
+                }
+
+                // 4. Near Legs (Back and Front)
+                ctx.fillStyle = baseColor;
+                ctx.fillRect(-w * 0.34 + nearLegSwing, h * 0.15 - nearLegLift, w * 0.14, h * 0.35);
+                ctx.fillRect(w * 0.18 + farLegSwing, h * 0.15 - farLegLift, w * 0.14, h * 0.35);
+                // Near Paws
+                ctx.fillStyle = (this.variant === 0 || this.variant === 3) ? bellyColor : pointColor;
+                ctx.fillRect(-w * 0.34 + nearLegSwing, h * 0.48 - nearLegLift, w * 0.14, 2.5);
+                ctx.fillRect(w * 0.18 + farLegSwing, h * 0.48 - farLegLift, w * 0.14, 2.5);
+            }
+
+            // =================================================================
+            // CAT HEAD & FACE
+            // =================================================================
+            const headX = w * 0.16;
+            const headY = (this.isSitting ? -h * 0.32 : -h * 0.30) + bodyBob;
+            const headW = w * 0.38;
+            const headH = h * 0.40;
+
+            // Cat Ears
+            const earTwitchL = (this.earTwitchActive > 0 && this.earTwitchSide === -1) ? 2 : 0;
+            const earTwitchR = (this.earTwitchActive > 0 && this.earTwitchSide === 1) ? 2 : 0;
+
+            // Left Ear
+            ctx.fillStyle = pointColor;
+            ctx.fillRect(headX + 2, headY - 6 + earTwitchL, 4, 6);
+            ctx.fillRect(headX + 3, headY - 8 + earTwitchL, 2.5, 3);
+            ctx.fillStyle = '#fda4af'; // Pink inner ear
+            ctx.fillRect(headX + 3.5, headY - 4 + earTwitchL, 2, 4);
+
+            // Right Ear
+            ctx.fillStyle = pointColor;
+            ctx.fillRect(headX + headW - 6, headY - 6 + earTwitchR, 4, 6);
+            ctx.fillRect(headX + headW - 5.5, headY - 8 + earTwitchR, 2.5, 3);
+            ctx.fillStyle = '#fda4af'; // Pink inner ear
+            ctx.fillRect(headX + headW - 5, headY - 4 + earTwitchR, 2, 4);
+
+            // Head Base
+            ctx.fillStyle = baseColor;
+            ctx.fillRect(headX, headY, headW, headH);
+            ctx.fillStyle = highColor;
+            ctx.fillRect(headX + 1, headY, headW - 2, 2);
+
+            // Siamese mask / Tabby forehead marking
+            if (this.variant === 2) {
+                ctx.fillStyle = pointColor;
+                ctx.fillRect(headX + 4, headY + 3, headW - 6, headH - 4);
+            } else if (this.variant === 1) {
+                ctx.fillStyle = pointColor;
+                ctx.fillRect(headX + headW / 2 - 1, headY + 1, 2, 3);
+                ctx.fillRect(headX + headW / 2 - 3, headY + 2, 1.5, 2);
+                ctx.fillRect(headX + headW / 2 + 1.5, headY + 2, 1.5, 2);
+            }
+
+            // Almond Cat Eyes
+            if (isBlinking) {
+                ctx.fillStyle = shadeColor;
+                ctx.fillRect(headX + 4, headY + 5, 4, 1.5);
+                ctx.fillRect(headX + headW - 8, headY + 5, 4, 1.5);
+            } else {
+                ctx.fillStyle = eyeColor;
+                ctx.fillRect(headX + 4, headY + 4, 4, 4);
+                ctx.fillRect(headX + headW - 8, headY + 4, 4, 4);
+                // Slit pupils
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(headX + 5.5, headY + 4, 1.5, 4);
+                ctx.fillRect(headX + headW - 6.5, headY + 4, 1.5, 4);
+                // Eye light glint
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(headX + 4.5, headY + 4.5, 1, 1);
+                ctx.fillRect(headX + headW - 7.5, headY + 4.5, 1, 1);
+            }
+
+            // Muzzle & Pink Nose
+            ctx.fillStyle = (this.variant === 0 || this.variant === 3) ? bellyColor : (this.variant === 2 ? '#2d1810' : highColor);
+            ctx.fillRect(headX + headW / 2 - 3, headY + headH - 4, 6, 4);
+            ctx.fillStyle = noseColor;
+            ctx.fillRect(headX + headW / 2 - 1, headY + headH - 4, 2, 1.5);
+
+            // Whiskers
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.fillRect(headX - 3, headY + headH - 3, 3, 1);
+            ctx.fillRect(headX - 3, headY + headH - 1, 3, 1);
+            ctx.fillRect(headX + headW, headY + headH - 3, 3, 1);
+            ctx.fillRect(headX + headW, headY + headH - 1, 3, 1);
+
+            // Collar with gold bell tag if tamed!
+            if (this.isTamed) {
+                ctx.fillStyle = '#dc2626'; // Red collar
+                ctx.fillRect(headX - 1, headY + headH - 1, headW + 2, 2);
+                ctx.fillStyle = '#eab308'; // Golden bell
+                ctx.fillRect(headX + headW / 2 - 1.5, headY + headH + 1, 3, 2.5);
+            }
+
+            ctx.restore();
+
+            // Multiplayer-style Nametag
+            if (this.name) {
+                const tagText = String(this.name).substring(0, 16);
+                ctx.font = '16px "VT323"';
+                const nameWidth = ctx.measureText(tagText).width;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(drawX + w / 2 - nameWidth / 2 - 4, drawY - 20, nameWidth + 8, 18);
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.fillText(tagText, drawX + w / 2, drawY - 6);
+                ctx.textAlign = 'left';
+            }
+        }
+    }
+
 // Global Window Registration for cross-module compatibility
 if (typeof window !== 'undefined') {
     window.Animal = Animal;
@@ -2366,6 +2875,7 @@ if (typeof window !== 'undefined') {
     window.Chicken = Chicken;
     window.Pigeon = Pigeon;
     window.Parrot = Parrot;
+    window.Cat = Cat;
     window.Sheep = Sheep;
     window.Cow = Cow;
 }

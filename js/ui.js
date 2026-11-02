@@ -221,6 +221,7 @@ try { if (typeof window !== 'undefined') window.setHeldItemObj = setHeldItemObj;
 export function setUIState(newState) {
     STATE = newState;
     if (typeof window !== 'undefined') window.STATE = newState;
+    if (typeof setEngineState === 'function') setEngineState(newState);
 }
 try { if (typeof window !== 'undefined') window.setUIState = setUIState; } catch(e) {}
 export let nonCollidableTreeWood = new Set();
@@ -2643,6 +2644,58 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         inlineSignText = '';
     }
 
+    // =========================================================================
+    // CAT COMPANION NAMING UI
+    // =========================================================================
+    export let activeCatForNaming = null;
+    export const DEFAULT_CAT_NAMES = ['Whiskers', 'Luna', 'Milo', 'Mittens', 'Oliver', 'Bella', 'Simba', 'Chloe', 'Shadow', 'Cleo', 'Jasper', 'Lily'];
+
+    export function openCatNameDialog(cat) {
+        if (!cat) return;
+        activeCatForNaming = cat;
+        if (typeof window !== 'undefined') window.activeCatForNaming = activeCatForNaming;
+
+        const modal = document.getElementById('cat-name-modal');
+        const input = document.getElementById('cat-name-input');
+        if (!modal || !input) return;
+
+        const defaultSuggested = DEFAULT_CAT_NAMES[Math.floor(Math.random() * DEFAULT_CAT_NAMES.length)];
+        input.value = cat.name || defaultSuggested;
+
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+
+        setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 50);
+    }
+
+    export function closeCatNameDialog(save = true) {
+        const modal = document.getElementById('cat-name-modal');
+        const input = document.getElementById('cat-name-input');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }
+
+        if (save && activeCatForNaming && input) {
+            const trimmed = input.value.trim().substring(0, 16);
+            if (trimmed) {
+                activeCatForNaming.name = trimmed;
+                showToast(`"${trimmed}" is now your faithful companion!`);
+                if (typeof playSound === 'function') {
+                    playSound('cat_purr', { vol: 0.7 });
+                }
+            }
+            if (!isMultiplayer && typeof saveCurrentWorld === 'function') {
+                saveCurrentWorld();
+            }
+        }
+        activeCatForNaming = null;
+        if (typeof window !== 'undefined') window.activeCatForNaming = null;
+    }
+
     export function renderInfuserUI() {
         const gearSlot = document.getElementById('infuser-slot-gear');
         const shardSlot = document.getElementById('infuser-slot-shard');
@@ -3474,18 +3527,27 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             if (skinCanvasObj) { skinCanvasObj.width = SKIN_W; skinCanvasObj.height = SKIN_H; }
         }
         if (!skinCanvasObj) return;
-        let sCtx = skinCanvasObj.getContext('2d');
+        let sCtx = skinCanvasObj.getContext('2d', { willReadFrequently: true });
         if (!sCtx) return;
         sCtx.clearRect(0, 0, SKIN_W, SKIN_H);
         const skinData = playerSkinData || (typeof window !== 'undefined' ? window.playerSkinData : null);
+        let hasAnyPixel = false;
         if (skinData) {
             for(let y=0; y<SKIN_H; y++) {
                 for(let x=0; x<SKIN_W; x++) {
                     if(skinData[y*SKIN_W + x]) {
+                        hasAnyPixel = true;
                         sCtx.fillStyle = skinData[y*SKIN_W + x];
                         sCtx.fillRect(x, y, 1, 1);
                     }
                 }
+            }
+        }
+        if (!hasAnyPixel) {
+            if (typeof paintDefaultSteveSkin === 'function') {
+                paintDefaultSteveSkin(skinCanvasObj);
+            } else if (typeof window !== 'undefined' && typeof window.paintDefaultSteveSkin === 'function') {
+                window.paintDefaultSteveSkin(skinCanvasObj);
             }
         }
         skinCanvasObj.cachedSkinTone = getSkinToneFromContext(sCtx);
@@ -3527,7 +3589,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
     export function compileRemoteSkin(skinArray, targetCanvas) {
         if(!targetCanvas) return;
         targetCanvas.width = SKIN_W; targetCanvas.height = SKIN_H;
-        let sCtx = targetCanvas.getContext('2d');
+        let sCtx = targetCanvas.getContext('2d', { willReadFrequently: true });
         sCtx.clearRect(0, 0, SKIN_W, SKIN_H);
         let frontData = (Array.isArray(skinArray) && skinArray.length === SKIN_W * SKIN_H) ? skinArray : getDefaultSkinData();
         for(let y=0; y<SKIN_H; y++) {
@@ -4181,6 +4243,24 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             iconItem: IDS.MELON_SEEDS,
             badge: 'Easy',
             difficulty: 'Easy'
+        },
+        {
+            id: 'cat_friend',
+            title: 'Cat Whisperer',
+            description: 'Befriend a village cat by feeding her steak and give her a name.',
+            iconItem: IDS.COOKED_BEEF,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 15
+        },
+        {
+            id: 'village_discovery',
+            title: 'Village Pioneer',
+            description: 'Discover and explore a peaceful village biome with cottages and crops.',
+            iconItem: IDS.PLANKS,
+            badge: 'Easy',
+            difficulty: 'Easy',
+            emeraldReward: 15
         },
         {
             id: 'first_contact',
@@ -5893,7 +5973,6 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             }
         });
     }
-    }
 
     export function openWhatsNew(force = false) {
         if (!force) {
@@ -5956,6 +6035,8 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
         remotePlayers = {};
         mpPeerIds = new Set(); lastWorldSyncTime = 0; lastWorldStateTimestamp = 0; mpPlayerSyncPending = false; mpWorldSyncPending = false; pendingDropRequest = null; isSleeping = false; sleepWakeVersion = 0; currentMpWorldName = null; currentMpRoom = null;
         STATE = 'MENU';
+        if (typeof window !== 'undefined') window.STATE = 'MENU';
+        if (typeof setEngineState === 'function') setEngineState('MENU');
         document.getElementById('pause-menu').classList.add('hidden');
         document.getElementById('death-menu').classList.add('hidden');
         document.getElementById('hud').style.display = 'none';
@@ -9959,7 +10040,12 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 if (typeof getFluid === 'function' && (getFluid(rx, ry) || getFluid(rx, ry - 1) || getFluid(rx, ry - 2))) continue;
 
                 const isJungle = typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(rx) === 'jungle';
-                if (isJungle && Math.random() < 0.70) {
+                const isVillage = typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(rx) === 'village';
+                const CatClass = typeof Cat !== 'undefined' ? Cat : (typeof window !== 'undefined' ? window.Cat : null);
+                if (isVillage && CatClass && Math.random() < 0.65) {
+                    const cat = new CatClass(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
+                    entities.push(cat);
+                } else if (isJungle && Math.random() < 0.70) {
                     const parrot = new Parrot(rx * TILE_SIZE, (ry - 2) * TILE_SIZE);
                     entities.push(parrot);
                 } else if (pigeonCount < targetPigeons && Math.random() < 0.35) {
@@ -9984,6 +10070,22 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 }
             }
         }
+
+        // Guaranteed Village Cats
+        const CatClass = typeof Cat !== 'undefined' ? Cat : (typeof window !== 'undefined' ? window.Cat : null);
+        const curBiomes = (typeof worldBiomes !== 'undefined' && worldBiomes) ? worldBiomes : ((typeof window !== 'undefined' && window.worldBiomes) ? window.worldBiomes : null);
+        if (curBiomes && CatClass) {
+            let vStart = curBiomes.indexOf('village');
+            let vEnd = curBiomes.lastIndexOf('village');
+            if (vStart !== -1 && vEnd !== -1) {
+                let vMid = Math.floor((vStart + vEnd) / 2);
+                let catY1 = (curSurfaces[vMid - 4] || Math.floor(WORLD_HEIGHT / 2)) - 2;
+                let catY2 = (curSurfaces[vMid + 6] || Math.floor(WORLD_HEIGHT / 2)) - 2;
+                entities.push(new CatClass((vMid - 4) * TILE_SIZE, catY1 * TILE_SIZE, 0));
+                entities.push(new CatClass((vMid + 6) * TILE_SIZE, catY2 * TILE_SIZE, 1));
+            }
+        }
+
         if (typeof setEngineEntities === 'function') setEngineEntities(entities);
         inventory.fill(null);
         equippedArmor = [null, null, null, null];
@@ -10163,6 +10265,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 ...(e.variant !== undefined ? { variant: e.variant } : {}),
                 ...(e.isTamed !== undefined ? { isTamed: e.isTamed } : {}),
                 ...(e.isSitting !== undefined ? { isSitting: e.isSitting } : {}),
+                ...(e.name ? { name: e.name } : {}),
                 ...(e.constructor.name === 'AtlasExplorer' ? {
                     warpState: 'active',
                     warpProgress: 1.0,
@@ -10546,10 +10649,10 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
             
             // 1. Determine world dimensions first before decompression
             let targetSize = data.worldSize;
-            let targetWidth = data.worldWidth || (targetSize === 'big' ? 2048 : 1024);
+            let targetWidth = data.worldWidth || (targetSize === 'big' ? 2560 : 1280);
             let targetHeight = data.worldHeight || (targetSize === 'big' ? 512 : 320);
             if (!targetSize) {
-                targetSize = targetWidth > 1200 ? 'big' : 'small';
+                targetSize = targetWidth > 1500 ? 'big' : 'small';
             }
             setWorldDimensions(targetSize, targetWidth, targetHeight);
 
@@ -10799,6 +10902,13 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                     if (e.isTamed !== undefined) inst.isTamed = !!e.isTamed;
                     if (e.isSitting !== undefined) inst.isSitting = !!e.isSitting;
                 }
+                else if (e.type === 'Cat') {
+                    const CatClass = (typeof Cat !== 'undefined') ? Cat : (typeof window !== 'undefined' ? window.Cat : null);
+                    inst = CatClass ? new CatClass(e.x, e.y, e.variant !== undefined ? e.variant : 0, e.name || null) : new Pig(e.x, e.y);
+                    if (e.isTamed !== undefined) inst.isTamed = !!e.isTamed;
+                    if (e.isSitting !== undefined) inst.isSitting = !!e.isSitting;
+                    if (e.name) inst.name = e.name;
+                }
                 else if (e.type === 'Creeper') inst = new Creeper(e.x, e.y);
                 else if (e.type === 'Scorpion') inst = new Scorpion(e.x, e.y);
                 else if (e.type === 'AtlasExplorer') {
@@ -10817,7 +10927,7 @@ export function dropItemForWorld(itemId, x, y, count = 1) {
                 }
                 else inst = new Zombie(e.x, e.y);
                 inst.health = e.health;
-                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon || inst instanceof Parrot || inst instanceof AtlasExplorer || (typeof Gloomstalker !== 'undefined' && inst instanceof Gloomstalker)) inst.dir = e.dir || 1;
+                if(inst instanceof Pig || inst instanceof Chicken || inst instanceof Sheep || inst instanceof Cow || inst instanceof Pigeon || inst instanceof Parrot || (typeof Cat !== 'undefined' && inst instanceof Cat) || inst instanceof AtlasExplorer || (typeof Gloomstalker !== 'undefined' && inst instanceof Gloomstalker)) inst.dir = e.dir || 1;
                 return inst;
             });
             ensureDesertScorpions();
@@ -16100,5 +16210,7 @@ try { if (typeof handleRecoveryStep1Submit !== "undefined") window.handleRecover
 try { if (typeof handleRecoveryStep2Submit !== "undefined") window.handleRecoveryStep2Submit = handleRecoveryStep2Submit; } catch(e) {}
 try { if (typeof handleRecoveryResendCode !== "undefined") window.handleRecoveryResendCode = handleRecoveryResendCode; } catch(e) {}
 try { if (typeof handleRecoveryStep3Submit !== "undefined") window.handleRecoveryStep3Submit = handleRecoveryStep3Submit; } catch(e) {}
+try { if (typeof openCatNameDialog !== "undefined") window.openCatNameDialog = openCatNameDialog; } catch(e) {}
+try { if (typeof closeCatNameDialog !== "undefined") window.closeCatNameDialog = closeCatNameDialog; } catch(e) {}
 
 

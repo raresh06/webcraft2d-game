@@ -810,7 +810,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
                 : Math.min(1.0, Math.max(0.0, this.warpProgress));
             ctx.globalAlpha = kaelAlpha;
 
-            if (advancedGraphics) {
+            if (advancedGraphics && cachedShadowCanvas) {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - 14, drawY + h - 5, 28, 7);
             }
 

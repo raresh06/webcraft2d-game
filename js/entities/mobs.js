@@ -386,9 +386,9 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const zFootGy = Math.floor((this.y + this.height - 2) / TILE_SIZE);
             const zBodyGy = Math.floor((this.y + this.height / 2) / TILE_SIZE);
             const zHeadGy = Math.floor((this.y + 4) / TILE_SIZE);
-            const zOnClimbable = isClimbableBlock(world[zGx]?.[zFootGy]) ||
-                                  isClimbableBlock(world[zGx]?.[zBodyGy]) ||
-                                  isClimbableBlock(world[zGx]?.[zHeadGy]);
+            const zOnClimbable = isClimbableBlock(world?.[zGx]?.[zFootGy]) ||
+                                  isClimbableBlock(world?.[zGx]?.[zBodyGy]) ||
+                                  isClimbableBlock(world?.[zGx]?.[zHeadGy]);
             if (zOnClimbable) {
                 if (target) {
                     const targetMidY = target.y + target.height / 2;
@@ -449,7 +449,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const drawX = this.x - camX; const drawY = this.y - camY;
             const w = this.width; const h = this.height;
 
-            if (advancedGraphics) {
+            if (advancedGraphics && cachedShadowCanvas) {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 6, w * (2 / 2.2), 8);
             }
 
@@ -723,9 +723,9 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const cFootGy  = Math.floor((this.y + this.height - 2) / TILE_SIZE);
             const cBodyGy  = Math.floor((this.y + this.height / 2) / TILE_SIZE);
             const cHeadGy  = Math.floor((this.y + 4) / TILE_SIZE);
-            const cOnClimbable = isClimbableBlock(world[cGx]?.[cFootGy]) ||
-                                  isClimbableBlock(world[cGx]?.[cBodyGy]) ||
-                                  isClimbableBlock(world[cGx]?.[cHeadGy]);
+            const cOnClimbable = isClimbableBlock(world?.[cGx]?.[cFootGy]) ||
+                                  isClimbableBlock(world?.[cGx]?.[cBodyGy]) ||
+                                  isClimbableBlock(world?.[cGx]?.[cHeadGy]);
             if (cOnClimbable && target) {
                 const targetMidY = target.y + target.height / 2;
                 const selfMidY   = this.y + this.height / 2;
@@ -820,7 +820,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const drawX = this.x - camX; const drawY = this.y - camY;
             const w = this.width; const h = this.height;
 
-            if (advancedGraphics) {
+            if (advancedGraphics && cachedShadowCanvas) {
                 ctx.drawImage(cachedShadowCanvas, drawX + w/2 - w/2.2, drawY + h - 6, w * (2/2.2), 8);
             }
 
@@ -1063,8 +1063,8 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const sGx     = Math.floor((this.x + this.width / 2) / TILE_SIZE);
             const sFootGy  = Math.floor((this.y + this.height - 1) / TILE_SIZE);
             const sBodyGy  = Math.floor((this.y + this.height / 2) / TILE_SIZE);
-            const sOnClimbable = isClimbableBlock(world[sGx]?.[sFootGy]) ||
-                                  isClimbableBlock(world[sGx]?.[sBodyGy]);
+            const sOnClimbable = isClimbableBlock(world?.[sGx]?.[sFootGy]) ||
+                                  isClimbableBlock(world?.[sGx]?.[sBodyGy]);
             if (sOnClimbable && target) {
                 const targetMidY = target.y + target.height / 2;
                 const selfMidY   = this.y + this.height / 2;
@@ -1099,7 +1099,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const w = this.width;
             const h = this.height;
 
-            if (advancedGraphics) {
+            if (advancedGraphics && cachedShadowCanvas) {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - w / 2.2, drawY + h - 4, w * (2 / 2.2), 6);
             }
 
@@ -1581,7 +1581,7 @@ if (typeof window !== 'undefined' && !window.cachedShadowCanvas && cachedShadowC
             const h = this.height;
 
             // 0. Entity Ground Contact Shadow
-            if (advancedGraphics && !this.isCeilingClinging) {
+            if (advancedGraphics && cachedShadowCanvas && !this.isCeilingClinging) {
                 ctx.drawImage(cachedShadowCanvas, drawX + w / 2 - 17, drawY + h - 4, 34, 6);
             }
 

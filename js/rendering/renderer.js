@@ -1012,7 +1012,7 @@ import {
             let drawY = Math.floor(remoteY - camera.y);
 
             // Simple drop shadow for remote players
-            if (advancedGraphics) {
+            if (advancedGraphics && cachedShadowCanvas) {
                 const rpW = TILE_SIZE * 0.75;
                 ctx.drawImage(cachedShadowCanvas, drawX + rpW/2 - rpW/2.5, drawY + (TILE_SIZE * 1.8) - 6, rpW * (2/2.5), 8);
             }
@@ -1079,9 +1079,24 @@ import {
         }
 
         if (Array.isArray(droppedItems)) droppedItems.forEach(d => { if (d && typeof d.draw === 'function') d.draw(ctx, camX, camY); });
-        entities.forEach(e => e.draw(ctx, camX, camY));
+        const curEntities = (typeof window !== 'undefined' && Array.isArray(window.entities)) ? window.entities : (Array.isArray(entities) ? entities : []);
+        curEntities.forEach(e => {
+            if (e && typeof e.draw === 'function') {
+                try {
+                    e.draw(ctx, camX, camY);
+                } catch (entErr) {
+                    console.error("Entity draw error:", e, entErr);
+                }
+            }
+        });
         const curPlayer = player || (typeof window !== 'undefined' ? window.player : null);
-        if (curPlayer && typeof curPlayer.draw === 'function') curPlayer.draw(ctx, camX, camY);
+        if (curPlayer && typeof curPlayer.draw === 'function') {
+            try {
+                curPlayer.draw(ctx, camX, camY);
+            } catch (pErr) {
+                console.error("Player draw error:", pErr);
+            }
+        }
 
         // Developer Cheats: Render Hitboxes
         if (typeof window !== 'undefined' && window.devCheats?.showHitboxes) {

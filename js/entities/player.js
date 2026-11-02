@@ -515,6 +515,17 @@ export class Player extends PhysicsEntity {
             window.updateOxygenUI(fullySubmerged);
         }
 
+        // Check village biome exploration achievement
+        if (frameCount % 30 === 0) {
+            const pGx = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+            const getBiomeFn = (typeof getActiveBiomeAt === 'function') ? getActiveBiomeAt : ((typeof window !== 'undefined' && typeof window.getActiveBiomeAt === 'function') ? window.getActiveBiomeAt : null);
+            if (getBiomeFn && getBiomeFn(pGx) === 'village') {
+                if (typeof window !== 'undefined' && typeof window.unlockAchievement === 'function') {
+                    window.unlockAchievement('village_discovery');
+                }
+            }
+        }
+
         if (this.isGrounded) {
             this.airborneTicks = 0;
         } else {

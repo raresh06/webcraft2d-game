@@ -42,7 +42,16 @@ export function seededRandom() {
 export function getInitialSpawnPoint(customWorld) {
     const curWorld = (typeof world !== 'undefined' && world) ? world : (typeof window !== 'undefined' ? window.world : null);
     const targetWorld = (customWorld && customWorld.data) ? customWorld.data : (customWorld || curWorld);
-    const centerCol = Math.floor(WORLD_WIDTH / 2);
+    let centerCol = Math.floor(WORLD_WIDTH / 2);
+    const chosenBiomePref = (typeof window !== 'undefined' && window.selectedStartingBiomeChoice) ? window.selectedStartingBiomeChoice : null;
+    const curBiomes = (typeof worldBiomes !== 'undefined' && worldBiomes) ? worldBiomes : ((typeof window !== 'undefined' && window.worldBiomes) ? window.worldBiomes : null);
+    if (chosenBiomePref && curBiomes) {
+        let bStart = curBiomes.indexOf(chosenBiomePref);
+        let bEnd = curBiomes.lastIndexOf(chosenBiomePref);
+        if (bStart !== -1 && bEnd !== -1) {
+            centerCol = Math.floor((bStart + bEnd) / 2);
+        }
+    }
     const nonSolid = new Set([
         IDS.AIR, IDS.TORCH, IDS.SAPLING, IDS.JUNGLE_SAPLING,
         IDS.DOOR_OPEN, IDS.DOOR_OPEN_TOP, IDS.JUNGLE_DOOR_OPEN, IDS.JUNGLE_DOOR_OPEN_TOP,
@@ -341,12 +350,12 @@ export function generateWorld(seedOverride, sizeOverride) {
     let activeBiomeList;
     if (mountainSide === 'left') {
         activeBiomeList = (Math.floor(worldSeed * 0.5) % 2 === 0)
-            ? ['mountains', 'snow', 'forest', 'plains', 'jungle', 'desert']
-            : ['mountains', 'snow', 'plains', 'forest', 'jungle', 'desert'];
+            ? ['mountains', 'snow', 'forest', 'plains', 'village', 'jungle', 'desert']
+            : ['mountains', 'snow', 'village', 'plains', 'forest', 'jungle', 'desert'];
     } else {
         activeBiomeList = (Math.floor(worldSeed * 0.5) % 2 === 0)
-            ? ['desert', 'jungle', 'plains', 'forest', 'snow', 'mountains']
-            : ['desert', 'jungle', 'forest', 'plains', 'snow', 'mountains'];
+            ? ['desert', 'jungle', 'village', 'plains', 'forest', 'snow', 'mountains']
+            : ['desert', 'jungle', 'forest', 'plains', 'village', 'snow', 'mountains'];
     }
     const numBiomes = activeBiomeList.length;
 
@@ -391,7 +400,7 @@ export function generateWorld(seedOverride, sizeOverride) {
             surfaceY += Math.sin(wx * 0.035) * 7 - 2;
         } else if (biome === "snow") {
             surfaceY += Math.sin(wx * 0.038) * 8 + 2;
-        } else if (biome === "plains") {
+        } else if (biome === "plains" || biome === "village") {
             surfaceY += Math.sin(wx * 0.025) * 5;
         }
 
@@ -429,7 +438,7 @@ export function generateWorld(seedOverride, sizeOverride) {
             }
             else if (y > surfaceY && y < surfaceY + seededRandom() * 3 + 3) {
                 if (biome === "desert") curWorld[x][y] = IDS.SAND;
-                else if (biome === "snow" || biome === "plains" || biome === "forest" || biome === "jungle" || (biome === "mountains" && surfaceY >= baseHeight - 30)) curWorld[x][y] = IDS.DIRT;
+                else if (biome === "snow" || biome === "plains" || biome === "village" || biome === "forest" || biome === "jungle" || (biome === "mountains" && surfaceY >= baseHeight - 30)) curWorld[x][y] = IDS.DIRT;
                 else curWorld[x][y] = IDS.STONE;
             }
             else {
@@ -873,6 +882,11 @@ export function generateWorld(seedOverride, sizeOverride) {
             let treeType = roll < 0.65 ? 'oak' : (roll < 0.85 ? 'bush' : 'tall_oak');
             buildTree(x, surfaceY, treeType);
             lastTreeX = x + 1;
+        } else if (biome === "village" && topBlock === IDS.GRASS && x - lastTreeX >= 10 && seededRandom() < 0.10) {
+            let roll = seededRandom();
+            let treeType = roll < 0.60 ? 'bush' : 'oak';
+            buildTree(x, surfaceY, treeType);
+            lastTreeX = x + 2;
         } else if (biome === "snow" && topBlock === IDS.SNOW && x - lastTreeX >= 4 && seededRandom() < 0.35) {
             let roll = seededRandom();
             let treeType = roll < 0.70 ? 'pine' : (roll < 0.88 ? 'tall_pine' : 'snow_bush');
@@ -904,7 +918,7 @@ export function generateWorld(seedOverride, sizeOverride) {
                         }
                     }
                 }
-            } else if (biome === "plains") {
+            } else if (biome === "plains" || biome === "village") {
                 if (flowerCluster > 0.82 && vegRoll < 0.45) {
                     curWorld[x][surfaceY - 1] = IDS.FLOWER_RED;
                 } else if (flowerCluster < -0.82 && vegRoll < 0.45) {
@@ -954,6 +968,288 @@ export function generateWorld(seedOverride, sizeOverride) {
         }
     }
 
+    // =========================================================================
+    // VILLAGE BIOME GENERATION: HOUSES, WHEAT CROPS & VILLAGE DETAILS
+    // =========================================================================
+    function buildVillageStructures(targetWorld, targetBgWorld, biomesArr, heightsArr) {
+        // Locate village biome boundaries
+        let vStart = -1, vEnd = -1;
+        for (let x = 0; x < WORLD_WIDTH; x++) {
+            if (biomesArr[x] === 'village') {
+                if (vStart === -1) vStart = x;
+                vEnd = x;
+            }
+        }
+        if (vStart === -1 || vEnd - vStart < 35) return;
+
+        const vCenter = Math.floor((vStart + vEnd) / 2);
+        const centerHeight = heightsArr[vCenter] || Math.floor(WORLD_HEIGHT / 2);
+
+        // Smooth & level terrain across the village terrace
+        for (let x = Math.max(5, vCenter - 34); x <= Math.min(WORLD_WIDTH - 6, vCenter + 34); x++) {
+            const dist = Math.abs(x - vCenter);
+            const blend = Math.max(0, 1 - dist / 34);
+            const origY = heightsArr[x];
+            const targetY = Math.round(origY * (1 - blend) + centerHeight * blend);
+            if (targetY !== origY) {
+                heightsArr[x] = targetY;
+                for (let y = 0; y < targetY; y++) targetWorld[x][y] = IDS.AIR;
+                targetWorld[x][targetY] = IDS.GRASS;
+                for (let y = targetY + 1; y <= targetY + 4; y++) {
+                    if (targetWorld[x][y] === IDS.AIR || targetWorld[x][y] === IDS.GRASS) {
+                        targetWorld[x][y] = IDS.DIRT;
+                    }
+                }
+            }
+        }
+
+        // Helper: prepare level plot with cobblestone foundation
+        const prepPlot = (startX, width, groundY) => {
+            for (let x = startX; x < startX + width; x++) {
+                if (x < 2 || x >= WORLD_WIDTH - 2) continue;
+                for (let y = groundY - 12; y < groundY; y++) {
+                    if (y >= 0) targetWorld[x][y] = IDS.AIR;
+                }
+                for (let y = groundY; y <= groundY + 3; y++) {
+                    if (y < WORLD_HEIGHT) targetWorld[x][y] = IDS.COBBLESTONE;
+                }
+                heightsArr[x] = groundY;
+            }
+        };
+
+        // Helper: populate chest loot
+        const populateChest = (cx, cy, items) => {
+            if (cx < 0 || cx >= WORLD_WIDTH || cy < 0 || cy >= WORLD_HEIGHT) return;
+            targetWorld[cx][cy] = IDS.CHEST;
+            const key = `${cx}_${cy}`;
+            const slots = new Array(27).fill(null);
+            items.forEach((it, idx) => {
+                if (idx < 27) slots[idx] = it;
+            });
+            const curChests = (typeof chests !== 'undefined' && chests) ? chests : (typeof window !== 'undefined' ? window.chests : null);
+            if (curChests) curChests.set(key, { items: slots });
+        };
+
+        // ---------------------------------------------------------------------
+        // 1. OAK COTTAGE (Cozy Village House)
+        // ---------------------------------------------------------------------
+        const h1X = vCenter - 26;
+        const h1Y = heightsArr[h1X];
+        prepPlot(h1X, 7, h1Y);
+        // Background walls
+        for (let x = h1X + 1; x < h1X + 6; x++) {
+            for (let y = h1Y - 4; y < h1Y; y++) {
+                targetBgWorld[x][y] = IDS.PLANKS;
+            }
+        }
+        // Corner wood log pillars
+        for (let y = h1Y - 4; y < h1Y; y++) {
+            targetWorld[h1X][y] = IDS.WOOD;
+            targetWorld[h1X + 6][y] = IDS.WOOD;
+        }
+        for (let x = h1X; x <= h1X + 6; x++) targetWorld[x][h1Y] = IDS.COBBLESTONE;
+        // Ceiling
+        for (let x = h1X + 1; x < h1X + 6; x++) targetWorld[x][h1Y - 4] = IDS.PLANKS;
+        // Window
+        targetWorld[h1X + 2][h1Y - 2] = IDS.PRISM_GLASS;
+        targetWorld[h1X + 2][h1Y - 1] = IDS.PLANKS;
+        targetWorld[h1X + 2][h1Y - 3] = IDS.PLANKS;
+        // Door
+        targetWorld[h1X + 4][h1Y - 1] = IDS.DOOR;
+        targetWorld[h1X + 4][h1Y - 2] = IDS.DOOR_TOP;
+        targetWorld[h1X + 4][h1Y - 3] = IDS.PLANKS;
+        // Interior furnishings
+        targetWorld[h1X + 1][h1Y - 1] = IDS.CRAFTING_TABLE;
+        targetWorld[h1X + 1][h1Y - 2] = IDS.TORCH;
+        // Pitched wooden roof with stairs
+        targetWorld[h1X - 1][h1Y - 4] = IDS.WOODEN_STAIRS;
+        targetWorld[h1X][h1Y - 5] = IDS.WOODEN_STAIRS;
+        targetWorld[h1X + 1][h1Y - 5] = IDS.PLANKS;
+        targetWorld[h1X + 2][h1Y - 6] = IDS.WOODEN_STAIRS;
+        targetWorld[h1X + 3][h1Y - 6] = IDS.PLANKS;
+        targetWorld[h1X + 4][h1Y - 6] = IDS.WOODEN_STAIRS_RIGHT;
+        targetWorld[h1X + 5][h1Y - 5] = IDS.PLANKS;
+        targetWorld[h1X + 6][h1Y - 5] = IDS.WOODEN_STAIRS_RIGHT;
+        targetWorld[h1X + 7][h1Y - 4] = IDS.WOODEN_STAIRS_RIGHT;
+
+        // ---------------------------------------------------------------------
+        // 2. CROP SECTION OF GROWN WHEAT (Village Farmland)
+        // ---------------------------------------------------------------------
+        const farmX = vCenter - 17;
+        const farmY = heightsArr[farmX];
+        for (let x = farmX; x < farmX + 12; x++) {
+            heightsArr[x] = farmY;
+            for (let y = farmY - 4; y < farmY; y++) targetWorld[x][y] = IDS.AIR;
+            targetWorld[x][farmY + 1] = IDS.DIRT;
+        }
+        // Border logs with corner torch posts
+        targetWorld[farmX][farmY] = IDS.WOOD;
+        targetWorld[farmX][farmY - 1] = IDS.TORCH;
+        targetWorld[farmX + 11][farmY] = IDS.WOOD;
+        targetWorld[farmX + 11][farmY - 1] = IDS.TORCH;
+        // Center water canal
+        targetWorld[farmX + 5][farmY] = IDS.WATER;
+        targetWorld[farmX + 6][farmY] = IDS.WATER;
+        // Farmland on both sides with fully grown mature wheat crops
+        for (let x = farmX + 1; x <= farmX + 4; x++) {
+            targetWorld[x][farmY] = IDS.PLOWED_DIRT;
+            targetWorld[x][farmY - 1] = IDS.WHEAT_STAGE_4; // Fully grown mature wheat!
+        }
+        for (let x = farmX + 7; x <= farmX + 10; x++) {
+            targetWorld[x][farmY] = IDS.PLOWED_DIRT;
+            targetWorld[x][farmY - 1] = IDS.WHEAT_STAGE_4; // Fully grown mature wheat!
+        }
+
+        // ---------------------------------------------------------------------
+        // 3. BLACKSMITH'S STONE WORKSHOP
+        // ---------------------------------------------------------------------
+        const smithX = vCenter - 3;
+        const smithY = heightsArr[smithX];
+        prepPlot(smithX, 9, smithY);
+        // Background cobblestone
+        for (let x = smithX + 1; x < smithX + 8; x++) {
+            for (let y = smithY - 4; y < smithY; y++) {
+                targetBgWorld[x][y] = IDS.COBBLESTONE;
+            }
+        }
+        // Cobblestone pillars and floor
+        for (let y = smithY - 4; y < smithY; y++) {
+            targetWorld[smithX][y] = IDS.COBBLESTONE;
+            targetWorld[smithX + 8][y] = IDS.COBBLESTONE;
+        }
+        for (let x = smithX; x <= smithX + 8; x++) targetWorld[x][smithY] = IDS.COBBLESTONE;
+        // Roof
+        for (let x = smithX; x <= smithX + 8; x++) targetWorld[x][smithY - 4] = IDS.COBBLESTONE;
+        targetWorld[smithX][smithY - 5] = IDS.COBBLESTONE_STAIRS;
+        targetWorld[smithX + 8][smithY - 5] = IDS.COBBLESTONE_STAIRS_RIGHT;
+        targetWorld[smithX + 4][smithY - 5] = IDS.TORCH;
+        // Furnaces, Crafting table & Torch
+        targetWorld[smithX + 1][smithY - 1] = IDS.FURNACE;
+        targetWorld[smithX + 2][smithY - 1] = IDS.FURNACE;
+        targetWorld[smithX + 3][smithY - 1] = IDS.CRAFTING_TABLE;
+        targetWorld[smithX + 2][smithY - 2] = IDS.TORCH;
+        // Blacksmith chest with generous village loot
+        populateChest(smithX + 5, smithY - 1, [
+            { id: IDS.IRON_INGOT, count: 4 },
+            { id: IDS.COOKED_BEEF, count: 5 },
+            { id: IDS.BREAD, count: 6 },
+            { id: IDS.EMERALD, count: 3 },
+            { id: IDS.APPLE, count: 3 },
+            { id: IDS.COAL, count: 8 }
+        ]);
+        // Door
+        targetWorld[smithX + 7][smithY - 1] = IDS.DOOR;
+        targetWorld[smithX + 7][smithY - 2] = IDS.DOOR_TOP;
+        targetWorld[smithX + 7][smithY - 3] = IDS.COBBLESTONE;
+
+        // ---------------------------------------------------------------------
+        // 4. VILLAGER RESIDENCE / COZY BEDROOM
+        // ---------------------------------------------------------------------
+        const bedHouseX = vCenter + 8;
+        const bedHouseY = heightsArr[bedHouseX];
+        prepPlot(bedHouseX, 8, bedHouseY);
+        // Background planks
+        for (let x = bedHouseX + 1; x < bedHouseX + 7; x++) {
+            for (let y = bedHouseY - 4; y < bedHouseY; y++) {
+                targetBgWorld[x][y] = IDS.PLANKS;
+            }
+        }
+        // Corner wood logs & floor
+        for (let y = bedHouseY - 4; y < bedHouseY; y++) {
+            targetWorld[bedHouseX][y] = IDS.WOOD;
+            targetWorld[bedHouseX + 7][y] = IDS.WOOD;
+        }
+        for (let x = bedHouseX; x <= bedHouseX + 7; x++) targetWorld[x][bedHouseY] = IDS.COBBLESTONE;
+        // Ceiling & roof
+        for (let x = bedHouseX; x <= bedHouseX + 7; x++) targetWorld[x][bedHouseY - 4] = IDS.PLANKS;
+        targetWorld[bedHouseX - 1][bedHouseY - 4] = IDS.WOODEN_STAIRS;
+        targetWorld[bedHouseX + 8][bedHouseY - 4] = IDS.WOODEN_STAIRS_RIGHT;
+        targetWorld[bedHouseX + 1][bedHouseY - 5] = IDS.WOODEN_STAIRS;
+        targetWorld[bedHouseX + 2][bedHouseY - 5] = IDS.PLANKS;
+        targetWorld[bedHouseX + 3][bedHouseY - 6] = IDS.WOODEN_STAIRS;
+        targetWorld[bedHouseX + 4][bedHouseY - 6] = IDS.WOODEN_STAIRS_RIGHT;
+        targetWorld[bedHouseX + 5][bedHouseY - 5] = IDS.PLANKS;
+        targetWorld[bedHouseX + 6][bedHouseY - 5] = IDS.WOODEN_STAIRS_RIGHT;
+        // Double Bed
+        targetWorld[bedHouseX + 1][bedHouseY - 1] = IDS.BED;
+        targetWorld[bedHouseX + 2][bedHouseY - 1] = IDS.BED;
+        // Window & interior torch
+        targetWorld[bedHouseX + 4][bedHouseY - 2] = IDS.PRISM_GLASS;
+        targetWorld[bedHouseX + 4][bedHouseY - 1] = IDS.PLANKS;
+        targetWorld[bedHouseX + 4][bedHouseY - 3] = IDS.PLANKS;
+        targetWorld[bedHouseX + 2][bedHouseY - 3] = IDS.TORCH;
+        // Residence chest
+        populateChest(bedHouseX + 5, bedHouseY - 1, [
+            { id: IDS.BREAD, count: 5 },
+            { id: IDS.SEEDS, count: 8 },
+            { id: IDS.COOKED_BEEF, count: 3 },
+            { id: IDS.APPLE, count: 4 }
+        ]);
+        // Door
+        targetWorld[bedHouseX + 6][bedHouseY - 1] = IDS.DOOR;
+        targetWorld[bedHouseX + 6][bedHouseY - 2] = IDS.DOOR_TOP;
+        targetWorld[bedHouseX + 6][bedHouseY - 3] = IDS.PLANKS;
+
+        // ---------------------------------------------------------------------
+        // 5. LOOKOUT WATCHTOWER (2-Story Elevated Tower)
+        // ---------------------------------------------------------------------
+        const towerX = vCenter + 18;
+        const towerY = heightsArr[towerX];
+        prepPlot(towerX, 5, towerY);
+        for (let x = towerX; x < towerX + 5; x++) {
+            for (let y = towerY - 8; y < towerY; y++) {
+                targetBgWorld[x][y] = IDS.PLANKS;
+            }
+        }
+        for (let y = towerY - 8; y < towerY; y++) {
+            targetWorld[towerX][y] = IDS.WOOD;
+            targetWorld[towerX + 4][y] = IDS.WOOD;
+        }
+        for (let x = towerX; x < towerX + 5; x++) {
+            targetWorld[x][towerY] = IDS.COBBLESTONE;
+            targetWorld[x][towerY - 4] = IDS.PLANKS;
+            targetWorld[x][towerY - 8] = IDS.PLANKS;
+        }
+        // Vertical climbable ladders
+        for (let y = towerY - 8; y < towerY; y++) {
+            targetWorld[towerX + 2][y] = IDS.LADDER;
+        }
+        // Observation deck parapet and torches
+        targetWorld[towerX - 1][towerY - 8] = IDS.WOODEN_STAIRS;
+        targetWorld[towerX + 5][towerY - 8] = IDS.WOODEN_STAIRS_RIGHT;
+        targetWorld[towerX][towerY - 9] = IDS.TORCH;
+        targetWorld[towerX + 4][towerY - 9] = IDS.TORCH;
+        // Ground entrance
+        targetWorld[towerX + 1][towerY - 1] = IDS.AIR;
+        targetWorld[towerX + 1][towerY - 2] = IDS.AIR;
+
+        // ---------------------------------------------------------------------
+        // 6. CONNECTING PATHWAYS & STREET LAMPS
+        // ---------------------------------------------------------------------
+        for (let x = h1X - 3; x <= towerX + 6; x++) {
+            if (x < 2 || x >= WORLD_WIDTH - 2) continue;
+            const sy = heightsArr[x];
+            if (targetWorld[x][sy] === IDS.GRASS) {
+                targetWorld[x][sy] = (x % 3 === 0) ? IDS.COBBLESTONE : IDS.DIRT;
+            }
+        }
+        // Street lamp posts
+        const lamp1X = vCenter - 6;
+        const lamp1Y = heightsArr[lamp1X];
+        if (targetWorld[lamp1X][lamp1Y - 1] === IDS.AIR) {
+            targetWorld[lamp1X][lamp1Y - 1] = IDS.WOOD;
+            targetWorld[lamp1X][lamp1Y - 2] = IDS.TORCH;
+        }
+        const lamp2X = vCenter + 16;
+        const lamp2Y = heightsArr[lamp2X];
+        if (targetWorld[lamp2X][lamp2Y - 1] === IDS.AIR) {
+            targetWorld[lamp2X][lamp2Y - 1] = IDS.WOOD;
+            targetWorld[lamp2X][lamp2Y - 2] = IDS.TORCH;
+        }
+    }
+
+    buildVillageStructures(curWorld, bgWorld, biomes, surfaceHeights);
+
     ensureTreeWoodNonCollidable();
     if (typeof window !== 'undefined') window.nonCollidableTreeWood = nonCollidableTreeWood;
     setEngineNonCollidableTreeWood(nonCollidableTreeWood);
@@ -982,6 +1278,7 @@ export function getActiveBiomeAt(gridX) {
     let sandCount = 0;
     let woodCount = 0;
     let jungleCount = 0;
+    let villageCount = 0;
     const checkRadius = 8;
     const startX = Math.max(0, gx - checkRadius);
     const endX = Math.min(WORLD_WIDTH - 1, gx + checkRadius);
@@ -997,10 +1294,12 @@ export function getActiveBiomeAt(gridX) {
             if (b0 === IDS.SNOW || b0 === IDS.ICE || b1 === IDS.SNOW || b1 === IDS.ICE) snowCount++;
             else if (b0 === IDS.SAND || b1 === IDS.SAND) sandCount++;
             else if (b0 === IDS.JUNGLE_WOOD || b0 === IDS.JUNGLE_LEAVES || b0 === IDS.BAMBOO || b0 === IDS.FERN || b0 === IDS.MELON || b0 === IDS.VINES || b1 === IDS.JUNGLE_WOOD || b1 === IDS.JUNGLE_LEAVES || bAbove === IDS.BAMBOO || bAbove === IDS.FERN || bAbove === IDS.MELON) jungleCount++;
+            else if (b0 === IDS.PLOWED_DIRT || bAbove === IDS.WHEAT_STAGE_4 || b0 === IDS.PLANKS) villageCount++;
             else if (b0 === IDS.WOOD || b0 === IDS.LEAVES || b1 === IDS.WOOD || bAbove === IDS.WOOD || bAbove === IDS.LEAVES) woodCount++;
         }
     }
 
+    if (villageCount >= 2) return 'village';
     if (jungleCount >= 1) return 'jungle';
     if (totalChecked > 0 && snowCount / totalChecked > 0.30) return 'snow';
     if (totalChecked > 0 && sandCount / totalChecked > 0.30) return 'desert';

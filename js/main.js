@@ -602,6 +602,17 @@ export function initJukeboxFileInput() {
                 case 'parrot_tame':
                     playTone(ctx, 'triangle', 600, 1200, 0.20 * effectiveVol, 0.25, null, now, false);
                     break;
+                case 'cat_meow': {
+                    const pitchMod = options.pitch || 1.0;
+                    playTone(ctx, 'sine', 720 * pitchMod, 1140 * pitchMod, 0.16 * effectiveVol, 0.18, null, now, false);
+                    break;
+                }
+                case 'cat_purr':
+                    playTone(ctx, 'triangle', 85, 75, 0.12 * effectiveVol, 0.28, null, now);
+                    break;
+                case 'cat_tame':
+                    playTone(ctx, 'sine', 587.33, 1174.66, 0.22 * effectiveVol, 0.26, null, now, false);
+                    break;
                 case 'parrot_hurt':
                     playTone(ctx, 'sawtooth', 700, 250, 0.22 * effectiveVol, 0.12, null, now);
                     break;
@@ -1619,7 +1630,7 @@ export function initJukeboxFileInput() {
                 const entCY = ent.y + ent.height / 2;
                 if (Math.hypot(pCX - entCX, pCY - entCY) / TILE_SIZE > REACH) return false;
 
-                if (ent instanceof Parrot) {
+                if (typeof ent.interact === 'function') {
                     return ent.interact(player, inventory, selectedHotbarIndex);
                 }
             }
@@ -3637,13 +3648,15 @@ export function initJukeboxFileInput() {
                 let sheep = entities.filter(e => e instanceof Sheep).length;
                 let cows = entities.filter(e => e instanceof Cow).length;
                 let pigeons = entities.filter(e => e instanceof Pigeon).length;
-                let hostiles = entities.length - pigs - chickens - sheep - cows - pigeons;
+                let cats = (typeof Cat !== 'undefined') ? entities.filter(e => e instanceof Cat).length : 0;
+                let hostiles = Math.max(0, entities.length - pigs - chickens - sheep - cows - pigeons - cats);
                 
                 let debugGridX = Math.max(0, Math.min(WORLD_WIDTH - 1, Math.floor(px)));
                 let surfaceY = typeof getWorldSurfaceY === 'function' ? getWorldSurfaceY(debugGridX) : 0;
                 let playerFeetGridY = (player.y + player.height) / TILE_SIZE;
                 let isSnowy = typeof getSnowBiomeRatio === 'function' ? getSnowBiomeRatio(debugGridX, 8) > 0.35 : false;
-                let biome = (caveSkyOpacity > 0.4 && playerFeetGridY > surfaceY + CAVE_SKY_START_TILES) ? 'Underground' : (isSnowy ? 'Snowy Biome' : 'Plains Surface');
+                let rawBiome = typeof getActiveBiomeAt === 'function' ? getActiveBiomeAt(debugGridX) : (isSnowy ? 'snow' : 'plains');
+                let biome = (caveSkyOpacity > 0.4 && playerFeetGridY > surfaceY + CAVE_SKY_START_TILES) ? 'Underground' : (rawBiome.charAt(0).toUpperCase() + rawBiome.slice(1) + ' Biome');
 
                 if (dbgEl) {
                     const curGraphicsMode = (typeof window !== 'undefined' && window.graphicsMode) ? window.graphicsMode : graphicsMode;
@@ -3679,7 +3692,7 @@ export function initJukeboxFileInput() {
                         `Biome: ${biome}\n` +
                         `Diff: ${currentDifficulty.toUpperCase()}\n` +
                         `Multiplayer: ${isMultiplayer ? currentMpRoom : 'Local'}\n` +
-                        `Entities: ${entities.length}${window.devCheats?.freezeMobs ? ' [FROZEN]' : ''} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Pigeons:${pigeons}, Bad:${hostiles})\n` +
+                        `Entities: ${entities.length}${window.devCheats?.freezeMobs ? ' [FROZEN]' : ''} (Pigs:${pigs}, Chk:${chickens}, Sheep:${sheep}, Cows:${cows}, Cats:${cats}, Pigeons:${pigeons}, Bad:${hostiles})\n` +
                         `Target: ${targetBlockName}\n` +
                         `Time: Day ${dayCount} (${(timeOfDay * 100).toFixed(0)}%)${(window.devCheats?.timeSpeed === 0) ? ' [PAUSED]' : (window.devCheats?.timeSpeed && window.devCheats.timeSpeed !== 1.0 ? ` [${window.devCheats.timeSpeed}x]` : '')} | Day Scale: ${typeof getDayDifficultyMultiplier === 'function' ? getDayDifficultyMultiplier().toFixed(2) : 1}x (Hunger: ${typeof getDayHungerDrainMultiplier === 'function' ? getDayHungerDrainMultiplier().toFixed(2) : 1}x)\n` +
                         `Kael: ${kaelStatus}`;

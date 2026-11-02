@@ -279,7 +279,7 @@ export function getChestGroup(x, y) {
     let neighbors = [[x, y]];
     if (isChestPairedWithLeft(x, y)) {
         neighbors = [[x - 1, y], [x, y]];
-    } else if (x < WORLD_WIDTH - 1 && world[x + 1]?.[y] === IDS.CHEST) {
+    } else if (x < WORLD_WIDTH - 1 && world && world[x + 1]?.[y] === IDS.CHEST) {
         neighbors = [[x, y], [x + 1, y]];
     }
     if (typeof window !== 'undefined' && window.chests && window.chests instanceof Map) {
@@ -334,17 +334,27 @@ export function applyChestState(key, data) {
 
 
 export function getActivePhysicsWorld(entity = null) {
-    if (entity?.isMenuEntity || (typeof STATE !== 'undefined' && STATE === 'MENU')) {
-        return (typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null;
+    if (entity?.isMenuEntity) {
+        if (typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) return menuWorld.blocks;
+        if (typeof window !== 'undefined' && window.menuWorld && window.menuWorld.blocks) return window.menuWorld.blocks;
+        return null;
     }
-    return (typeof world !== 'undefined' && world) ? world : ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : null);
+    const curWorld = (typeof world !== 'undefined' && world && world.length) ? world : ((typeof window !== 'undefined' && window.world && window.world.length) ? window.world : null);
+    if (curWorld) return curWorld;
+    if (typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) return menuWorld.blocks;
+    if (typeof window !== 'undefined' && window.menuWorld && window.menuWorld.blocks) return window.menuWorld.blocks;
+    return null;
 }
 
 export function getActivePhysicsTerrain(entity = null) {
-    if (entity?.isMenuEntity || (typeof STATE !== 'undefined' && STATE === 'MENU')) {
-        return (typeof menuWorld !== 'undefined' && menuWorld && (menuWorld.surfaceHeights || menuWorld.terrain)) ? (menuWorld.surfaceHeights || menuWorld.terrain) : null;
+    if (entity?.isMenuEntity) {
+        const mw = (typeof menuWorld !== 'undefined' && menuWorld) ? menuWorld : ((typeof window !== 'undefined' && window.menuWorld) ? window.menuWorld : null);
+        return mw ? (mw.surfaceHeights || mw.terrain || null) : null;
     }
-    return (typeof surfaceHeights !== 'undefined' && surfaceHeights && surfaceHeights.length) ? surfaceHeights : ((typeof menuWorld !== 'undefined' && menuWorld && (menuWorld.surfaceHeights || menuWorld.terrain)) ? (menuWorld.surfaceHeights || menuWorld.terrain) : null);
+    const curTerrain = (typeof surfaceHeights !== 'undefined' && surfaceHeights && surfaceHeights.length) ? surfaceHeights : ((typeof window !== 'undefined' && window.surfaceHeights && window.surfaceHeights.length) ? window.surfaceHeights : null);
+    if (curTerrain) return curTerrain;
+    const mw = (typeof menuWorld !== 'undefined' && menuWorld) ? menuWorld : ((typeof window !== 'undefined' && window.menuWorld) ? window.menuWorld : null);
+    return mw ? (mw.surfaceHeights || mw.terrain || null) : null;
 }
 
 
@@ -487,11 +497,40 @@ export function getCrackStage(progress) {
     return Math.min(BLOCK_CRACK_STAGES.length - 1, Math.floor(progress * BLOCK_CRACK_STAGES.length));
 }
 
-export function isWater(x, y) {
-    if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
-    return world[x]?.[y] === IDS.WATER;
+export function isWater(x, y, entityOrWorld = null) {
+    let targetWorld = null;
+    if (Array.isArray(entityOrWorld)) {
+        targetWorld = entityOrWorld;
+    } else if (entityOrWorld && typeof entityOrWorld.getActiveWorld === 'function') {
+        targetWorld = entityOrWorld.getActiveWorld();
+    } else {
+        targetWorld = getActivePhysicsWorld(entityOrWorld);
+    }
+    if (!targetWorld) {
+        targetWorld = (typeof world !== 'undefined' && world) ? world : ((typeof window !== 'undefined' && window.world) ? window.world : null);
+    }
+    if (!targetWorld || !targetWorld.length) return false;
+    if (x < 0 || x >= targetWorld.length) return false;
+    const col = targetWorld[x];
+    if (!col || y < 0 || y >= col.length) return false;
+    return col[y] === IDS.WATER;
 }
-export function isLava(x, y) {
-    if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return false;
-    return world[x]?.[y] === IDS.LAVA;
+
+export function isLava(x, y, entityOrWorld = null) {
+    let targetWorld = null;
+    if (Array.isArray(entityOrWorld)) {
+        targetWorld = entityOrWorld;
+    } else if (entityOrWorld && typeof entityOrWorld.getActiveWorld === 'function') {
+        targetWorld = entityOrWorld.getActiveWorld();
+    } else {
+        targetWorld = getActivePhysicsWorld(entityOrWorld);
+    }
+    if (!targetWorld) {
+        targetWorld = (typeof world !== 'undefined' && world) ? world : ((typeof window !== 'undefined' && window.world) ? window.world : null);
+    }
+    if (!targetWorld || !targetWorld.length) return false;
+    if (x < 0 || x >= targetWorld.length) return false;
+    const col = targetWorld[x];
+    if (!col || y < 0 || y >= col.length) return false;
+    return col[y] === IDS.LAVA;
 }

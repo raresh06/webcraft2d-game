@@ -111,6 +111,7 @@ try { if (typeof Particle !== "undefined") window.Particle = Particle; } catch(e
 try { if (typeof PhysicsEntity !== "undefined") window.PhysicsEntity = PhysicsEntity; } catch(e) {}
 try { if (typeof Pig !== "undefined") window.Pig = Pig; } catch(e) {}
 try { if (typeof Pigeon !== "undefined") window.Pigeon = Pigeon; } catch(e) {}
+try { if (typeof Cat !== "undefined") window.Cat = Cat; } catch(e) {}
 try { if (typeof Player !== "undefined") window.Player = Player; } catch(e) {}
 try { if (typeof SKIN_W !== "undefined") window.SKIN_W = SKIN_W; } catch(e) {}
 try { if (typeof SKY_STARS !== "undefined") window.SKY_STARS = SKY_STARS; } catch(e) {}

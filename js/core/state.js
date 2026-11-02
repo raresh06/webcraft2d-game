@@ -64,21 +64,21 @@ export let lastSyncTime = 0;
 export let lastSentSkinData = null;
 export let lastFluidStateTimestamp = 0;
 
-export let WORLD_WIDTH = 1024;
+export let WORLD_WIDTH = 1280;
 export let WORLD_HEIGHT = 320;
 export let currentWorldSize = 'small';
 export let worldBiomes = null;
 
 export function setWorldDimensions(size, explicitWidth, explicitHeight) {
-    currentWorldSize = (size === 'big' || (explicitWidth && explicitWidth > 1200)) ? 'big' : 'small';
+    currentWorldSize = (size === 'big' || (explicitWidth && explicitWidth > 1500)) ? 'big' : 'small';
     if (explicitWidth && explicitHeight) {
         WORLD_WIDTH = explicitWidth;
         WORLD_HEIGHT = explicitHeight;
     } else if (currentWorldSize === 'big') {
-        WORLD_WIDTH = 2048;
+        WORLD_WIDTH = 2560;
         WORLD_HEIGHT = 512;
     } else {
-        WORLD_WIDTH = 1024;
+        WORLD_WIDTH = 1280;
         WORLD_HEIGHT = 320;
     }
     if (typeof window !== 'undefined') {

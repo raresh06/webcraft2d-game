@@ -132,6 +132,7 @@ export function spawnAnimals(count = 1, nearPlayerBias = 0.35) {
     const AnimalClass = getEntityClass('Animal');
     const PigeonClass = getEntityClass('Pigeon');
     const ParrotClass = getEntityClass('Parrot');
+    const CatClass = getEntityClass('Cat');
     const SheepClass = getEntityClass('Sheep');
     const PigClass = getEntityClass('Pig');
     const CowClass = getEntityClass('Cow');
@@ -192,10 +193,13 @@ export function spawnAnimals(count = 1, nearPlayerBias = 0.35) {
             torsoBlock !== undefined && nonSolid.has(torsoBlock)) {
             
             const isJungle = typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(gx) === 'jungle';
+            const isVillage = typeof getActiveBiomeAt === 'function' && getActiveBiomeAt(gx) === 'village';
             let currentPigeons = PigeonClass ? curEntities.filter(e => e instanceof PigeonClass).length : 0;
             let targetPigeons = Math.round(maxAnimals * 0.28);
             let animalType;
-            if (isJungle && Math.random() < 0.65) {
+            if (isVillage && Math.random() < 0.60) {
+                animalType = 'Cat';
+            } else if (isJungle && Math.random() < 0.65) {
                 animalType = 'Parrot';
             } else if (currentPigeons < targetPigeons) {
                 let roll = Math.random();
@@ -217,6 +221,11 @@ export function spawnAnimals(count = 1, nearPlayerBias = 0.35) {
             else if (animalType === 'Pig' && PigClass) curEntities.push(new PigClass(spawnX, spawnWorldY));
             else if (animalType === 'Cow' && CowClass) curEntities.push(new CowClass(spawnX, spawnWorldY));
             else if (animalType === 'Chicken' && ChickenClass) curEntities.push(new ChickenClass(spawnX, spawnWorldY));
+            else if (animalType === 'Cat' && CatClass) {
+                const cat = new CatClass(spawnX, spawnWorldY);
+                curEntities.push(cat);
+                currentAnimals++;
+            }
             else if (animalType === 'Parrot' && ParrotClass) {
                 const parrot = new ParrotClass(spawnX, spawnWorldY);
                 curEntities.push(parrot);

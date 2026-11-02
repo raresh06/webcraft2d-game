@@ -2058,6 +2058,7 @@ if (typeof window !== 'undefined') {
             Cow: typeof Cow !== 'undefined' ? Cow : (typeof window !== 'undefined' ? window.Cow : null),
             Pigeon: typeof Pigeon !== 'undefined' ? Pigeon : (typeof window !== 'undefined' ? window.Pigeon : null),
             Parrot: typeof Parrot !== 'undefined' ? Parrot : (typeof window !== 'undefined' ? window.Parrot : null),
+            Cat: typeof Cat !== 'undefined' ? Cat : (typeof window !== 'undefined' ? window.Cat : null),
             Zombie: typeof Zombie !== 'undefined' ? Zombie : (typeof window !== 'undefined' ? window.Zombie : null),
             Creeper: typeof Creeper !== 'undefined' ? Creeper : (typeof window !== 'undefined' ? window.Creeper : null),
             Scorpion: typeof Scorpion !== 'undefined' ? Scorpion : (typeof window !== 'undefined' ? window.Scorpion : null)
@@ -2103,6 +2104,7 @@ if (typeof window !== 'undefined') {
             Cow: typeof Cow !== 'undefined' ? Cow : (typeof window !== 'undefined' ? window.Cow : null),
             Pigeon: typeof Pigeon !== 'undefined' ? Pigeon : (typeof window !== 'undefined' ? window.Pigeon : null),
             Parrot: typeof Parrot !== 'undefined' ? Parrot : (typeof window !== 'undefined' ? window.Parrot : null),
+            Cat: typeof Cat !== 'undefined' ? Cat : (typeof window !== 'undefined' ? window.Cat : null),
             Zombie: typeof Zombie !== 'undefined' ? Zombie : (typeof window !== 'undefined' ? window.Zombie : null),
             Creeper: typeof Creeper !== 'undefined' ? Creeper : (typeof window !== 'undefined' ? window.Creeper : null),
             Scorpion: typeof Scorpion !== 'undefined' ? Scorpion : (typeof window !== 'undefined' ? window.Scorpion : null)
@@ -2378,6 +2380,8 @@ if (typeof window !== 'undefined') {
                 document.getElementById('hud').style.display = 'block';
                 document.getElementById('gameCanvas').classList.remove('hidden');
                 STATE = 'PLAYING';
+                if (typeof window !== 'undefined') window.STATE = 'PLAYING';
+                if (typeof window.setEngineState === 'function') window.setEngineState('PLAYING');
                 updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateArmorUI(); updateHudArmorBar();
                 broadcastPlayerState(true);
                 if (isMultiplayerAuthority()) {
@@ -2750,7 +2754,7 @@ if (typeof window !== 'undefined') {
         // 4. Save Room Document with Offer to Firestore
         const activeMpSizeBtn = document.querySelector('#mp-world-size-selector button.active');
         const chosenMpSize = (activeMpSizeBtn?.dataset?.size === 'big' || (typeof window !== 'undefined' && window.selectedMpWorldSize === 'big') || (typeof selectedMpWorldSize !== 'undefined' && selectedMpWorldSize === 'big')) ? 'big' : 'small';
-        const chosenMpWidth = (chosenMpSize === 'big' ? 2048 : 1024);
+        const chosenMpWidth = (chosenMpSize === 'big' ? 2560 : 1280);
         const chosenMpHeight = (chosenMpSize === 'big' ? 512 : 320);
         await setDoc(roomRef, {
             worldName, gameMode, minigameType, difficulty: mpCreateDifficulty, worldSize: chosenMpSize, worldWidth: chosenMpWidth, worldHeight: chosenMpHeight, starterItems, keepInventory: roomKeepInventory, achievementsEnabled: roomAchievementsEnabled, passwordHash, seed, timeOfDay: 0.02, gameVersion: GAME_VERSION, gameBuild: GAME_BUILD,
@@ -3189,7 +3193,9 @@ if (typeof window !== 'undefined') {
                     hideMultiplayerLoading();
                     document.getElementById('hud').style.display = 'block';
                     document.getElementById('gameCanvas').classList.remove('hidden');
-                    STATE = 'PLAYING'; updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateArmorUI(); updateHudArmorBar();
+                    STATE = 'PLAYING';
+                if (typeof window !== 'undefined') window.STATE = 'PLAYING';
+                if (typeof window.setEngineState === 'function') window.setEngineState('PLAYING'); updateUI(); updateHealthUI(); updateHungerUI(); updateTimeUI(); updateArmorUI(); updateHudArmorBar();
                     broadcastPlayerState(true);
                     lastAutosaveTimestamp = Date.now();
                     showToast("Hosting " + currentMpWorldName + ". Waiting for players...");

@@ -257,13 +257,37 @@ export function generateProceduralThumbnail({
         ctx.fillRect(115, baseGroundY + 6, 2, 2);
     }
 
-    // 3. CUTE DETAILS: Wooden Shelter or Crafting Bench
-    ctx.fillStyle = '#92400e'; // Wooden cabin roof
-    ctx.fillRect(60, baseGroundY - 1, 14, 8);
-    ctx.fillStyle = '#78350f';
-    ctx.fillRect(62, baseGroundY + 1, 10, 6);
-    ctx.fillStyle = '#fde047'; // Warm lit window
-    ctx.fillRect(66, baseGroundY + 2, 3, 3);
+    // 3. CUTE DETAILS: Wooden Shelter or Crafting Bench or Village
+    if (b === 'village') {
+        // Village Cottage
+        ctx.fillStyle = '#64748b'; // Stone base
+        ctx.fillRect(56, baseGroundY + 2, 20, 6);
+        ctx.fillStyle = '#b45309'; // Wood walls
+        ctx.fillRect(58, baseGroundY - 4, 16, 6);
+        ctx.fillStyle = '#78350f'; // Roof
+        ctx.beginPath(); ctx.moveTo(54, baseGroundY - 4); ctx.lineTo(66, baseGroundY - 12); ctx.lineTo(78, baseGroundY - 4); ctx.fill();
+        ctx.fillStyle = '#fef08a'; // Lit window
+        ctx.fillRect(63, baseGroundY - 2, 4, 3);
+        ctx.fillStyle = '#451a03'; // Door
+        ctx.fillRect(70, baseGroundY - 1, 3, 5);
+        // Crop field with golden wheat
+        ctx.fillStyle = '#78350f'; // Farmland
+        ctx.fillRect(84, baseGroundY + 5, 22, 3);
+        ctx.fillStyle = '#0284c7'; // Water canal
+        ctx.fillRect(94, baseGroundY + 6, 3, 2);
+        ctx.fillStyle = '#facc15'; // Golden wheat crops
+        for (let wx = 85; wx < 105; wx += 3) {
+            if (wx >= 93 && wx <= 96) continue;
+            ctx.fillRect(wx, baseGroundY + 2, 2, 4);
+        }
+    } else {
+        ctx.fillStyle = '#92400e'; // Wooden cabin roof
+        ctx.fillRect(60, baseGroundY - 1, 14, 8);
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(62, baseGroundY + 1, 10, 6);
+        ctx.fillStyle = '#fde047'; // Warm lit window
+        ctx.fillRect(66, baseGroundY + 2, 3, 3);
+    }
 
     // 4. BOTTOM PILL: MODE & DIMENSIONS (Optional)
     if (includePill) {
@@ -281,7 +305,7 @@ export function generateProceduralThumbnail({
         ctx.font = 'bold 8px monospace';
         ctx.fillText(modeText, 10, 84);
 
-        const sizeLabel = worldSize === 'big' ? '2048x512' : (worldSize === 'flat' ? 'FLAT' : '1024x320');
+        const sizeLabel = worldSize === 'big' ? '2560x512' : (worldSize === 'flat' ? 'FLAT' : '1280x320');
         ctx.fillStyle = '#cbd5e1';
         ctx.font = '8px monospace';
         ctx.fillText(sizeLabel, 110, 84);

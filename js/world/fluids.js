@@ -42,13 +42,16 @@ function getParticleClass() {
 }
 
 export function getFluid(x, y) {
-    if (x < 0 || x >= WORLD_WIDTH || y < 0 || y >= WORLD_HEIGHT) return null;
+    const curWorld = (typeof world !== 'undefined' && world) ? world : ((typeof window !== 'undefined' && window.world) ? window.world : null);
+    const targetWorld = curWorld || ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : ((typeof window !== 'undefined' && window.menuWorld && window.menuWorld.blocks) ? window.menuWorld.blocks : null));
+    const maxW = targetWorld ? targetWorld.length : WORLD_WIDTH;
+    const maxH = (targetWorld && targetWorld[0]) ? targetWorld[0].length : WORLD_HEIGHT;
+    if (x < 0 || x >= maxW || y < 0 || y >= maxH) return null;
     const curFluids = (typeof fluids !== 'undefined' && fluids) ? fluids : (typeof window !== 'undefined' ? window.fluids : null);
     const fl = curFluids ? curFluids.get(getFluidKey(x, y)) : null;
     if (fl) return fl;
-    const curWorld = (typeof world !== 'undefined' && world) ? world : (typeof window !== 'undefined' ? window.world : null);
-    if (curWorld && curWorld[x]) {
-        const b = curWorld[x][y];
+    if (targetWorld && targetWorld[x]) {
+        const b = targetWorld[x][y];
         if (b === IDS.WATER) return { type: IDS.WATER, level: 0, source: true, falling: false, x, y };
         if (b === IDS.LAVA) return { type: IDS.LAVA, level: 0, source: true, falling: false, x, y };
     }
@@ -56,7 +59,11 @@ export function getFluid(x, y) {
 }
 
 export function getFluidFlowVector(gx, gy) {
-    if (gx < 0 || gx >= WORLD_WIDTH || gy < 0 || gy >= WORLD_HEIGHT) return { vx: 0, vy: 0 };
+    const curWorld = (typeof world !== 'undefined' && world) ? world : ((typeof window !== 'undefined' && window.world) ? window.world : null);
+    const targetWorld = curWorld || ((typeof menuWorld !== 'undefined' && menuWorld && menuWorld.blocks) ? menuWorld.blocks : ((typeof window !== 'undefined' && window.menuWorld && window.menuWorld.blocks) ? window.menuWorld.blocks : null));
+    const maxW = targetWorld ? targetWorld.length : WORLD_WIDTH;
+    const maxH = (targetWorld && targetWorld[0]) ? targetWorld[0].length : WORLD_HEIGHT;
+    if (gx < 0 || gx >= maxW || gy < 0 || gy >= maxH) return { vx: 0, vy: 0 };
     const fl = getFluid(gx, gy);
     if (!fl) return { vx: 0, vy: 0 };
     if (fl.falling) return { vx: 0, vy: 0.35 };
@@ -80,11 +87,10 @@ export function getFluidFlowVector(gx, gy) {
         else if (!right.falling && right.level < fl.level) rightStrength = maxFlow - right.level;
     }
 
-    const curWorld = (typeof world !== 'undefined' && world) ? world : (typeof window !== 'undefined' ? window.world : null);
-    if (!left && gx > 0 && curWorld && !isSolidWorldBlock(gx - 1, gy, curWorld[gx - 1]?.[gy])) {
+    if (!left && gx > 0 && targetWorld && !isSolidWorldBlock(gx - 1, gy, targetWorld[gx - 1]?.[gy])) {
         rightStrength += 1.5;
     }
-    if (!right && gx < WORLD_WIDTH - 1 && curWorld && !isSolidWorldBlock(gx + 1, gy, curWorld[gx + 1]?.[gy])) {
+    if (!right && gx < maxW - 1 && targetWorld && !isSolidWorldBlock(gx + 1, gy, targetWorld[gx + 1]?.[gy])) {
         leftStrength += 1.5;
     }
 
@@ -468,4 +474,4 @@ try {
         window.isWater = isWater;
         window.isLava = isLava;
     }
-} catch (e) {}
+} catch (e) {}
